@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react"
 
+import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -14,6 +15,7 @@ import {
   READER_SHELL_SETTINGS_DEFAULTS,
   getReaderShellViewSettings,
 } from "@/lib/reader-shell-settings"
+import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
@@ -57,6 +59,11 @@ export function ReadingPage() {
   }, [])
 
   const liveReadingSession = liveSession?.readingSession
+  const liveReaderAppearance =
+    liveSession?.isActive ? normalizeReaderAppearance(liveReadingSession?.appearance) : null
+
+  useReaderAppearanceSync(liveReaderAppearance)
+
   const markdown =
     liveReadingSession?.content?.markdown ??
     (draftReadingSession.source === "custom" && draftReadingSession.customMarkdown.trim().length > 0

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { applyInterventionCommand, subscribeToGaze } from "@/lib/gaze-socket"
+import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
@@ -157,6 +159,9 @@ function ResearcherCurrentLiveBody({
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
   const [localReaderOptions, setLocalReaderOptions] = useState<LiveReaderOptions | null>(null)
   const readerOptions = localReaderOptions ?? persistedReaderOptions
+  const readerAppearance = normalizeReaderAppearance(readingSession.appearance)
+
+  useReaderAppearanceSync(readerAppearance)
 
   const presentation = normalizeReadingPresentation({
     fontFamily: readingSession.presentation.fontFamily,
@@ -221,18 +226,29 @@ function ResearcherCurrentLiveBody({
     }))
   }, [persistedReaderOptions])
 
-  const commitIntervention = useCallback((next: Partial<typeof DEFAULT_READING_PRESENTATION>, reason: string) => {
+  const commitIntervention = useCallback((
+    next: {
+      presentation?: Partial<typeof DEFAULT_READING_PRESENTATION>
+      appearance?: Partial<ReaderAppearanceSettings>
+    },
+    reason: string
+  ) => {
     applyInterventionCommand({
       source: "manual",
       trigger: "researcher-ui",
       reason,
       presentation: {
-        fontFamily: next.fontFamily ?? null,
-        fontSizePx: next.fontSizePx ?? null,
-        lineWidthPx: next.lineWidthPx ?? null,
-        lineHeight: next.lineHeight ?? null,
-        letterSpacingEm: next.letterSpacingEm ?? null,
-        editableByResearcher: next.editableByExperimenter ?? null,
+        fontFamily: next.presentation?.fontFamily ?? null,
+        fontSizePx: next.presentation?.fontSizePx ?? null,
+        lineWidthPx: next.presentation?.lineWidthPx ?? null,
+        lineHeight: next.presentation?.lineHeight ?? null,
+        letterSpacingEm: next.presentation?.letterSpacingEm ?? null,
+        editableByResearcher: next.presentation?.editableByExperimenter ?? null,
+      },
+      appearance: {
+        themeMode: next.appearance?.themeMode ?? null,
+        palette: next.appearance?.palette ?? null,
+        appFont: next.appearance?.appFont ?? null,
       },
     })
   }, [])
@@ -247,9 +263,13 @@ function ResearcherCurrentLiveBody({
           sampleRateHz={sampleRateHz}
           validityRate={validityRate}
           latencyMs={latencyMs}
+          appearance={readerAppearance}
           presentation={presentation}
           readerOptions={readerOptions}
           onFollowParticipantChange={setFollowParticipant}
+          onReaderAppearanceChange={(appearance, reason) =>
+            commitIntervention({ appearance }, reason)
+          }
           onReaderOptionChange={setReaderOption}
           onCommitIntervention={commitIntervention}
         />

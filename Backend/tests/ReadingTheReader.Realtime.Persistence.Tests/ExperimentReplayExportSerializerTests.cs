@@ -35,6 +35,7 @@ public sealed class ExperimentReplayExportSerializerTests
             RightEyeValidity = "Valid"
         };
         var presentation = new ReadingPresentationSnapshot("merriweather", 18, 680, 1.8, 0, true);
+        var appearance = new ReaderAppearanceSnapshot("dark", "sepia", "inter");
         var content = new ReadingContentSnapshot("doc-1", "Sample", "# Hello", null, 1_710_000_001_000);
         var viewport = new ParticipantViewportSnapshot(true, 0.35, 1280, 720, 2400, 900, 1_710_000_001_500);
         var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", 1_710_000_001_600);
@@ -44,10 +45,12 @@ public sealed class ExperimentReplayExportSerializerTests
             "researcher-ui",
             "Adjusted font size",
             1_710_000_002_000,
-            presentation);
+            presentation,
+            appearance);
         var readingSession = new LiveReadingSessionSnapshot(
             content,
             presentation,
+            appearance,
             viewport,
             focus,
             intervention,

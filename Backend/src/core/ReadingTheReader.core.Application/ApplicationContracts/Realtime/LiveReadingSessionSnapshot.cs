@@ -52,6 +52,57 @@ public static class ReadingPresentationRules
     }
 }
 
+public static class ReaderAppearanceRules
+{
+    public static ReaderAppearanceSnapshot Normalize(ReaderAppearanceSnapshot? snapshot)
+    {
+        var source = snapshot ?? ReaderAppearanceSnapshot.Default;
+
+        return new ReaderAppearanceSnapshot(
+            NormalizeThemeMode(source.ThemeMode),
+            NormalizePalette(source.Palette),
+            ReadingPresentationRules.NormalizeFontFamily(source.AppFont));
+    }
+
+    public static string NormalizeThemeMode(string? themeMode)
+    {
+        return string.Equals(themeMode?.Trim(), "dark", StringComparison.OrdinalIgnoreCase)
+            ? "dark"
+            : ReaderAppearanceSnapshot.Default.ThemeMode;
+    }
+
+    public static string NormalizePalette(string? palette)
+    {
+        if (string.Equals(palette?.Trim(), "sepia", StringComparison.OrdinalIgnoreCase))
+        {
+            return "sepia";
+        }
+
+        if (string.Equals(palette?.Trim(), "high-contrast", StringComparison.OrdinalIgnoreCase))
+        {
+            return "high-contrast";
+        }
+
+        return ReaderAppearanceSnapshot.Default.Palette;
+    }
+}
+
+public sealed record ReaderAppearanceSnapshot(
+    string ThemeMode,
+    string Palette,
+    string AppFont)
+{
+    public static ReaderAppearanceSnapshot Default { get; } = new(
+        "light",
+        "default",
+        "geist");
+
+    public ReaderAppearanceSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
 public sealed record ReadingPresentationSnapshot(
     string FontFamily,
     int FontSizePx,
@@ -126,7 +177,8 @@ public sealed record InterventionEventSnapshot(
     string Trigger,
     string Reason,
     long AppliedAtUnixMs,
-    ReadingPresentationSnapshot AppliedPresentation)
+    ReadingPresentationSnapshot AppliedPresentation,
+    ReaderAppearanceSnapshot AppliedAppearance)
 {
     public InterventionEventSnapshot Copy()
     {
@@ -136,13 +188,15 @@ public sealed record InterventionEventSnapshot(
             Trigger,
             Reason,
             AppliedAtUnixMs,
-            AppliedPresentation.Copy());
+            AppliedPresentation.Copy(),
+            AppliedAppearance.Copy());
     }
 }
 
 public sealed record LiveReadingSessionSnapshot(
     ReadingContentSnapshot? Content,
     ReadingPresentationSnapshot Presentation,
+    ReaderAppearanceSnapshot Appearance,
     ParticipantViewportSnapshot ParticipantViewport,
     ReadingFocusSnapshot Focus,
     InterventionEventSnapshot? LatestIntervention,
@@ -151,6 +205,7 @@ public sealed record LiveReadingSessionSnapshot(
     public static LiveReadingSessionSnapshot Empty { get; } = new(
         null,
         ReadingPresentationSnapshot.Default,
+        ReaderAppearanceSnapshot.Default,
         ParticipantViewportSnapshot.Disconnected,
         ReadingFocusSnapshot.Empty,
         null,
@@ -161,6 +216,7 @@ public sealed record LiveReadingSessionSnapshot(
         return new LiveReadingSessionSnapshot(
             Content?.Copy(),
             (Presentation ?? ReadingPresentationSnapshot.Default).Copy(),
+            (Appearance ?? ReaderAppearanceSnapshot.Default).Copy(),
             (ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected).Copy(),
             (Focus ?? ReadingFocusSnapshot.Empty).Copy(),
             LatestIntervention?.Copy(),
@@ -173,7 +229,8 @@ public sealed record UpsertReadingSessionCommand(
     string Title,
     string Markdown,
     string? SourceSetupId,
-    ReadingPresentationSnapshot Presentation);
+    ReadingPresentationSnapshot Presentation,
+    ReaderAppearanceSnapshot Appearance);
 
 public sealed record ReadingPresentationPatch(
     string? FontFamily,
@@ -187,7 +244,13 @@ public sealed record ApplyInterventionCommand(
     string Source,
     string Trigger,
     string Reason,
-    ReadingPresentationPatch Presentation);
+    ReadingPresentationPatch Presentation,
+    ReaderAppearancePatch Appearance);
+
+public sealed record ReaderAppearancePatch(
+    string? ThemeMode,
+    string? Palette,
+    string? AppFont);
 
 public sealed record UpdateParticipantViewportCommand(
     double ScrollProgress,

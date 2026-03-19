@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 
 type ModeToggleProps = {
   className?: string;
+  value?: "light" | "dark";
+  onValueChange?: (theme: "light" | "dark") => void;
 };
 
-export function ModeToggle({ className }: ModeToggleProps) {
+export function ModeToggle({ className, value, onValueChange }: ModeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
@@ -34,7 +36,9 @@ export function ModeToggle({ className }: ModeToggleProps) {
     );
   }
 
-  const isDark = resolvedTheme === "dark";
+  const currentMode = value ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const isDark = currentMode === "dark";
+  const nextMode = isDark ? "light" : "dark";
 
   return (
     <Button
@@ -44,7 +48,12 @@ export function ModeToggle({ className }: ModeToggleProps) {
         "border-border bg-background text-foreground",
         className,
       )}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => {
+        if (value === undefined) {
+          setTheme(nextMode);
+        }
+        onValueChange?.(nextMode);
+      }}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

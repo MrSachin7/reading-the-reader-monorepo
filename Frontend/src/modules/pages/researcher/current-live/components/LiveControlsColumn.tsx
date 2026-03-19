@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 
-import { FontSelector } from "@/components/theme/font-selector"
 import { ModeToggle } from "@/components/theme/mode-toggle"
 import { PaletteToggle } from "@/components/theme/palette-toggle"
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,6 +18,7 @@ import {
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { type FontTheme, FONTS } from "@/hooks/use-font-theme"
+import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
 import { normalizeFontTheme, type ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
@@ -90,9 +90,17 @@ function SectionLabel({ children }: { children: ReactNode }) {
   )
 }
 
-function ThemePalette() {
+function ThemePalette({
+  value,
+  onValueChange,
+}: {
+  value?: ReaderAppearanceSettings["palette"]
+  onValueChange: (palette: ReaderAppearanceSettings["palette"]) => void
+}) {
   return (
     <PaletteToggle
+      value={value}
+      onValueChange={onValueChange}
       appearance="flat"
       className="grid w-full grid-cols-3 [&>[data-slot=toggle-group-item]]:w-full [&>[data-slot=toggle-group-item]]:shrink [&>[data-slot=toggle-group-item]]:justify-center [&>[data-slot=toggle-group-item]]:px-0"
     />
@@ -186,11 +194,19 @@ type LiveControlsColumnProps = {
   sampleRateHz: number
   validityRate: number
   latencyMs: number | null
+  appearance: ReaderAppearanceSettings
   presentation: ReadingPresentationSettings
   readerOptions: LiveReaderOptions
   onFollowParticipantChange: (checked: boolean) => void
+  onReaderAppearanceChange: (
+    next: Partial<ReaderAppearanceSettings>,
+    reason: string
+  ) => void
   onReaderOptionChange: (key: keyof LiveReaderOptions, value: boolean) => void
-  onCommitIntervention: (next: Partial<ReadingPresentationSettings>, reason: string) => void
+  onCommitIntervention: (
+    next: { presentation?: Partial<ReadingPresentationSettings> },
+    reason: string
+  ) => void
 }
 
 export function LiveControlsColumn({
@@ -200,9 +216,11 @@ export function LiveControlsColumn({
   sampleRateHz,
   validityRate,
   latencyMs,
+  appearance,
   presentation,
   readerOptions,
   onFollowParticipantChange,
+  onReaderAppearanceChange,
   onReaderOptionChange,
   onCommitIntervention,
 }: LiveControlsColumnProps) {
@@ -239,35 +257,21 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <div className="space-y-4">
-                <FollowParticipantRow
-                  checked={followParticipant}
-                  onCheckedChange={onFollowParticipantChange}
+              <FollowParticipantRow
+                checked={followParticipant}
+                onCheckedChange={onFollowParticipantChange}
+              />
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                <MetricItem
+                  label="Current word"
+                  value={activeWord ?? "No fixation"}
+                  className="col-span-2"
                 />
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                  <MetricItem
-                    label="Current word"
-                    value={activeWord ?? "No fixation"}
-                    className="col-span-2"
-                  />
-                  <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} />
-                  <MetricItem label="Validity" value={formatPercent(validityRate)} />
-                  <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
-                  <MetricItem label="Participant" value={participantName ?? "Not registered"} />
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <SectionLabel>Theme</SectionLabel>
-
-                <div className="mt-3 space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <FontSelector className="min-w-0 flex-1" />
-                    <ModeToggle className="shrink-0" />
-                  </div>
-                  <ThemePalette />
-                </div>
+                <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} />
+                <MetricItem label="Validity" value={formatPercent(validityRate)} />
+                <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
+                <MetricItem label="Participant" value={participantName ?? "Not registered"} />
               </div>
             </div>
           </CardContent>
@@ -284,7 +288,7 @@ export function LiveControlsColumn({
                   value={normalizeFontTheme(presentation.fontFamily)}
                   onValueChange={(value) =>
                     onCommitIntervention(
-                      { fontFamily: value as FontTheme },
+                      { presentation: { fontFamily: value as FontTheme } },
                       `Changed font family to ${PRESENTATION_FONT_LABELS[value as FontTheme]}`
                     )
                   }
@@ -310,7 +314,7 @@ export function LiveControlsColumn({
                   checked={!presentation.editableByExperimenter}
                   onCheckedChange={(checked) =>
                     onCommitIntervention(
-                      { editableByExperimenter: !checked },
+                      { presentation: { editableByExperimenter: !checked } },
                       checked
                         ? "Locked participant-side presentation changes"
                         : "Unlocked participant-side presentation changes"
@@ -331,11 +335,42 @@ export function LiveControlsColumn({
                   value={[presentation.fontSizePx]}
                   onValueChange={(value) =>
                     onCommitIntervention(
-                      { fontSizePx: value[0] ?? presentation.fontSizePx },
+                      { presentation: { fontSizePx: value[0] ?? presentation.fontSizePx } },
                       "Adjusted font size"
                     )
                   }
                 />
+              </Field>
+
+              <Field>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <FieldLabel>Theme mode</FieldLabel>
+                  <ModeToggle
+                    className="shrink-0"
+                    value={appearance.themeMode}
+                    onValueChange={(value) =>
+                      onReaderAppearanceChange(
+                        { themeMode: value },
+                        value === "dark" ? "Switched reader theme to dark mode" : "Switched reader theme to light mode"
+                      )
+                    }
+                  />
+                </div>
+              </Field>
+
+              <Field>
+                <FieldLabel>Color palette</FieldLabel>
+                <div className="mt-2">
+                  <ThemePalette
+                    value={appearance.palette}
+                    onValueChange={(value) =>
+                      onReaderAppearanceChange(
+                        { palette: value },
+                        `Changed reader palette to ${value.replace("-", " ")}`
+                      )
+                    }
+                  />
+                </div>
               </Field>
 
               <Field>
@@ -350,7 +385,7 @@ export function LiveControlsColumn({
                   value={[presentation.lineWidthPx]}
                   onValueChange={(value) =>
                     onCommitIntervention(
-                      { lineWidthPx: value[0] ?? presentation.lineWidthPx },
+                      { presentation: { lineWidthPx: value[0] ?? presentation.lineWidthPx } },
                       "Adjusted line width"
                     )
                   }
@@ -369,7 +404,7 @@ export function LiveControlsColumn({
                   value={[presentation.lineHeight]}
                   onValueChange={(value) =>
                     onCommitIntervention(
-                      { lineHeight: value[0] ?? presentation.lineHeight },
+                      { presentation: { lineHeight: value[0] ?? presentation.lineHeight } },
                       "Adjusted line height"
                     )
                   }
@@ -390,7 +425,7 @@ export function LiveControlsColumn({
                   value={[presentation.letterSpacingEm]}
                   onValueChange={(value) =>
                     onCommitIntervention(
-                      { letterSpacingEm: value[0] ?? presentation.letterSpacingEm },
+                      { presentation: { letterSpacingEm: value[0] ?? presentation.letterSpacingEm } },
                       "Adjusted letter spacing"
                     )
                   }

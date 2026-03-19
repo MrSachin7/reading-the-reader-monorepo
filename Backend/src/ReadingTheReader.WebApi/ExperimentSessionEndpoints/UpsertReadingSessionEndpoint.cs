@@ -34,7 +34,11 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                     req.LineWidthPx,
                     req.LineHeight,
                     req.LetterSpacingEm,
-                    req.EditableByResearcher)), ct);
+                    req.EditableByResearcher),
+                new ReaderAppearanceSnapshot(
+                    req.ThemeMode,
+                    req.Palette,
+                    req.AppFont)), ct);
 
             await Send.OkAsync(_experimentSessionManager.GetCurrentSnapshot(), ct);
         }

@@ -140,6 +140,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             {
                 Content = content,
                 Presentation = ReadingPresentationRules.Normalize(command.Presentation),
+                Appearance = ReaderAppearanceRules.Normalize(command.Appearance),
                 ParticipantViewport = ParticipantViewportSnapshot.Disconnected with
                 {
                     IsConnected = viewportIsConnected,
@@ -272,6 +273,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var execution = _readingInterventionRuntime.Apply(
                 _liveReadingSession.Presentation,
+                _liveReadingSession.Appearance,
                 command,
                 updatedAtUnixMs);
 
@@ -283,6 +285,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             _liveReadingSession = _liveReadingSession with
             {
                 Presentation = execution.Presentation.Copy(),
+                Appearance = execution.Appearance.Copy(),
                 LatestIntervention = execution.Event.Copy(),
                 RecentInterventions = BuildRecentInterventionHistory(
                     _liveReadingSession.RecentInterventions,
@@ -557,7 +560,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
 
                 await SendErrorAsync(connectionId, "Intervention payload is invalid.", ct);
                 break;
-
             case MessageTypes.ResearcherCommand:
                 if (payload.ValueKind == JsonValueKind.Object &&
                     payload.TryGetProperty("command", out var command) &&

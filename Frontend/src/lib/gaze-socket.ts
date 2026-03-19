@@ -107,6 +107,11 @@ type ClientEnvelope =
           letterSpacingEm?: number | null;
           editableByResearcher?: boolean | null;
         };
+        appearance: {
+          themeMode?: string | null;
+          palette?: string | null;
+          appFont?: string | null;
+        };
       };
     };
 
@@ -146,6 +151,11 @@ type ApplyInterventionPayload = {
     lineHeight?: number | null;
     letterSpacingEm?: number | null;
     editableByResearcher?: boolean | null;
+  };
+  appearance: {
+    themeMode?: string | null;
+    palette?: string | null;
+    appFont?: string | null;
   };
 };
 
@@ -357,6 +367,7 @@ function handleMessage(raw: MessageEvent<string>) {
           ...current.recentInterventions.filter((item) => item.id !== message.payload.id),
         ].slice(0, 25),
         presentation: message.payload.appliedPresentation,
+        appearance: message.payload.appliedAppearance,
       }));
       return;
     }
