@@ -1,0 +1,60 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: Frontend
+        run: bun install --frozen-lockfile
+
+      - name: Build application
+        working-directory: Frontend
+        run: bun run build
+
+      - name: Check for test script
+        id: test-script
+        shell: bash
+        working-directory: Frontend
+        run: |
+          if [ "$(bun --print "Boolean(require('./package.json').scripts?.test)")" = "true" ]; then
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests
+        if: steps.test-script.outputs.has_tests == 'true'
+        working-directory: Frontend
+        run: bun run test

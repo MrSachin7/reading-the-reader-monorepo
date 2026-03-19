@@ -1,0 +1,6 @@
+@ReadingTheReader.WebApi_HostAddress = http://localhost:5190
+
+GET {{ReadingTheReader.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

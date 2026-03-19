@@ -1,0 +1,47 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Backend/**"
+      - "docs/backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Backend/**"
+      - "docs/backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore Backend/reading-the-reader-backend.sln
+
+      - name: Build solution
+        run: dotnet build Backend/reading-the-reader-backend.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test Backend/reading-the-reader-backend.sln --configuration Release --no-build --verbosity normal

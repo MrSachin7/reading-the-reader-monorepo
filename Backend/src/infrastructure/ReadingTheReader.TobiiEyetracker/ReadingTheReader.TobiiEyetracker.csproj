@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <!-- Define WINDOWS symbol when building on Windows -->
+    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.1.26104.118" />
+    </ItemGroup>
+
+    <!-- Only include Tobii package on Windows -->
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <PackageReference Include="Tobii.Research.x64" Version="1.11.0.1334" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\core\ReadingTheReader.core.Application\ReadingTheReader.core.Application.csproj" />
+      <ProjectReference Include="..\..\core\ReadingTheReader.core.Domain\ReadingTheReader.core.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
