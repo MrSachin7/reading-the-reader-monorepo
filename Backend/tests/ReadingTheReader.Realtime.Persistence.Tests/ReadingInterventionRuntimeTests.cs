@@ -12,11 +12,13 @@ public sealed class ReadingInterventionRuntimeTests
 
         var result = sut.Apply(
             ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default,
             new ApplyInterventionCommand(
                 "manual",
                 "researcher-ui",
                 "Increase font size for readability",
-                new ReadingPresentationPatch(null, 22, null, null, null, null)),
+                new ReadingPresentationPatch(null, 22, null, null, null, null),
+                new ReaderAppearancePatch(null, null, null)),
             12345);
 
         Assert.NotNull(result);
@@ -34,6 +36,7 @@ public sealed class ReadingInterventionRuntimeTests
 
         var result = sut.Apply(
             ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default,
             new ApplyInterventionCommand(
                 "manual",
                 "researcher-ui",
@@ -44,7 +47,11 @@ public sealed class ReadingInterventionRuntimeTests
                     ReadingPresentationSnapshot.Default.LineWidthPx,
                     ReadingPresentationSnapshot.Default.LineHeight,
                     ReadingPresentationSnapshot.Default.LetterSpacingEm,
-                    ReadingPresentationSnapshot.Default.EditableByResearcher)),
+                    ReadingPresentationSnapshot.Default.EditableByResearcher),
+                new ReaderAppearancePatch(
+                    ReaderAppearanceSnapshot.Default.ThemeMode,
+                    ReaderAppearanceSnapshot.Default.Palette,
+                    ReaderAppearanceSnapshot.Default.AppFont)),
             12345);
 
         Assert.Null(result);

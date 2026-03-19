@@ -12,4 +12,7 @@ public sealed class UpsertReadingSessionRequest
     public double LineHeight { get; set; }
     public double LetterSpacingEm { get; set; }
     public bool EditableByResearcher { get; set; } = true;
+    public string ThemeMode { get; set; } = string.Empty;
+    public string Palette { get; set; } = string.Empty;
+    public string AppFont { get; set; } = string.Empty;
 }

@@ -44,6 +44,12 @@ const readingPresentationSchema = z.object({
   editableByResearcher: z.boolean(),
 })
 
+const readerAppearanceSchema = z.object({
+  themeMode: z.enum(["light", "dark"]),
+  palette: z.enum(["default", "sepia", "high-contrast"]),
+  appFont: z.enum(["geist", "inter", "space-grotesk", "merriweather"]),
+})
+
 const readingContentSchema = z.object({
   documentId: z.string(),
   title: z.string(),
@@ -78,11 +84,21 @@ const interventionSchema = z.object({
   reason: z.string(),
   appliedAtUnixMs: z.number(),
   appliedPresentation: readingPresentationSchema,
+  appliedAppearance: readerAppearanceSchema.default({
+    themeMode: "light",
+    palette: "default",
+    appFont: "geist",
+  }),
 })
 
 const liveReadingSessionSchema = z.object({
   content: readingContentSchema.nullable(),
   presentation: readingPresentationSchema,
+  appearance: readerAppearanceSchema.default({
+    themeMode: "light",
+    palette: "default",
+    appFont: "geist",
+  }),
   participantViewport: participantViewportSchema,
   focus: readingFocusSchema,
   latestIntervention: interventionSchema.nullable(),
@@ -385,6 +401,7 @@ function copyIntervention(
   return {
     ...intervention,
     appliedPresentation: { ...intervention.appliedPresentation },
+    appliedAppearance: { ...intervention.appliedAppearance },
   }
 }
 
@@ -417,12 +434,14 @@ function copyReadingSession(
     ...session,
     content: session.content ? { ...session.content } : null,
     presentation: { ...session.presentation },
+    appearance: { ...session.appearance },
     participantViewport: { ...session.participantViewport },
     focus: { ...session.focus },
     latestIntervention: copyIntervention(session.latestIntervention),
     recentInterventions: session.recentInterventions.map((item) => ({
       ...item,
       appliedPresentation: { ...item.appliedPresentation },
+      appliedAppearance: { ...item.appliedAppearance },
     })),
   }
 }
@@ -593,6 +612,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   if (baseReadingSession && interventionRecord) {
     baseReadingSession.latestIntervention = copyIntervention(interventionRecord.intervention)
     baseReadingSession.presentation = { ...interventionRecord.intervention.appliedPresentation }
+    baseReadingSession.appearance = { ...interventionRecord.intervention.appliedAppearance }
   }
 
   snapshot.readingSession = baseReadingSession

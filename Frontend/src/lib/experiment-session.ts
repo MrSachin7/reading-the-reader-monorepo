@@ -1,4 +1,5 @@
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
 export type ExperimentSetupSnapshot = {
   eyeTrackerSetupCompleted: boolean
@@ -31,6 +32,8 @@ export type ReadingPresentationSnapshot = {
   letterSpacingEm: number
   editableByResearcher: boolean
 }
+
+export type ReaderAppearanceSnapshot = ReaderAppearanceSettings
 
 export type ReadingContentSnapshot = {
   documentId: string
@@ -66,11 +69,13 @@ export type InterventionEventSnapshot = {
   reason: string
   appliedAtUnixMs: number
   appliedPresentation: ReadingPresentationSnapshot
+  appliedAppearance: ReaderAppearanceSnapshot
 }
 
 export type LiveReadingSessionSnapshot = {
   content: ReadingContentSnapshot | null
   presentation: ReadingPresentationSnapshot
+  appearance: ReaderAppearanceSnapshot
   participantViewport: ParticipantViewportSnapshot
   focus: ReadingFocusSnapshot
   latestIntervention: InterventionEventSnapshot | null
@@ -101,6 +106,11 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     lineHeight: 1.8,
     letterSpacingEm: 0,
     editableByResearcher: true,
+  },
+  appearance: {
+    themeMode: "light",
+    palette: "default",
+    appFont: "geist",
   },
   participantViewport: {
     isConnected: false,

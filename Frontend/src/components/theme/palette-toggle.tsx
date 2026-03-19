@@ -19,21 +19,27 @@ const LABELS: Record<Palette, string> = {
 type PaletteToggleProps = {
   className?: string;
   appearance?: "default" | "flat";
+  value?: Palette;
+  onValueChange?: (palette: Palette) => void;
 };
 
 export function PaletteToggle({
   className,
   appearance = "default",
+  value,
+  onValueChange,
 }: PaletteToggleProps) {
   const { palette, setPalette } = usePaletteTheme();
 
   return (
     <ToggleGroup
       type="single"
-      value={palette}
+      value={value ?? palette}
       onValueChange={(value) => {
         if (value) {
-          setPalette(value as Palette);
+          const nextPalette = value as Palette
+          setPalette(nextPalette);
+          onValueChange?.(nextPalette)
         }
       }}
       variant="outline"

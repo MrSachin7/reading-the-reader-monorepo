@@ -14,6 +14,9 @@ export type UpsertReadingSessionPayload = {
   lineHeight: number
   letterSpacingEm: number
   editableByResearcher: boolean
+  themeMode: string
+  palette: string
+  appFont: string
 }
 
 export type SavedExperimentReplayExportSummary = {

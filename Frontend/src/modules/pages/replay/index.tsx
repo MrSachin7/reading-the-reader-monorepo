@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react"
 
+import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   buildReplayFrame,
@@ -12,6 +13,7 @@ import {
   type ExperimentReplayExport,
 } from "@/lib/experiment-replay"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
+import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import { ReplayControlsColumn } from "@/modules/pages/replay/components/ReplayControlsColumn"
 import { ReplayMetadataColumn } from "@/modules/pages/replay/components/ReplayMetadataColumn"
 import { ReplayReaderColumn } from "@/modules/pages/replay/components/ReplayReaderColumn"
@@ -95,6 +97,7 @@ export default function ReplayPage() {
 
   const readingSession = frame?.session.readingSession ?? null
   const content = readingSession?.content ?? null
+  const replayAppearance = readingSession ? normalizeReaderAppearance(readingSession.appearance) : null
   const presentation = useMemo(
     () =>
       normalizeReadingPresentation({
@@ -107,6 +110,8 @@ export default function ReplayPage() {
       }),
     [readingSession]
   )
+
+  useReaderAppearanceSync(replayAppearance)
 
   const parsedDoc = useMemo(() => (content ? parseMinimalMarkdown(content.markdown) : null), [content])
   const tokenizedBlocks = useMemo(

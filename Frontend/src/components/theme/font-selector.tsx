@@ -20,9 +20,11 @@ const FONT_LABELS: Record<FontTheme, string> = {
 
 type FontSelectorProps = {
   className?: string;
-};
+  value?: FontTheme;
+  onValueChange?: (font: FontTheme) => void;
+}
 
-export function FontSelector({ className }: FontSelectorProps) {
+export function FontSelector({ className, value, onValueChange }: FontSelectorProps) {
   const { font, setFont } = useFontTheme();
   const [mounted, setMounted] = React.useState(false);
 
@@ -32,8 +34,12 @@ export function FontSelector({ className }: FontSelectorProps) {
 
   return (
     <Select
-      value={mounted ? font : "geist"}
-      onValueChange={(value) => setFont(value as FontTheme)}
+      value={mounted ? value ?? font : "geist"}
+      onValueChange={(value) => {
+        const nextFont = value as FontTheme
+        setFont(nextFont)
+        onValueChange?.(nextFont)
+      }}
       disabled={!mounted}
     >
       <SelectTrigger className={className ?? "w-[180px]"} size="sm">

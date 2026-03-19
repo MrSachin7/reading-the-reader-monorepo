@@ -5,10 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
 import { BookOpen, Crosshair, FileText, Plus, ScanEye } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useFontTheme } from "@/hooks/use-font-theme"
+import { usePaletteTheme } from "@/hooks/use-palette-theme"
 import { cn } from "@/lib/utils"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
 import {
@@ -609,6 +612,9 @@ function SessionContentStep({ onCompletionChange }: SessionContentStepProps) {
 export function ExperimentStepper() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const { font } = useFontTheme()
+  const { palette } = usePaletteTheme()
   const stepThree = useAppSelector((state: RootState) => state.experiment.stepThree)
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
   const { presentation, experimentSetupId } = useReadingSettings()
@@ -661,6 +667,9 @@ export function ExperimentStepper() {
         lineHeight: presentation.lineHeight,
         letterSpacingEm: presentation.letterSpacingEm,
         editableByResearcher: presentation.editableByExperimenter,
+        themeMode: resolvedTheme === "dark" ? "dark" : "light",
+        palette,
+        appFont: font,
       }).unwrap()
       await startExperimentSession().unwrap()
       router.push("/reading")
@@ -678,9 +687,12 @@ export function ExperimentStepper() {
     readingSession.customMarkdown,
     readingSession.source,
     readingSession.title,
+    resolvedTheme,
     router,
     startExperimentSession,
     upsertReadingSession,
+    font,
+    palette,
   ])
 
   React.useEffect(() => {
