@@ -1,0 +1,17 @@
+# Workspace
+**/.DS_Store
+.idea/
+.vscode/
+docs/.obsidian/
+
+# Shared build artifacts
+**/[Bb]in/
+**/[Oo]bj/
+**/TestResults/
+
+# Frontend caches that may now sit under root-owned paths
+Frontend/node_modules/
+Frontend/.next/
+Frontend/coverage/
+Frontend/out/
+Frontend/build/

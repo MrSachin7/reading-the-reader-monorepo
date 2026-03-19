@@ -1,0 +1,206 @@
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+
+public static class ReadingPresentationRules
+{
+    public const int MinFontSizePx = 12;
+    public const int MaxFontSizePx = 48;
+    public const int MinLineWidthPx = 320;
+    public const int MaxLineWidthPx = 1600;
+    public const double MinLineHeight = 1.0;
+    public const double MaxLineHeight = 3.0;
+    public const double MinLetterSpacingEm = -0.05;
+    public const double MaxLetterSpacingEm = 0.2;
+
+    public static ReadingPresentationSnapshot Normalize(ReadingPresentationSnapshot? snapshot)
+    {
+        var source = snapshot ?? ReadingPresentationSnapshot.Default;
+
+        return new ReadingPresentationSnapshot(
+            NormalizeFontFamily(source.FontFamily),
+            Clamp(source.FontSizePx, MinFontSizePx, MaxFontSizePx, ReadingPresentationSnapshot.Default.FontSizePx),
+            Clamp(source.LineWidthPx, MinLineWidthPx, MaxLineWidthPx, ReadingPresentationSnapshot.Default.LineWidthPx),
+            Clamp(source.LineHeight, MinLineHeight, MaxLineHeight, ReadingPresentationSnapshot.Default.LineHeight),
+            Clamp(source.LetterSpacingEm, MinLetterSpacingEm, MaxLetterSpacingEm, ReadingPresentationSnapshot.Default.LetterSpacingEm),
+            source.EditableByResearcher);
+    }
+
+    public static string NormalizeFontFamily(string? fontFamily)
+    {
+        return string.IsNullOrWhiteSpace(fontFamily)
+            ? ReadingPresentationSnapshot.Default.FontFamily
+            : fontFamily.Trim();
+    }
+
+    private static int Clamp(int value, int min, int max, int fallback)
+    {
+        if (value == 0)
+        {
+            value = fallback;
+        }
+
+        return Math.Min(max, Math.Max(min, value));
+    }
+
+    private static double Clamp(double value, double min, double max, double fallback)
+    {
+        if (Math.Abs(value) < double.Epsilon)
+        {
+            value = fallback;
+        }
+
+        return Math.Min(max, Math.Max(min, value));
+    }
+}
+
+public sealed record ReadingPresentationSnapshot(
+    string FontFamily,
+    int FontSizePx,
+    int LineWidthPx,
+    double LineHeight,
+    double LetterSpacingEm,
+    bool EditableByResearcher)
+{
+    public static ReadingPresentationSnapshot Default { get; } = new(
+        "merriweather",
+        18,
+        680,
+        1.8,
+        0,
+        true);
+
+    public ReadingPresentationSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record ReadingContentSnapshot(
+    string DocumentId,
+    string Title,
+    string Markdown,
+    string? SourceSetupId,
+    long UpdatedAtUnixMs)
+{
+    public ReadingContentSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record ParticipantViewportSnapshot(
+    bool IsConnected,
+    double ScrollProgress,
+    double ViewportWidthPx,
+    double ViewportHeightPx,
+    double ContentHeightPx,
+    double ContentWidthPx,
+    long UpdatedAtUnixMs)
+{
+    public static ParticipantViewportSnapshot Disconnected { get; } = new(false, 0, 0, 0, 0, 0, 0);
+
+    public ParticipantViewportSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record ReadingFocusSnapshot(
+    bool IsInsideReadingArea,
+    double? NormalizedContentX,
+    double? NormalizedContentY,
+    string? ActiveTokenId,
+    string? ActiveBlockId,
+    long UpdatedAtUnixMs)
+{
+    public static ReadingFocusSnapshot Empty { get; } = new(false, null, null, null, null, 0);
+
+    public ReadingFocusSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record InterventionEventSnapshot(
+    Guid Id,
+    string Source,
+    string Trigger,
+    string Reason,
+    long AppliedAtUnixMs,
+    ReadingPresentationSnapshot AppliedPresentation)
+{
+    public InterventionEventSnapshot Copy()
+    {
+        return new InterventionEventSnapshot(
+            Id,
+            Source,
+            Trigger,
+            Reason,
+            AppliedAtUnixMs,
+            AppliedPresentation.Copy());
+    }
+}
+
+public sealed record LiveReadingSessionSnapshot(
+    ReadingContentSnapshot? Content,
+    ReadingPresentationSnapshot Presentation,
+    ParticipantViewportSnapshot ParticipantViewport,
+    ReadingFocusSnapshot Focus,
+    InterventionEventSnapshot? LatestIntervention,
+    IReadOnlyList<InterventionEventSnapshot> RecentInterventions)
+{
+    public static LiveReadingSessionSnapshot Empty { get; } = new(
+        null,
+        ReadingPresentationSnapshot.Default,
+        ParticipantViewportSnapshot.Disconnected,
+        ReadingFocusSnapshot.Empty,
+        null,
+        []);
+
+    public LiveReadingSessionSnapshot Copy()
+    {
+        return new LiveReadingSessionSnapshot(
+            Content?.Copy(),
+            (Presentation ?? ReadingPresentationSnapshot.Default).Copy(),
+            (ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected).Copy(),
+            (Focus ?? ReadingFocusSnapshot.Empty).Copy(),
+            LatestIntervention?.Copy(),
+            RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())]);
+    }
+}
+
+public sealed record UpsertReadingSessionCommand(
+    string DocumentId,
+    string Title,
+    string Markdown,
+    string? SourceSetupId,
+    ReadingPresentationSnapshot Presentation);
+
+public sealed record ReadingPresentationPatch(
+    string? FontFamily,
+    int? FontSizePx,
+    int? LineWidthPx,
+    double? LineHeight,
+    double? LetterSpacingEm,
+    bool? EditableByResearcher);
+
+public sealed record ApplyInterventionCommand(
+    string Source,
+    string Trigger,
+    string Reason,
+    ReadingPresentationPatch Presentation);
+
+public sealed record UpdateParticipantViewportCommand(
+    double ScrollProgress,
+    double ViewportWidthPx,
+    double ViewportHeightPx,
+    double ContentHeightPx,
+    double ContentWidthPx);
+
+public sealed record UpdateReadingFocusCommand(
+    bool IsInsideReadingArea,
+    double? NormalizedContentX,
+    double? NormalizedContentY,
+    string? ActiveTokenId,
+    string? ActiveBlockId);
+
+public sealed record FinishExperimentCommand(string Source);
