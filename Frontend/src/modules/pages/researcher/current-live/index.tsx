@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
+import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { applyInterventionCommand, subscribeToGaze } from "@/lib/gaze-socket"
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
+import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
@@ -26,6 +28,7 @@ import type {
   LiveReaderOptions,
 } from "@/modules/pages/researcher/current-live/types"
 import { useGetReaderShellSettingsQuery } from "@/redux"
+
 function EmptyState({
   title,
   description,
@@ -58,10 +61,15 @@ function EmptyState({
 
 export default function ResearcherCurrentLivePage() {
   const session = useLiveExperimentSession()
-  const liveGaze = useLiveGazeStream()
+  const hasActiveEyeTracker = Boolean(session?.isActive && session?.eyeTrackerDevice)
+  const liveGaze = useLiveGazeStream({ enabled: hasActiveEyeTracker })
   const [validityRate, setValidityRate] = useState(0)
 
   useEffect(() => {
+    if (!hasActiveEyeTracker) {
+      return
+    }
+
     let totalSamples = 0
     let validSamples = 0
 
@@ -82,7 +90,9 @@ export default function ResearcherCurrentLivePage() {
       unsubscribe()
       window.clearInterval(timer)
     }
-  }, [])
+  }, [hasActiveEyeTracker])
+
+  const displayedValidityRate = hasActiveEyeTracker ? validityRate : 0
 
   if (!session) {
     return (
@@ -133,7 +143,7 @@ export default function ResearcherCurrentLivePage() {
       session={session as ActiveLiveExperimentSession}
       sampleRateHz={liveGaze.sampleRateHz}
       latencyMs={liveGaze.connectionStats?.lastRttMs ?? null}
-      validityRate={validityRate}
+      validityRate={displayedValidityRate}
     />
   )
 }
@@ -158,6 +168,7 @@ function ResearcherCurrentLiveBody({
   const persistedReaderOptions =
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
   const [localReaderOptions, setLocalReaderOptions] = useState<LiveReaderOptions | null>(null)
+  const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = localReaderOptions ?? persistedReaderOptions
   const readerAppearance = normalizeReaderAppearance(readingSession.appearance)
 
@@ -253,8 +264,41 @@ function ResearcherCurrentLiveBody({
     })
   }, [])
 
+  const participantViewport = readingSession.participantViewport
+  const participantViewportReady =
+    participantViewport.isConnected &&
+    participantViewport.viewportWidthPx > 0 &&
+    participantViewport.viewportHeightPx > 0 &&
+    participantViewport.updatedAtUnixMs > 0
+  const exactMirrorEnabled =
+    followParticipant && fullscreen.isFullscreen && fullscreen.isVisible && participantViewportReady
+  const mirrorStatusLabel = exactMirrorEnabled
+    ? "Exact mirror"
+    : !followParticipant
+      ? "Manual view"
+      : !fullscreen.isFullscreen
+        ? "Enter full screen for exact mirror"
+        : !fullscreen.isVisible
+          ? "Bring this tab back to the front"
+          : !participantViewport.isConnected
+            ? "Waiting for participant view"
+            : "Approximate follow"
+
   return (
     <main className="h-screen overflow-hidden bg-background px-4 py-5 md:px-8 md:py-8">
+      {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
+        <div className="pointer-events-none fixed inset-x-4 top-4 z-30 flex justify-center md:inset-x-8">
+          <div className="pointer-events-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-2xl border bg-card/96 px-4 py-3 shadow-lg backdrop-blur">
+            <p className="text-sm text-foreground">
+              Researcher live view works best in full screen. Exact mirror falls back until this page
+              is visible and full screen.
+            </p>
+            <Button onClick={() => void fullscreen.requestFullscreen()} className="shrink-0">
+              Enter full screen
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <div className="mx-auto grid h-full w-full max-w-[1680px] min-h-0 gap-4 overflow-hidden xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
         <LiveControlsColumn
           followParticipant={followParticipant}
@@ -280,6 +324,8 @@ function ResearcherCurrentLiveBody({
           readingSession={readingSession}
           followParticipant={followParticipant}
           readerOptions={readerOptions}
+          exactMirrorEnabled={exactMirrorEnabled}
+          mirrorStatusLabel={mirrorStatusLabel}
         />
 
         <LiveMetadataColumn

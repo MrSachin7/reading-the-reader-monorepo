@@ -61,6 +61,7 @@ const readingContentSchema = z.object({
 const participantViewportSchema = z.object({
   isConnected: z.boolean(),
   scrollProgress: z.number(),
+  scrollTopPx: z.number(),
   viewportWidthPx: z.number(),
   viewportHeightPx: z.number(),
   contentHeightPx: z.number(),

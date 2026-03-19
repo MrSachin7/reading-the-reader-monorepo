@@ -61,7 +61,7 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
         var presentation = new ReadingPresentationSnapshot("merriweather", 18, 680, 1.8, 0, true);
         var appearance = new ReaderAppearanceSnapshot("light", "high-contrast", "space-grotesk");
         var content = new ReadingContentSnapshot("doc-2", "CSV Sample", "## Title", null, 1_710_001_001_000);
-        var viewport = new ParticipantViewportSnapshot(true, 0.2, 1440, 900, 2600, 980, 1_710_001_001_500);
+        var viewport = new ParticipantViewportSnapshot(true, 0.2, 260, 1440, 900, 2600, 980, 1_710_001_001_500);
         var focus = new ReadingFocusSnapshot(true, 0.25, 0.75, "token-2", "block-2", 1_710_001_001_600);
         var readingSession = new LiveReadingSessionSnapshot(
             content,

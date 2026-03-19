@@ -46,6 +46,7 @@ export function ReplayReaderColumn({
           showBackButton={readerOptions.showBackButton}
           showLixScores={readerOptions.showLixScores}
           viewportScrollProgress={readingSession.participantViewport.scrollProgress}
+          viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
           remoteFocus={{
             isInsideReadingArea: readingSession.focus.isInsideReadingArea,
             normalizedContentX: readingSession.focus.normalizedContentX,

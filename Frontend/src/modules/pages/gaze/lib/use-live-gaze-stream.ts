@@ -15,12 +15,14 @@ type UseLiveGazeStreamResult = {
 
 type UseLiveGazeStreamOptions = {
   applyLocalCalibration?: boolean
+  enabled?: boolean
 }
 
 export function useLiveGazeStream(
   options: UseLiveGazeStreamOptions = {}
 ): UseLiveGazeStreamResult {
   const shouldApplyLocalCalibration = options.applyLocalCalibration ?? true
+  const enabled = options.enabled ?? true
   const [rawPoint, setRawPoint] = useState<GazePoint | null>(null)
   const [smoothedPoint, setSmoothedPoint] = useState<GazePoint | null>(null)
   const [connectionStats, setConnectionStats] = useState<ConnectionStats | null>(null)
@@ -34,6 +36,15 @@ export function useLiveGazeStream(
   const lastValidPointAtRef = useRef(0)
 
   useEffect(() => {
+    if (!enabled) {
+      latestRawPointRef.current = null
+      latestSmoothedPointRef.current = null
+      latestStatsRef.current = null
+      sampleCounterRef.current = 0
+      lastValidPointAtRef.current = 0
+      return
+    }
+
     const unsubscribeGaze = subscribeToGaze((sample) => {
       const nextPoint = calculateGazePoint(sample)
       sampleCounterRef.current += 1
@@ -78,13 +89,13 @@ export function useLiveGazeStream(
       window.clearInterval(livenessTimer)
       window.cancelAnimationFrame(frameId)
     }
-  }, [shouldApplyLocalCalibration])
+  }, [enabled, shouldApplyLocalCalibration])
 
   return {
-    rawPoint,
-    smoothedPoint,
-    connectionStats,
-    sampleRateHz,
-    hasRecentGaze,
+    rawPoint: enabled ? rawPoint : null,
+    smoothedPoint: enabled ? smoothedPoint : null,
+    connectionStats: enabled ? connectionStats : null,
+    sampleRateHz: enabled ? sampleRateHz : 0,
+    hasRecentGaze: enabled ? hasRecentGaze : false,
   }
 }

@@ -4,7 +4,9 @@ import { useCallback, useEffect } from "react"
 
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
+import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
   unregisterParticipantView,
@@ -26,11 +28,49 @@ import { useAppSelector, useGetReaderShellSettingsQuery } from "@/redux"
 
 const MOCK_DOC_ID = "mock-reading-v1"
 
+function FullscreenGate({
+  isVisible,
+  requestWasRejected,
+  onEnterFullscreen,
+}: {
+  isVisible: boolean
+  requestWasRejected: boolean
+  onEnterFullscreen: () => Promise<boolean>
+}) {
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/92 px-6 backdrop-blur">
+      <Card className="w-full max-w-xl rounded-[1.8rem] border bg-card/96 shadow-xl">
+        <CardHeader className="space-y-4">
+          <CardTitle>Please go full screen to use this feature.</CardTitle>
+          <CardDescription className="leading-7">
+            The researcher mirror needs a stable participant viewport. Leaving full screen or hiding
+            this page will pause the exact mirrored view.
+          </CardDescription>
+          {!isVisible ? (
+            <p className="text-sm text-amber-700">
+              Bring this page back to the front, then enter full screen again.
+            </p>
+          ) : null}
+          {requestWasRejected ? (
+            <p className="text-sm text-amber-700">
+              The browser blocked the full screen request. Use the button below and allow full screen.
+            </p>
+          ) : null}
+          <div className="pt-2">
+            <Button onClick={() => void onEnterFullscreen()}>Enter full screen</Button>
+          </div>
+        </CardHeader>
+      </Card>
+    </div>
+  )
+}
+
 export function ReadingPage() {
   const liveSession = useLiveExperimentSession()
-  const liveGaze = useLiveGazeStream()
+  const liveGaze = useLiveGazeStream({ enabled: Boolean(liveSession?.eyeTrackerDevice) })
   const draftReadingSession = useAppSelector((state) => state.experiment.readingSession)
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
+  const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
     readerShellSettings ?? READER_SHELL_SETTINGS_DEFAULTS,
     "reading"
@@ -136,6 +176,13 @@ export function ReadingPage() {
         onViewportMetricsChange={handleViewportMetricsChange}
         onFocusChange={handleFocusChange}
       />
+      {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
+        <FullscreenGate
+          isVisible={fullscreen.isVisible}
+          requestWasRejected={fullscreen.requestWasRejected}
+          onEnterFullscreen={fullscreen.requestFullscreen}
+        />
+      ) : null}
     </div>
   )
 }
