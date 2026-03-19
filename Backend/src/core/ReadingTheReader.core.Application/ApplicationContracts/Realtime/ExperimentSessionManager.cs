@@ -208,6 +208,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                 ParticipantViewport = new ParticipantViewportSnapshot(
                     true,
                     Clamp(command.ScrollProgress, 0, 1),
+                    Math.Max(command.ScrollTopPx, 0),
                     Math.Max(command.ViewportWidthPx, 0),
                     Math.Max(command.ViewportHeightPx, 0),
                     Math.Max(command.ContentHeightPx, 0),

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 type ReaderViewportMetrics = {
   scrollProgress: number;
+  scrollTopPx: number;
   viewportWidthPx: number;
   viewportHeightPx: number;
   contentHeightPx: number;
@@ -43,6 +44,7 @@ type ReaderShellProps = {
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
   viewportScrollProgress?: number | null;
+  viewportScrollTopPx?: number | null;
   remoteFocus?: {
     isInsideReadingArea: boolean;
     normalizedContentX: number | null;
@@ -106,6 +108,7 @@ export function ReaderShell({
   onViewportMetricsChange,
   onFocusChange,
   viewportScrollProgress = null,
+  viewportScrollTopPx = null,
   remoteFocus = null,
   showRemoteFocusMarker = true,
   gazeOverlayPoint,
@@ -254,6 +257,7 @@ export function ReaderShell({
     const emitMetrics = () => {
       onViewportMetricsChange({
         scrollProgress: buildScrollProgress(container),
+        scrollTopPx: container.scrollTop,
         viewportWidthPx: container.clientWidth,
         viewportHeightPx: container.clientHeight,
         contentHeightPx: content.scrollHeight,
@@ -292,7 +296,7 @@ export function ReaderShell({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || viewportScrollProgress === null) {
+    if (!container) {
       return;
     }
 
@@ -301,8 +305,17 @@ export function ReaderShell({
       return;
     }
 
+    if (viewportScrollTopPx !== null) {
+      container.scrollTop = Math.min(scrollableHeight, Math.max(0, viewportScrollTopPx));
+      return;
+    }
+
+    if (viewportScrollProgress === null) {
+      return;
+    }
+
     container.scrollTop = scrollableHeight * Math.min(1, Math.max(0, viewportScrollProgress));
-  }, [viewportScrollProgress]);
+  }, [viewportScrollProgress, viewportScrollTopPx]);
 
   const remoteFocusMarker =
     showRemoteFocusMarker &&
