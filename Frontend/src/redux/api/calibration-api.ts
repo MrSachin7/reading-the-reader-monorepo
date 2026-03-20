@@ -34,6 +34,30 @@ export const calibrationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Experiment"],
     }),
+    startValidation: builder.mutation<CalibrationSessionSnapshot, void>({
+      query: () => ({
+        url: "/calibration/validation/start",
+        method: "POST",
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    collectValidationPoint: builder.mutation<CalibrationSessionSnapshot, { pointId: string }>({
+      query: ({ pointId }) => ({
+        url: "/calibration/validation/collect",
+        method: "POST",
+        body: {
+          PointId: pointId,
+        },
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    finishValidation: builder.mutation<CalibrationSessionSnapshot, void>({
+      query: () => ({
+        url: "/calibration/validation/finish",
+        method: "POST",
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
     cancelCalibration: builder.mutation<CalibrationSessionSnapshot, void>({
       query: () => ({
         url: "/calibration/cancel",
@@ -60,6 +84,9 @@ export const {
   useStartCalibrationMutation,
   useCollectCalibrationPointMutation,
   useFinishCalibrationMutation,
+  useStartValidationMutation,
+  useCollectValidationPointMutation,
+  useFinishValidationMutation,
   useCancelCalibrationMutation,
   useUpdateCalibrationSettingsMutation,
 } = calibrationApi

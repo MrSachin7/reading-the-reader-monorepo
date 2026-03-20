@@ -158,7 +158,7 @@ const steps: ExperimentStep[] = [
     value: 2,
     name: "step3",
     label: "Calibration",
-    description: "Confirm that calibration has been completed in the Tobii software.",
+    description: "Run calibration and confirm that validation quality is acceptable before starting.",
     icon: ScanEye,
   },
   {
@@ -702,7 +702,7 @@ export function ExperimentStepper() {
 
     const calibrationApplied =
       experimentSession.setup.calibrationCompleted ||
-      experimentSession.calibration.result?.applied === true ||
+      experimentSession.calibration.validation.result?.passed === true ||
       stepThree.externalCalibrationCompleted
     const backendStep = Math.min(
       Math.max(experimentSession.setup.currentStepIndex, 0),

@@ -11,6 +11,12 @@ public interface ICalibrationService
 
     Task<CalibrationSessionSnapshot> FinishCalibrationAsync(CancellationToken ct = default);
 
+    Task<CalibrationSessionSnapshot> StartValidationAsync(CancellationToken ct = default);
+
+    Task<CalibrationSessionSnapshot> CollectValidationPointAsync(string pointId, CancellationToken ct = default);
+
+    Task<CalibrationSessionSnapshot> FinishValidationAsync(CancellationToken ct = default);
+
     Task<CalibrationSessionSnapshot> CancelCalibrationAsync(CancellationToken ct = default);
 
     Task<CalibrationSettingsSnapshot> UpdateSettingsAsync(int presetPointCount, CancellationToken ct = default);

@@ -32,7 +32,8 @@ export function CalibrationStep({
   const isSkipped = stepThree.calibrationSkipped
   const hasPreviousCalibration =
     Boolean(stepThree.lastAppliedAtUnixMs) &&
-    Boolean(stepThree.lastCalibrationStatus) &&
+    stepThree.lastQuality !== null &&
+    stepThree.lastQuality !== "poor" &&
     stepThree.lastCalibrationStatus !== "Skipped using previous calibration"
   const canSkipCalibration = hasPreviousCalibration && !isRunning
   const isStepComplete = isSkipped ? hasPreviousCalibration : isComplete
@@ -77,12 +78,12 @@ export function CalibrationStep({
           <Badge variant="outline">Calibration</Badge>
         </div>
         <CardTitle className="mt-3 text-3xl tracking-tight">
-          Run the Tobii hardware calibration.
+          Run the Tobii calibration and validation.
         </CardTitle>
         <CardDescription className="max-w-3xl text-base leading-7">
-          This flow drives Tobii&apos;s screen-based calibration from the backend. Open the full
-          calibration page, guide the participant through the configured targets, and return here once it
-          has been applied on the eye tracker.
+          This flow drives Tobii&apos;s screen-based calibration from the backend, then shows
+          validation metrics before the session can start. Open the full calibration page, guide the
+          participant through the targets, and return here once validation passes.
         </CardDescription>
       </CardHeader>
 
@@ -92,8 +93,9 @@ export function CalibrationStep({
             <div className="min-w-0">
               <p className="text-base font-semibold">Launch the calibration screen.</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The backend enters Tobii calibration mode, collects the configured calibration points, and applies the
-                result directly on the selected eye tracker.
+                The backend enters Tobii calibration mode, collects the configured points, applies the
+                result on the selected eye tracker, then runs a validation pass to estimate accuracy
+                and precision.
               </p>
             </div>
             <Button asChild>
@@ -122,7 +124,8 @@ export function CalibrationStep({
             <div>
               <p className="text-sm font-semibold">Calibration applied</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                The selected eye tracker has an active Tobii calibration from this setup flow.
+                The selected eye tracker has an active Tobii calibration with a validated quality rating
+                of {stepThree.lastQuality ?? "unknown"}.
               </p>
             </div>
           </div>
@@ -146,8 +149,8 @@ export function CalibrationStep({
             <div>
               <p className="text-sm font-semibold">Calibration in progress</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                Keep the participant on the calibration screen until the backend reports success or
-                failure.
+                Keep the participant on the calibration screen until both calibration and validation
+                finish.
               </p>
             </div>
           </div>
@@ -159,7 +162,8 @@ export function CalibrationStep({
             <div>
               <p className="text-sm font-semibold">Calibration required</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                No previous hardware calibration is available yet, so this step must be completed before continuing.
+                No previous validated calibration is available yet, so this step must be completed
+                before continuing.
               </p>
             </div>
           </div>
@@ -171,7 +175,7 @@ export function CalibrationStep({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Calibration needs to be rerun</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                The last attempt did not apply successfully on the eye tracker.
+                The last attempt did not complete with acceptable validation quality.
               </p>
             </div>
             <Button variant="outline" onClick={handleReset}>

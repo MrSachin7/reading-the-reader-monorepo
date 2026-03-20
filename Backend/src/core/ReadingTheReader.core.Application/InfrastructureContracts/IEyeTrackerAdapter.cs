@@ -21,5 +21,13 @@ public interface IEyeTrackerAdapter
 
     Task<CalibrationComputeResult> ComputeAndApplyCalibrationAsync(CancellationToken ct = default);
 
+    Task BeginValidationAsync(CancellationToken ct = default);
+
+    Task<CalibrationValidationCollectionResult> CollectValidationDataAsync(float x, float y, CancellationToken ct = default);
+
+    Task<CalibrationValidationResult> ComputeValidationAsync(CancellationToken ct = default);
+
     Task CancelCalibrationAsync(CancellationToken ct = default);
+
+    Task CancelValidationAsync(CancellationToken ct = default);
 }

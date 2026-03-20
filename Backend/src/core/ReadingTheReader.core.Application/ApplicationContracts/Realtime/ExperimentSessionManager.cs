@@ -352,6 +352,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                 return false;
             }
 
+            EnsureSetupIsReadyForStart(current, _calibrationSnapshot, _liveReadingSession);
+
             Interlocked.Exchange(ref _receivedGazeSamples, 0);
             Interlocked.Exchange(ref _eventSequenceNumber, 0);
             Volatile.Write(ref _latestGazeSample, null);
@@ -961,7 +963,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                                        !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
         var participantSetupCompleted = session.Participant is not null &&
                                         !string.IsNullOrWhiteSpace(session.Participant.Name);
-        var calibrationCompleted = CalibrationSessionSnapshots.IsApplied(calibrationSnapshot);
+        var calibrationCompleted = CalibrationSessionSnapshots.IsReadyForSession(calibrationSnapshot);
         var readingMaterialSetupCompleted = liveReadingSession.Content is not null &&
                                             !string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown);
 
@@ -977,6 +979,32 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             calibrationCompleted,
             readingMaterialSetupCompleted,
             currentStepIndex);
+    }
+
+    private static void EnsureSetupIsReadyForStart(
+        ExperimentSession session,
+        CalibrationSessionSnapshot calibrationSnapshot,
+        LiveReadingSessionSnapshot liveReadingSession)
+    {
+        if (session.EyeTrackerDevice is null || string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber))
+        {
+            throw new InvalidOperationException("Select and license an eye tracker before starting the session.");
+        }
+
+        if (session.Participant is null || string.IsNullOrWhiteSpace(session.Participant.Name))
+        {
+            throw new InvalidOperationException("Save the participant information before starting the session.");
+        }
+
+        if (!CalibrationSessionSnapshots.IsReadyForSession(calibrationSnapshot))
+        {
+            throw new InvalidOperationException("Calibration validation must pass before the session can start.");
+        }
+
+        if (liveReadingSession.Content is null || string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown))
+        {
+            throw new InvalidOperationException("Choose the reading material before starting the session.");
+        }
     }
 
     private static IReadOnlyList<InterventionEventSnapshot> BuildRecentInterventionHistory(
