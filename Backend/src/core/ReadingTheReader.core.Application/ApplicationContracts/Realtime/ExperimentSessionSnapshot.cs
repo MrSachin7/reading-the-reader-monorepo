@@ -64,6 +64,7 @@ public sealed record ExperimentSessionSnapshot(
             source.CompletedAtUnixMs,
             CopyCalibrationPoints(source.Points),
             source.Result is null ? null : CopyCalibrationRunResult(source.Result),
+            source.Validation is null ? CalibrationSessionSnapshots.CreateIdleValidation() : CopyValidation(source.Validation),
             source.Notes is null ? [] : [.. source.Notes]);
     }
 
@@ -104,6 +105,68 @@ public sealed record ExperimentSessionSnapshot(
             source.Applied,
             source.CalibrationPointCount,
             source.AcceptedPoints is null ? [] : [.. source.AcceptedPoints],
+            source.Validation is null ? null : CopyValidationResult(source.Validation),
+            source.Notes is null ? [] : [.. source.Notes]);
+    }
+
+    private static CalibrationValidationSnapshot CopyValidation(CalibrationValidationSnapshot source)
+    {
+        return new CalibrationValidationSnapshot(
+            source.Status,
+            source.StartedAtUnixMs,
+            source.UpdatedAtUnixMs,
+            source.CompletedAtUnixMs,
+            CopyValidationPoints(source.Points),
+            source.Result is null ? null : CopyValidationResult(source.Result),
+            source.Notes is null ? [] : [.. source.Notes]);
+    }
+
+    private static IReadOnlyList<CalibrationValidationPointState> CopyValidationPoints(
+        IReadOnlyList<CalibrationValidationPointState>? points)
+    {
+        if (points is null || points.Count == 0)
+        {
+            return [];
+        }
+
+        var copies = new CalibrationValidationPointState[points.Count];
+        for (var i = 0; i < points.Count; i++)
+        {
+            copies[i] = new CalibrationValidationPointState(
+                points[i].PointId,
+                points[i].Label,
+                points[i].X,
+                points[i].Y,
+                points[i].Status,
+                points[i].SampleCount,
+                points[i].CollectedAtUnixMs,
+                points[i].Notes is null ? [] : [.. points[i].Notes]);
+        }
+
+        return copies;
+    }
+
+    private static CalibrationValidationResult CopyValidationResult(CalibrationValidationResult source)
+    {
+        return new CalibrationValidationResult(
+            source.Passed,
+            source.Quality,
+            source.AverageAccuracyDegrees,
+            source.AveragePrecisionDegrees,
+            source.SampleCount,
+            source.Points is null
+                ? []
+                : source.Points.Select(point => new CalibrationValidationPointResult(
+                    point.PointId,
+                    point.Label,
+                    point.X,
+                    point.Y,
+                    point.AverageAccuracyDegrees,
+                    point.AveragePrecisionDegrees,
+                    point.SampleCount,
+                    point.Quality,
+                    point.Notes is null ? [] : [.. point.Notes]))
+                    .ToArray(),
             source.Notes is null ? [] : [.. source.Notes]);
     }
 }

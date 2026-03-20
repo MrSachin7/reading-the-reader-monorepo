@@ -7,6 +7,14 @@ public sealed class CalibrationService : ICalibrationService
 {
     private const float AcceptedPointMatchTolerance = 0.04f;
     private static readonly int[] SupportedPointCounts = [9, 13, 16];
+    private static readonly CalibrationPointDefinition[] ValidationPoints =
+    [
+        new("validation-upper-left", "Upper left", 0.28f, 0.24f),
+        new("validation-upper-right", "Upper right", 0.72f, 0.24f),
+        new("validation-center", "Center", 0.50f, 0.50f),
+        new("validation-lower-left", "Lower left", 0.28f, 0.76f),
+        new("validation-lower-right", "Lower right", 0.72f, 0.76f)
+    ];
     private static readonly JsonSerializerOptions SettingsJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -81,6 +89,7 @@ public sealed class CalibrationService : ICalibrationService
                         []))
                     .ToArray(),
                 null,
+                CalibrationSessionSnapshots.CreateIdleValidation(),
                 ["Calibration mode entered on the selected eye tracker."]);
 
             await BroadcastSnapshotAsync(ct);
@@ -196,7 +205,9 @@ public sealed class CalibrationService : ICalibrationService
                     result.Applied,
                     result.CalibrationPointCount,
                     result.AcceptedPoints,
+                    null,
                     result.Notes),
+                Validation = CalibrationSessionSnapshots.CreateIdleValidation(),
                 Notes = completionNotes
             };
 
@@ -219,15 +230,223 @@ public sealed class CalibrationService : ICalibrationService
         }
     }
 
+    public async Task<CalibrationSessionSnapshot> StartValidationAsync(CancellationToken ct = default)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            if (_snapshot.Result?.Applied != true)
+            {
+                throw new InvalidOperationException("Apply calibration on the eye tracker before starting validation.");
+            }
+
+            if (string.Equals(_snapshot.Validation.Status, "running", StringComparison.OrdinalIgnoreCase))
+            {
+                await _eyeTrackerAdapter.CancelValidationAsync(ct);
+            }
+
+            await _experimentSessionManager.PauseGazeStreamingAsync(ct);
+            await _eyeTrackerAdapter.BeginValidationAsync(ct);
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _snapshot = _snapshot with
+            {
+                Validation = new CalibrationValidationSnapshot(
+                    "running",
+                    now,
+                    now,
+                    null,
+                    ValidationPoints
+                        .Select(point => new CalibrationValidationPointState(
+                            point.PointId,
+                            point.Label,
+                            point.X,
+                            point.Y,
+                            "pending",
+                            0,
+                            null,
+                            []))
+                        .ToArray(),
+                    null,
+                    ["Validation mode started. Hold steady while the validation targets are shown."]),
+                Result = _snapshot.Result with { Validation = null },
+                Notes = ["Calibration applied. Validation is now collecting quality metrics."]
+            };
+
+            await BroadcastSnapshotAsync(ct);
+            return _snapshot;
+        }
+        catch (Exception ex)
+        {
+            await SafeCancelValidationAsync(ct);
+            await SafeResumeGazeStreamingAsync(ct);
+            _snapshot = CreateFailedSnapshot(ex.Message, _snapshot.Points, _snapshot.Validation);
+            await BroadcastSnapshotAsync(ct);
+            throw;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<CalibrationSessionSnapshot> CollectValidationPointAsync(string pointId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(pointId))
+        {
+            throw new ArgumentException("pointId is required.", nameof(pointId));
+        }
+
+        await _gate.WaitAsync(ct);
+        try
+        {
+            EnsureValidationRunningSession();
+
+            var pointIndex = FindValidationPointIndex(pointId);
+            var point = _snapshot.Validation.Points[pointIndex];
+
+            _snapshot = _snapshot with
+            {
+                Validation = _snapshot.Validation with
+                {
+                    UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    Points = ReplaceValidationPoint(pointIndex, point with
+                    {
+                        Status = "collecting",
+                        Notes = ["Collecting gaze samples for validation."]
+                    }),
+                    Notes = [$"Collecting validation data for {point.Label.ToLowerInvariant()}."]
+                }
+            };
+            await BroadcastSnapshotAsync(ct);
+
+            var result = await _eyeTrackerAdapter.CollectValidationDataAsync(point.X, point.Y, ct);
+            var collectedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var nextPoint = point with
+            {
+                Status = result.Succeeded ? "collected" : "failed",
+                SampleCount = result.SampleCount,
+                CollectedAtUnixMs = collectedAtUnixMs,
+                Notes = result.Notes
+            };
+
+            _snapshot = _snapshot with
+            {
+                Validation = _snapshot.Validation with
+                {
+                    Status = result.Succeeded ? "running" : "failed",
+                    UpdatedAtUnixMs = collectedAtUnixMs,
+                    CompletedAtUnixMs = result.Succeeded ? null : collectedAtUnixMs,
+                    Points = ReplaceValidationPoint(pointIndex, nextPoint),
+                    Notes = result.Succeeded
+                        ? [$"Collected validation data for {point.Label.ToLowerInvariant()}."]
+                        : [$"Validation failed for {point.Label.ToLowerInvariant()}. Restart validation and try again."]
+                }
+            };
+
+            if (!result.Succeeded)
+            {
+                await _eyeTrackerAdapter.CancelValidationAsync(ct);
+                await SafeResumeGazeStreamingAsync(ct);
+            }
+
+            await BroadcastSnapshotAsync(ct);
+            return _snapshot;
+        }
+        catch (Exception ex)
+        {
+            await SafeCancelValidationAsync(ct);
+            await SafeResumeGazeStreamingAsync(ct);
+            _snapshot = CreateFailedSnapshot(ex.Message, _snapshot.Points, _snapshot.Validation with
+            {
+                Status = "failed",
+                UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                CompletedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Notes = [ex.Message]
+            });
+            await BroadcastSnapshotAsync(ct);
+            throw;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<CalibrationSessionSnapshot> FinishValidationAsync(CancellationToken ct = default)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            EnsureValidationRunningSession();
+
+            if (_snapshot.Validation.Points.Any(point => !string.Equals(point.Status, "collected", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("All validation points must be collected before validation can be computed.");
+            }
+
+            var result = NormalizeValidationResult(await _eyeTrackerAdapter.ComputeValidationAsync(ct));
+            var completedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var validationStatus = "completed";
+            var validationNotes = BuildValidationCompletionNotes(result);
+
+            _snapshot = _snapshot with
+            {
+                Validation = _snapshot.Validation with
+                {
+                    Status = validationStatus,
+                    UpdatedAtUnixMs = completedAtUnixMs,
+                    CompletedAtUnixMs = completedAtUnixMs,
+                    Result = result,
+                    Notes = validationNotes
+                },
+                Result = _snapshot.Result with
+                {
+                    Validation = result
+                },
+                Notes = result.Passed
+                    ? ["Calibration and validation completed. The setup is ready for session start."]
+                    : ["Validation completed, but the quality metrics were below the required threshold."]
+            };
+
+            await _eyeTrackerAdapter.CancelValidationAsync(ct);
+            await SafeResumeGazeStreamingAsync(ct);
+            await BroadcastSnapshotAsync(ct);
+            return _snapshot;
+        }
+        catch (Exception ex)
+        {
+            await SafeCancelValidationAsync(ct);
+            await SafeResumeGazeStreamingAsync(ct);
+            _snapshot = CreateFailedSnapshot(ex.Message, _snapshot.Points, _snapshot.Validation with
+            {
+                Status = "failed",
+                UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                CompletedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Notes = [ex.Message]
+            });
+            await BroadcastSnapshotAsync(ct);
+            throw;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public async Task<CalibrationSessionSnapshot> CancelCalibrationAsync(CancellationToken ct = default)
     {
         await _gate.WaitAsync(ct);
         try
         {
             await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
+            await _eyeTrackerAdapter.CancelValidationAsync(ct);
             await SafeResumeGazeStreamingAsync(ct);
 
-            if (!string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase))
+            var calibrationRunning = string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase);
+            var validationRunning = string.Equals(_snapshot.Validation.Status, "running", StringComparison.OrdinalIgnoreCase);
+
+            if (!calibrationRunning && !validationRunning)
             {
                 return _snapshot;
             }
@@ -235,10 +454,21 @@ public sealed class CalibrationService : ICalibrationService
             var completedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _snapshot = _snapshot with
             {
-                Status = "cancelled",
+                Status = calibrationRunning ? "cancelled" : _snapshot.Status,
                 UpdatedAtUnixMs = completedAtUnixMs,
-                CompletedAtUnixMs = completedAtUnixMs,
-                Notes = ["Calibration was cancelled before completion."]
+                CompletedAtUnixMs = calibrationRunning ? completedAtUnixMs : _snapshot.CompletedAtUnixMs,
+                Validation = validationRunning
+                    ? _snapshot.Validation with
+                    {
+                        Status = "cancelled",
+                        UpdatedAtUnixMs = completedAtUnixMs,
+                        CompletedAtUnixMs = completedAtUnixMs,
+                        Notes = ["Validation was cancelled before completion."]
+                    }
+                    : _snapshot.Validation,
+                Notes = calibrationRunning
+                    ? ["Calibration was cancelled before completion."]
+                    : ["Validation was cancelled before completion."]
             };
 
             await BroadcastSnapshotAsync(ct);
@@ -286,7 +516,8 @@ public sealed class CalibrationService : ICalibrationService
 
     private CalibrationSessionSnapshot CreateFailedSnapshot(
         string message,
-        IReadOnlyList<CalibrationPointState>? points = null)
+        IReadOnlyList<CalibrationPointState>? points = null,
+        CalibrationValidationSnapshot? validation = null)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         return new CalibrationSessionSnapshot(
@@ -298,6 +529,7 @@ public sealed class CalibrationService : ICalibrationService
             now,
             points ?? [],
             null,
+            validation ?? CalibrationSessionSnapshots.CreateIdleValidation(),
             [message]);
     }
 
@@ -306,6 +538,14 @@ public sealed class CalibrationService : ICalibrationService
         if (!string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("No active calibration session. Start calibration first.");
+        }
+    }
+
+    private void EnsureValidationRunningSession()
+    {
+        if (!string.Equals(_snapshot.Validation.Status, "running", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("No active validation session. Start validation first.");
         }
     }
 
@@ -323,9 +563,30 @@ public sealed class CalibrationService : ICalibrationService
         return index;
     }
 
+    private int FindValidationPointIndex(string pointId)
+    {
+        var index = _snapshot.Validation.Points
+            .ToList()
+            .FindIndex(point => point.PointId.Equals(pointId, StringComparison.OrdinalIgnoreCase));
+
+        if (index < 0)
+        {
+            throw new ArgumentException($"Unknown validation point '{pointId}'.", nameof(pointId));
+        }
+
+        return index;
+    }
+
     private CalibrationPointState[] ReplacePoint(int pointIndex, CalibrationPointState point)
     {
         var nextPoints = _snapshot.Points.ToArray();
+        nextPoints[pointIndex] = point;
+        return nextPoints;
+    }
+
+    private CalibrationValidationPointState[] ReplaceValidationPoint(int pointIndex, CalibrationValidationPointState point)
+    {
+        var nextPoints = _snapshot.Validation.Points.ToArray();
         nextPoints[pointIndex] = point;
         return nextPoints;
     }
@@ -406,7 +667,7 @@ public sealed class CalibrationService : ICalibrationService
 
         if (result.CalibrationPointCount == _snapshot.Points.Count)
         {
-            return ["The eye tracker calibration was computed and applied successfully."];
+            return ["The eye tracker calibration was computed and applied successfully. Continue to validation to review quality metrics."];
         }
 
         var unmatchedRequestedPoints = FindUnmatchedRequestedPoints(
@@ -422,8 +683,60 @@ public sealed class CalibrationService : ICalibrationService
         return
         [
             $"The eye tracker applied calibration using {result.CalibrationPointCount} of {_snapshot.Points.Count} collected points.",
-            $"The retained calibration model did not include: {labels}."
+            $"The retained calibration model did not include: {labels}.",
+            "Continue to validation to review the resulting quality metrics."
         ];
+    }
+
+    private static IReadOnlyList<string> BuildValidationCompletionNotes(CalibrationValidationResult result)
+    {
+        if (result.Passed)
+        {
+            return
+            [
+                $"Validation passed with {result.Quality} quality.",
+                $"Average accuracy: {FormatDegrees(result.AverageAccuracyDegrees)}. Average precision: {FormatDegrees(result.AveragePrecisionDegrees)}."
+            ];
+        }
+
+        return
+        [
+            $"Validation completed with {result.Quality} quality.",
+            $"Average accuracy: {FormatDegrees(result.AverageAccuracyDegrees)}. Average precision: {FormatDegrees(result.AveragePrecisionDegrees)}.",
+            "Re-run calibration or validation before starting the session."
+        ];
+    }
+
+    private static string FormatDegrees(double? value)
+    {
+        return value.HasValue ? $"{value.Value:0.00}°" : "-";
+    }
+
+    private CalibrationValidationResult NormalizeValidationResult(CalibrationValidationResult result)
+    {
+        if (result.Points.Count == 0 || _snapshot.Validation.Points.Count == 0)
+        {
+            return result;
+        }
+
+        var normalizedPoints = result.Points
+            .Select(point =>
+            {
+                var match = _snapshot.Validation.Points.FirstOrDefault(candidate =>
+                    Math.Abs(candidate.X - point.X) <= AcceptedPointMatchTolerance &&
+                    Math.Abs(candidate.Y - point.Y) <= AcceptedPointMatchTolerance);
+
+                return match is null
+                    ? point
+                    : point with
+                    {
+                        PointId = match.PointId,
+                        Label = match.Label
+                    };
+            })
+            .ToArray();
+
+        return result with { Points = normalizedPoints };
     }
 
     private static IReadOnlyList<CalibrationPointState> FindUnmatchedRequestedPoints(
@@ -500,6 +813,18 @@ public sealed class CalibrationService : ICalibrationService
         catch
         {
             // Best effort cleanup for calibration mode.
+        }
+    }
+
+    private async Task SafeCancelValidationAsync(CancellationToken ct)
+    {
+        try
+        {
+            await _eyeTrackerAdapter.CancelValidationAsync(ct);
+        }
+        catch
+        {
+            // Best effort cleanup for validation mode.
         }
     }
 

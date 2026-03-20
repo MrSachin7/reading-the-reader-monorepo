@@ -1,0 +1,153 @@
+# Calibration and Validation Guide
+
+This guide explains why the system uses both calibration and validation before an experiment session starts, and how calibration quality is judged.
+
+## Why There Are Two Steps
+
+Calibration and validation are not the same thing.
+
+### Calibration
+
+Calibration creates the gaze mapping for the current participant.
+
+During calibration, the participant looks at known points on the screen. The eye tracker uses those points to build a model that maps eye measurements to screen positions.
+
+In simple terms:
+
+- calibration teaches the system how this participant's eyes relate to the screen
+- it creates the gaze-to-content mapping used during the session
+- it must be applied successfully before anything else can happen
+
+### Validation
+
+Validation checks whether the calibration is reliable enough to use.
+
+After calibration is applied, the participant looks at a separate set of validation points. The system then compares where the participant was asked to look with where the calibrated gaze estimate says they looked.
+
+In simple terms:
+
+- calibration builds the mapping
+- validation tests the quality of that mapping
+- validation is used as the quality gate before session start
+
+This separation matters because a calibration can complete technically, but still not be good enough for research use. Validation is the safeguard against that.
+
+## Why Session Start Is Blocked Without Validation
+
+The session is only considered ready when:
+
+- calibration was successfully applied
+- validation passed
+
+This prevents starting an experiment with a weak or unstable gaze mapping.
+
+## How Validation Quality Is Measured
+
+The system evaluates validation quality using two metrics, both reported in degrees.
+
+### Accuracy
+
+Accuracy answers this question:
+
+"How close was the estimated gaze direction to the true target direction?"
+
+Lower accuracy values are better.
+
+If the participant is asked to look at one point but the estimated gaze direction is offset, the angular difference is counted as the accuracy error.
+
+### Precision
+
+Precision answers this question:
+
+"How stable was the gaze while the participant looked at one target?"
+
+Lower precision values are better.
+
+If the gaze estimate jumps around while the participant is fixating on one point, precision gets worse.
+
+## How the System Collects Validation Data
+
+The current implementation uses 5 validation points placed in the reading area:
+
+- upper left
+- upper right
+- center
+- lower left
+- lower right
+
+For each validation point:
+
+- the system collects usable gaze samples for up to 1 second
+- the target is 30 samples
+- at least 10 usable samples are needed
+
+If too little usable data is collected, that point is treated as low quality.
+
+## Quality Levels
+
+Each validation point is labeled as `good`, `fair`, or `poor`.
+
+### Good
+
+- accuracy <= 0.5 degrees
+- precision <= 0.3 degrees
+
+### Fair
+
+- accuracy <= 1.0 degrees
+- precision <= 0.5 degrees
+
+### Poor
+
+- worse than the fair thresholds
+- or not enough usable data
+
+## When Validation Passes
+
+Validation passes only if all of the following are true:
+
+- average accuracy <= 1.0 degrees
+- average precision <= 0.5 degrees
+- at least 80% of validation points are rated `good` or `fair`
+
+If these conditions are not met, validation fails and the researcher is asked to rerun validation or recalibrate.
+
+## How to Interpret the Result
+
+### Good result
+
+- low accuracy error
+- low precision error
+- stable gaze estimate
+- suitable for session start
+
+### Fair result
+
+- acceptable for session start
+- usable, but less robust than a good result
+- experimenter should still ensure the participant is positioned correctly
+
+### Poor result
+
+- not reliable enough for session start
+- usually means the participant should be repositioned, instructed again, or recalibrated
+
+## Common Reasons for Poor Validation
+
+- participant moved during calibration or validation
+- participant was not looking directly at the point
+- glasses, reflections, or lighting interfered with tracking
+- distance to the screen changed
+- eyes were only partially tracked
+
+## Practical Guidance for Experimenters
+
+Before rerunning validation or calibration, check:
+
+- participant is seated comfortably and still
+- participant is facing the screen naturally
+- lighting is stable
+- no reflections are blocking the eyes
+- the participant understands that they should look directly at each point
+
+If validation fails repeatedly, a full recalibration is usually better than repeating validation alone.
