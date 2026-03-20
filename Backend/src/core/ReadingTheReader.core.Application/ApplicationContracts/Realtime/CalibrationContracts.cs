@@ -30,6 +30,12 @@ public sealed record CalibrationCollectionResult(
     int Attempts,
     IReadOnlyList<string> Notes);
 
+public sealed record CalibrationValidationCollectionResult(
+    string Status,
+    bool Succeeded,
+    int SampleCount,
+    IReadOnlyList<string> Notes);
+
 public sealed record CalibrationComputeResult(
     string Status,
     bool Applied,
@@ -37,11 +43,51 @@ public sealed record CalibrationComputeResult(
     IReadOnlyList<CalibrationPointDefinition> AcceptedPoints,
     IReadOnlyList<string> Notes);
 
+public sealed record CalibrationValidationPointState(
+    string PointId,
+    string Label,
+    float X,
+    float Y,
+    string Status,
+    int SampleCount,
+    long? CollectedAtUnixMs,
+    IReadOnlyList<string> Notes);
+
+public sealed record CalibrationValidationPointResult(
+    string PointId,
+    string Label,
+    float X,
+    float Y,
+    double? AverageAccuracyDegrees,
+    double? AveragePrecisionDegrees,
+    int SampleCount,
+    string Quality,
+    IReadOnlyList<string> Notes);
+
+public sealed record CalibrationValidationResult(
+    bool Passed,
+    string Quality,
+    double? AverageAccuracyDegrees,
+    double? AveragePrecisionDegrees,
+    int SampleCount,
+    IReadOnlyList<CalibrationValidationPointResult> Points,
+    IReadOnlyList<string> Notes);
+
+public sealed record CalibrationValidationSnapshot(
+    string Status,
+    long? StartedAtUnixMs,
+    long? UpdatedAtUnixMs,
+    long? CompletedAtUnixMs,
+    IReadOnlyList<CalibrationValidationPointState> Points,
+    CalibrationValidationResult? Result,
+    IReadOnlyList<string> Notes);
+
 public sealed record CalibrationRunResult(
     string Status,
     bool Applied,
     int CalibrationPointCount,
     IReadOnlyList<CalibrationPointDefinition> AcceptedPoints,
+    CalibrationValidationResult? Validation,
     IReadOnlyList<string> Notes);
 
 public sealed record CalibrationSessionSnapshot(
@@ -53,6 +99,7 @@ public sealed record CalibrationSessionSnapshot(
     long? CompletedAtUnixMs,
     IReadOnlyList<CalibrationPointState> Points,
     CalibrationRunResult? Result,
+    CalibrationValidationSnapshot Validation,
     IReadOnlyList<string> Notes);
 
 public sealed record CalibrationSettingsSnapshot(
@@ -75,11 +122,30 @@ public static class CalibrationSessionSnapshots
             null,
             [],
             null,
+            CreateIdleValidation(),
+            []);
+    }
+
+    public static CalibrationValidationSnapshot CreateIdleValidation()
+    {
+        return new CalibrationValidationSnapshot(
+            "idle",
+            null,
+            null,
+            null,
+            [],
+            null,
             []);
     }
 
     public static bool IsApplied(CalibrationSessionSnapshot? snapshot)
     {
         return snapshot?.Result?.Applied == true;
+    }
+
+    public static bool IsReadyForSession(CalibrationSessionSnapshot? snapshot)
+    {
+        return snapshot?.Result?.Applied == true &&
+               snapshot.Validation.Result?.Passed == true;
     }
 }

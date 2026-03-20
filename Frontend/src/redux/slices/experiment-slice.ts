@@ -205,10 +205,11 @@ const experimentSlice = createSlice({
             readingProficiency: participant.readingProficiency,
           })
         : null
-      const calibrationApplied =
-        session.setup.calibrationCompleted || calibration.result?.applied === true
-      const effectiveCalibrationApplied =
-        calibrationApplied || state.stepThree.externalCalibrationCompleted
+      const validationPassed = calibration.validation.result?.passed === true
+      const calibrationReady =
+        session.setup.calibrationCompleted || validationPassed
+      const effectiveCalibrationReady =
+        calibrationReady || state.stepThree.externalCalibrationCompleted
 
       state.stepOne = {
         ...state.stepOne,
@@ -233,29 +234,35 @@ const experimentSlice = createSlice({
 
       state.stepThree = {
         ...state.stepThree,
-        externalCalibrationCompleted: effectiveCalibrationApplied,
+        externalCalibrationCompleted: effectiveCalibrationReady,
         useLocalCalibration: false,
-        calibrationSkipped: calibrationApplied ? false : state.stepThree.calibrationSkipped,
+        calibrationSkipped: calibrationReady ? false : state.stepThree.calibrationSkipped,
         internalCalibrationStatus:
-          effectiveCalibrationApplied
+          effectiveCalibrationReady
             ? "completed"
-            : calibration.status === "running"
+            : calibration.status === "running" || calibration.validation.status === "running"
               ? "running"
-              : calibration.status === "failed" || calibration.status === "cancelled"
+              : calibration.status === "failed" ||
+                  calibration.status === "cancelled" ||
+                  calibration.validation.status === "failed"
                 ? "failed"
                 : "pending",
         lastAppliedAtUnixMs:
-          calibrationApplied
+          calibrationReady
             ? calibration.completedAtUnixMs
             : state.stepThree.lastAppliedAtUnixMs,
         lastQuality:
-          effectiveCalibrationApplied
-            ? state.stepThree.lastQuality ?? "unknown"
+          effectiveCalibrationReady
+            ? calibration.validation.result?.quality ?? state.stepThree.lastQuality ?? "unknown"
             : null,
         lastCalibrationSessionId:
           calibration.sessionId ?? state.stepThree.lastCalibrationSessionId,
         lastCalibrationStatus:
-          calibration.result?.status ??
+          calibration.validation.result
+            ? calibration.validation.result.passed
+              ? "Validation passed"
+              : "Validation failed"
+            : calibration.result?.status ??
           (calibration.status === "idle"
             ? state.stepThree.lastCalibrationStatus
             : calibration.status),
