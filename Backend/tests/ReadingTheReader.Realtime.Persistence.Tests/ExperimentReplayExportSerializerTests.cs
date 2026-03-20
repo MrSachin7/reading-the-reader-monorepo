@@ -39,6 +39,17 @@ public sealed class ExperimentReplayExportSerializerTests
         var content = new ReadingContentSnapshot("doc-1", "Sample", "# Hello", null, 1_710_000_001_000);
         var viewport = new ParticipantViewportSnapshot(true, 0.35, 420, 1280, 720, 2400, 900, 1_710_000_001_500);
         var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", 1_710_000_001_600);
+        var attentionSummary = new ReadingAttentionSummarySnapshot(
+            1_710_000_001_900,
+            new Dictionary<string, ReadingAttentionTokenSnapshot>
+            {
+                ["token-1"] = new(340, 1, 0, 340, 340),
+                ["token-2"] = new(0, 0, 1, 0, 0)
+            },
+            "token-1",
+            340,
+            1,
+            1);
         var intervention = new InterventionEventSnapshot(
             Guid.Parse("f2220a31-1d74-48db-99fe-9e1a30f446f2"),
             "manual",
@@ -54,7 +65,8 @@ public sealed class ExperimentReplayExportSerializerTests
             viewport,
             focus,
             intervention,
-            [intervention]);
+            [intervention],
+            attentionSummary);
         var initialSnapshot = new ExperimentSessionSnapshot(
             sessionId,
             true,

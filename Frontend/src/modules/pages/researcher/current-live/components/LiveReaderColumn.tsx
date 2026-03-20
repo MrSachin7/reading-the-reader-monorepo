@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import type { LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
+import { cn } from "@/lib/utils"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
+import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
-import { cn } from "@/lib/utils"
 
 type LiveReaderColumnProps = {
   content: ReadingContentSnapshot
@@ -16,6 +17,9 @@ type LiveReaderColumnProps = {
   readerOptions: LiveReaderOptions
   exactMirrorEnabled: boolean
   mirrorStatusLabel: string
+  showReadingDynamics: boolean
+  tokenAttention: RemoteTokenAttentionSnapshot
+  onTokenAttentionChange: (snapshot: RemoteTokenAttentionSnapshot) => void
 }
 
 type ElementSize = {
@@ -24,11 +28,16 @@ type ElementSize = {
 }
 
 function useElementSize<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
+  const [element, setElement] = useState<T | null>(null)
   const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 })
+  const ref = useCallback((node: T | null) => {
+    setElement(node)
+    if (!node) {
+      setSize({ width: 0, height: 0 })
+    }
+  }, [])
 
   useEffect(() => {
-    const element = ref.current
     if (!element) {
       return
     }
@@ -48,7 +57,7 @@ function useElementSize<T extends HTMLElement>() {
     return () => {
       observer.disconnect()
     }
-  }, [])
+  }, [element])
 
   return { ref, size }
 }
@@ -61,6 +70,9 @@ export function LiveReaderColumn({
   readerOptions,
   exactMirrorEnabled,
   mirrorStatusLabel,
+  showReadingDynamics,
+  tokenAttention,
+  onTokenAttentionChange,
 }: LiveReaderColumnProps) {
   const { ref: stageHostRef, size: stageHostSize } = useElementSize<HTMLDivElement>()
   const participantViewport = readingSession.participantViewport
@@ -95,11 +107,11 @@ export function LiveReaderColumn({
 
   const scaledStageWidth = participantViewportWidth * exactMirrorScale
   const scaledStageHeight = participantViewportHeight * exactMirrorScale
-  const showExactMirror =
+  const canAttemptExactMirror =
     exactMirrorEnabled &&
     participantViewportWidth > 0 &&
-    participantViewportHeight > 0 &&
-    exactMirrorScale > 0
+    participantViewportHeight > 0
+  const showExactMirror = canAttemptExactMirror && exactMirrorScale > 0
 
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
@@ -116,59 +128,77 @@ export function LiveReaderColumn({
             {mirrorStatusLabel}
           </span>
         </div>
+        {showReadingDynamics ? (
+          <div className="pointer-events-none absolute right-4 top-4 z-10">
+            <span
+              className="inline-flex rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-amber-800 shadow-sm backdrop-blur"
+            >
+              Token heat map
+            </span>
+          </div>
+        ) : null}
 
-        {showExactMirror ? (
+        {canAttemptExactMirror ? (
           <div
             ref={stageHostRef}
             className="flex h-full w-full items-center justify-center overflow-hidden bg-muted/10 p-3"
           >
-            <div
-              className="relative overflow-hidden rounded-xl border bg-card shadow-sm"
-              style={{
-                width: `${scaledStageWidth}px`,
-                height: `${scaledStageHeight}px`,
-              }}
-            >
+            {showExactMirror ? (
               <div
-                className="absolute left-0 top-0 origin-top-left"
+                className="relative overflow-hidden rounded-xl border bg-card shadow-sm"
                 style={{
-                  width: `${participantViewportWidth}px`,
-                  height: `${participantViewportHeight}px`,
-                  transform: `scale(${exactMirrorScale})`,
+                  width: `${scaledStageWidth}px`,
+                  height: `${scaledStageHeight}px`,
                 }}
               >
-                <ReaderShell
-                  docId={content.documentId}
-                  markdown={content.markdown}
-                  presentation={presentation}
-                  experimentSetupName={content.title}
-                  preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
-                  highlightContext={readerOptions.highlightContext}
-                  displayGazePosition={false}
-                  enableLiveGazeTracking={false}
-                  highlightTokensBeingLookedAt={false}
-                  highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
-                  showToolbar={false}
-                  showBackButton={false}
-                  showLixScores={false}
-                  viewportScrollProgress={readingSession.participantViewport.scrollProgress}
-                  viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
-                  remoteFocus={{
-                    isInsideReadingArea: readingSession.focus.isInsideReadingArea,
-                    normalizedContentX: readingSession.focus.normalizedContentX,
-                    normalizedContentY: readingSession.focus.normalizedContentY,
-                    activeTokenId: readingSession.focus.activeTokenId,
-                  }}
-                  showRemoteFocusMarker={readerOptions.displayGazePosition}
-                  embedded
-                  frameClassName="h-full rounded-none border-0 shadow-none"
-                  frameStyle={{
+                <div
+                  className="absolute left-0 top-0 origin-top-left"
+                  style={{
                     width: `${participantViewportWidth}px`,
                     height: `${participantViewportHeight}px`,
+                    transform: `scale(${exactMirrorScale})`,
                   }}
-                />
+                >
+                  <ReaderShell
+                    docId={content.documentId}
+                    markdown={content.markdown}
+                    presentation={presentation}
+                    experimentSetupName={content.title}
+                    preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
+                    highlightContext={readerOptions.highlightContext}
+                    displayGazePosition={false}
+                    enableLiveGazeTracking={false}
+                    highlightTokensBeingLookedAt={false}
+                    highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
+                    showToolbar={false}
+                    showBackButton={false}
+                    showLixScores={false}
+                    viewportScrollProgress={readingSession.participantViewport.scrollProgress}
+                    viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
+                    remoteFocus={{
+                      isInsideReadingArea: readingSession.focus.isInsideReadingArea,
+                      normalizedContentX: readingSession.focus.normalizedContentX,
+                      normalizedContentY: readingSession.focus.normalizedContentY,
+                      activeTokenId: readingSession.focus.activeTokenId,
+                      updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
+                    }}
+                    remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
+                    onRemoteTokenAttentionChange={onTokenAttentionChange}
+                    showRemoteFocusMarker={readerOptions.displayGazePosition}
+                    embedded
+                    frameClassName="h-full rounded-none border-0 shadow-none"
+                    frameStyle={{
+                      width: `${participantViewportWidth}px`,
+                      height: `${participantViewportHeight}px`,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border/70 bg-card/70 px-4 py-3 text-sm text-muted-foreground">
+                Preparing exact mirror layout…
+              </div>
+            )}
           </div>
         ) : (
           <ReaderShell
@@ -196,7 +226,10 @@ export function LiveReaderColumn({
               normalizedContentX: readingSession.focus.normalizedContentX,
               normalizedContentY: readingSession.focus.normalizedContentY,
               activeTokenId: readingSession.focus.activeTokenId,
+              updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
             }}
+            remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
+            onRemoteTokenAttentionChange={onTokenAttentionChange}
             showRemoteFocusMarker={readerOptions.displayGazePosition}
             embedded
             frameClassName="mx-auto rounded-none border-0 shadow-none"

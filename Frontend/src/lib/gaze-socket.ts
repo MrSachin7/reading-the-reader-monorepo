@@ -7,6 +7,7 @@ import {
   type ParticipantViewportSnapshot,
   type ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
+import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import { reportAppError } from "@/redux/error-reporter"
 
 export interface GazeData {
@@ -51,6 +52,11 @@ type ServerEnvelope =
       payload: ReadingFocusSnapshot;
     }
   | {
+      type: "readingAttentionSummaryChanged";
+      sentAtUnixMs: number;
+      payload: ReadingAttentionSummarySnapshot;
+    }
+  | {
       type: "interventionEvent";
       sentAtUnixMs: number;
       payload: InterventionEventSnapshot;
@@ -93,6 +99,10 @@ type ClientEnvelope =
         activeTokenId: string | null;
         activeBlockId: string | null;
       };
+    }
+  | {
+      type: "readingAttentionSummaryUpdated";
+      payload: ReadingAttentionSummarySnapshot;
     }
   | {
       type: "applyIntervention";
@@ -142,6 +152,7 @@ type ReadingFocusPayload = {
   activeTokenId: string | null;
   activeBlockId: string | null;
 };
+type ReadingAttentionSummaryPayload = ReadingAttentionSummarySnapshot;
 type ApplyInterventionPayload = {
   source: string;
   trigger: string;
@@ -360,6 +371,14 @@ function handleMessage(raw: MessageEvent<string>) {
       return;
     }
 
+    if (message.type === "readingAttentionSummaryChanged") {
+      patchReadingSession((current) => ({
+        ...current,
+        attentionSummary: message.payload,
+      }));
+      return;
+    }
+
     if (message.type === "interventionEvent") {
       patchReadingSession((current) => ({
         ...current,
@@ -535,6 +554,14 @@ export function applyInterventionCommand(payload: ApplyInterventionPayload) {
   connect();
   send({
     type: "applyIntervention",
+    payload,
+  });
+}
+
+export function updateReadingAttentionSummary(payload: ReadingAttentionSummaryPayload) {
+  connect();
+  send({
+    type: "readingAttentionSummaryUpdated",
     payload,
   });
 }

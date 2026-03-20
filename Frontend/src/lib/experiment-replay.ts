@@ -8,6 +8,7 @@ import type {
   ParticipantViewportSnapshot,
   ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
+import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { GazeData } from "@/lib/gaze-socket"
 
 const gazeDataSchema = z.object({
@@ -92,6 +93,23 @@ const interventionSchema = z.object({
   }),
 })
 
+const readingAttentionTokenStatsSchema = z.object({
+  fixationMs: z.number(),
+  fixationCount: z.number(),
+  skimCount: z.number(),
+  maxFixationMs: z.number(),
+  lastFixationMs: z.number(),
+})
+
+const readingAttentionSummarySchema = z.object({
+  updatedAtUnixMs: z.number(),
+  tokenStats: z.record(z.string(), readingAttentionTokenStatsSchema),
+  currentTokenId: z.string().nullable(),
+  currentTokenDurationMs: z.number().nullable(),
+  fixatedTokenCount: z.number(),
+  skimmedTokenCount: z.number(),
+})
+
 const liveReadingSessionSchema = z.object({
   content: readingContentSchema.nullable(),
   presentation: readingPresentationSchema,
@@ -104,6 +122,7 @@ const liveReadingSessionSchema = z.object({
   focus: readingFocusSchema,
   latestIntervention: interventionSchema.nullable(),
   recentInterventions: z.array(interventionSchema),
+  attentionSummary: readingAttentionSummarySchema.nullable().default(null),
 })
 
 const replaySessionSnapshotSchema = z.object({
@@ -424,6 +443,21 @@ function copyFocus(focus: ReadingFocusSnapshot | null | undefined): ReadingFocus
   return { ...focus }
 }
 
+function copyAttentionSummary(
+  summary: ReadingAttentionSummarySnapshot | null | undefined
+): ReadingAttentionSummarySnapshot | null {
+  if (!summary) {
+    return null
+  }
+
+  return {
+    ...summary,
+    tokenStats: Object.fromEntries(
+      Object.entries(summary.tokenStats).map(([tokenId, stats]) => [tokenId, { ...stats }])
+    ),
+  }
+}
+
 function copyReadingSession(
   session: LiveReadingSessionSnapshot | null | undefined
 ): LiveReadingSessionSnapshot | null {
@@ -444,6 +478,7 @@ function copyReadingSession(
       appliedPresentation: { ...item.appliedPresentation },
       appliedAppearance: { ...item.appliedAppearance },
     })),
+    attentionSummary: copyAttentionSummary(session.attentionSummary),
   }
 }
 

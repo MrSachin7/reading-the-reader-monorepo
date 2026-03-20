@@ -3,6 +3,7 @@ export type ReaderShellViewSettings = {
   highlightContext: boolean
   displayGazePosition: boolean
   highlightTokensBeingLookedAt: boolean
+  showFixationHeatmap: boolean
   showToolbar: boolean
   showBackButton: boolean
   showLixScores: boolean
@@ -29,6 +30,7 @@ export const READER_SHELL_SETTINGS_DEFAULTS: ReaderShellSettingsSnapshot = {
     highlightContext: false,
     displayGazePosition: false,
     highlightTokensBeingLookedAt: true,
+    showFixationHeatmap: false,
     showToolbar: false,
     showBackButton: false,
     showLixScores: false,
@@ -38,6 +40,7 @@ export const READER_SHELL_SETTINGS_DEFAULTS: ReaderShellSettingsSnapshot = {
     highlightContext: true,
     displayGazePosition: false,
     highlightTokensBeingLookedAt: false,
+    showFixationHeatmap: false,
     showToolbar: false,
     showBackButton: false,
     showLixScores: false,
@@ -47,6 +50,7 @@ export const READER_SHELL_SETTINGS_DEFAULTS: ReaderShellSettingsSnapshot = {
     highlightContext: true,
     displayGazePosition: true,
     highlightTokensBeingLookedAt: true,
+    showFixationHeatmap: false,
     showToolbar: false,
     showBackButton: true,
     showLixScores: true,

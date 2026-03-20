@@ -10,6 +10,7 @@ function serializeViewSettings(settings: ReaderShellViewSettings) {
     HighlightContext: settings.highlightContext,
     DisplayGazePosition: settings.displayGazePosition,
     HighlightTokensBeingLookedAt: settings.highlightTokensBeingLookedAt,
+    ShowFixationHeatmap: settings.showFixationHeatmap,
     ShowToolbar: settings.showToolbar,
     ShowBackButton: settings.showBackButton,
     ShowLixScores: settings.showLixScores,

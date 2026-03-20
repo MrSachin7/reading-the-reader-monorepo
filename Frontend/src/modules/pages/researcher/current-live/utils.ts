@@ -19,6 +19,14 @@ export function formatNumeric(value: number | null | undefined, digits = 1) {
   return value.toFixed(digits).replace(/\.0$/, "")
 }
 
+export function formatDurationMs(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "-"
+  }
+
+  return `${Math.round(value)} ms`
+}
+
 export function formatAbsoluteTime(unixMs: number | null | undefined) {
   if (!unixMs) {
     return "-"

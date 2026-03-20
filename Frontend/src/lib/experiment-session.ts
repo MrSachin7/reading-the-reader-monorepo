@@ -1,4 +1,5 @@
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
 export type ExperimentSetupSnapshot = {
@@ -81,6 +82,7 @@ export type LiveReadingSessionSnapshot = {
   focus: ReadingFocusSnapshot
   latestIntervention: InterventionEventSnapshot | null
   recentInterventions: InterventionEventSnapshot[]
+  attentionSummary: ReadingAttentionSummarySnapshot | null
 }
 
 export type ExperimentSessionSnapshot = {
@@ -133,4 +135,5 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   },
   latestIntervention: null,
   recentInterventions: [],
+  attentionSummary: null,
 }

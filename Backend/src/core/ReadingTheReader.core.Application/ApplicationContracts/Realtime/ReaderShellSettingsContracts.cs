@@ -5,6 +5,7 @@ public sealed record ReaderShellViewSettings(
     bool HighlightContext,
     bool DisplayGazePosition,
     bool HighlightTokensBeingLookedAt,
+    bool ShowFixationHeatmap,
     bool ShowToolbar,
     bool ShowBackButton,
     bool ShowLixScores);
@@ -24,6 +25,7 @@ public static class ReaderShellSettingsSnapshots
                 HighlightContext: false,
                 DisplayGazePosition: false,
                 HighlightTokensBeingLookedAt: true,
+                ShowFixationHeatmap: false,
                 ShowToolbar: false,
                 ShowBackButton: false,
                 ShowLixScores: false),
@@ -32,6 +34,7 @@ public static class ReaderShellSettingsSnapshots
                 HighlightContext: true,
                 DisplayGazePosition: false,
                 HighlightTokensBeingLookedAt: false,
+                ShowFixationHeatmap: false,
                 ShowToolbar: false,
                 ShowBackButton: false,
                 ShowLixScores: false),
@@ -40,6 +43,7 @@ public static class ReaderShellSettingsSnapshots
                 HighlightContext: true,
                 DisplayGazePosition: true,
                 HighlightTokensBeingLookedAt: true,
+                ShowFixationHeatmap: false,
                 ShowToolbar: false,
                 ShowBackButton: true,
                 ShowLixScores: true));

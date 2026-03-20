@@ -21,10 +21,12 @@ public static class MessageTypes
     public const string ReadingSessionChanged = "readingSessionChanged";
     public const string ParticipantViewportChanged = "participantViewportChanged";
     public const string ReadingFocusChanged = "readingFocusChanged";
+    public const string ReadingAttentionSummaryChanged = "readingAttentionSummaryChanged";
     public const string RegisterParticipantView = "registerParticipantView";
     public const string UnregisterParticipantView = "unregisterParticipantView";
     public const string ParticipantViewportUpdated = "participantViewportUpdated";
     public const string ReadingFocusUpdated = "readingFocusUpdated";
+    public const string ReadingAttentionSummaryUpdated = "readingAttentionSummaryUpdated";
     public const string ApplyIntervention = "applyIntervention";
     public const string Error = "error";
 }

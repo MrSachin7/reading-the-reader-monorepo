@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { applyInterventionCommand, subscribeToGaze } from "@/lib/gaze-socket"
+import { applyInterventionCommand, subscribeToGaze, updateReadingAttentionSummary } from "@/lib/gaze-socket"
+import { EMPTY_READING_ATTENTION_SUMMARY } from "@/lib/reading-attention-summary"
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
@@ -15,6 +16,7 @@ import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
 import { calculateLix } from "@/modules/pages/reading/lib/readingMetrics"
+import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import {
   DEFAULT_READING_PRESENTATION,
   normalizeReadingPresentation,
@@ -140,6 +142,7 @@ export default function ResearcherCurrentLivePage() {
 
   return (
     <ResearcherCurrentLiveBody
+      key={session.readingSession.content.documentId}
       session={session as ActiveLiveExperimentSession}
       sampleRateHz={liveGaze.sampleRateHz}
       latencyMs={liveGaze.connectionStats?.lastRttMs ?? null}
@@ -164,6 +167,13 @@ function ResearcherCurrentLiveBody({
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const readingSession = session.readingSession
   const content = readingSession.content!
+  const [tokenAttention, setTokenAttention] = useState<RemoteTokenAttentionSnapshot>(
+    readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
+  )
+  const latestTokenAttentionRef = useRef<RemoteTokenAttentionSnapshot>(
+    readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
+  )
+  const lastSyncedAttentionKeyRef = useRef("")
   const [followParticipant, setFollowParticipant] = useState(true)
   const persistedReaderOptions =
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
@@ -229,6 +239,44 @@ function ResearcherCurrentLiveBody({
       ? activeBlock.lixScore
       : null
   const documentLix = calculateLix(content.markdown)
+  const topAttentionTokens = useMemo(() => {
+    return Object.entries(tokenAttention.tokenStats)
+      .filter(([, stats]) => stats.maxFixationMs > 0 || stats.skimCount > 0)
+      .sort((left, right) => {
+        if (right[1].maxFixationMs !== left[1].maxFixationMs) {
+          return right[1].maxFixationMs - left[1].maxFixationMs
+        }
+
+        return right[1].fixationMs - left[1].fixationMs
+      })
+      .slice(0, 5)
+      .map(([tokenId, stats]) => ({
+        tokenId,
+        tokenText: tokenTextLookup.get(tokenId) ?? tokenId,
+        ...stats,
+      }))
+  }, [tokenAttention.tokenStats, tokenTextLookup])
+
+  useEffect(() => {
+    latestTokenAttentionRef.current = tokenAttention
+  }, [tokenAttention])
+
+  useEffect(() => {
+    const syncTimer = window.setInterval(() => {
+      const snapshot = latestTokenAttentionRef.current
+      const serialized = JSON.stringify(snapshot)
+      if (serialized === lastSyncedAttentionKeyRef.current) {
+        return
+      }
+
+      updateReadingAttentionSummary(snapshot)
+      lastSyncedAttentionKeyRef.current = serialized
+    }, 750)
+
+    return () => {
+      window.clearInterval(syncTimer)
+    }
+  }, [])
 
   const setReaderOption = useCallback((key: keyof LiveReaderOptions, value: boolean) => {
     setLocalReaderOptions((previous) => ({
@@ -307,6 +355,12 @@ function ResearcherCurrentLiveBody({
           sampleRateHz={sampleRateHz}
           validityRate={validityRate}
           latencyMs={latencyMs}
+          readingDynamicsEnabled={readerOptions.showFixationHeatmap}
+          currentFixationDurationMs={
+            readerOptions.showFixationHeatmap ? tokenAttention.currentTokenDurationMs : null
+          }
+          fixatedTokenCount={readerOptions.showFixationHeatmap ? tokenAttention.fixatedTokenCount : 0}
+          skimmedTokenCount={readerOptions.showFixationHeatmap ? tokenAttention.skimmedTokenCount : 0}
           appearance={readerAppearance}
           presentation={presentation}
           readerOptions={readerOptions}
@@ -326,6 +380,9 @@ function ResearcherCurrentLiveBody({
           readerOptions={readerOptions}
           exactMirrorEnabled={exactMirrorEnabled}
           mirrorStatusLabel={mirrorStatusLabel}
+          showReadingDynamics={readerOptions.showFixationHeatmap}
+          tokenAttention={tokenAttention}
+          onTokenAttentionChange={setTokenAttention}
         />
 
         <LiveMetadataColumn
@@ -335,6 +392,7 @@ function ResearcherCurrentLiveBody({
           activeBlockLix={activeBlockLix}
           documentLix={documentLix}
           followParticipant={followParticipant}
+          topAttentionTokens={topAttentionTokens}
         />
       </div>
     </main>
