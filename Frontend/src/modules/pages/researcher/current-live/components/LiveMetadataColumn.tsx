@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
+import type { RemoteTokenAttentionStats } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
-import { formatAbsoluteTime, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
+import { formatAbsoluteTime, formatDurationMs, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
 
 function MetadataRow({
   label,
@@ -32,6 +33,12 @@ type LiveMetadataColumnProps = {
   activeBlockLix: number | null
   documentLix: number | null
   followParticipant: boolean
+  topAttentionTokens: Array<
+    {
+      tokenId: string
+      tokenText: string
+    } & RemoteTokenAttentionStats
+  >
 }
 
 export function LiveMetadataColumn({
@@ -41,6 +48,7 @@ export function LiveMetadataColumn({
   activeBlockLix,
   documentLix,
   followParticipant,
+  topAttentionTokens,
 }: LiveMetadataColumnProps) {
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
@@ -122,6 +130,36 @@ export function LiveMetadataColumn({
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Strongest fixations
+                  </p>
+                  <Badge variant="outline">{topAttentionTokens.length}</Badge>
+                </div>
+                {topAttentionTokens.length > 0 ? (
+                  <div className="divide-y">
+                    {topAttentionTokens.map((token) => (
+                      <div key={token.tokenId} className="px-4 py-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">{token.tokenText}</span>
+                          <span className="text-xs text-muted-foreground">
+                            max {formatDurationMs(token.maxFixationMs)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          avg {formatDurationMs(token.fixationCount > 0 ? token.fixationMs / token.fixationCount : null)} • total {formatDurationMs(token.fixationMs)} • {token.fixationCount} fixations • {token.skimCount} skims
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-4 pb-4 text-sm text-muted-foreground">
+                    Waiting for stable reading attention data.
+                  </p>
+                )}
               </div>
 
               <div className="rounded-[1.2rem] border bg-background/80">

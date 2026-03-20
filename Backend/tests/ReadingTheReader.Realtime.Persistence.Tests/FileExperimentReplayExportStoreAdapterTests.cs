@@ -63,6 +63,16 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
         var content = new ReadingContentSnapshot("doc-2", "CSV Sample", "## Title", null, 1_710_001_001_000);
         var viewport = new ParticipantViewportSnapshot(true, 0.2, 260, 1440, 900, 2600, 980, 1_710_001_001_500);
         var focus = new ReadingFocusSnapshot(true, 0.25, 0.75, "token-2", "block-2", 1_710_001_001_600);
+        var attentionSummary = new ReadingAttentionSummarySnapshot(
+            1_710_001_001_900,
+            new Dictionary<string, ReadingAttentionTokenSnapshot>
+            {
+                ["token-2"] = new(220, 1, 0, 220, 220)
+            },
+            "token-2",
+            220,
+            1,
+            0);
         var readingSession = new LiveReadingSessionSnapshot(
             content,
             presentation,
@@ -70,7 +80,8 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             viewport,
             focus,
             null,
-            []);
+            [],
+            attentionSummary);
         var initialSnapshot = new ExperimentSessionSnapshot(
             sessionId,
             true,

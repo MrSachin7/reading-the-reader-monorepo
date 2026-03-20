@@ -172,6 +172,43 @@ public sealed record ReadingFocusSnapshot(
     }
 }
 
+public sealed record ReadingAttentionTokenSnapshot(
+    long FixationMs,
+    int FixationCount,
+    int SkimCount,
+    long MaxFixationMs,
+    long LastFixationMs)
+{
+    public ReadingAttentionTokenSnapshot Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record ReadingAttentionSummarySnapshot(
+    long UpdatedAtUnixMs,
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot> TokenStats,
+    string? CurrentTokenId,
+    long? CurrentTokenDurationMs,
+    int FixatedTokenCount,
+    int SkimmedTokenCount)
+{
+    public static ReadingAttentionSummarySnapshot Empty { get; } = new(0, new Dictionary<string, ReadingAttentionTokenSnapshot>(), null, null, 0, 0);
+
+    public ReadingAttentionSummarySnapshot Copy()
+    {
+        return new ReadingAttentionSummarySnapshot(
+            UpdatedAtUnixMs,
+            TokenStats is null
+                ? new Dictionary<string, ReadingAttentionTokenSnapshot>()
+                : TokenStats.ToDictionary(entry => entry.Key, entry => entry.Value.Copy()),
+            string.IsNullOrWhiteSpace(CurrentTokenId) ? null : CurrentTokenId.Trim(),
+            CurrentTokenDurationMs,
+            FixatedTokenCount,
+            SkimmedTokenCount);
+    }
+}
+
 public sealed record InterventionEventSnapshot(
     Guid Id,
     string Source,
@@ -201,7 +238,8 @@ public sealed record LiveReadingSessionSnapshot(
     ParticipantViewportSnapshot ParticipantViewport,
     ReadingFocusSnapshot Focus,
     InterventionEventSnapshot? LatestIntervention,
-    IReadOnlyList<InterventionEventSnapshot> RecentInterventions)
+    IReadOnlyList<InterventionEventSnapshot> RecentInterventions,
+    ReadingAttentionSummarySnapshot? AttentionSummary = null)
 {
     public static LiveReadingSessionSnapshot Empty { get; } = new(
         null,
@@ -210,7 +248,8 @@ public sealed record LiveReadingSessionSnapshot(
         ParticipantViewportSnapshot.Disconnected,
         ReadingFocusSnapshot.Empty,
         null,
-        []);
+        [],
+        null);
 
     public LiveReadingSessionSnapshot Copy()
     {
@@ -221,7 +260,8 @@ public sealed record LiveReadingSessionSnapshot(
             (ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected).Copy(),
             (Focus ?? ReadingFocusSnapshot.Empty).Copy(),
             LatestIntervention?.Copy(),
-            RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())]);
+            RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())],
+            AttentionSummary?.Copy());
     }
 }
 
@@ -267,5 +307,13 @@ public sealed record UpdateReadingFocusCommand(
     double? NormalizedContentY,
     string? ActiveTokenId,
     string? ActiveBlockId);
+
+public sealed record UpdateReadingAttentionSummaryCommand(
+    long UpdatedAtUnixMs,
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot> TokenStats,
+    string? CurrentTokenId,
+    long? CurrentTokenDurationMs,
+    int FixatedTokenCount,
+    int SkimmedTokenCount);
 
 public sealed record FinishExperimentCommand(string Source);
