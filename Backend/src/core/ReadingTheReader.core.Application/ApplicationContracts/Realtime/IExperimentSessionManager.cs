@@ -19,6 +19,8 @@ public interface IExperimentSessionManager
 
     ValueTask<ReadingFocusSnapshot> UpdateReadingFocusAsync(UpdateReadingFocusCommand command, CancellationToken ct = default);
 
+    ValueTask<ReadingAttentionSummarySnapshot> UpdateReadingAttentionSummaryAsync(UpdateReadingAttentionSummaryCommand command, CancellationToken ct = default);
+
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
     ValueTask PauseGazeStreamingAsync(CancellationToken ct = default);

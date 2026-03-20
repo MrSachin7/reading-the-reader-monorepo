@@ -92,6 +92,7 @@ public sealed class ReaderShellSettingsService : IReaderShellSettingsService
             persisted?.HighlightContext ?? defaults.HighlightContext,
             persisted?.DisplayGazePosition ?? defaults.DisplayGazePosition,
             persisted?.HighlightTokensBeingLookedAt ?? defaults.HighlightTokensBeingLookedAt,
+            persisted?.ShowFixationHeatmap ?? defaults.ShowFixationHeatmap,
             persisted?.ShowToolbar ?? defaults.ShowToolbar,
             persisted?.ShowBackButton ?? defaults.ShowBackButton,
             persisted?.ShowLixScores ?? defaults.ShowLixScores);
@@ -150,6 +151,8 @@ public sealed class ReaderShellSettingsService : IReaderShellSettingsService
 
         public bool? HighlightTokensBeingLookedAt { get; set; }
 
+        public bool? ShowFixationHeatmap { get; set; }
+
         public bool? ShowToolbar { get; set; }
 
         public bool? ShowBackButton { get; set; }
@@ -164,6 +167,7 @@ public sealed class ReaderShellSettingsService : IReaderShellSettingsService
                 HighlightContext = snapshot.HighlightContext,
                 DisplayGazePosition = snapshot.DisplayGazePosition,
                 HighlightTokensBeingLookedAt = snapshot.HighlightTokensBeingLookedAt,
+                ShowFixationHeatmap = snapshot.ShowFixationHeatmap,
                 ShowToolbar = snapshot.ShowToolbar,
                 ShowBackButton = snapshot.ShowBackButton,
                 ShowLixScores = snapshot.ShowLixScores

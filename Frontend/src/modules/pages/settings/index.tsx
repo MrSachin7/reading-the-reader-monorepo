@@ -90,6 +90,11 @@ const READER_SHELL_OPTIONS: Array<{
     description: "Highlight the token the participant is focused on.",
   },
   {
+    key: "showFixationHeatmap",
+    label: "Show fixation heat map",
+    description: "Color tokens by fixation dwell and mark quick skims when remote focus data is available.",
+  },
+  {
     key: "showLixScores",
     label: "Show LIX scores",
     description: "Display readability badges inside the reading view.",

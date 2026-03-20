@@ -147,6 +147,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                     UpdatedAtUnixMs = updatedAtUnixMs
                 },
                 Focus = ReadingFocusSnapshot.Empty,
+                AttentionSummary = null,
             };
 
             nextState = _liveReadingSession.Copy();
@@ -259,6 +260,31 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingFocusChanged, focus, ct);
         return focus;
+    }
+
+    public async ValueTask<ReadingAttentionSummarySnapshot> UpdateReadingAttentionSummaryAsync(
+        UpdateReadingAttentionSummaryCommand command,
+        CancellationToken ct = default)
+    {
+        ReadingAttentionSummarySnapshot summary;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            summary = NormalizeReadingAttentionSummary(command);
+            _liveReadingSession = _liveReadingSession with
+            {
+                AttentionSummary = summary
+            };
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        return summary;
     }
 
     public async ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(
@@ -550,6 +576,16 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                 }
 
                 await SendErrorAsync(connectionId, "Reading focus payload is invalid.", ct);
+                break;
+
+            case MessageTypes.ReadingAttentionSummaryUpdated:
+                if (TryDeserializePayload<UpdateReadingAttentionSummaryCommand>(payload, out var attentionSummaryCommand))
+                {
+                    await UpdateReadingAttentionSummaryAsync(attentionSummaryCommand!, ct);
+                    return;
+                }
+
+                await SendErrorAsync(connectionId, "Reading attention summary payload is invalid.", ct);
                 break;
 
             case MessageTypes.ApplyIntervention:
@@ -1032,6 +1068,40 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
     private static string? NormalizeNullableText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static ReadingAttentionSummarySnapshot NormalizeReadingAttentionSummary(
+        UpdateReadingAttentionSummaryCommand command)
+    {
+        var tokenStats = new Dictionary<string, ReadingAttentionTokenSnapshot>(StringComparer.Ordinal);
+
+        if (command.TokenStats is not null)
+        {
+            foreach (var entry in command.TokenStats)
+            {
+                var tokenId = NormalizeNullableText(entry.Key);
+                if (tokenId is null)
+                {
+                    continue;
+                }
+
+                var stats = entry.Value ?? new ReadingAttentionTokenSnapshot(0, 0, 0, 0, 0);
+                tokenStats[tokenId] = new ReadingAttentionTokenSnapshot(
+                    Math.Max(stats.FixationMs, 0),
+                    Math.Max(stats.FixationCount, 0),
+                    Math.Max(stats.SkimCount, 0),
+                    Math.Max(stats.MaxFixationMs, 0),
+                    Math.Max(stats.LastFixationMs, 0));
+            }
+        }
+
+        return new ReadingAttentionSummarySnapshot(
+            Math.Max(command.UpdatedAtUnixMs, 0),
+            tokenStats,
+            NormalizeNullableText(command.CurrentTokenId),
+            command.CurrentTokenDurationMs.HasValue ? Math.Max(command.CurrentTokenDurationMs.Value, 0) : null,
+            Math.Max(command.FixatedTokenCount, 0),
+            Math.Max(command.SkimmedTokenCount, 0));
     }
 
     private void StopHardwareStreaming()

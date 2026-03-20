@@ -12,6 +12,11 @@ import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readi
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
 import { useReadingProgress } from "@/modules/pages/reading/lib/useReadingProgress";
+import { useRemoteFocusTokenAttention } from "@/modules/pages/reading/lib/useRemoteFocusTokenAttention";
+import {
+  useRemoteTokenAttentionHeatmap,
+  type RemoteTokenAttentionSnapshot,
+} from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap";
 import { useRemoteTokenHighlight } from "@/modules/pages/reading/lib/useRemoteTokenHighlight";
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown";
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
@@ -50,7 +55,10 @@ type ReaderShellProps = {
     normalizedContentX: number | null;
     normalizedContentY: number | null;
     activeTokenId: string | null;
+    updatedAtUnixMs?: number | null;
   } | null;
+  remoteTokenAttention?: RemoteTokenAttentionSnapshot | null;
+  onRemoteTokenAttentionChange?: (snapshot: RemoteTokenAttentionSnapshot) => void;
   showRemoteFocusMarker?: boolean;
   gazeOverlayPoint?: GazePoint | null;
   gazeOverlayHasRecentPoint?: boolean;
@@ -110,6 +118,8 @@ export function ReaderShell({
   viewportScrollProgress = null,
   viewportScrollTopPx = null,
   remoteFocus = null,
+  remoteTokenAttention = null,
+  onRemoteTokenAttentionChange,
   showRemoteFocusMarker = true,
   gazeOverlayPoint,
   gazeOverlayHasRecentPoint,
@@ -136,6 +146,27 @@ export function ReaderShell({
     activeTokenId: remoteFocus?.activeTokenId ?? null,
     enabled: Boolean(remoteFocus?.isInsideReadingArea) && highlightRemoteTokensBeingLookedAt,
   });
+
+  const derivedRemoteTokenAttention = useRemoteFocusTokenAttention({
+    containerRef,
+    contentRef,
+    remoteFocus,
+    enabled: Boolean(remoteFocus),
+  });
+
+  useRemoteTokenAttentionHeatmap({
+    containerRef,
+    attention: remoteTokenAttention ?? derivedRemoteTokenAttention,
+    enabled: Boolean(remoteTokenAttention ?? derivedRemoteTokenAttention),
+  });
+
+  useEffect(() => {
+    if (!onRemoteTokenAttentionChange) {
+      return;
+    }
+
+    onRemoteTokenAttentionChange(derivedRemoteTokenAttention);
+  }, [derivedRemoteTokenAttention, onRemoteTokenAttentionChange]);
 
   const parsedDoc = useMemo(() => parseMinimalMarkdown(markdown), [markdown]);
   const tokenizedBlocks = useMemo(() => tokenizeDocument(parsedDoc, docId), [docId, parsedDoc]);
@@ -401,6 +432,7 @@ export function ReaderShell({
         >
           <div
             ref={contentRef}
+            data-reader-content="true"
             className="relative mx-auto w-full"
             style={{
               maxWidth: `${presentation.lineWidthPx}px`,

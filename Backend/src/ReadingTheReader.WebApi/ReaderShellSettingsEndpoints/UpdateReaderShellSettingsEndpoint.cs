@@ -45,6 +45,7 @@ public sealed class UpdateReaderShellSettingsEndpoint
             req.HighlightContext,
             req.DisplayGazePosition,
             req.HighlightTokensBeingLookedAt,
+            req.ShowFixationHeatmap,
             req.ShowToolbar,
             req.ShowBackButton,
             req.ShowLixScores);
@@ -69,6 +70,8 @@ public sealed class UpdateReaderShellViewSettingsRequest
     public bool DisplayGazePosition { get; set; }
 
     public bool HighlightTokensBeingLookedAt { get; set; }
+
+    public bool ShowFixationHeatmap { get; set; }
 
     public bool ShowToolbar { get; set; }
 

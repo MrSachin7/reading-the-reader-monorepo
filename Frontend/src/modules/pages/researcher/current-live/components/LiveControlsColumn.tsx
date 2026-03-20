@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { normalizeFontTheme, type ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 import {
+  formatDurationMs,
   formatPercent,
   getLatencyBars,
   getLatencyTone,
@@ -194,6 +195,10 @@ type LiveControlsColumnProps = {
   sampleRateHz: number
   validityRate: number
   latencyMs: number | null
+  readingDynamicsEnabled: boolean
+  currentFixationDurationMs: number | null
+  fixatedTokenCount: number
+  skimmedTokenCount: number
   appearance: ReaderAppearanceSettings
   presentation: ReadingPresentationSettings
   readerOptions: LiveReaderOptions
@@ -216,6 +221,10 @@ export function LiveControlsColumn({
   sampleRateHz,
   validityRate,
   latencyMs,
+  readingDynamicsEnabled,
+  currentFixationDurationMs,
+  fixatedTokenCount,
+  skimmedTokenCount,
   appearance,
   presentation,
   readerOptions,
@@ -272,6 +281,21 @@ export function LiveControlsColumn({
                 <MetricItem label="Validity" value={formatPercent(validityRate)} />
                 <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
                 <MetricItem label="Participant" value={participantName ?? "Not registered"} />
+                <MetricItem label="Heat map" value={readingDynamicsEnabled ? "Live" : "Off"} />
+                <MetricItem
+                  label="Current dwell"
+                  value={
+                    readingDynamicsEnabled ? formatDurationMs(currentFixationDurationMs) : "Off"
+                  }
+                />
+                <MetricItem
+                  label="Fixated"
+                  value={readingDynamicsEnabled ? fixatedTokenCount : "-"}
+                />
+                <MetricItem
+                  label="Skimmed"
+                  value={readingDynamicsEnabled ? skimmedTokenCount : "-"}
+                />
               </div>
             </div>
           </CardContent>
@@ -478,6 +502,14 @@ export function LiveControlsColumn({
 
               <ControlSection title="Gaze and text">
                 <ControlRow
+                  label="Show fixation heat map"
+                  description="Color tokens by accumulated fixation time and mark brief skims directly in the mirrored text."
+                  checked={readingDynamicsEnabled}
+                  onCheckedChange={(checked) =>
+                    onReaderOptionChange("showFixationHeatmap", checked)
+                  }
+                />
+                <ControlRow
                   label="Display gaze position"
                   description="Show the participant gaze marker inside the mirrored page."
                   checked={readerOptions.displayGazePosition}
@@ -495,6 +527,12 @@ export function LiveControlsColumn({
                   checked={readerOptions.showLixScores}
                   onCheckedChange={(checked) => onReaderOptionChange("showLixScores", checked)}
                 />
+                {readingDynamicsEnabled ? (
+                  <div className="rounded-[1.1rem] border border-amber-500/20 bg-amber-500/8 px-4 py-3 text-xs leading-5 text-amber-900">
+                    Light amber means a shorter fixation. Darker orange means a longer fixation. Blue underlines mark
+                    quick passes that were likely skimmed.
+                  </div>
+                ) : null}
               </ControlSection>
 
               <ControlSection title="Reader chrome">
