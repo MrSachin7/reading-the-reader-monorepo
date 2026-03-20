@@ -985,3 +985,9 @@ sketch
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/rider,csharp,dotnetcore,visualstudio,visualstudiocode,pycharm,python,react,nextjs
+
+# Runtime experiment persistence data
+src/infrastructure/ReadingTheReader.Realtime.Persistence/data/
+
+# Legacy runtime data path kept for local compatibility
+src/ReadingTheReader.WebApi/data/

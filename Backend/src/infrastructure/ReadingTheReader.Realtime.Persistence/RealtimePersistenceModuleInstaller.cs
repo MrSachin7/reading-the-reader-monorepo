@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;
@@ -21,17 +22,29 @@ public static class RealtimePersistenceModuleInstaller
 
         if (useFileProvider)
         {
-            services.AddSingleton<IExperimentStateStoreAdapter>(_ => new FileSnapshotExperimentStateStoreAdapter(options.SnapshotFilePath));
+            services.AddSingleton(_ => new FileExperimentSessionJournalStoreAdapter(
+                options.ResolveSessionJournalDirectoryPath(),
+                options.JournalGazeBatchSize));
+            services.AddSingleton<IExperimentStateStoreAdapter>(_ => new FileSnapshotExperimentStateStoreAdapter(options.ResolveSnapshotFilePath()));
+            services.AddSingleton<IExperimentSessionJournalStoreAdapter>(serviceProvider =>
+                serviceProvider.GetRequiredService<FileExperimentSessionJournalStoreAdapter>());
             services.AddSingleton<IExperimentReplayExportStoreAdapter>(serviceProvider =>
                 new FileExperimentReplayExportStoreAdapter(
-                    options.ReplayExportFilePath,
-                    options.SavedReplayExportsDirectoryPath,
+                    options.ResolveReplayExportFilePath(),
+                    options.ResolveSavedReplayExportsDirectoryPath(),
                     serviceProvider.GetRequiredService<IExperimentReplayExportSerializer>()));
-            services.AddSingleton<IReadingMaterialSetupStoreAdapter>(_ => new FileReadingMaterialSetupStoreAdapter(readingMaterialSetupOptions.DirectoryPath));
+            services.AddSingleton<IReadingMaterialSetupStoreAdapter>(_ => new FileReadingMaterialSetupStoreAdapter(readingMaterialSetupOptions.ResolveDirectoryPath()));
+            services.AddSingleton<ExperimentSessionJournalFlushWorker>(serviceProvider =>
+                new ExperimentSessionJournalFlushWorker(
+                    serviceProvider.GetRequiredService<FileExperimentSessionJournalStoreAdapter>(),
+                    options.JournalGazeFlushIntervalMilliseconds));
+            services.AddSingleton<IHostedService>(serviceProvider =>
+                serviceProvider.GetRequiredService<ExperimentSessionJournalFlushWorker>());
         }
         else
         {
             services.AddSingleton<IExperimentStateStoreAdapter, InMemoryExperimentStateStoreAdapter>();
+            services.AddSingleton<IExperimentSessionJournalStoreAdapter, InMemoryExperimentSessionJournalStoreAdapter>();
             services.AddSingleton<IExperimentReplayExportStoreAdapter>(serviceProvider =>
                 new InMemoryExperimentReplayExportStoreAdapter(serviceProvider.GetRequiredService<IExperimentReplayExportSerializer>()));
             services.AddSingleton<IReadingMaterialSetupStoreAdapter, InMemoryReadingMaterialSetupStoreAdapter>();

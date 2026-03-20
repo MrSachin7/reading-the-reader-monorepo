@@ -17,6 +17,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
     private readonly IEyeTrackerAdapter _eyeTrackerAdapter;
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
     private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
+    private readonly IExperimentSessionJournalStoreAdapter _experimentSessionJournalStoreAdapter;
     private readonly IExperimentReplayExportStoreAdapter _experimentReplayExportStoreAdapter;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
@@ -45,12 +46,14 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         IEyeTrackerAdapter eyeTrackerAdapter,
         IClientBroadcasterAdapter clientBroadcasterAdapter,
         IExperimentStateStoreAdapter experimentStateStoreAdapter,
+        IExperimentSessionJournalStoreAdapter experimentSessionJournalStoreAdapter,
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
         IReadingInterventionRuntime readingInterventionRuntime)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
         _experimentStateStoreAdapter = experimentStateStoreAdapter;
+        _experimentSessionJournalStoreAdapter = experimentSessionJournalStoreAdapter;
         _experimentReplayExportStoreAdapter = experimentReplayExportStoreAdapter;
         _readingInterventionRuntime = readingInterventionRuntime;
 
@@ -361,12 +364,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             var startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             Volatile.Write(ref _session, ExperimentSession.StartNew(startedAt, current.Participant, current.EyeTrackerDevice));
             ResetReplayHistory();
-            RecordLifecycleEvent("session-started", "system", startedAt);
-            RecordReadingSessionState("session-started", startedAt, _liveReadingSession.Copy());
             await EnsureGazeStreamingStateAsync(ct);
 
+            var initialSnapshot = GetCurrentSnapshot();
+            SetInitialSnapshot(initialSnapshot);
+            TryStartJournal(initialSnapshot);
+            RecordLifecycleEvent("session-started", "system", startedAt);
+            RecordReadingSessionState("session-started", startedAt, _liveReadingSession.Copy());
+
             var snapshot = GetCurrentSnapshot();
-            SetInitialSnapshot(snapshot);
             await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStarted, snapshot, ct);
             return true;
@@ -386,12 +392,34 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
     public async Task<ExperimentSessionSnapshot> FinishSessionAsync(FinishExperimentCommand command, CancellationToken ct = default)
     {
         var source = string.IsNullOrWhiteSpace(command.Source) ? "unknown" : command.Source.Trim();
-        return await StopSessionCoreAsync(source, ct) ?? GetCurrentSnapshot();
+        var finalSnapshot = await StopSessionCoreAsync(source, ct) ?? GetCurrentSnapshot();
+        await ResetForNextSessionAsync(finalSnapshot.ReadingSession, ct);
+        return finalSnapshot;
     }
 
-    public ValueTask<ExperimentReplayExport?> GetLatestReplayExportAsync(CancellationToken ct = default)
+    public async ValueTask<ExperimentReplayExport?> GetLatestReplayExportAsync(CancellationToken ct = default)
     {
-        return _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);
+        var latest = await _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);
+        if (latest is not null)
+        {
+            return latest;
+        }
+
+        var snapshot = await _experimentStateStoreAdapter.LoadLatestSnapshotAsync(ct);
+        if (snapshot?.SessionId is not Guid sessionId)
+        {
+            return null;
+        }
+
+        var recovery = TryLoadJournalRecovery(sessionId);
+        if (recovery is null)
+        {
+            return null;
+        }
+
+        var completionSource = recovery.CompletionSource ??
+                               (snapshot.IsActive ? "recovered-incomplete" : "recovered");
+        return BuildReplayExport(snapshot, completionSource, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), recovery);
     }
 
     public async ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(
@@ -403,7 +431,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             throw new InvalidOperationException("A name is required.");
         }
 
-        var latest = await _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);
+        var latest = await GetLatestReplayExportAsync(ct);
         if (latest is null)
         {
             throw new InvalidOperationException("No completed experiment export is available yet.");
@@ -455,6 +483,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
 
             var snapshot = GetCurrentSnapshot();
             await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
+            if (snapshot.SessionId is Guid sessionId)
+            {
+                TryMarkJournalCompleted(sessionId, source, stoppedAtUnixMs);
+            }
+
             var exportDocument = BuildReplayExport(snapshot, source, stoppedAtUnixMs);
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStopped, snapshot, ct);
@@ -777,6 +810,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             return;
         }
 
+        if (!snapshot.IsActive)
+        {
+            Volatile.Write(ref _session, ExperimentSession.Inactive);
+            _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
+            Interlocked.Exchange(ref _receivedGazeSamples, 0);
+            Interlocked.Exchange(ref _eventSequenceNumber, 0);
+            Volatile.Write(ref _latestGazeSample, null);
+            _liveReadingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
+            ResetReplayHistory();
+            return;
+        }
+
         Volatile.Write(ref _session, new ExperimentSession(
             snapshot.SessionId,
             snapshot.IsActive,
@@ -789,6 +834,31 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         Interlocked.Exchange(ref _receivedGazeSamples, snapshot.ReceivedGazeSamples);
         Volatile.Write(ref _latestGazeSample, snapshot.LatestGazeSample?.Copy());
         _liveReadingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
+
+        if (snapshot.SessionId is Guid sessionId)
+        {
+            RestoreReplayHistory(sessionId);
+        }
+    }
+
+    private async Task ResetForNextSessionAsync(LiveReadingSessionSnapshot? readingSession, CancellationToken ct)
+    {
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            Volatile.Write(ref _session, ExperimentSession.Inactive);
+            _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
+            Interlocked.Exchange(ref _receivedGazeSamples, 0);
+            Interlocked.Exchange(ref _eventSequenceNumber, 0);
+            Volatile.Write(ref _latestGazeSample, null);
+            _liveReadingSession = readingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
+            ResetReplayHistory();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
     }
 
     private void ResetReplayHistory()
@@ -815,27 +885,35 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
 
     private void RecordLifecycleEvent(string eventType, string source, long occurredAtUnixMs)
     {
+        ExperimentLifecycleEventRecord record;
         lock (_historyGate)
         {
-            _lifecycleEvents.Add(new ExperimentLifecycleEventRecord(
+            record = new ExperimentLifecycleEventRecord(
                 NextSequenceNumber(),
                 eventType,
                 source,
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs)));
+                CalculateElapsedSinceStart(occurredAtUnixMs));
+            _lifecycleEvents.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendLifecycleEvent(sessionId, record));
     }
 
     private void RecordGazeSample(long capturedAtUnixMs, GazeData gazeData)
     {
+        GazeSampleRecord record;
         lock (_historyGate)
         {
-            _gazeSamples.Add(new GazeSampleRecord(
+            record = new GazeSampleRecord(
                 NextSequenceNumber(),
                 capturedAtUnixMs,
                 CalculateElapsedSinceStart(capturedAtUnixMs),
-                gazeData.Copy()));
+                gazeData.Copy());
+            _gazeSamples.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendGazeSample(sessionId, record));
     }
 
     private void RecordReadingSessionState(string reason, long occurredAtUnixMs, LiveReadingSessionSnapshot session)
@@ -845,51 +923,67 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             return;
         }
 
+        ReadingSessionStateRecord record;
         lock (_historyGate)
         {
-            _readingSessionStates.Add(new ReadingSessionStateRecord(
+            record = new ReadingSessionStateRecord(
                 NextSequenceNumber(),
                 reason,
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                session.Copy()));
+                session.Copy());
+            _readingSessionStates.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendReadingSessionState(sessionId, record));
     }
 
     private void RecordParticipantViewportEvent(long occurredAtUnixMs, ParticipantViewportSnapshot viewport)
     {
+        ParticipantViewportEventRecord record;
         lock (_historyGate)
         {
-            _participantViewportEvents.Add(new ParticipantViewportEventRecord(
+            record = new ParticipantViewportEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                viewport.Copy()));
+                viewport.Copy());
+            _participantViewportEvents.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendParticipantViewportEvent(sessionId, record));
     }
 
     private void RecordReadingFocusEvent(long occurredAtUnixMs, ReadingFocusSnapshot focus)
     {
+        ReadingFocusEventRecord record;
         lock (_historyGate)
         {
-            _readingFocusEvents.Add(new ReadingFocusEventRecord(
+            record = new ReadingFocusEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                focus.Copy()));
+                focus.Copy());
+            _readingFocusEvents.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendReadingFocusEvent(sessionId, record));
     }
 
     private void RecordInterventionEvent(long occurredAtUnixMs, InterventionEventSnapshot intervention)
     {
+        InterventionEventRecord record;
         lock (_historyGate)
         {
-            _interventionEvents.Add(new InterventionEventRecord(
+            record = new InterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                intervention.Copy()));
+                intervention.Copy());
+            _interventionEvents.Add(record);
         }
+
+        TryAppendToJournal((sessionId, journal) => journal.AppendInterventionEvent(sessionId, record));
     }
 
     private ExperimentReplayExport BuildReplayExport(
@@ -897,15 +991,24 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         string completionSource,
         long exportedAtUnixMs)
     {
+        return BuildReplayExport(finalSnapshot, completionSource, exportedAtUnixMs, null);
+    }
+
+    private ExperimentReplayExport BuildReplayExport(
+        ExperimentSessionSnapshot finalSnapshot,
+        string completionSource,
+        long exportedAtUnixMs,
+        ExperimentJournalRecovery? recovery)
+    {
         lock (_historyGate)
         {
-            var initialSnapshot = (_initialSnapshot ?? finalSnapshot).Copy();
-            var lifecycleEvents = _lifecycleEvents.Select(item => item.Copy()).ToArray();
-            var gazeSamples = _gazeSamples.Select(item => item.Copy()).ToArray();
-            var readingSessionStates = _readingSessionStates.Select(item => item.Copy()).ToArray();
-            var participantViewportEvents = _participantViewportEvents.Select(item => item.Copy()).ToArray();
-            var readingFocusEvents = _readingFocusEvents.Select(item => item.Copy()).ToArray();
-            var interventionEvents = _interventionEvents.Select(item => item.Copy()).ToArray();
+            var initialSnapshot = (recovery?.InitialSnapshot ?? _initialSnapshot ?? finalSnapshot).Copy();
+            var lifecycleEvents = (recovery?.LifecycleEvents ?? _lifecycleEvents).Select(item => item.Copy()).ToArray();
+            var gazeSamples = (recovery?.GazeSamples ?? _gazeSamples).Select(item => item.Copy()).ToArray();
+            var readingSessionStates = (recovery?.ReadingSessionStates ?? _readingSessionStates).Select(item => item.Copy()).ToArray();
+            var participantViewportEvents = (recovery?.ParticipantViewportEvents ?? _participantViewportEvents).Select(item => item.Copy()).ToArray();
+            var readingFocusEvents = (recovery?.ReadingFocusEvents ?? _readingFocusEvents).Select(item => item.Copy()).ToArray();
+            var interventionEvents = (recovery?.InterventionEvents ?? _interventionEvents).Select(item => item.Copy()).ToArray();
             long? durationMs = finalSnapshot.StartedAtUnixMs > 0 && finalSnapshot.StoppedAtUnixMs.HasValue
                 ? Math.Max(0L, finalSnapshot.StoppedAtUnixMs.Value - finalSnapshot.StartedAtUnixMs)
                 : null;
@@ -935,6 +1038,82 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
                 participantViewportEvents,
                 readingFocusEvents,
                 interventionEvents);
+        }
+    }
+
+    private void RestoreReplayHistory(Guid sessionId)
+    {
+        var recovery = TryLoadJournalRecovery(sessionId);
+        if (recovery is null)
+        {
+            return;
+        }
+
+        lock (_historyGate)
+        {
+            _initialSnapshot = recovery.InitialSnapshot.Copy();
+            _lifecycleEvents = [.. recovery.LifecycleEvents.Select(item => item.Copy())];
+            _gazeSamples = [.. recovery.GazeSamples.Select(item => item.Copy())];
+            _readingSessionStates = [.. recovery.ReadingSessionStates.Select(item => item.Copy())];
+            _participantViewportEvents = [.. recovery.ParticipantViewportEvents.Select(item => item.Copy())];
+            _readingFocusEvents = [.. recovery.ReadingFocusEvents.Select(item => item.Copy())];
+            _interventionEvents = [.. recovery.InterventionEvents.Select(item => item.Copy())];
+        }
+
+        Interlocked.Exchange(ref _eventSequenceNumber, Math.Max(Interlocked.Read(ref _eventSequenceNumber), recovery.LastSequenceNumber));
+    }
+
+    private void TryStartJournal(ExperimentSessionSnapshot initialSnapshot)
+    {
+        try
+        {
+            _experimentSessionJournalStoreAdapter.StartSession(initialSnapshot.Copy());
+        }
+        catch
+        {
+            // Journal persistence should not block session start.
+        }
+    }
+
+    private void TryMarkJournalCompleted(Guid sessionId, string completionSource, long completedAtUnixMs)
+    {
+        try
+        {
+            _experimentSessionJournalStoreAdapter.MarkCompleted(sessionId, completionSource, completedAtUnixMs);
+        }
+        catch
+        {
+            // The recoverable journal is a safety net and should not block session completion.
+        }
+    }
+
+    private void TryAppendToJournal(Action<Guid, IExperimentSessionJournalStoreAdapter> append)
+    {
+        var sessionId = Volatile.Read(ref _session).Id;
+        if (!sessionId.HasValue)
+        {
+            return;
+        }
+
+        try
+        {
+            append(sessionId.Value, _experimentSessionJournalStoreAdapter);
+        }
+        catch
+        {
+            // Keep realtime ingestion and UI updates resilient even if journal writes fail.
+        }
+    }
+
+    private ExperimentJournalRecovery? TryLoadJournalRecovery(Guid sessionId)
+    {
+        try
+        {
+            return _experimentSessionJournalStoreAdapter.LoadRecovery(sessionId)?.Copy();
+        }
+        catch
+        {
+            return null;
         }
     }
 

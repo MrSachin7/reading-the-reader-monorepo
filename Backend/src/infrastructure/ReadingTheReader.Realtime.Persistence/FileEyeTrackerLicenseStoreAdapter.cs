@@ -61,37 +61,7 @@ public sealed class FileEyeTrackerLicenseStoreAdapter : IEyeTrackerLicenseStoreA
 
     private static string ResolveLicenseFolderPath()
     {
-        var repositoryPath = FindRepositoryRoot(Directory.GetCurrentDirectory())
-                             ?? FindRepositoryRoot(AppContext.BaseDirectory);
-
-        if (repositoryPath is not null)
-        {
-            return Path.Combine(
-                repositoryPath,
-                "src",
-                "infrastructure",
-                "ReadingTheReader.Realtime.Persistence",
-                "licence");
-        }
-
-        return Path.Combine(AppContext.BaseDirectory, "licence");
-    }
-
-    private static string? FindRepositoryRoot(string startPath)
-    {
-        var dir = new DirectoryInfo(startPath);
-        while (dir is not null)
-        {
-            var srcPath = Path.Combine(dir.FullName, "src");
-            if (Directory.Exists(srcPath))
-            {
-                return dir.FullName;
-            }
-
-            dir = dir.Parent;
-        }
-
-        return null;
+        return PersistencePathResolver.GetLicenseDirectory();
     }
 
     private static string SanitizeFileName(string value)

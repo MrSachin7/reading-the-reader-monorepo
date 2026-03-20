@@ -5,6 +5,7 @@ All project documentation now lives in this root folder.
 ## Sections
 
 - `backend/` - backend architecture notes and frontend/backend integration guide
+- `backend/experiment-persistence-files.md` - explains the snapshot, journal, and export files written during experiments
 - `frontend/` - requirements and thesis planning documents
 
 ## Notes
