@@ -6,11 +6,11 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class FinishExperimentEndpoint : Endpoint<FinishExperimentRequest, ExperimentSessionSnapshot>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentRuntimeAuthority _runtimeAuthority;
 
-    public FinishExperimentEndpoint(IExperimentSessionManager experimentSessionManager)
+    public FinishExperimentEndpoint(IExperimentRuntimeAuthority runtimeAuthority)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _runtimeAuthority = runtimeAuthority;
     }
 
     public override void Configure()
@@ -21,7 +21,7 @@ public sealed class FinishExperimentEndpoint : Endpoint<FinishExperimentRequest,
 
     public override async Task HandleAsync(FinishExperimentRequest req, CancellationToken ct)
     {
-        var snapshot = await _experimentSessionManager.FinishSessionAsync(
+        var snapshot = await _runtimeAuthority.FinishSessionAsync(
             new FinishExperimentCommand(req.Source),
             ct);
 

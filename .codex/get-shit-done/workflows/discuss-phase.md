@@ -137,7 +137,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 AGENT_SKILLS_ADVISOR=$(node "C:/Users/s243871/reading-the-reader-monorepo/.codex/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-advisor 2>/dev/null)
 ```
 
-Parse JSON for: `commit_docs`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_plans`, `has_verification`, `plan_count`, `roadmap_exists`, `planning_exists`.
+Parse JSON for: `commit_docs`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_plans`, `has_verification`, `plan_count`, `roadmap_exists`, `planning_exists`.
 
 **If `phase_found` is false:**
 ```
@@ -155,6 +155,22 @@ Exit workflow.
 - In `discuss_areas`: for each discussion question, choose the recommended option (first option, or the one marked "recommended") without using AskUserQuestion
 - Log each auto-selected choice inline so the user can review decisions in the context file
 - After discussion completes, auto-advance to plan-phase (existing behavior)
+</step>
+
+<step name="handle_branching">
+If `branching_strategy` is not `"phase"` or `branch_name` is empty/null: skip.
+
+Otherwise, check the current branch:
+```bash
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || true)
+```
+
+**If `CURRENT_BRANCH` is `main` or `master`:**
+```bash
+git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+```
+
+This keeps phase discussion/planning work off the default branch when phase-based branching is enabled, while preserving any existing non-main feature branch the user is already on.
 </step>
 
 <step name="check_existing">

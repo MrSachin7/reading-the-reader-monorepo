@@ -6,11 +6,15 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSessionRequest, ExperimentSessionSnapshot>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentRuntimeAuthority _runtimeAuthority;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
 
-    public UpsertReadingSessionEndpoint(IExperimentSessionManager experimentSessionManager)
+    public UpsertReadingSessionEndpoint(
+        IExperimentRuntimeAuthority runtimeAuthority,
+        IExperimentSessionQueryService experimentSessionQueryService)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _runtimeAuthority = runtimeAuthority;
+        _experimentSessionQueryService = experimentSessionQueryService;
     }
 
     public override void Configure()
@@ -23,7 +27,7 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
     {
         try
         {
-            await _experimentSessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            await _runtimeAuthority.SetReadingSessionAsync(new UpsertReadingSessionCommand(
                 req.DocumentId,
                 req.Title,
                 req.Markdown,
@@ -40,7 +44,7 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                     req.Palette,
                     req.AppFont)), ct);
 
-            await Send.OkAsync(_experimentSessionManager.GetCurrentSnapshot(), ct);
+            await Send.OkAsync(_experimentSessionQueryService.GetCurrentSnapshot(), ct);
         }
         catch (InvalidOperationException ex)
         {

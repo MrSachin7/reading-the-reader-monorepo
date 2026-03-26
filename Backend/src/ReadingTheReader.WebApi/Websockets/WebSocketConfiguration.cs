@@ -35,7 +35,7 @@ public static class WebSocketConfiguration
     {
         app.UseWebSockets();
 
-        app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connections, IExperimentSessionManager sessionManager) =>
+        app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connections, IExperimentCommandIngress ingress) =>
         {
             if (!context.WebSockets.IsWebSocketRequest)
             {
@@ -73,7 +73,8 @@ public static class WebSocketConfiguration
                     }
 
                     Console.WriteLine($"WebSocket command received. ConnectionId={connectionId}, Type={envelope.Type}");
-                    await sessionManager.HandleInboundMessageAsync(connectionId, envelope.Type, envelope.Payload, context.RequestAborted);
+                    var command = RealtimeIngressCommandFactory.Create(connectionId, envelope.Type, envelope.Payload);
+                    await ingress.HandleAsync(command, context.RequestAborted);
                 }
             }
             catch (OperationCanceledException)
@@ -82,7 +83,7 @@ public static class WebSocketConfiguration
             }
             finally
             {
-                await sessionManager.HandleClientDisconnectedAsync(connectionId, CancellationToken.None);
+                await ingress.HandleAsync(new DisconnectClientRealtimeCommand(connectionId), CancellationToken.None);
                 connections.Remove(connectionId);
                 if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived)
                 {

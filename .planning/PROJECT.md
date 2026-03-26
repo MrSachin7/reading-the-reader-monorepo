@@ -21,6 +21,7 @@ Build a defendable, modular adaptive reading platform that supports real Tobii-b
 - [x] Researchers can observe a real-time mirrored participant view and manually apply interventions from a second-screen interface - existing
 - [x] The system streams gaze data and tracks live session state through REST plus WebSocket transport - existing
 - [x] The system exports replay-ready session data and supports JSON/CSV export and replay workflows - existing
+- [x] Phase 1 established one backend experiment authority plus explicit ingress, reader-observation, sensing, and query seams for thesis-defensible modularity - Phase 1
 
 ### Active
 
@@ -60,11 +61,11 @@ The primary end-to-end scenarios that must work for thesis defense are: eye trac
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Prioritize a modular adaptive reading platform over a narrow feature demo | The thesis must defend architecture, extensibility, and experiment readiness, not just isolated UI behavior | - Pending |
+| Prioritize a modular adaptive reading platform over a narrow feature demo | The thesis must defend architecture, extensibility, and experiment readiness, not just isolated UI behavior | Confirmed in Phase 1 through authority, ingress, observation, sensing, and query seam extraction |
 | Treat the system as both participant-facing and researcher-facing, with a slight bias toward researcher workflows | Researchers are the operators of the platform and need dependable experiment control | - Pending |
 | Support external AI-driven decision providers without implementing AI models in this thesis repo | AI implementation is owned elsewhere, but the platform must still prove clean integration boundaries | - Pending |
 | Standardize on Markdown reading content and explicitly exclude PDF support | Time is limited and Markdown is sufficient for the thesis reading interface and experiments | - Pending |
-| Use the existing brownfield implementation as the foundation and focus thesis work on strengthening, validating, and documenting it | Many core flows already exist, so the best thesis value is in making the system defensible and extensible | - Pending |
+| Use the existing brownfield implementation as the foundation and focus thesis work on strengthening, validating, and documenting it | Many core flows already exist, so the best thesis value is in making the system defensible and extensible | Confirmed in Phase 1 by refactoring existing runtime flows instead of replacing them wholesale |
 
 ## Evolution
 
@@ -84,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 after initialization*
+*Last updated: 2026-03-26 after Phase 1 execution*
