@@ -6,14 +6,14 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class DownloadExperimentExportEndpoint : EndpointWithoutRequest
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
     private readonly IExperimentReplayExportSerializer _serializer;
 
     public DownloadExperimentExportEndpoint(
-        IExperimentSessionManager experimentSessionManager,
+        IExperimentSessionQueryService experimentSessionQueryService,
         IExperimentReplayExportSerializer serializer)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _experimentSessionQueryService = experimentSessionQueryService;
         _serializer = serializer;
     }
 
@@ -37,7 +37,7 @@ public sealed class DownloadExperimentExportEndpoint : EndpointWithoutRequest
         }
 
         var format = ExperimentReplayExportFormats.Normalize(formatQuery);
-        var exportDocument = await _experimentSessionManager.GetLatestReplayExportAsync(ct);
+        var exportDocument = await _experimentSessionQueryService.GetLatestReplayExportAsync(ct);
         if (exportDocument is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;

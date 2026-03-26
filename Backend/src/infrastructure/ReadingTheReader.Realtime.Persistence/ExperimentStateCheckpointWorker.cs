@@ -7,16 +7,16 @@ namespace ReadingTheReader.Realtime.Persistence;
 
 public sealed class ExperimentStateCheckpointWorker : BackgroundService
 {
-    private readonly IExperimentSessionManager _sessionManager;
+    private readonly IExperimentSessionQueryService _sessionQueryService;
     private readonly IExperimentStateStoreAdapter _stateStoreAdapter;
     private readonly TimeSpan _checkpointInterval;
 
     public ExperimentStateCheckpointWorker(
-        IExperimentSessionManager sessionManager,
+        IExperimentSessionQueryService sessionQueryService,
         IExperimentStateStoreAdapter stateStoreAdapter,
         IOptions<ExperimentPersistenceOptions> options)
     {
-        _sessionManager = sessionManager;
+        _sessionQueryService = sessionQueryService;
         _stateStoreAdapter = stateStoreAdapter;
 
         var intervalMs = options.Value.CheckpointIntervalMilliseconds;
@@ -42,7 +42,7 @@ public sealed class ExperimentStateCheckpointWorker : BackgroundService
                     break;
                 }
 
-                var snapshot = _sessionManager.GetCurrentSnapshot();
+                var snapshot = _sessionQueryService.GetCurrentSnapshot();
                 await _stateStoreAdapter.SaveSnapshotAsync(snapshot, stoppingToken);
             }
             catch (OperationCanceledException)

@@ -12,7 +12,7 @@ This roadmap treats Reading the Reader as a brownfield thesis platform that alre
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Experiment Authority & Sensing Boundary** - Isolate sensing and orchestration so the thesis has a defensible core runtime.
+- [x] **Phase 1: Experiment Authority & Sensing Boundary** - Isolate sensing and orchestration so the thesis has a defensible core runtime.
 - [ ] **Phase 2: Swappable Decision Strategies** - Make decision logic pluggable for manual, rule-based, hybrid, and external-provider modes.
 - [ ] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
 - [ ] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
@@ -33,11 +33,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A contributor can identify distinct ownership for sensing, session orchestration, decision strategy, intervention execution, researcher controls, and participant adaptation without ambiguous cross-layer coupling.
 **Plans**: 5 plans
 Plans:
-- [ ] 01-01-PLAN.md — Add characterization tests and guardrails for runtime authority plus ingress regression coverage.
-- [ ] 01-02-PLAN.md — Extract typed websocket command ingress in front of the backend runtime authority.
-- [ ] 01-03-PLAN.md — Separate reader-observation handling from the orchestration authority and align participant websocket reporting.
-- [ ] 01-04-PLAN.md — Harden the device-facing sensing seam behind application-facing sensing operations.
-- [ ] 01-05-PLAN.md — Finish DI and REST contract cleanup so transport depends on focused authority, ingress, sensing, observation, and query interfaces.
+- [x] 01-01-PLAN.md - Add characterization tests and guardrails for runtime authority plus ingress regression coverage.
+- [x] 01-02-PLAN.md - Extract typed websocket command ingress in front of the backend runtime authority.
+- [x] 01-03-PLAN.md - Separate reader-observation handling from the orchestration authority and align participant websocket reporting.
+- [x] 01-04-PLAN.md - Harden the device-facing sensing seam behind application-facing sensing operations.
+- [x] 01-05-PLAN.md - Finish DI and REST contract cleanup so transport depends on focused authority, ingress, sensing, observation, and query interfaces.
 
 ### Phase 2: Swappable Decision Strategies
 **Goal**: The adaptive runtime can swap decision strategies cleanly without destabilizing the rest of the platform.
@@ -124,7 +124,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiment Authority & Sensing Boundary | 0/5 | Planned | - |
+| 1. Experiment Authority & Sensing Boundary | 5/5 | Completed | 2026-03-26 |
 | 2. Swappable Decision Strategies | 0/TBD | Not started | - |
 | 3. Pluggable Intervention Modules | 0/TBD | Not started | - |
 | 4. Device Setup & Calibration Workflow | 0/TBD | Not started | - |

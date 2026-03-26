@@ -5,11 +5,11 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class GetSavedExperimentReplayExportByIdEndpoint : EndpointWithoutRequest<ExperimentReplayExport>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
 
-    public GetSavedExperimentReplayExportByIdEndpoint(IExperimentSessionManager experimentSessionManager)
+    public GetSavedExperimentReplayExportByIdEndpoint(IExperimentSessionQueryService experimentSessionQueryService)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _experimentSessionQueryService = experimentSessionQueryService;
     }
 
     public override void Configure()
@@ -21,7 +21,7 @@ public sealed class GetSavedExperimentReplayExportByIdEndpoint : EndpointWithout
     public override async Task HandleAsync(CancellationToken ct)
     {
         var id = Route<string>("id");
-        var export = await _experimentSessionManager.GetSavedReplayExportByIdAsync(id ?? string.Empty, ct);
+        var export = await _experimentSessionQueryService.GetSavedReplayExportByIdAsync(id ?? string.Empty, ct);
         if (export is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;

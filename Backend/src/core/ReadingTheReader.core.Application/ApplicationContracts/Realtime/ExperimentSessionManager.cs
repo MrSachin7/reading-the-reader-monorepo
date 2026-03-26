@@ -1,18 +1,12 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 
-public sealed class ExperimentSessionManager : IExperimentSessionManager
+public sealed class ExperimentSessionManager : IExperimentSessionManager, IExperimentRuntimeAuthority, IExperimentSessionQueryService
 {
     private const int MaxRecentInterventions = 25;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
 
     private readonly IEyeTrackerAdapter _eyeTrackerAdapter;
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
@@ -521,118 +515,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
             _liveReadingSession.Copy());
     }
 
-    public async Task HandleInboundMessageAsync(string connectionId, string messageType, JsonElement payload, CancellationToken ct = default)
-    {
-        switch (messageType)
-        {
-            case MessageTypes.Ping:
-                await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.Pong, new
-                {
-                    serverTimeUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                }, ct);
-                break;
-
-            case MessageTypes.StartExperiment:
-                await StartSessionAsync(ct);
-                break;
-
-            case MessageTypes.StopExperiment:
-                await StopSessionAsync(ct);
-                break;
-
-            case MessageTypes.SubscribeGazeData:
-                await SubscribeGazeDataAsync(connectionId, ct);
-                break;
-
-            case MessageTypes.UnsubscribeGazeData:
-                await UnsubscribeGazeDataAsync(connectionId, ct);
-                break;
-
-            case MessageTypes.GetExperimentState:
-                await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.ExperimentState, GetCurrentSnapshot(), ct);
-                break;
-
-            case MessageTypes.RegisterParticipantView:
-                await RegisterParticipantViewAsync(connectionId, ct);
-                break;
-
-            case MessageTypes.UnregisterParticipantView:
-                await UnregisterParticipantViewAsync(connectionId, ct);
-                break;
-
-            case MessageTypes.ParticipantViewportUpdated:
-                if (TryDeserializePayload<UpdateParticipantViewportCommand>(payload, out var viewportCommand))
-                {
-                    await UpdateParticipantViewportAsync(connectionId, viewportCommand!, ct);
-                    return;
-                }
-
-                await SendErrorAsync(connectionId, "Participant viewport payload is invalid.", ct);
-                break;
-
-            case MessageTypes.ReadingFocusUpdated:
-                if (TryDeserializePayload<UpdateReadingFocusCommand>(payload, out var focusCommand))
-                {
-                    await UpdateReadingFocusAsync(focusCommand!, ct);
-                    return;
-                }
-
-                await SendErrorAsync(connectionId, "Reading focus payload is invalid.", ct);
-                break;
-
-            case MessageTypes.ReadingAttentionSummaryUpdated:
-                if (TryDeserializePayload<UpdateReadingAttentionSummaryCommand>(payload, out var attentionSummaryCommand))
-                {
-                    await UpdateReadingAttentionSummaryAsync(attentionSummaryCommand!, ct);
-                    return;
-                }
-
-                await SendErrorAsync(connectionId, "Reading attention summary payload is invalid.", ct);
-                break;
-
-            case MessageTypes.ApplyIntervention:
-                if (TryDeserializePayload<ApplyInterventionCommand>(payload, out var interventionCommand))
-                {
-                    await ApplyInterventionAsync(interventionCommand!, ct);
-                    return;
-                }
-
-                await SendErrorAsync(connectionId, "Intervention payload is invalid.", ct);
-                break;
-            case MessageTypes.ResearcherCommand:
-                if (payload.ValueKind == JsonValueKind.Object &&
-                    payload.TryGetProperty("command", out var command) &&
-                    command.ValueKind == JsonValueKind.String)
-                {
-                    var commandValue = command.GetString();
-                    if (string.Equals(commandValue, MessageTypes.StartExperiment, StringComparison.OrdinalIgnoreCase))
-                    {
-                        await StartSessionAsync(ct);
-                        return;
-                    }
-
-                    if (string.Equals(commandValue, MessageTypes.StopExperiment, StringComparison.OrdinalIgnoreCase))
-                    {
-                        await StopSessionAsync(ct);
-                        return;
-                    }
-                }
-
-                await SendErrorAsync(connectionId, "Unsupported researcher command", ct);
-                break;
-
-            default:
-                await SendErrorAsync(connectionId, $"Unsupported message type '{messageType}'", ct);
-                break;
-        }
-    }
-
-    public async Task HandleClientDisconnectedAsync(string connectionId, CancellationToken ct = default)
-    {
-        await UnsubscribeGazeDataAsync(connectionId, ct);
-        await UnregisterParticipantViewAsync(connectionId, ct);
-    }
-
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
     {
         if (_gazeSubscribers.IsEmpty)
@@ -649,7 +531,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         }
     }
 
-    private async Task SubscribeGazeDataAsync(string connectionId, CancellationToken ct)
+    public async ValueTask SubscribeGazeDataAsync(string connectionId, CancellationToken ct = default)
     {
         await _lifecycleGate.WaitAsync(ct);
         try
@@ -676,7 +558,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         }
     }
 
-    private async Task UnsubscribeGazeDataAsync(string connectionId, CancellationToken ct)
+    public async ValueTask UnsubscribeGazeDataAsync(string connectionId, CancellationToken ct = default)
     {
         await _lifecycleGate.WaitAsync(ct);
         try
@@ -690,7 +572,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         }
     }
 
-    private async Task UnregisterParticipantViewAsync(string connectionId, CancellationToken ct)
+    public async ValueTask DisconnectParticipantViewAsync(string connectionId, CancellationToken ct = default)
     {
         ParticipantViewportSnapshot? viewport = null;
         ReadingFocusSnapshot? focus = null;
@@ -1059,28 +941,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager
         }
 
         return items;
-    }
-
-    private static bool TryDeserializePayload<T>(JsonElement payload, out T? value)
-    {
-        try
-        {
-            value = payload.Deserialize<T>(JsonOptions);
-            return value is not null;
-        }
-        catch
-        {
-            value = default;
-            return false;
-        }
-    }
-
-    private async Task SendErrorAsync(string connectionId, string message, CancellationToken ct)
-    {
-        await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.Error, new
-        {
-            message
-        }, ct);
     }
 
     private static double Clamp(double value, double min, double max)

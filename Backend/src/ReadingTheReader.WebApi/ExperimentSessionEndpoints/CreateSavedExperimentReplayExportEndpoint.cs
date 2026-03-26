@@ -6,11 +6,11 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class CreateSavedExperimentReplayExportEndpoint : Endpoint<SaveExperimentReplayExportRequest, SavedExperimentReplayExportSummary>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentRuntimeAuthority _runtimeAuthority;
 
-    public CreateSavedExperimentReplayExportEndpoint(IExperimentSessionManager experimentSessionManager)
+    public CreateSavedExperimentReplayExportEndpoint(IExperimentRuntimeAuthority runtimeAuthority)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _runtimeAuthority = runtimeAuthority;
     }
 
     public override void Configure()
@@ -30,7 +30,7 @@ public sealed class CreateSavedExperimentReplayExportEndpoint : Endpoint<SaveExp
                 return;
             }
 
-            var saved = await _experimentSessionManager.SaveLatestReplayExportAsync(
+            var saved = await _runtimeAuthority.SaveLatestReplayExportAsync(
                 new SaveExperimentReplayExportCommand(req.Name, req.Format),
                 ct);
 

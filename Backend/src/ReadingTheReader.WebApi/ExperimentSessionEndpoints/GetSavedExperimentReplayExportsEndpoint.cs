@@ -5,11 +5,11 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class GetSavedExperimentReplayExportsEndpoint : EndpointWithoutRequest<IReadOnlyCollection<SavedExperimentReplayExportSummary>>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
 
-    public GetSavedExperimentReplayExportsEndpoint(IExperimentSessionManager experimentSessionManager)
+    public GetSavedExperimentReplayExportsEndpoint(IExperimentSessionQueryService experimentSessionQueryService)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _experimentSessionQueryService = experimentSessionQueryService;
     }
 
     public override void Configure()
@@ -20,7 +20,7 @@ public sealed class GetSavedExperimentReplayExportsEndpoint : EndpointWithoutReq
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var items = await _experimentSessionManager.ListSavedReplayExportsAsync(ct);
+        var items = await _experimentSessionQueryService.ListSavedReplayExportsAsync(ct);
         await Send.OkAsync(items, ct);
     }
 }

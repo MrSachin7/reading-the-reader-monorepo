@@ -35,15 +35,15 @@ This is a brownfield thesis platform. Some v1 requirements are already partly or
 
 ### Modularity and Extensibility
 
-- [ ] **MOD-01**: System exposes a stable sensing boundary that isolates eye-tracker integration from decision-making and UI adaptation logic.
+- [x] **MOD-01**: System exposes a stable sensing boundary that isolates eye-tracker integration from decision-making and UI adaptation logic.
 - [ ] **MOD-02**: System exposes a stable decision-strategy boundary so manual, rule-based, hybrid, and external AI-driven strategies can be added or swapped without rewriting the whole application.
 - [ ] **MOD-03**: System exposes a stable intervention boundary so new micro-intervention modules can be added with additive code rather than invasive rewrites.
 - [ ] **MOD-04**: Intervention modules declare their supported parameters or required inputs clearly enough for researchers and future developers to understand how to use them.
-- [ ] **MOD-05**: Architecture and code organization preserve strict separation between sensing, session orchestration, decision strategy, intervention application, researcher controls, and participant UI adaptation.
+- [x] **MOD-05**: Architecture and code organization preserve strict separation between sensing, session orchestration, decision strategy, intervention application, researcher controls, and participant UI adaptation.
 
 ### Context Preservation and Reading Flow
 
-- [ ] **FLOW-01**: System preserves the participant’s reading position during layout-changing interventions strongly enough that reading can continue without obvious loss of place.
+- [ ] **FLOW-01**: System preserves the participant's reading position during layout-changing interventions strongly enough that reading can continue without obvious loss of place.
 - [ ] **FLOW-02**: System anchors the currently read text region or equivalent reading context during layout-changing interventions.
 - [ ] **FLOW-03**: Failures or degraded cases in context preservation are observable or logged for later inspection.
 - [ ] **FLOW-04**: Micro-interventions are applied in a way intended to minimize perceived disruption and support rhythmic reading flow.
@@ -100,11 +100,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIVE-03 | Phase 6 | Pending |
 | LIVE-04 | Phase 6 | Pending |
 | LIVE-05 | Phase 6 | Pending |
-| MOD-01 | Phase 1 | Pending |
+| MOD-01 | Phase 1 | Validated (Phase 1) |
 | MOD-02 | Phase 2 | Pending |
 | MOD-03 | Phase 3 | Pending |
 | MOD-04 | Phase 3 | Pending |
-| MOD-05 | Phase 1 | Pending |
+| MOD-05 | Phase 1 | Validated (Phase 1) |
 | FLOW-01 | Phase 7 | Pending |
 | FLOW-02 | Phase 7 | Pending |
 | FLOW-03 | Phase 7 | Pending |
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after roadmap creation*
+*Last updated: 2026-03-26 after Phase 1 execution*
