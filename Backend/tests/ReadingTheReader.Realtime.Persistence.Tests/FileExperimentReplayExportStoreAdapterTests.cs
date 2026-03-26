@@ -82,6 +82,10 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             null,
             [],
             attentionSummary);
+        var decisionConfiguration = new DecisionConfigurationSnapshot(
+            "Manual only",
+            DecisionProviderIds.Manual,
+            DecisionExecutionModes.Advisory);
         var initialSnapshot = new ExperimentSessionSnapshot(
             sessionId,
             true,
@@ -94,7 +98,9 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             0,
             null,
             1,
-            readingSession);
+            readingSession,
+            decisionConfiguration,
+            DecisionRuntimeStateSnapshot.Empty);
         var finalSnapshot = initialSnapshot with
         {
             IsActive = false,
@@ -114,7 +120,7 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
                 1_710_001_004_000,
                 4_000,
                 "CSV Export"),
-            new ExperimentReplayStatistics(1, 1, 1, 1, 1, 0),
+            new ExperimentReplayStatistics(1, 1, 1, 1, 1, 0, 0),
             initialSnapshot,
             finalSnapshot,
             [new ExperimentLifecycleEventRecord(1, "session-started", "system", 1_710_001_000_000, 0)],
@@ -122,6 +128,7 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             [new ReadingSessionStateRecord(3, "reading-session-configured", 1_710_001_000_400, 400, readingSession)],
             [new ParticipantViewportEventRecord(4, 1_710_001_001_500, 1500, viewport)],
             [new ReadingFocusEventRecord(5, 1_710_001_001_600, 1600, focus)],
+            [],
             []);
     }
 }

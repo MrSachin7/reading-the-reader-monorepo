@@ -6,7 +6,16 @@ import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { applyInterventionCommand, subscribeToGaze, updateReadingAttentionSummary } from "@/lib/gaze-socket"
+import {
+  applyInterventionCommand,
+  approveDecisionProposal,
+  pauseDecisionAutomation,
+  rejectDecisionProposal,
+  resumeDecisionAutomation,
+  setDecisionExecutionMode,
+  subscribeToGaze,
+  updateReadingAttentionSummary,
+} from "@/lib/gaze-socket"
 import { EMPTY_READING_ATTENTION_SUMMARY } from "@/lib/reading-attention-summary"
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
@@ -350,6 +359,8 @@ function ResearcherCurrentLiveBody({
       <div className="mx-auto grid h-full w-full max-w-[1680px] min-h-0 gap-4 overflow-hidden xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
         <LiveControlsColumn
           followParticipant={followParticipant}
+          decisionConfiguration={session.decisionConfiguration}
+          decisionState={session.decisionState}
           activeWord={activeWord}
           participantName={session.participant?.name ?? null}
           sampleRateHz={sampleRateHz}
@@ -370,6 +381,11 @@ function ResearcherCurrentLiveBody({
           }
           onReaderOptionChange={setReaderOption}
           onCommitIntervention={commitIntervention}
+          onApproveProposal={(proposalId) => approveDecisionProposal(proposalId)}
+          onRejectProposal={(proposalId) => rejectDecisionProposal(proposalId)}
+          onPauseAutomation={() => pauseDecisionAutomation()}
+          onResumeAutomation={() => resumeDecisionAutomation()}
+          onExecutionModeChange={(executionMode) => setDecisionExecutionMode(executionMode)}
         />
 
         <LiveReaderColumn
@@ -388,6 +404,8 @@ function ResearcherCurrentLiveBody({
         <LiveMetadataColumn
           session={session}
           readingSession={readingSession}
+          decisionConfiguration={session.decisionConfiguration}
+          decisionState={session.decisionState}
           activeWord={activeWord}
           activeBlockLix={activeBlockLix}
           documentLix={documentLix}

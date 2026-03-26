@@ -27,11 +27,13 @@ export {
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
+  useUpdateDecisionConfigurationMutation,
   useUpsertReadingSessionMutation,
 } from "./experiment-session-api"
 export type {
   ReplayExportFormat,
   SavedExperimentReplayExportSummary,
+  UpdateDecisionConfigurationPayload,
   UpsertReadingSessionPayload,
 } from "./experiment-session-api"
 export { eyetrackerApi, useGetEyetrackersQuery, useSelectEyetrackerMutation } from "./eyetracker-api"

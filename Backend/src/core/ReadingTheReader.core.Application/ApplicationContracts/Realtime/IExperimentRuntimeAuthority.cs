@@ -12,6 +12,31 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
+    ValueTask<DecisionRealtimeUpdateSnapshot> UpdateDecisionConfigurationAsync(
+        DecisionConfigurationSnapshot configuration,
+        bool automationPaused,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> ApproveDecisionProposalAsync(
+        Guid proposalId,
+        string source,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> RejectDecisionProposalAsync(
+        Guid proposalId,
+        string source,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> SetDecisionAutomationPausedAsync(
+        bool automationPaused,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> SetDecisionExecutionModeAsync(
+        string executionMode,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> EvaluateDecisionStrategiesAsync(CancellationToken ct = default);
+
     ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(
         SaveExperimentReplayExportCommand command,
         CancellationToken ct = default);

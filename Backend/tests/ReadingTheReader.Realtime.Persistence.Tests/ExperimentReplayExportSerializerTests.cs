@@ -8,7 +8,7 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 public sealed class ExperimentReplayExportSerializerTests
 {
     [Fact]
-    public void SerializeCsv_AndDeserialize_RoundTripsReplayExport()
+    public void DecisionProposalEvents_RoundTripReplayExport()
     {
         var serializer = new ExperimentReplayExportSerializer();
         var export = CreateReplayExport();
@@ -67,6 +67,28 @@ public sealed class ExperimentReplayExportSerializerTests
             intervention,
             [intervention],
             attentionSummary);
+        var decisionConfiguration = new DecisionConfigurationSnapshot(
+            "Rule-based advisory",
+            DecisionProviderIds.RuleBased,
+            DecisionExecutionModes.Advisory);
+        var proposal = new DecisionProposalSnapshot(
+            Guid.Parse("edb79e0c-7766-426d-a5a0-6d8decc68d3f"),
+            "Rule-based advisory",
+            DecisionProviderIds.RuleBased,
+            DecisionExecutionModes.Advisory,
+            DecisionProposalStatus.Approved,
+            new DecisionSignalSnapshot("attention-summary", "Token dwell time reached 340 ms.", 1_710_000_001_900, 0.66),
+            "Increase font size to reduce local reading strain.",
+            1_710_000_001_900,
+            1_710_000_002_000,
+            "researcher",
+            intervention.Id,
+            new ApplyInterventionCommand(
+                DecisionProviderIds.RuleBased,
+                "attention-summary",
+                "Increase font size to reduce local reading strain.",
+                new ReadingPresentationPatch(null, 20, null, null, null, null),
+                new ReaderAppearancePatch(null, null, null)));
         var initialSnapshot = new ExperimentSessionSnapshot(
             sessionId,
             true,
@@ -79,7 +101,9 @@ public sealed class ExperimentReplayExportSerializerTests
             0,
             null,
             1,
-            readingSession);
+            readingSession,
+            decisionConfiguration,
+            new DecisionRuntimeStateSnapshot(false, null, [proposal]));
         var finalSnapshot = initialSnapshot with
         {
             IsActive = false,
@@ -99,7 +123,7 @@ public sealed class ExperimentReplayExportSerializerTests
                 1_710_000_010_000,
                 10_000,
                 "Sample export"),
-            new ExperimentReplayStatistics(2, 1, 1, 1, 1, 1),
+            new ExperimentReplayStatistics(2, 1, 1, 1, 1, 1, 1),
             initialSnapshot,
             finalSnapshot,
             [new ExperimentLifecycleEventRecord(1, "session-started", "system", 1_710_000_000_000, 0)],
@@ -107,6 +131,7 @@ public sealed class ExperimentReplayExportSerializerTests
             [new ReadingSessionStateRecord(3, "reading-session-configured", 1_710_000_000_500, 500, readingSession)],
             [new ParticipantViewportEventRecord(4, 1_710_000_001_500, 1500, viewport)],
             [new ReadingFocusEventRecord(5, 1_710_000_001_600, 1600, focus)],
-            [new InterventionEventRecord(6, 1_710_000_002_000, 2000, intervention)]);
+            [new DecisionProposalEventRecord(6, 1_710_000_002_000, 2000, proposal)],
+            [new InterventionEventRecord(7, 1_710_000_002_000, 2000, intervention)]);
     }
 }

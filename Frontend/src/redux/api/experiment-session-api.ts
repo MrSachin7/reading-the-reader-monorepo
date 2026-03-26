@@ -30,6 +30,13 @@ export type SavedExperimentReplayExportSummary = {
   exportedAtUnixMs: number
 }
 
+export type UpdateDecisionConfigurationPayload = {
+  conditionLabel: string
+  providerId: string
+  executionMode: string
+  automationPaused: boolean
+}
+
 export const experimentSessionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getExperimentSession: builder.query<ExperimentSessionSnapshot, void>({
@@ -42,6 +49,17 @@ export const experimentSessionApi = baseApi.injectEndpoints({
     >({
       query: (body) => ({
         url: "/experiment-session/reading-session",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    updateDecisionConfiguration: builder.mutation<
+      ExperimentSessionSnapshot,
+      UpdateDecisionConfigurationPayload
+    >({
+      query: (body) => ({
+        url: "/experiment-session/decision-configuration",
         method: "PUT",
         body,
       }),
@@ -115,5 +133,6 @@ export const {
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
+  useUpdateDecisionConfigurationMutation,
   useUpsertReadingSessionMutation,
 } = experimentSessionApi

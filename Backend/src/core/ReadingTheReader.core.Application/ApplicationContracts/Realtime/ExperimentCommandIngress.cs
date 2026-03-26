@@ -80,6 +80,32 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 await _runtimeAuthority.ApplyInterventionAsync(applyIntervention.Payload, ct);
                 return;
 
+            case ApproveDecisionProposalRealtimeCommand approveDecisionProposal:
+                await _runtimeAuthority.ApproveDecisionProposalAsync(
+                    approveDecisionProposal.ProposalId,
+                    "researcher",
+                    ct);
+                return;
+
+            case RejectDecisionProposalRealtimeCommand rejectDecisionProposal:
+                await _runtimeAuthority.RejectDecisionProposalAsync(
+                    rejectDecisionProposal.ProposalId,
+                    "researcher",
+                    ct);
+                return;
+
+            case PauseDecisionAutomationRealtimeCommand:
+                await _runtimeAuthority.SetDecisionAutomationPausedAsync(true, ct);
+                return;
+
+            case ResumeDecisionAutomationRealtimeCommand:
+                await _runtimeAuthority.SetDecisionAutomationPausedAsync(false, ct);
+                return;
+
+            case SetDecisionExecutionModeRealtimeCommand setDecisionExecutionMode:
+                await _runtimeAuthority.SetDecisionExecutionModeAsync(setDecisionExecutionMode.ExecutionMode, ct);
+                return;
+
             case DisconnectClientRealtimeCommand disconnect:
                 await _runtimeAuthority.UnsubscribeGazeDataAsync(disconnect.ConnectionId, ct);
                 await _readerObservationService.DisconnectParticipantViewAsync(disconnect.ConnectionId, ct);

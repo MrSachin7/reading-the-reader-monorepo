@@ -28,5 +28,11 @@ public static class MessageTypes
     public const string ReadingFocusUpdated = "readingFocusUpdated";
     public const string ReadingAttentionSummaryUpdated = "readingAttentionSummaryUpdated";
     public const string ApplyIntervention = "applyIntervention";
+    public const string DecisionProposalChanged = "decisionProposalChanged";
+    public const string ApproveDecisionProposal = "approveDecisionProposal";
+    public const string RejectDecisionProposal = "rejectDecisionProposal";
+    public const string PauseDecisionAutomation = "pauseDecisionAutomation";
+    public const string ResumeDecisionAutomation = "resumeDecisionAutomation";
+    public const string SetDecisionExecutionMode = "setDecisionExecutionMode";
     public const string Error = "error";
 }

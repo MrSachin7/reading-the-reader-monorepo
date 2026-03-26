@@ -7,12 +7,14 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 public sealed class ExperimentSessionManager : IExperimentSessionManager, IExperimentRuntimeAuthority, IExperimentSessionQueryService
 {
     private const int MaxRecentInterventions = 25;
+    private const int MaxRecentDecisionHistory = 25;
 
     private readonly IEyeTrackerAdapter _eyeTrackerAdapter;
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
     private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
     private readonly IExperimentReplayExportStoreAdapter _experimentReplayExportStoreAdapter;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
+    private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
     private readonly ConcurrentDictionary<string, byte> _participantViewConnections = new();
@@ -27,12 +29,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private CalibrationSessionSnapshot _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
     private ExperimentSession _session = ExperimentSession.Inactive;
     private LiveReadingSessionSnapshot _liveReadingSession = LiveReadingSessionSnapshot.Empty;
+    private DecisionConfigurationSnapshot _decisionConfiguration = DecisionConfigurationSnapshot.Default;
+    private DecisionRuntimeStateSnapshot _decisionState = DecisionRuntimeStateSnapshot.Empty;
     private ExperimentSessionSnapshot? _initialSnapshot;
     private List<ExperimentLifecycleEventRecord> _lifecycleEvents = [];
     private List<GazeSampleRecord> _gazeSamples = [];
     private List<ReadingSessionStateRecord> _readingSessionStates = [];
     private List<ParticipantViewportEventRecord> _participantViewportEvents = [];
     private List<ReadingFocusEventRecord> _readingFocusEvents = [];
+    private List<DecisionProposalEventRecord> _decisionProposalEvents = [];
     private List<InterventionEventRecord> _interventionEvents = [];
 
     public ExperimentSessionManager(
@@ -40,13 +45,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         IClientBroadcasterAdapter clientBroadcasterAdapter,
         IExperimentStateStoreAdapter experimentStateStoreAdapter,
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
-        IReadingInterventionRuntime readingInterventionRuntime)
+        IReadingInterventionRuntime readingInterventionRuntime,
+        IDecisionStrategyCoordinator decisionStrategyCoordinator)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
         _experimentStateStoreAdapter = experimentStateStoreAdapter;
         _experimentReplayExportStoreAdapter = experimentReplayExportStoreAdapter;
         _readingInterventionRuntime = readingInterventionRuntime;
+        _decisionStrategyCoordinator = decisionStrategyCoordinator;
 
         RestoreLatestSnapshot();
     }
@@ -220,6 +227,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ParticipantViewportChanged, viewport, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
         return viewport;
     }
 
@@ -253,6 +261,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingFocusChanged, focus, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
         return focus;
     }
 
@@ -278,6 +287,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
         return summary;
     }
 
@@ -287,41 +297,37 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         InterventionEventSnapshot? interventionEvent;
         LiveReadingSessionSnapshot? nextState = null;
+        DecisionRealtimeUpdateSnapshot? decisionUpdate = null;
 
         await _lifecycleGate.WaitAsync(ct);
         try
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var execution = _readingInterventionRuntime.Apply(
-                _liveReadingSession.Presentation,
-                _liveReadingSession.Appearance,
-                command,
-                updatedAtUnixMs);
+            var supersededProposal = SupersedeActiveProposal(updatedAtUnixMs, "researcher");
+            var execution = ApplyInterventionCore(command, updatedAtUnixMs);
 
             if (execution is null)
             {
+                if (supersededProposal is not null)
+                {
+                    await SaveCurrentSnapshotAsync(ct);
+                }
                 return null;
             }
 
-            _liveReadingSession = _liveReadingSession with
-            {
-                Presentation = execution.Presentation.Copy(),
-                Appearance = execution.Appearance.Copy(),
-                LatestIntervention = execution.Event.Copy(),
-                RecentInterventions = BuildRecentInterventionHistory(
-                    _liveReadingSession.RecentInterventions,
-                    execution.Event)
-            };
-
             interventionEvent = execution.Event.Copy();
             nextState = _liveReadingSession.Copy();
-            RecordInterventionEvent(updatedAtUnixMs, interventionEvent);
-            RecordReadingSessionState("intervention-applied", updatedAtUnixMs, nextState);
+            decisionUpdate = supersededProposal is null ? null : BuildDecisionRealtimeUpdate();
             await SaveCurrentSnapshotAsync(ct);
         }
         finally
         {
             _lifecycleGate.Release();
+        }
+
+        if (decisionUpdate is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, decisionUpdate, ct);
         }
 
         if (interventionEvent is not null && nextState is not null)
@@ -331,6 +337,303 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         return interventionEvent;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> UpdateDecisionConfigurationAsync(
+        DecisionConfigurationSnapshot configuration,
+        bool automationPaused,
+        CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var normalizedConfiguration = NormalizeDecisionConfiguration(configuration);
+            var providerChanged = !string.Equals(
+                _decisionConfiguration.ProviderId,
+                normalizedConfiguration.ProviderId,
+                StringComparison.Ordinal);
+            var executionModeChanged = !string.Equals(
+                _decisionConfiguration.ExecutionMode,
+                normalizedConfiguration.ExecutionMode,
+                StringComparison.Ordinal);
+
+            _decisionConfiguration = normalizedConfiguration;
+            _decisionState = _decisionState with
+            {
+                AutomationPaused = automationPaused
+            };
+
+            if (providerChanged || executionModeChanged)
+            {
+                SupersedeActiveProposal(updatedAtUnixMs, "system");
+            }
+
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
+        return update;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> ApproveDecisionProposalAsync(
+        Guid proposalId,
+        string source,
+        CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+        InterventionEventSnapshot? interventionEvent;
+        LiveReadingSessionSnapshot? nextState;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            if (_decisionState.ActiveProposal is null ||
+                _decisionState.ActiveProposal.ProposalId != proposalId)
+            {
+                throw new InvalidOperationException("No active decision proposal matches the supplied id.");
+            }
+
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var execution = ApplyInterventionCore(_decisionState.ActiveProposal.ProposedIntervention, updatedAtUnixMs);
+            var resolvedProposal = _decisionState.ActiveProposal.WithResolution(
+                DecisionProposalStatus.Approved,
+                updatedAtUnixMs,
+                NormalizeDecisionResolutionSource(source),
+                execution?.Event.Id);
+
+            _decisionState = new DecisionRuntimeStateSnapshot(
+                _decisionState.AutomationPaused,
+                null,
+                BuildRecentProposalHistory(_decisionState.RecentProposalHistory, resolvedProposal));
+
+            RecordDecisionProposalEvent(updatedAtUnixMs, resolvedProposal);
+            interventionEvent = execution?.Event.Copy();
+            nextState = execution is null ? null : _liveReadingSession.Copy();
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (interventionEvent is not null && nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+        }
+
+        return update;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> RejectDecisionProposalAsync(
+        Guid proposalId,
+        string source,
+        CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            if (_decisionState.ActiveProposal is null ||
+                _decisionState.ActiveProposal.ProposalId != proposalId)
+            {
+                throw new InvalidOperationException("No active decision proposal matches the supplied id.");
+            }
+
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var rejectedProposal = _decisionState.ActiveProposal.WithResolution(
+                DecisionProposalStatus.Rejected,
+                updatedAtUnixMs,
+                NormalizeDecisionResolutionSource(source));
+
+            _decisionState = new DecisionRuntimeStateSnapshot(
+                _decisionState.AutomationPaused,
+                null,
+                BuildRecentProposalHistory(_decisionState.RecentProposalHistory, rejectedProposal));
+
+            RecordDecisionProposalEvent(updatedAtUnixMs, rejectedProposal);
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        return update;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> SetDecisionAutomationPausedAsync(
+        bool automationPaused,
+        CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            _decisionState = _decisionState with
+            {
+                AutomationPaused = automationPaused
+            };
+
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (!automationPaused)
+        {
+            await EvaluateDecisionStrategiesAsync(ct);
+        }
+
+        return update;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> SetDecisionExecutionModeAsync(
+        string executionMode,
+        CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var normalizedExecutionMode = NormalizeExecutionMode(executionMode);
+            var executionModeChanged = !string.Equals(
+                _decisionConfiguration.ExecutionMode,
+                normalizedExecutionMode,
+                StringComparison.Ordinal);
+
+            _decisionConfiguration = _decisionConfiguration with
+            {
+                ExecutionMode = normalizedExecutionMode
+            };
+
+            if (executionModeChanged)
+            {
+                SupersedeActiveProposal(updatedAtUnixMs, "system");
+            }
+
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
+        return update;
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> EvaluateDecisionStrategiesAsync(CancellationToken ct = default)
+    {
+        DecisionRealtimeUpdateSnapshot? update = null;
+        InterventionEventSnapshot? interventionEvent = null;
+        LiveReadingSessionSnapshot? nextState = null;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            if (_decisionState.AutomationPaused ||
+                string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.Manual, StringComparison.Ordinal))
+            {
+                return BuildDecisionRealtimeUpdate();
+            }
+
+            var currentSnapshot = GetCurrentSnapshot();
+            var proposal = await _decisionStrategyCoordinator.EvaluateAsync(
+                currentSnapshot,
+                _decisionConfiguration,
+                _decisionState,
+                ct);
+
+            if (proposal is null)
+            {
+                return BuildDecisionRealtimeUpdate();
+            }
+
+            if (_decisionState.ActiveProposal is not null &&
+                DecisionProposalLifecycleRules.CanTransition(
+                    _decisionState.ActiveProposal.Status,
+                    DecisionProposalStatus.Superseded) &&
+                ProposalsMatch(_decisionState.ActiveProposal, proposal))
+            {
+                return BuildDecisionRealtimeUpdate();
+            }
+
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            SupersedeActiveProposal(updatedAtUnixMs, "system");
+
+            if (string.Equals(_decisionConfiguration.ExecutionMode, DecisionExecutionModes.Autonomous, StringComparison.Ordinal))
+            {
+                var execution = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
+                var autoAppliedProposal = proposal.WithResolution(
+                    DecisionProposalStatus.AutoApplied,
+                    updatedAtUnixMs,
+                    "system",
+                    execution?.Event.Id);
+
+                _decisionState = new DecisionRuntimeStateSnapshot(
+                    _decisionState.AutomationPaused,
+                    null,
+                    BuildRecentProposalHistory(_decisionState.RecentProposalHistory, autoAppliedProposal));
+
+                RecordDecisionProposalEvent(updatedAtUnixMs, autoAppliedProposal);
+                interventionEvent = execution?.Event.Copy();
+                nextState = execution is null ? null : _liveReadingSession.Copy();
+            }
+            else
+            {
+                _decisionState = new DecisionRuntimeStateSnapshot(
+                    _decisionState.AutomationPaused,
+                    proposal.Copy(),
+                    _decisionState.RecentProposalHistory is null
+                        ? []
+                        : [.. _decisionState.RecentProposalHistory.Select(item => item.Copy())]);
+                RecordDecisionProposalEvent(updatedAtUnixMs, proposal);
+            }
+
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        if (update is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        }
+
+        if (interventionEvent is not null && nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+        }
+
+        return update ?? BuildDecisionRealtimeUpdate();
     }
 
     public async ValueTask PauseGazeStreamingAsync(CancellationToken ct = default)
@@ -380,6 +683,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             var startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             Volatile.Write(ref _session, ExperimentSession.StartNew(startedAt, current.Participant, current.EyeTrackerDevice));
+            _decisionState = new DecisionRuntimeStateSnapshot(_decisionState.AutomationPaused, null, []);
             ResetReplayHistory();
             RecordLifecycleEvent("session-started", "system", startedAt);
             RecordReadingSessionState("session-started", startedAt, _liveReadingSession.Copy());
@@ -512,7 +816,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             Interlocked.Read(ref _receivedGazeSamples),
             latest?.Copy(),
             _clientBroadcasterAdapter.ConnectedClients,
-            _liveReadingSession.Copy());
+            _liveReadingSession.Copy(),
+            _decisionConfiguration.Copy(),
+            _decisionState.Copy());
     }
 
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
@@ -707,6 +1013,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         Interlocked.Exchange(ref _receivedGazeSamples, snapshot.ReceivedGazeSamples);
         Volatile.Write(ref _latestGazeSample, snapshot.LatestGazeSample?.Copy());
         _liveReadingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
+        _decisionConfiguration = snapshot.DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy();
+        _decisionState = snapshot.DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy();
     }
 
     private void ResetReplayHistory()
@@ -719,6 +1027,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _readingSessionStates = [];
             _participantViewportEvents = [];
             _readingFocusEvents = [];
+            _decisionProposalEvents = [];
             _interventionEvents = [];
         }
     }
@@ -798,6 +1107,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
     }
 
+    private void RecordDecisionProposalEvent(long occurredAtUnixMs, DecisionProposalSnapshot proposal)
+    {
+        lock (_historyGate)
+        {
+            _decisionProposalEvents.Add(new DecisionProposalEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                CalculateElapsedSinceStart(occurredAtUnixMs),
+                proposal.Copy()));
+        }
+    }
+
     private void RecordInterventionEvent(long occurredAtUnixMs, InterventionEventSnapshot intervention)
     {
         lock (_historyGate)
@@ -823,6 +1144,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var readingSessionStates = _readingSessionStates.Select(item => item.Copy()).ToArray();
             var participantViewportEvents = _participantViewportEvents.Select(item => item.Copy()).ToArray();
             var readingFocusEvents = _readingFocusEvents.Select(item => item.Copy()).ToArray();
+            var decisionProposalEvents = _decisionProposalEvents.Select(item => item.Copy()).ToArray();
             var interventionEvents = _interventionEvents.Select(item => item.Copy()).ToArray();
             long? durationMs = finalSnapshot.StartedAtUnixMs > 0 && finalSnapshot.StoppedAtUnixMs.HasValue
                 ? Math.Max(0L, finalSnapshot.StoppedAtUnixMs.Value - finalSnapshot.StartedAtUnixMs)
@@ -844,6 +1166,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     readingSessionStates.Length,
                     participantViewportEvents.Length,
                     readingFocusEvents.Length,
+                    decisionProposalEvents.Length,
                     interventionEvents.Length),
                 initialSnapshot,
                 finalSnapshot.Copy(),
@@ -852,6 +1175,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 readingSessionStates,
                 participantViewportEvents,
                 readingFocusEvents,
+                decisionProposalEvents,
                 interventionEvents);
         }
     }
@@ -941,6 +1265,139 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         return items;
+    }
+
+    private InterventionExecutionResult? ApplyInterventionCore(ApplyInterventionCommand command, long appliedAtUnixMs)
+    {
+        var execution = _readingInterventionRuntime.Apply(
+            _liveReadingSession.Presentation,
+            _liveReadingSession.Appearance,
+            command,
+            appliedAtUnixMs);
+
+        if (execution is null)
+        {
+            return null;
+        }
+
+        _liveReadingSession = _liveReadingSession with
+        {
+            Presentation = execution.Presentation.Copy(),
+            Appearance = execution.Appearance.Copy(),
+            LatestIntervention = execution.Event.Copy(),
+            RecentInterventions = BuildRecentInterventionHistory(
+                _liveReadingSession.RecentInterventions,
+                execution.Event)
+        };
+
+        RecordInterventionEvent(appliedAtUnixMs, execution.Event);
+        RecordReadingSessionState("intervention-applied", appliedAtUnixMs, _liveReadingSession.Copy());
+        return execution;
+    }
+
+    private DecisionProposalSnapshot? SupersedeActiveProposal(long resolvedAtUnixMs, string resolutionSource)
+    {
+        if (_decisionState.ActiveProposal is null ||
+            !DecisionProposalLifecycleRules.CanTransition(
+                _decisionState.ActiveProposal.Status,
+                DecisionProposalStatus.Superseded))
+        {
+            return null;
+        }
+
+        var supersededProposal = _decisionState.ActiveProposal.WithResolution(
+            DecisionProposalStatus.Superseded,
+            resolvedAtUnixMs,
+            NormalizeDecisionResolutionSource(resolutionSource));
+
+        _decisionState = new DecisionRuntimeStateSnapshot(
+            _decisionState.AutomationPaused,
+            null,
+            BuildRecentProposalHistory(_decisionState.RecentProposalHistory, supersededProposal));
+        RecordDecisionProposalEvent(resolvedAtUnixMs, supersededProposal);
+
+        return supersededProposal;
+    }
+
+    private DecisionRealtimeUpdateSnapshot BuildDecisionRealtimeUpdate()
+    {
+        return new DecisionRealtimeUpdateSnapshot(
+            _decisionConfiguration.Copy(),
+            _decisionState.Copy());
+    }
+
+    private static IReadOnlyList<DecisionProposalSnapshot> BuildRecentProposalHistory(
+        IReadOnlyList<DecisionProposalSnapshot>? existing,
+        DecisionProposalSnapshot next)
+    {
+        var items = existing is null
+            ? new List<DecisionProposalSnapshot>()
+            : existing.Select(item => item.Copy()).ToList();
+
+        items.Insert(0, next.Copy());
+
+        if (items.Count > MaxRecentDecisionHistory)
+        {
+            items.RemoveRange(MaxRecentDecisionHistory, items.Count - MaxRecentDecisionHistory);
+        }
+
+        return items;
+    }
+
+    private static DecisionConfigurationSnapshot NormalizeDecisionConfiguration(DecisionConfigurationSnapshot configuration)
+    {
+        return new DecisionConfigurationSnapshot(
+            string.IsNullOrWhiteSpace(configuration.ConditionLabel)
+                ? DecisionConfigurationSnapshot.Default.ConditionLabel
+                : configuration.ConditionLabel.Trim(),
+            NormalizeProviderId(configuration.ProviderId),
+            NormalizeExecutionMode(configuration.ExecutionMode));
+    }
+
+    private static string NormalizeProviderId(string? providerId)
+    {
+        if (string.Equals(providerId?.Trim(), DecisionProviderIds.RuleBased, StringComparison.OrdinalIgnoreCase))
+        {
+            return DecisionProviderIds.RuleBased;
+        }
+
+        if (string.Equals(providerId?.Trim(), DecisionProviderIds.External, StringComparison.OrdinalIgnoreCase))
+        {
+            return DecisionProviderIds.External;
+        }
+
+        return DecisionProviderIds.Manual;
+    }
+
+    private static string NormalizeExecutionMode(string? executionMode)
+    {
+        return string.Equals(executionMode?.Trim(), DecisionExecutionModes.Autonomous, StringComparison.OrdinalIgnoreCase)
+            ? DecisionExecutionModes.Autonomous
+            : DecisionExecutionModes.Advisory;
+    }
+
+    private static string NormalizeDecisionResolutionSource(string? source)
+    {
+        return string.IsNullOrWhiteSpace(source) ? "system" : source.Trim();
+    }
+
+    private static bool ProposalsMatch(DecisionProposalSnapshot current, DecisionProposalSnapshot next)
+    {
+        return current with
+        {
+            ProposalId = Guid.Empty,
+            ProposedAtUnixMs = 0,
+            ResolvedAtUnixMs = null,
+            ResolutionSource = null,
+            AppliedInterventionId = null
+        } == next with
+        {
+            ProposalId = Guid.Empty,
+            ProposedAtUnixMs = 0,
+            ResolvedAtUnixMs = null,
+            ResolutionSource = null,
+            AppliedInterventionId = null
+        };
     }
 
     private static double Clamp(double value, double min, double max)

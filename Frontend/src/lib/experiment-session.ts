@@ -74,6 +74,59 @@ export type InterventionEventSnapshot = {
   appliedAppearance: ReaderAppearanceSnapshot
 }
 
+export type DecisionConfiguration = {
+  conditionLabel: string
+  providerId: string
+  executionMode: string
+}
+
+export type DecisionSignalSnapshot = {
+  signalType: string
+  summary: string
+  observedAtUnixMs: number
+  confidence: number | null
+}
+
+export type DecisionProposalIntervention = {
+  source: string
+  trigger: string
+  reason: string
+  presentation: {
+    fontFamily: string | null
+    fontSizePx: number | null
+    lineWidthPx: number | null
+    lineHeight: number | null
+    letterSpacingEm: number | null
+    editableByResearcher: boolean | null
+  }
+  appearance: {
+    themeMode: string | null
+    palette: string | null
+    appFont: string | null
+  }
+}
+
+export type DecisionProposalSnapshot = {
+  proposalId: string
+  conditionLabel: string
+  providerId: string
+  executionMode: string
+  status: string
+  signal: DecisionSignalSnapshot
+  rationale: string
+  proposedAtUnixMs: number
+  resolvedAtUnixMs: number | null
+  resolutionSource: string | null
+  appliedInterventionId: string | null
+  proposedIntervention: DecisionProposalIntervention
+}
+
+export type DecisionState = {
+  automationPaused: boolean
+  activeProposal: DecisionProposalSnapshot | null
+  recentProposalHistory: DecisionProposalSnapshot[]
+}
+
 export type LiveReadingSessionSnapshot = {
   content: ReadingContentSnapshot | null
   presentation: ReadingPresentationSnapshot
@@ -98,6 +151,13 @@ export type ExperimentSessionSnapshot = {
   latestGazeSample: unknown
   connectedClients: number
   readingSession: LiveReadingSessionSnapshot | null
+  decisionConfiguration: DecisionConfiguration
+  decisionState: DecisionState
+}
+
+export type DecisionRealtimeUpdate = {
+  decisionConfiguration: DecisionConfiguration
+  decisionState: DecisionState
 }
 
 export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
@@ -136,4 +196,16 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   latestIntervention: null,
   recentInterventions: [],
   attentionSummary: null,
+}
+
+export const EMPTY_DECISION_CONFIGURATION: DecisionConfiguration = {
+  conditionLabel: "Manual only",
+  providerId: "manual",
+  executionMode: "advisory",
+}
+
+export const EMPTY_DECISION_STATE: DecisionState = {
+  automationPaused: false,
+  activeProposal: null,
+  recentProposalHistory: [],
 }

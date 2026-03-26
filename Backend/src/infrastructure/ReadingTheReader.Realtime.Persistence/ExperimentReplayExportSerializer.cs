@@ -49,6 +49,7 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
         rows.AddRange(CreateRows("readingSessionState", exportDocument.ReadingSessionStates));
         rows.AddRange(CreateRows("participantViewportEvent", exportDocument.ParticipantViewportEvents));
         rows.AddRange(CreateRows("readingFocusEvent", exportDocument.ReadingFocusEvents));
+        rows.AddRange(CreateRows("decisionProposalEvent", exportDocument.DecisionProposalEvents));
         rows.AddRange(CreateRows("interventionEvent", exportDocument.InterventionEvents));
 
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
@@ -82,6 +83,7 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             DeserializeMany<ReadingSessionStateRecord>(rows, "readingSessionState"),
             DeserializeMany<ParticipantViewportEventRecord>(rows, "participantViewportEvent"),
             DeserializeMany<ReadingFocusEventRecord>(rows, "readingFocusEvent"),
+            DeserializeMany<DecisionProposalEventRecord>(rows, "decisionProposalEvent"),
             DeserializeMany<InterventionEventRecord>(rows, "interventionEvent"));
     }
 
