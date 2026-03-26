@@ -21,23 +21,23 @@ public sealed class CalibrationService : ICalibrationService
         WriteIndented = false
     };
 
-    private readonly IEyeTrackerAdapter _eyeTrackerAdapter;
+    private readonly ISensingOperations _sensingOperations;
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentRuntimeAuthority _runtimeAuthority;
     private readonly CalibrationOptions _calibrationOptions;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private CalibrationSessionSnapshot _snapshot;
 
     public CalibrationService(
-        IEyeTrackerAdapter eyeTrackerAdapter,
+        ISensingOperations sensingOperations,
         IClientBroadcasterAdapter clientBroadcasterAdapter,
-        IExperimentSessionManager experimentSessionManager,
+        IExperimentRuntimeAuthority runtimeAuthority,
         CalibrationOptions calibrationOptions)
     {
-        _eyeTrackerAdapter = eyeTrackerAdapter;
+        _sensingOperations = sensingOperations;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
-        _experimentSessionManager = experimentSessionManager;
+        _runtimeAuthority = runtimeAuthority;
         _calibrationOptions = calibrationOptions;
         TryLoadPersistedSettings(_calibrationOptions);
         _snapshot = BuildIdleSnapshot();
@@ -60,11 +60,11 @@ public sealed class CalibrationService : ICalibrationService
         {
             if (string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase))
             {
-                await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
+                await _sensingOperations.CancelCalibrationAsync(ct);
             }
 
-            await _experimentSessionManager.PauseGazeStreamingAsync(ct);
-            await _eyeTrackerAdapter.BeginCalibrationAsync(ct);
+            await _runtimeAuthority.PauseGazeStreamingAsync(ct);
+            await _sensingOperations.BeginCalibrationAsync(ct);
 
             var pattern = _calibrationOptions.GetPatternName();
             var points = _calibrationOptions.GetPointDefinitions();
@@ -135,7 +135,7 @@ public sealed class CalibrationService : ICalibrationService
             };
             await BroadcastSnapshotAsync(ct);
 
-            var result = await _eyeTrackerAdapter.CollectCalibrationDataAsync(point.X, point.Y, ct);
+            var result = await _sensingOperations.CollectCalibrationDataAsync(point.X, point.Y, ct);
             var collectedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var nextPoint = point with
             {
@@ -159,7 +159,7 @@ public sealed class CalibrationService : ICalibrationService
 
             if (!result.Succeeded)
             {
-                await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
+                await _sensingOperations.CancelCalibrationAsync(ct);
                 await SafeResumeGazeStreamingAsync(ct);
             }
 
@@ -192,7 +192,7 @@ public sealed class CalibrationService : ICalibrationService
                 throw new InvalidOperationException("All calibration points must be collected before calibration can be applied.");
             }
 
-            var result = await _eyeTrackerAdapter.ComputeAndApplyCalibrationAsync(ct);
+            var result = await _sensingOperations.ComputeAndApplyCalibrationAsync(ct);
             var completedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var completionNotes = BuildCompletionNotes(result);
             _snapshot = _snapshot with
@@ -211,7 +211,7 @@ public sealed class CalibrationService : ICalibrationService
                 Notes = completionNotes
             };
 
-            await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
+            await _sensingOperations.CancelCalibrationAsync(ct);
             await SafeResumeGazeStreamingAsync(ct);
             await BroadcastSnapshotAsync(ct);
             return _snapshot;
@@ -242,11 +242,11 @@ public sealed class CalibrationService : ICalibrationService
 
             if (string.Equals(_snapshot.Validation.Status, "running", StringComparison.OrdinalIgnoreCase))
             {
-                await _eyeTrackerAdapter.CancelValidationAsync(ct);
+                await _sensingOperations.CancelValidationAsync(ct);
             }
 
-            await _experimentSessionManager.PauseGazeStreamingAsync(ct);
-            await _eyeTrackerAdapter.BeginValidationAsync(ct);
+            await _runtimeAuthority.PauseGazeStreamingAsync(ct);
+            await _sensingOperations.BeginValidationAsync(ct);
 
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _snapshot = _snapshot with
@@ -320,7 +320,7 @@ public sealed class CalibrationService : ICalibrationService
             };
             await BroadcastSnapshotAsync(ct);
 
-            var result = await _eyeTrackerAdapter.CollectValidationDataAsync(point.X, point.Y, ct);
+            var result = await _sensingOperations.CollectValidationDataAsync(point.X, point.Y, ct);
             var collectedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var nextPoint = point with
             {
@@ -346,7 +346,7 @@ public sealed class CalibrationService : ICalibrationService
 
             if (!result.Succeeded)
             {
-                await _eyeTrackerAdapter.CancelValidationAsync(ct);
+                await _sensingOperations.CancelValidationAsync(ct);
                 await SafeResumeGazeStreamingAsync(ct);
             }
 
@@ -385,7 +385,7 @@ public sealed class CalibrationService : ICalibrationService
                 throw new InvalidOperationException("All validation points must be collected before validation can be computed.");
             }
 
-            var result = NormalizeValidationResult(await _eyeTrackerAdapter.ComputeValidationAsync(ct));
+            var result = NormalizeValidationResult(await _sensingOperations.ComputeValidationAsync(ct));
             var completedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var validationStatus = "completed";
             var validationNotes = BuildValidationCompletionNotes(result);
@@ -400,7 +400,7 @@ public sealed class CalibrationService : ICalibrationService
                     Result = result,
                     Notes = validationNotes
                 },
-                Result = _snapshot.Result with
+                Result = _snapshot.Result! with
                 {
                     Validation = result
                 },
@@ -409,7 +409,7 @@ public sealed class CalibrationService : ICalibrationService
                     : ["Validation completed, but the quality metrics were below the required threshold."]
             };
 
-            await _eyeTrackerAdapter.CancelValidationAsync(ct);
+            await _sensingOperations.CancelValidationAsync(ct);
             await SafeResumeGazeStreamingAsync(ct);
             await BroadcastSnapshotAsync(ct);
             return _snapshot;
@@ -439,8 +439,8 @@ public sealed class CalibrationService : ICalibrationService
         await _gate.WaitAsync(ct);
         try
         {
-            await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
-            await _eyeTrackerAdapter.CancelValidationAsync(ct);
+            await _sensingOperations.CancelCalibrationAsync(ct);
+            await _sensingOperations.CancelValidationAsync(ct);
             await SafeResumeGazeStreamingAsync(ct);
 
             var calibrationRunning = string.Equals(_snapshot.Status, "running", StringComparison.OrdinalIgnoreCase);
@@ -800,7 +800,7 @@ public sealed class CalibrationService : ICalibrationService
 
     private async Task BroadcastSnapshotAsync(CancellationToken ct)
     {
-        await _experimentSessionManager.SetCalibrationStateAsync(_snapshot, ct);
+        await _runtimeAuthority.SetCalibrationStateAsync(_snapshot, ct);
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.CalibrationStateChanged, _snapshot, ct);
     }
 
@@ -808,7 +808,7 @@ public sealed class CalibrationService : ICalibrationService
     {
         try
         {
-            await _eyeTrackerAdapter.CancelCalibrationAsync(ct);
+            await _sensingOperations.CancelCalibrationAsync(ct);
         }
         catch
         {
@@ -820,7 +820,7 @@ public sealed class CalibrationService : ICalibrationService
     {
         try
         {
-            await _eyeTrackerAdapter.CancelValidationAsync(ct);
+            await _sensingOperations.CancelValidationAsync(ct);
         }
         catch
         {
@@ -832,7 +832,7 @@ public sealed class CalibrationService : ICalibrationService
     {
         try
         {
-            await _experimentSessionManager.ResumeGazeStreamingAsync(ct);
+            await _runtimeAuthority.ResumeGazeStreamingAsync(ct);
         }
         catch
         {

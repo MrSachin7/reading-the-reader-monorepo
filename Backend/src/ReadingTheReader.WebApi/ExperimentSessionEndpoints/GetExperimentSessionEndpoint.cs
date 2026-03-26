@@ -5,11 +5,11 @@ namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
 
 public sealed class GetExperimentSessionEndpoint : EndpointWithoutRequest<ExperimentSessionSnapshot>
 {
-    private readonly IExperimentSessionManager _experimentSessionManager;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
 
-    public GetExperimentSessionEndpoint(IExperimentSessionManager experimentSessionManager)
+    public GetExperimentSessionEndpoint(IExperimentSessionQueryService experimentSessionQueryService)
     {
-        _experimentSessionManager = experimentSessionManager;
+        _experimentSessionQueryService = experimentSessionQueryService;
     }
 
     public override void Configure()
@@ -20,6 +20,6 @@ public sealed class GetExperimentSessionEndpoint : EndpointWithoutRequest<Experi
 
     public override Task HandleAsync(CancellationToken ct)
     {
-        return Send.OkAsync(_experimentSessionManager.GetCurrentSnapshot(), ct);
+        return Send.OkAsync(_experimentSessionQueryService.GetCurrentSnapshot(), ct);
     }
 }
