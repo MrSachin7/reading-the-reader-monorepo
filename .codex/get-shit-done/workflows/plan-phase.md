@@ -29,11 +29,27 @@ AGENT_SKILLS_PLANNER=$(node "C:/Users/s243871/reading-the-reader-monorepo/.codex
 AGENT_SKILLS_CHECKER=$(node "C:/Users/s243871/reading-the-reader-monorepo/.codex/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-checker 2>/dev/null)
 ```
 
-Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_enabled`, `plan_checker_enabled`, `nyquist_validation_enabled`, `commit_docs`, `text_mode`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_reviews`, `has_plans`, `plan_count`, `planning_exists`, `roadmap_exists`, `phase_req_ids`.
+Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_enabled`, `plan_checker_enabled`, `nyquist_validation_enabled`, `commit_docs`, `text_mode`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_reviews`, `has_plans`, `plan_count`, `planning_exists`, `roadmap_exists`, `phase_req_ids`.
 
 **File paths (for <files_to_read> blocks):** `state_path`, `roadmap_path`, `requirements_path`, `context_path`, `research_path`, `verification_path`, `uat_path`, `reviews_path`. These are null if files don't exist.
 
 **If `planning_exists` is false:** Error — run `$gsd-new-project` first.
+
+## 1.5. Handle Branching Early
+
+If `branching_strategy` is not `"phase"` or `branch_name` is empty/null: skip.
+
+Check current branch:
+```bash
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || true)
+```
+
+**If `CURRENT_BRANCH` is `main` or `master`:**
+```bash
+git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+```
+
+This moves phase planning work off the default branch as soon as the phase workflow starts, without hijacking any existing non-main feature branch the user has already chosen.
 
 ## 2. Parse and Normalize Arguments
 
