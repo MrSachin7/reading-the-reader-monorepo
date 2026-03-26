@@ -14,13 +14,21 @@ public sealed class RealtimeTestDoubles
         var stateStore = new FakeExperimentStateStoreAdapter();
         var replayExportStore = new FakeExperimentReplayExportStoreAdapter();
         var interventionRuntime = new FakeReadingInterventionRuntime();
+        var decisionContextFactory = new DecisionContextFactory();
+        var strategyRegistry = new DecisionStrategyRegistry(
+            [
+                new RuleBasedDecisionStrategy(),
+                new ExternalDecisionStrategyStub()
+            ]);
+        var strategyCoordinator = new DecisionStrategyCoordinator(strategyRegistry, decisionContextFactory);
 
         var sessionManager = new ExperimentSessionManager(
             eyeTrackerAdapter,
             broadcaster,
             stateStore,
             replayExportStore,
-            interventionRuntime);
+            interventionRuntime,
+            strategyCoordinator);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
             sessionManager,

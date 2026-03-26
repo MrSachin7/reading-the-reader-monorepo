@@ -6,7 +6,11 @@ import { ExperimentCompletionActions } from "@/components/experiment/experiment-
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
+import type {
+  DecisionConfiguration,
+  DecisionState,
+  LiveReadingSessionSnapshot,
+} from "@/lib/experiment-session"
 import type { RemoteTokenAttentionStats } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
 import { formatAbsoluteTime, formatDurationMs, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
@@ -29,6 +33,8 @@ function MetadataRow({
 type LiveMetadataColumnProps = {
   session: ActiveLiveExperimentSession
   readingSession: LiveReadingSessionSnapshot
+  decisionConfiguration: DecisionConfiguration
+  decisionState: DecisionState
   activeWord: string | null
   activeBlockLix: number | null
   documentLix: number | null
@@ -44,6 +50,8 @@ type LiveMetadataColumnProps = {
 export function LiveMetadataColumn({
   session,
   readingSession,
+  decisionConfiguration,
+  decisionState,
   activeWord,
   activeBlockLix,
   documentLix,
@@ -77,6 +85,9 @@ export function LiveMetadataColumn({
                   />
                   <MetadataRow label="Eyetracker" value={session.eyeTrackerDevice?.name ?? "-"} />
                   <MetadataRow label="Document" value={readingSession.content?.title ?? "-"} />
+                  <MetadataRow label="Condition" value={decisionConfiguration.conditionLabel} />
+                  <MetadataRow label="Provider" value={decisionConfiguration.providerId} />
+                  <MetadataRow label="Execution" value={decisionConfiguration.executionMode} />
                   <MetadataRow
                     label="Focus"
                     value={
@@ -109,6 +120,23 @@ export function LiveMetadataColumn({
                   <MetadataRow label="Focused block" value={formatNumeric(activeBlockLix, 1)} />
                   <MetadataRow label="Samples" value={session.receivedGazeSamples.toLocaleString()} />
                 </dl>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Decision state</p>
+                <div className="mt-3 rounded-[1rem] border bg-muted/20 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="outline">
+                      {decisionState.automationPaused ? "Automation paused" : "Automation active"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {decisionConfiguration.providerId} · {decisionConfiguration.executionMode}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6">
+                    {decisionState.activeProposal?.rationale ?? "No active proposal."}
+                  </p>
+                </div>
               </div>
 
               <div className="rounded-[1.2rem] border bg-background/80 p-4">
@@ -158,6 +186,38 @@ export function LiveMetadataColumn({
                 ) : (
                   <p className="px-4 pb-4 text-sm text-muted-foreground">
                     Waiting for stable reading attention data.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Proposal history
+                  </p>
+                  <Badge variant="outline">{decisionState.recentProposalHistory.length}</Badge>
+                </div>
+
+                {decisionState.recentProposalHistory.length > 0 ? (
+                  <div className="divide-y">
+                    {decisionState.recentProposalHistory.map((proposal) => (
+                      <div key={proposal.proposalId} className="px-4 py-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <Badge variant="outline">{proposal.status}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatAbsoluteTime(proposal.resolvedAtUnixMs ?? proposal.proposedAtUnixMs)}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-medium leading-5">{proposal.rationale}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {proposal.conditionLabel} · {proposal.providerId} · {proposal.executionMode}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-4 pb-4 text-sm text-muted-foreground">
+                    No reviewed or superseded proposals yet.
                   </p>
                 )}
               </div>

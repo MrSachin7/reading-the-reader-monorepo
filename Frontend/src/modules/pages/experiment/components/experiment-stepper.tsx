@@ -33,6 +33,7 @@ import {
   useLazyGetReadingMaterialSetupByIdQuery,
   useSaveParticipantMutation,
   useStartExperimentSessionMutation,
+  useUpdateDecisionConfigurationMutation,
   useUpsertReadingSessionMutation,
 } from "@/redux"
 import type { RootState } from "@/redux"
@@ -190,6 +191,27 @@ const participantReadingProficiencyOptions = [
   { value: "intermediate", label: "Intermediate" },
   { value: "advanced", label: "Advanced" },
 ]
+
+const DECISION_CONDITION_OPTIONS = [
+  { label: "Manual only", providerId: "manual", executionMode: "advisory" },
+  { label: "Rule-based advisory", providerId: "rule-based", executionMode: "advisory" },
+  { label: "Rule-based autonomous", providerId: "rule-based", executionMode: "autonomous" },
+  { label: "External advisory", providerId: "external", executionMode: "advisory" },
+  { label: "External autonomous", providerId: "external", executionMode: "autonomous" },
+] as const
+
+function resolveConditionLabel(
+  providerId?: string | null,
+  executionMode?: string | null
+) {
+  return (
+    DECISION_CONDITION_OPTIONS.find(
+      (option) =>
+        option.providerId === providerId &&
+        option.executionMode === executionMode
+    )?.label ?? "Manual only"
+  )
+}
 
 const participantFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -462,9 +484,15 @@ function ParticipantInformationForm({
 
 type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
+  currentConditionLabel?: string
+  automationPaused?: boolean
 }
 
-function SessionContentStep({ onCompletionChange }: SessionContentStepProps) {
+function SessionContentStep({
+  onCompletionChange,
+  currentConditionLabel = "Manual only",
+  automationPaused = false,
+}: SessionContentStepProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
@@ -472,9 +500,12 @@ function SessionContentStep({ onCompletionChange }: SessionContentStepProps) {
     useGetReadingMaterialSetupsQuery()
   const [getReadingMaterialSetupById, { isFetching: isLoadingSelectedMaterial }] =
     useLazyGetReadingMaterialSetupByIdQuery()
+  const [updateDecisionConfiguration, { isLoading: isSavingDecisionConfiguration }] =
+    useUpdateDecisionConfigurationMutation()
   const { experimentSetupId, resetReadingSettings } = useReadingSettings()
 
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
+  const [selectedConditionLabel, setSelectedConditionLabel] = React.useState(currentConditionLabel)
   const hasSelectedMaterial = readingSession.title.trim().length > 0
   const selectedSavedSetup = React.useMemo(
     () => materialSetups.find((setup) => setup.id === experimentSetupId) ?? null,
@@ -488,6 +519,10 @@ function SessionContentStep({ onCompletionChange }: SessionContentStepProps) {
   React.useEffect(() => {
     onCompletionChange?.(hasSelectedMaterial)
   }, [hasSelectedMaterial, onCompletionChange])
+
+  React.useEffect(() => {
+    setSelectedConditionLabel(currentConditionLabel)
+  }, [currentConditionLabel])
 
   return (
     <div className="space-y-6">
@@ -596,11 +631,63 @@ function SessionContentStep({ onCompletionChange }: SessionContentStepProps) {
             </button>
           </div>
 
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold">Experiment condition</p>
+              <p className="text-sm text-muted-foreground">
+                Choose whether decision support stays advisory or is allowed to run autonomously.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {DECISION_CONDITION_OPTIONS.map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  disabled={isSavingDecisionConfiguration}
+                  onClick={async () => {
+                    setSelectionError(null)
+
+                    try {
+                      await updateDecisionConfiguration({
+                        conditionLabel: option.label,
+                        providerId: option.providerId,
+                        executionMode: option.executionMode,
+                        automationPaused,
+                      }).unwrap()
+                      setSelectedConditionLabel(option.label)
+                    } catch (error) {
+                      setSelectionError(
+                        getErrorMessage(error, "Could not update the experiment condition.")
+                      )
+                    }
+                  }}
+                  className={cn(
+                    "w-full rounded-2xl border p-5 text-left transition-colors",
+                    "bg-card hover:border-primary/40 hover:bg-accent/30",
+                    selectedConditionLabel === option.label && "border-primary bg-accent/50"
+                  )}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-base font-semibold">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {option.providerId} · {option.executionMode}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {hasSelectedMaterial ? (
             <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
               Selected: <span className="font-medium text-foreground">{readingSession.title}</span>
               {" · "}
-              <span className="font-medium text-foreground">{selectedPresentationLabel}</span>
+              <span className="font-medium text-foreground">
+                {selectedPresentationLabel} · {selectedConditionLabel}
+              </span>
             </div>
           ) : null}
         </CardContent>
@@ -636,7 +723,9 @@ export function ExperimentStepper() {
   })
   const stepSubmitHandlerRef = React.useRef<(() => Promise<boolean>) | null>(null)
 
-  const isCurrentStepComplete = stepCompletion[step] ?? false
+  const isReadingMaterialReady = readingSession.title.trim().length > 0
+  const isCurrentStepComplete =
+    step === steps.length - 1 ? (stepCompletion[step] ?? false) || isReadingMaterialReady : stepCompletion[step] ?? false
   const canAdvance = isCurrentStepComplete && !isStepSubmitting
 
   const handleStartReadingSession = React.useCallback(async () => {
@@ -700,6 +789,7 @@ export function ExperimentStepper() {
       return
     }
 
+    const localReadingMaterialReady = readingSession.title.trim().length > 0
     const calibrationApplied =
       experimentSession.setup.calibrationCompleted ||
       experimentSession.calibration.validation.result?.passed === true ||
@@ -714,12 +804,12 @@ export function ExperimentStepper() {
       0: experimentSession.setup.eyeTrackerSetupCompleted,
       1: experimentSession.setup.participantSetupCompleted,
       2: calibrationApplied,
-      3: Boolean(
-        (experimentSession.setup as Record<string, unknown>).readingMaterialSetupCompleted
-      ),
+      3:
+        Boolean((experimentSession.setup as Record<string, unknown>).readingMaterialSetupCompleted) ||
+        localReadingMaterialReady,
     })
     setStep(calibrationApplied ? Math.max(backendStep, 2) : backendStep)
-  }, [dispatch, experimentSession, stepThree.externalCalibrationCompleted])
+  }, [dispatch, experimentSession, readingSession.title, stepThree.externalCalibrationCompleted])
 
   const setStepComplete = React.useCallback((stepIndex: number, isComplete: boolean) => {
     setStepCompletion((prev) => {
@@ -819,6 +909,11 @@ export function ExperimentStepper() {
         ) : (
           <SessionContentStep
             onCompletionChange={handleStepThreeCompletionChange}
+            currentConditionLabel={resolveConditionLabel(
+              experimentSession?.decisionConfiguration?.providerId,
+              experimentSession?.decisionConfiguration?.executionMode
+            )}
+            automationPaused={experimentSession?.decisionState?.automationPaused ?? false}
           />
         )}
 
