@@ -31,7 +31,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Eye-tracker integration can change behind a stable sensing contract without rewriting decision, intervention, or reader modules.
   2. Experiment lifecycle control remains consistent across setup, live operation, and data capture because one authoritative orchestration path owns session state.
   3. A contributor can identify distinct ownership for sensing, session orchestration, decision strategy, intervention execution, researcher controls, and participant adaptation without ambiguous cross-layer coupling.
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Add characterization tests and guardrails for runtime authority plus ingress regression coverage.
+- [ ] 01-02-PLAN.md — Extract typed websocket command ingress in front of the backend runtime authority.
+- [ ] 01-03-PLAN.md — Separate reader-observation handling from the orchestration authority and align participant websocket reporting.
+- [ ] 01-04-PLAN.md — Harden the device-facing sensing seam behind application-facing sensing operations.
+- [ ] 01-05-PLAN.md — Finish DI and REST contract cleanup so transport depends on focused authority, ingress, sensing, observation, and query interfaces.
 
 ### Phase 2: Swappable Decision Strategies
 **Goal**: The adaptive runtime can swap decision strategies cleanly without destabilizing the rest of the platform.
@@ -118,7 +124,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiment Authority & Sensing Boundary | 0/TBD | Not started | - |
+| 1. Experiment Authority & Sensing Boundary | 0/5 | Planned | - |
 | 2. Swappable Decision Strategies | 0/TBD | Not started | - |
 | 3. Pluggable Intervention Modules | 0/TBD | Not started | - |
 | 4. Device Setup & Calibration Workflow | 0/TBD | Not started | - |
