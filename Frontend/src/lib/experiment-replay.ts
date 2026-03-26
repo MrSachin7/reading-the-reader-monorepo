@@ -1,6 +1,9 @@
 import { z } from "zod"
 
 import type {
+  DecisionConfiguration,
+  DecisionProposalSnapshot,
+  DecisionState,
   ExperimentEyeTrackerSnapshot,
   ExperimentParticipantSnapshot,
   InterventionEventSnapshot,
@@ -93,6 +96,59 @@ const interventionSchema = z.object({
   }),
 })
 
+const decisionConfigurationSchema = z.object({
+  conditionLabel: z.string(),
+  providerId: z.string(),
+  executionMode: z.string(),
+})
+
+const decisionSignalSchema = z.object({
+  signalType: z.string(),
+  summary: z.string(),
+  observedAtUnixMs: z.number(),
+  confidence: z.number().nullable(),
+})
+
+const decisionProposalInterventionSchema = z.object({
+  source: z.string(),
+  trigger: z.string(),
+  reason: z.string(),
+  presentation: z.object({
+    fontFamily: z.string().nullable(),
+    fontSizePx: z.number().nullable(),
+    lineWidthPx: z.number().nullable(),
+    lineHeight: z.number().nullable(),
+    letterSpacingEm: z.number().nullable(),
+    editableByResearcher: z.boolean().nullable(),
+  }),
+  appearance: z.object({
+    themeMode: z.string().nullable(),
+    palette: z.string().nullable(),
+    appFont: z.string().nullable(),
+  }),
+})
+
+const decisionProposalSchema = z.object({
+  proposalId: z.string(),
+  conditionLabel: z.string(),
+  providerId: z.string(),
+  executionMode: z.string(),
+  status: z.string(),
+  signal: decisionSignalSchema,
+  rationale: z.string(),
+  proposedAtUnixMs: z.number(),
+  resolvedAtUnixMs: z.number().nullable(),
+  resolutionSource: z.string().nullable(),
+  appliedInterventionId: z.string().nullable(),
+  proposedIntervention: decisionProposalInterventionSchema,
+})
+
+const decisionStateSchema = z.object({
+  automationPaused: z.boolean(),
+  activeProposal: decisionProposalSchema.nullable(),
+  recentProposalHistory: z.array(decisionProposalSchema),
+})
+
 const readingAttentionTokenStatsSchema = z.object({
   fixationMs: z.number(),
   fixationCount: z.number(),
@@ -135,6 +191,8 @@ const replaySessionSnapshotSchema = z.object({
   receivedGazeSamples: z.number(),
   latestGazeSample: gazeDataSchema.nullable(),
   readingSession: liveReadingSessionSchema.nullable(),
+  decisionConfiguration: decisionConfigurationSchema,
+  decisionState: decisionStateSchema,
 })
 
 const replayMetadataSchema = z.object({
@@ -155,6 +213,7 @@ const replayStatisticsSchema = z.object({
   readingSessionStateCount: z.number(),
   participantViewportEventCount: z.number(),
   readingFocusEventCount: z.number(),
+  decisionProposalEventCount: z.number(),
   interventionEventCount: z.number(),
 })
 
@@ -195,6 +254,11 @@ const interventionEventRecordSchema = timedRecordSchema.extend({
   intervention: interventionSchema,
 })
 
+const decisionProposalEventRecordSchema = timedRecordSchema.extend({
+  occurredAtUnixMs: z.number(),
+  proposal: decisionProposalSchema,
+})
+
 const experimentReplayExportSchema = z.object({
   metadata: replayMetadataSchema,
   statistics: replayStatisticsSchema,
@@ -205,6 +269,7 @@ const experimentReplayExportSchema = z.object({
   readingSessionStates: z.array(readingSessionStateRecordSchema),
   participantViewportEvents: z.array(participantViewportEventRecordSchema),
   readingFocusEvents: z.array(readingFocusEventRecordSchema),
+  decisionProposalEvents: z.array(decisionProposalEventRecordSchema),
   interventionEvents: z.array(interventionEventRecordSchema),
 })
 
@@ -218,6 +283,8 @@ export type ReplaySessionSnapshot = {
   receivedGazeSamples: number
   latestGazeSample: GazeData | null
   readingSession: LiveReadingSessionSnapshot | null
+  decisionConfiguration: DecisionConfiguration
+  decisionState: DecisionState
 }
 
 export type ExperimentReplayMetadata = z.infer<typeof replayMetadataSchema>
@@ -227,6 +294,7 @@ export type GazeSampleRecord = z.infer<typeof gazeRecordSchema>
 export type ReadingSessionStateRecord = z.infer<typeof readingSessionStateRecordSchema>
 export type ParticipantViewportEventRecord = z.infer<typeof participantViewportEventRecordSchema>
 export type ReadingFocusEventRecord = z.infer<typeof readingFocusEventRecordSchema>
+export type DecisionProposalEventRecord = z.infer<typeof decisionProposalEventRecordSchema>
 export type InterventionEventRecord = z.infer<typeof interventionEventRecordSchema>
 export type ExperimentReplayExport = z.infer<typeof experimentReplayExportSchema>
 
@@ -239,13 +307,14 @@ export type ReplayFrame = {
   viewportRecord: ParticipantViewportEventRecord | null
   focusRecord: ReadingFocusEventRecord | null
   readingSessionStateRecord: ReadingSessionStateRecord | null
+  decisionProposalRecord: DecisionProposalEventRecord | null
   interventionRecord: InterventionEventRecord | null
   lifecycleRecord: ExperimentLifecycleEventRecord | null
 }
 
 export type ReplayKeyEvent = {
   id: string
-  kind: "lifecycle" | "state" | "intervention" | "connection"
+  kind: "lifecycle" | "state" | "proposal" | "intervention" | "connection"
   timeMs: number
   title: string
   detail: string
@@ -403,6 +472,7 @@ function parseReplayCsv(input: string) {
     readingSessionStates: getMany("readingSessionState"),
     participantViewportEvents: getMany("participantViewportEvent"),
     readingFocusEvents: getMany("readingFocusEvent"),
+    decisionProposalEvents: getMany("decisionProposalEvent"),
     interventionEvents: getMany("interventionEvent"),
   }
 }
@@ -482,6 +552,38 @@ function copyReadingSession(
   }
 }
 
+function copyDecisionProposal(
+  proposal: DecisionProposalSnapshot | null | undefined
+): DecisionProposalSnapshot | null {
+  if (!proposal) {
+    return null
+  }
+
+  return {
+    ...proposal,
+    signal: { ...proposal.signal },
+    proposedIntervention: {
+      ...proposal.proposedIntervention,
+      presentation: { ...proposal.proposedIntervention.presentation },
+      appearance: { ...proposal.proposedIntervention.appearance },
+    },
+  }
+}
+
+function copyDecisionConfiguration(
+  configuration: DecisionConfiguration
+): DecisionConfiguration {
+  return { ...configuration }
+}
+
+function copyDecisionState(state: DecisionState): DecisionState {
+  return {
+    ...state,
+    activeProposal: copyDecisionProposal(state.activeProposal),
+    recentProposalHistory: state.recentProposalHistory.map((proposal) => copyDecisionProposal(proposal)!),
+  }
+}
+
 function copySessionSnapshot(snapshot: ReplaySessionSnapshot): ReplaySessionSnapshot {
   return {
     ...snapshot,
@@ -489,6 +591,8 @@ function copySessionSnapshot(snapshot: ReplaySessionSnapshot): ReplaySessionSnap
     eyeTrackerDevice: snapshot.eyeTrackerDevice ? { ...snapshot.eyeTrackerDevice } : null,
     latestGazeSample: snapshot.latestGazeSample ? { ...snapshot.latestGazeSample } : null,
     readingSession: copyReadingSession(snapshot.readingSession),
+    decisionConfiguration: copyDecisionConfiguration(snapshot.decisionConfiguration),
+    decisionState: copyDecisionState(snapshot.decisionState),
   }
 }
 
@@ -618,6 +722,9 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   const stateIndex = findLatestIndexAtOrBefore(replay.readingSessionStates, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
+  const decisionProposalIndex = findLatestIndexAtOrBefore(replay.decisionProposalEvents, currentTimeMs, (record) =>
+    resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+  )
   const interventionIndex = findLatestIndexAtOrBefore(replay.interventionEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
@@ -629,6 +736,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   const viewportRecord = viewportIndex >= 0 ? replay.participantViewportEvents[viewportIndex]! : null
   const focusRecord = focusIndex >= 0 ? replay.readingFocusEvents[focusIndex]! : null
   const readingSessionStateRecord = stateIndex >= 0 ? replay.readingSessionStates[stateIndex]! : null
+  const decisionProposalRecord = decisionProposalIndex >= 0 ? replay.decisionProposalEvents[decisionProposalIndex]! : null
   const interventionRecord = interventionIndex >= 0 ? replay.interventionEvents[interventionIndex]! : null
   const lifecycleRecord = lifecycleIndex >= 0 ? replay.lifecycleEvents[lifecycleIndex]! : null
 
@@ -656,6 +764,23 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   snapshot.latestGazeSample = gazeRecord ? { ...gazeRecord.sample } : null
   snapshot.isActive = currentTimeMs < durationMs
   snapshot.stoppedAtUnixMs = currentTimeMs >= durationMs ? replay.finalSnapshot.stoppedAtUnixMs : null
+  if (decisionProposalRecord) {
+    snapshot.decisionState = {
+      ...snapshot.decisionState,
+      activeProposal:
+        decisionProposalRecord.proposal.status === "pending"
+          ? copyDecisionProposal(decisionProposalRecord.proposal)
+          : snapshot.decisionState.activeProposal?.proposalId === decisionProposalRecord.proposal.proposalId
+            ? null
+            : snapshot.decisionState.activeProposal,
+      recentProposalHistory: [
+        copyDecisionProposal(decisionProposalRecord.proposal)!,
+        ...snapshot.decisionState.recentProposalHistory.filter(
+          (proposal) => proposal.proposalId !== decisionProposalRecord.proposal.proposalId
+        ),
+      ].slice(0, 25),
+    }
+  }
 
   return {
     currentTimeMs,
@@ -666,6 +791,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     viewportRecord,
     focusRecord,
     readingSessionStateRecord,
+    decisionProposalRecord,
     interventionRecord,
     lifecycleRecord,
   }
@@ -696,6 +822,16 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
       timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
       title: "Intervention applied",
       detail: record.intervention.reason,
+    })
+  }
+
+  for (const record of replay.decisionProposalEvents) {
+    events.push({
+      id: `proposal-${record.sequenceNumber}`,
+      kind: "proposal",
+      timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
+      title: `Proposal ${record.proposal.status}`,
+      detail: record.proposal.rationale,
     })
   }
 

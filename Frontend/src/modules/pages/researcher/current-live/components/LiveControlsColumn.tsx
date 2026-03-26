@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 
 import { ModeToggle } from "@/components/theme/mode-toggle"
 import { PaletteToggle } from "@/components/theme/palette-toggle"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
@@ -18,6 +19,7 @@ import {
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { type FontTheme, FONTS } from "@/hooks/use-font-theme"
+import type { DecisionConfiguration, DecisionState } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
 import { normalizeFontTheme, type ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
@@ -190,6 +192,8 @@ function LatencySignal({ latencyMs }: { latencyMs: number | null | undefined }) 
 
 type LiveControlsColumnProps = {
   followParticipant: boolean
+  decisionConfiguration: DecisionConfiguration
+  decisionState: DecisionState
   activeWord: string | null
   participantName: string | null
   sampleRateHz: number
@@ -212,10 +216,17 @@ type LiveControlsColumnProps = {
     next: { presentation?: Partial<ReadingPresentationSettings> },
     reason: string
   ) => void
+  onApproveProposal: (proposalId: string) => void
+  onRejectProposal: (proposalId: string) => void
+  onPauseAutomation: () => void
+  onResumeAutomation: () => void
+  onExecutionModeChange: (executionMode: string) => void
 }
 
 export function LiveControlsColumn({
   followParticipant,
+  decisionConfiguration,
+  decisionState,
   activeWord,
   participantName,
   sampleRateHz,
@@ -232,6 +243,11 @@ export function LiveControlsColumn({
   onReaderAppearanceChange,
   onReaderOptionChange,
   onCommitIntervention,
+  onApproveProposal,
+  onRejectProposal,
+  onPauseAutomation,
+  onResumeAutomation,
+  onExecutionModeChange,
 }: LiveControlsColumnProps) {
   const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false)
 
@@ -266,6 +282,65 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
+              <SectionLabel>Decision supervision</SectionLabel>
+
+              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {decisionConfiguration.providerId} · {decisionConfiguration.executionMode}
+                  {decisionState.automationPaused ? " · paused" : ""}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    decisionState.automationPaused
+                      ? onResumeAutomation()
+                      : onPauseAutomation()
+                  }
+                >
+                  {decisionState.automationPaused ? "Resume automation" : "Pause automation"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    onExecutionModeChange(
+                      decisionConfiguration.executionMode === "autonomous"
+                        ? "advisory"
+                        : "autonomous"
+                    )
+                  }
+                >
+                  {decisionConfiguration.executionMode === "autonomous" ? "Advisory" : "Autonomous"}
+                </Button>
+              </div>
+
+              {decisionState.activeProposal ? (
+                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                  <p className="text-sm font-medium">Active proposal</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {decisionState.activeProposal.rationale}
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button onClick={() => onApproveProposal(decisionState.activeProposal!.proposalId)}>
+                      Approve proposal
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => onRejectProposal(decisionState.activeProposal!.proposalId)}
+                    >
+                      Reject proposal
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[1.1rem] border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                  No active proposal. Manual intervention remains available below.
+                </div>
+              )}
+
               <FollowParticipantRow
                 checked={followParticipant}
                 onCheckedChange={onFollowParticipantChange}

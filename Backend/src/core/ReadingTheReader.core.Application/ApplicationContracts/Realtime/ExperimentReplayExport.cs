@@ -25,11 +25,28 @@ public sealed record ExperimentReplayStatistics(
     int ReadingSessionStateCount,
     int ParticipantViewportEventCount,
     int ReadingFocusEventCount,
+    int DecisionProposalEventCount,
     int InterventionEventCount)
 {
     public ExperimentReplayStatistics Copy()
     {
         return this with { };
+    }
+}
+
+public sealed record DecisionProposalEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    long? ElapsedSinceStartMs,
+    DecisionProposalSnapshot Proposal)
+{
+    public DecisionProposalEventRecord Copy()
+    {
+        return new DecisionProposalEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            ElapsedSinceStartMs,
+            Proposal.Copy());
     }
 }
 
@@ -138,6 +155,7 @@ public sealed record ExperimentReplayExport(
     IReadOnlyList<ReadingSessionStateRecord> ReadingSessionStates,
     IReadOnlyList<ParticipantViewportEventRecord> ParticipantViewportEvents,
     IReadOnlyList<ReadingFocusEventRecord> ReadingFocusEvents,
+    IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
     IReadOnlyList<InterventionEventRecord> InterventionEvents)
 {
     public ExperimentReplayExport Copy()
@@ -152,6 +170,7 @@ public sealed record ExperimentReplayExport(
             ReadingSessionStates is null ? [] : [.. ReadingSessionStates.Select(item => item.Copy())],
             ParticipantViewportEvents is null ? [] : [.. ParticipantViewportEvents.Select(item => item.Copy())],
             ReadingFocusEvents is null ? [] : [.. ReadingFocusEvents.Select(item => item.Copy())],
+            DecisionProposalEvents is null ? [] : [.. DecisionProposalEvents.Select(item => item.Copy())],
             InterventionEvents is null ? [] : [.. InterventionEvents.Select(item => item.Copy())]);
     }
 }

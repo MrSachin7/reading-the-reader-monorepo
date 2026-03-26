@@ -39,6 +39,22 @@ public sealed record ApplyInterventionRealtimeCommand(
     string ConnectionId,
     ApplyInterventionCommand Payload) : IRealtimeIngressCommand;
 
+public sealed record ApproveDecisionProposalRealtimeCommand(
+    string ConnectionId,
+    Guid ProposalId) : IRealtimeIngressCommand;
+
+public sealed record RejectDecisionProposalRealtimeCommand(
+    string ConnectionId,
+    Guid ProposalId) : IRealtimeIngressCommand;
+
+public sealed record PauseDecisionAutomationRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
+
+public sealed record ResumeDecisionAutomationRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
+
+public sealed record SetDecisionExecutionModeRealtimeCommand(
+    string ConnectionId,
+    string ExecutionMode) : IRealtimeIngressCommand;
+
 public sealed record DisconnectClientRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
 public sealed record InvalidRealtimeCommand(
@@ -88,6 +104,23 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Intervention payload is invalid.",
                 parsed => new ApplyInterventionRealtimeCommand(connectionId, parsed)),
+            MessageTypes.ApproveDecisionProposal => Deserialize<DecisionProposalRealtimePayload>(
+                payload,
+                connectionId,
+                "Decision proposal payload is invalid.",
+                parsed => new ApproveDecisionProposalRealtimeCommand(connectionId, parsed.ProposalId)),
+            MessageTypes.RejectDecisionProposal => Deserialize<DecisionProposalRealtimePayload>(
+                payload,
+                connectionId,
+                "Decision proposal payload is invalid.",
+                parsed => new RejectDecisionProposalRealtimeCommand(connectionId, parsed.ProposalId)),
+            MessageTypes.PauseDecisionAutomation => new PauseDecisionAutomationRealtimeCommand(connectionId),
+            MessageTypes.ResumeDecisionAutomation => new ResumeDecisionAutomationRealtimeCommand(connectionId),
+            MessageTypes.SetDecisionExecutionMode => Deserialize<SetDecisionExecutionModeRealtimePayload>(
+                payload,
+                connectionId,
+                "Decision execution mode payload is invalid.",
+                parsed => new SetDecisionExecutionModeRealtimeCommand(connectionId, parsed.ExecutionMode)),
             MessageTypes.ResearcherCommand => ParseResearcherCommand(connectionId, payload),
             _ => new UnsupportedRealtimeCommand(connectionId, messageType)
         };
@@ -109,9 +142,46 @@ public static class RealtimeIngressCommandFactory
             {
                 return new StopExperimentRealtimeCommand(connectionId);
             }
+
+            if (string.Equals(commandValue, MessageTypes.ApproveDecisionProposal, StringComparison.OrdinalIgnoreCase) &&
+                TryParseProposalPayload(payload, out var approveProposalId))
+            {
+                return new ApproveDecisionProposalRealtimeCommand(connectionId, approveProposalId);
+            }
+
+            if (string.Equals(commandValue, MessageTypes.RejectDecisionProposal, StringComparison.OrdinalIgnoreCase) &&
+                TryParseProposalPayload(payload, out var rejectProposalId))
+            {
+                return new RejectDecisionProposalRealtimeCommand(connectionId, rejectProposalId);
+            }
+
+            if (string.Equals(commandValue, MessageTypes.PauseDecisionAutomation, StringComparison.OrdinalIgnoreCase))
+            {
+                return new PauseDecisionAutomationRealtimeCommand(connectionId);
+            }
+
+            if (string.Equals(commandValue, MessageTypes.ResumeDecisionAutomation, StringComparison.OrdinalIgnoreCase))
+            {
+                return new ResumeDecisionAutomationRealtimeCommand(connectionId);
+            }
+
+            if (string.Equals(commandValue, MessageTypes.SetDecisionExecutionMode, StringComparison.OrdinalIgnoreCase) &&
+                payload.TryGetProperty("executionMode", out var executionModeElement) &&
+                executionModeElement.ValueKind == JsonValueKind.String)
+            {
+                return new SetDecisionExecutionModeRealtimeCommand(connectionId, executionModeElement.GetString() ?? string.Empty);
+            }
         }
 
         return new InvalidRealtimeCommand(connectionId, "Unsupported researcher command");
+    }
+
+    private static bool TryParseProposalPayload(JsonElement payload, out Guid proposalId)
+    {
+        proposalId = Guid.Empty;
+        return payload.TryGetProperty("proposalId", out var proposalIdElement) &&
+               proposalIdElement.ValueKind == JsonValueKind.String &&
+               Guid.TryParse(proposalIdElement.GetString(), out proposalId);
     }
 
     private static IRealtimeIngressCommand Deserialize<TPayload>(
@@ -132,4 +202,8 @@ public static class RealtimeIngressCommandFactory
             return new InvalidRealtimeCommand(connectionId, errorMessage);
         }
     }
+
+    private sealed record DecisionProposalRealtimePayload(Guid ProposalId);
+
+    private sealed record SetDecisionExecutionModeRealtimePayload(string ExecutionMode);
 }

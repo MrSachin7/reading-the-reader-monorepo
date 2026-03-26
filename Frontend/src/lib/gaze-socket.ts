@@ -1,6 +1,9 @@
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
 import {
+  EMPTY_DECISION_CONFIGURATION,
+  EMPTY_DECISION_STATE,
   EMPTY_READING_SESSION,
+  type DecisionRealtimeUpdate,
   type ExperimentSessionSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
@@ -60,6 +63,11 @@ type ServerEnvelope =
       type: "interventionEvent";
       sentAtUnixMs: number;
       payload: InterventionEventSnapshot;
+    }
+  | {
+      type: "decisionProposalChanged";
+      sentAtUnixMs: number;
+      payload: DecisionRealtimeUpdate;
     }
   | {
       type: "calibrationStateChanged";
@@ -123,6 +131,22 @@ type ClientEnvelope =
           palette?: string | null;
           appFont?: string | null;
         };
+      };
+    }
+  | {
+      type: "approveDecisionProposal" | "rejectDecisionProposal";
+      payload: {
+        proposalId: string;
+      };
+    }
+  | {
+      type: "pauseDecisionAutomation" | "resumeDecisionAutomation";
+      payload: Record<string, never>;
+    }
+  | {
+      type: "setDecisionExecutionMode";
+      payload: {
+        executionMode: string;
       };
     };
 
@@ -311,6 +335,19 @@ function patchReadingSession(
   emitExperimentSession();
 }
 
+function patchDecisionRealtimeUpdate(update: DecisionRealtimeUpdate) {
+  if (!latestExperimentSession) {
+    return
+  }
+
+  latestExperimentSession = {
+    ...latestExperimentSession,
+    decisionConfiguration: update.decisionConfiguration,
+    decisionState: update.decisionState,
+  }
+  emitExperimentSession()
+}
+
 function handleMessage(raw: MessageEvent<string>) {
   try {
     const message = JSON.parse(raw.data) as ServerEnvelope;
@@ -345,6 +382,8 @@ function handleMessage(raw: MessageEvent<string>) {
       latestExperimentSession = {
         ...message.payload,
         readingSession: latestReadingSession,
+        decisionConfiguration: message.payload.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION,
+        decisionState: message.payload.decisionState ?? EMPTY_DECISION_STATE,
       };
       emitExperimentSession();
       return;
@@ -391,6 +430,11 @@ function handleMessage(raw: MessageEvent<string>) {
         appearance: message.payload.appliedAppearance,
       }));
       return;
+    }
+
+    if (message.type === "decisionProposalChanged") {
+      patchDecisionRealtimeUpdate(message.payload)
+      return
     }
 
     if (message.type === "calibrationStateChanged") {
@@ -564,6 +608,46 @@ export function updateReadingAttentionSummary(payload: ReadingAttentionSummaryPa
     type: "readingAttentionSummaryUpdated",
     payload,
   });
+}
+
+export function approveDecisionProposal(proposalId: string) {
+  connect()
+  send({
+    type: "approveDecisionProposal",
+    payload: { proposalId },
+  })
+}
+
+export function rejectDecisionProposal(proposalId: string) {
+  connect()
+  send({
+    type: "rejectDecisionProposal",
+    payload: { proposalId },
+  })
+}
+
+export function pauseDecisionAutomation() {
+  connect()
+  send({
+    type: "pauseDecisionAutomation",
+    payload: {},
+  })
+}
+
+export function resumeDecisionAutomation() {
+  connect()
+  send({
+    type: "resumeDecisionAutomation",
+    payload: {},
+  })
+}
+
+export function setDecisionExecutionMode(executionMode: string) {
+  connect()
+  send({
+    type: "setDecisionExecutionMode",
+    payload: { executionMode },
+  })
 }
 
 export function stopGazeSocket() {

@@ -33,7 +33,9 @@ public sealed record ExperimentSessionSnapshot(
     long ReceivedGazeSamples,
     GazeData? LatestGazeSample,
     int ConnectedClients,
-    LiveReadingSessionSnapshot? ReadingSession
+    LiveReadingSessionSnapshot? ReadingSession,
+    DecisionConfigurationSnapshot DecisionConfiguration,
+    DecisionRuntimeStateSnapshot DecisionState
 )
 {
     public ExperimentSessionSnapshot Copy()
@@ -50,7 +52,9 @@ public sealed record ExperimentSessionSnapshot(
             ReceivedGazeSamples,
             LatestGazeSample?.Copy(),
             ConnectedClients,
-            ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty);
+            ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty,
+            DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy(),
+            DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy());
     }
 
     private static CalibrationSessionSnapshot CopyCalibration(CalibrationSessionSnapshot source)

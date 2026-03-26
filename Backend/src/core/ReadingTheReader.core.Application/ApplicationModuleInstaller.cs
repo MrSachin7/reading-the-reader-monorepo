@@ -13,6 +13,11 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton<IParticipantService, ParticipantService>();
         collection.AddSingleton<IReadingMaterialSetupService, ReadingMaterialSetupService>();
         collection.AddSingleton<IReadingInterventionRuntime, ReadingInterventionRuntime>();
+        collection.AddSingleton<IDecisionContextFactory, DecisionContextFactory>();
+        collection.AddSingleton<IDecisionStrategy, RuleBasedDecisionStrategy>();
+        collection.AddSingleton<IDecisionStrategy, ExternalDecisionStrategyStub>();
+        collection.AddSingleton<IDecisionStrategyRegistry, DecisionStrategyRegistry>();
+        collection.AddSingleton<IDecisionStrategyCoordinator, DecisionStrategyCoordinator>();
         collection.AddSingleton<ExperimentSessionManager>();
         collection.AddSingleton<IExperimentSessionManager>(sp => sp.GetRequiredService<ExperimentSessionManager>());
         collection.AddSingleton<IExperimentRuntimeAuthority>(sp => sp.GetRequiredService<ExperimentSessionManager>());
