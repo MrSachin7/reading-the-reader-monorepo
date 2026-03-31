@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { AlertCircle, CheckCircle2, Forward, ScanEye } from "lucide-react"
+import { AlertCircle, CheckCircle2, ScanEye } from "lucide-react"
 
+import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { CalibrationSetupReadinessSnapshot } from "@/lib/experiment-session"
 import {
-  setStepThreeCalibrationSkipped,
-  setStepThreeExternalCalibrationCompleted,
   setStepThreeInternalCalibrationStatus,
   setStepThreeUseLocalCalibration,
   useAppDispatch,
@@ -16,27 +16,41 @@ import type { RootState } from "@/redux"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { type CalibrationStepProps } from "./utils"
+import {
+  formatCalibrationMetric,
+  formatCalibrationQualityLabel,
+  type CalibrationStepProps,
+} from "./utils"
+
+type AuthoritativeCalibrationStepProps = CalibrationStepProps & {
+  setup: CalibrationSetupReadinessSnapshot
+  calibration?: CalibrationSessionSnapshot
+}
 
 export function CalibrationStep({
+  setup,
+  calibration,
   onCompletionChange,
   onSubmitRequestChange,
   onSubmittingChange,
-}: CalibrationStepProps) {
+}: AuthoritativeCalibrationStepProps) {
   const dispatch = useAppDispatch()
   const stepThree = useAppSelector((state: RootState) => state.experiment.stepThree)
 
-  const isComplete = stepThree.externalCalibrationCompleted
+  const isComplete = setup.isReady
   const isRunning = stepThree.internalCalibrationStatus === "running"
-  const hasFailed = stepThree.internalCalibrationStatus === "failed"
-  const isSkipped = stepThree.calibrationSkipped
-  const hasPreviousCalibration =
-    Boolean(stepThree.lastAppliedAtUnixMs) &&
-    stepThree.lastQuality !== null &&
-    stepThree.lastQuality !== "poor" &&
-    stepThree.lastCalibrationStatus !== "Skipped using previous calibration"
-  const canSkipCalibration = hasPreviousCalibration && !isRunning
-  const isStepComplete = isSkipped ? hasPreviousCalibration : isComplete
+  const hasFailed =
+    stepThree.internalCalibrationStatus === "failed" ||
+    (setup.hasCalibrationSession &&
+      !setup.isReady &&
+      setup.validationStatus === "completed" &&
+      setup.isValidationPassed === false)
+  const isStepComplete = isComplete
+  const failureMessage =
+    stepThree.lastCalibrationStatus ??
+    calibration?.validation.result?.notes?.[0] ??
+    setup.blockReason ??
+    "The last attempt did not complete with acceptable validation quality."
 
   React.useEffect(() => {
     onCompletionChange?.(isStepComplete)
@@ -53,20 +67,7 @@ export function CalibrationStep({
   }, [onSubmittingChange])
 
   const handleReset = () => {
-    dispatch(setStepThreeExternalCalibrationCompleted(false))
-    dispatch(setStepThreeCalibrationSkipped(false))
     dispatch(setStepThreeInternalCalibrationStatus("pending"))
-    dispatch(setStepThreeUseLocalCalibration(false))
-  }
-
-  const handleSkip = () => {
-    if (!hasPreviousCalibration) {
-      return
-    }
-
-    dispatch(setStepThreeExternalCalibrationCompleted(true))
-    dispatch(setStepThreeCalibrationSkipped(true))
-    dispatch(setStepThreeInternalCalibrationStatus("completed"))
     dispatch(setStepThreeUseLocalCalibration(false))
   }
 
@@ -88,6 +89,31 @@ export function CalibrationStep({
       </CardHeader>
 
       <CardContent className="space-y-6 pt-8">
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Workflow</p>
+            <p className="mt-2 text-sm font-semibold">{setup.isReady ? "Ready" : "Blocked"}</p>
+          </div>
+          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Validation quality</p>
+            <p className="mt-2 text-sm font-semibold">
+              {formatCalibrationQualityLabel(setup.validationQuality)}
+            </p>
+          </div>
+          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Accuracy</p>
+            <p className="mt-2 text-sm font-semibold">
+              {formatCalibrationMetric(setup.averageAccuracyDegrees)}
+            </p>
+          </div>
+          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Precision</p>
+            <p className="mt-2 text-sm font-semibold">
+              {formatCalibrationMetric(setup.averagePrecisionDegrees)}
+            </p>
+          </div>
+        </div>
+
         <div className="rounded-[1.75rem] border bg-muted/20 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
@@ -105,39 +131,22 @@ export function CalibrationStep({
               </Link>
             </Button>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button variant="outline" onClick={handleSkip} disabled={!canSkipCalibration}>
-              <Forward className="h-4 w-4" />
-              Skip calibration
-            </Button>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {hasPreviousCalibration
-                ? "Use the previously applied calibration and continue without rerunning this step."
-                : "Run calibration once before this option becomes available."}
-            </p>
+          <div className="mt-4 text-sm leading-6 text-muted-foreground">
+            The experiment workflow only becomes ready when the backend reports a validated
+            calibration result. Leaving full screen, hiding the tab, or backing out interrupts the
+            route and keeps this step blocked until the researcher reruns it.
           </div>
         </div>
 
-        {stepThree.externalCalibrationCompleted && !isSkipped ? (
+        {setup.isReady ? (
           <div className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-4 text-emerald-900 dark:text-emerald-100">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="text-sm font-semibold">Calibration applied</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                The selected eye tracker has an active Tobii calibration with a validated quality rating
-                of {stepThree.lastQuality ?? "unknown"}.
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {isSkipped ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-amber-400/30 bg-amber-500/5 p-4 text-amber-950">
-            <Forward className="mt-0.5 h-5 w-5 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">Calibration skipped</p>
-              <p className="mt-1 text-sm leading-6 opacity-80">
-                This session is using a previously applied calibration without rerunning the hardware flow.
+                The selected eye tracker has an active validated calibration with{" "}
+                {formatCalibrationQualityLabel(setup.validationQuality).toLowerCase()} and{" "}
+                {setup.sampleCount} validation samples.
               </p>
             </div>
           </div>
@@ -156,14 +165,14 @@ export function CalibrationStep({
           </div>
         ) : null}
 
-        {!hasPreviousCalibration && !stepThree.externalCalibrationCompleted ? (
+        {!setup.isReady ? (
           <div className="flex items-start gap-3 rounded-[1.5rem] border border-slate-300/70 bg-slate-50 p-4 text-slate-900">
             <ScanEye className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="text-sm font-semibold">Calibration required</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                No previous validated calibration is available yet, so this step must be completed
-                before continuing.
+                {setup.blockReason ??
+                  "Run calibration and validation once before the backend will allow the session to start."}
               </p>
             </div>
           </div>
@@ -175,7 +184,7 @@ export function CalibrationStep({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Calibration needs to be rerun</p>
               <p className="mt-1 text-sm leading-6 opacity-80">
-                The last attempt did not complete with acceptable validation quality.
+                {failureMessage}
               </p>
             </div>
             <Button variant="outline" onClick={handleReset}>

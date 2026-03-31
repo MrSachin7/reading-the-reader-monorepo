@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Experiment Authority & Sensing Boundary** - Isolate sensing and orchestration so the thesis has a defensible core runtime.
 - [x] **Phase 2: Swappable Decision Strategies** - Make decision logic pluggable for manual, rule-based, hybrid, and external-provider modes.
 - [x] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
-- [ ] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
+- [x] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
 - [ ] **Phase 5: Controlled Markdown Reading Baseline** - Keep Markdown reading stable while researchers configure and lock presentation conditions.
 - [ ] **Phase 6: Researcher Live Mirror & Session Operations** - Keep the live researcher console trustworthy during active experiment runs.
 - [ ] **Phase 7: Context-Preserving Adaptive Reading** - Preserve reading position and rhythm when live interventions change layout.
@@ -79,7 +79,11 @@ Plans:
   2. Researcher can complete calibration and validation in the application and review calibration quality before starting a session.
   3. Session start stays blocked until device, licensing, calibration, reading material, and other required setup inputs are valid.
   4. Researcher can move through the setup workflow without leaving the platform or losing experiment context.
-**Plans**: TBD
+**Plans**:
+- [x] 04-01-PLAN.md - Add authoritative setup-readiness contracts and Wave 0 backend coverage for device/licence/calibration/start blockers.
+- [x] 04-02-PLAN.md - Align device-selection and calibration transport/frontend contracts around authoritative workflow state.
+- [x] 04-03-PLAN.md - Refactor the experiment page into one guided setup workflow driven by authoritative readiness and calibration summary.
+- [x] 04-04-PLAN.md - Harden calibration-route return/interruption handling and verify the full Tobii-ready setup flow end to end.
 **UI hint**: yes
 
 ### Phase 5: Controlled Markdown Reading Baseline
@@ -137,7 +141,7 @@ Plans:
 | 1. Experiment Authority & Sensing Boundary | 5/5 | Completed | 2026-03-26 |
 | 2. Swappable Decision Strategies | 4/4 | Completed | 2026-03-31 |
 | 3. Pluggable Intervention Modules | 4/4 | Completed | 2026-03-31 |
-| 4. Device Setup & Calibration Workflow | 0/TBD | Not started | - |
+| 4. Device Setup & Calibration Workflow | 4/4 | Completed | 2026-03-31 |
 | 5. Controlled Markdown Reading Baseline | 0/TBD | Not started | - |
 | 6. Researcher Live Mirror & Session Operations | 0/TBD | Not started | - |
 | 7. Context-Preserving Adaptive Reading | 0/TBD | Not started | - |

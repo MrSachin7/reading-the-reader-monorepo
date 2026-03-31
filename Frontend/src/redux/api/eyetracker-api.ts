@@ -1,10 +1,12 @@
 import { baseApi } from "@/redux/api/base-api"
+import type { ExperimentSetupSnapshot } from "@/lib/experiment-session"
 
 export type Eyetracker = {
   name: string
   model: string
   serialNumber: string
   hasSavedLicence: boolean
+  isSelected: boolean
 }
 
 export type SelectEyetrackerPayload = {
@@ -18,6 +20,27 @@ type EyeTrackerApiResponse = {
   model?: string
   serialNumber?: string
   hasSavedLicence?: boolean
+  isSelected?: boolean
+}
+
+export type SelectEyetrackerResult = {
+  selectedTracker: Eyetracker
+  setup: ExperimentSetupSnapshot
+}
+
+type SelectEyetrackerApiResponse = {
+  selectedTracker?: EyeTrackerApiResponse
+  setup?: ExperimentSetupSnapshot
+}
+
+function mapEyetracker(item: EyeTrackerApiResponse): Eyetracker {
+  return {
+    name: item.name ?? "",
+    model: item.model ?? "",
+    serialNumber: item.serialNumber ?? "",
+    hasSavedLicence: Boolean(item.hasSavedLicence),
+    isSelected: Boolean(item.isSelected),
+  }
 }
 
 export const eyetrackerApi = baseApi.injectEndpoints({
@@ -25,15 +48,10 @@ export const eyetrackerApi = baseApi.injectEndpoints({
     getEyetrackers: builder.query<Eyetracker[], void>({
       query: () => "/eyetrackers",
       transformResponse: (response: EyeTrackerApiResponse[]) =>
-        response.map((item) => ({
-          name: item.name ?? "",
-          model: item.model ?? "",
-          serialNumber: item.serialNumber ?? "",
-          hasSavedLicence: Boolean(item.hasSavedLicence),
-        })),
+        response.map(mapEyetracker),
       providesTags: ["Eyetracker"],
     }),
-    selectEyetracker: builder.mutation<void, SelectEyetrackerPayload>({
+    selectEyetracker: builder.mutation<SelectEyetrackerResult, SelectEyetrackerPayload>({
       query: ({ serialNumber, saveLicence, licenceFile }) => {
         const formData = new FormData()
         formData.append("SerialNumber", serialNumber)
@@ -48,6 +66,52 @@ export const eyetrackerApi = baseApi.injectEndpoints({
           body: formData,
         }
       },
+      transformResponse: (response: SelectEyetrackerApiResponse) => ({
+        selectedTracker: mapEyetracker(response.selectedTracker ?? {}),
+        setup: response.setup ?? {
+          isReadyForSessionStart: false,
+          currentStepIndex: 0,
+          currentBlocker: null,
+          eyeTracker: {
+            isReady: false,
+            hasSelectedEyeTracker: false,
+            hasAppliedLicence: false,
+            hasSavedLicence: false,
+            savedLicenceMissing: false,
+            selectedTrackerSerialNumber: null,
+            selectedTrackerName: null,
+            blockReason: null,
+          },
+          participant: {
+            isReady: false,
+            hasParticipant: false,
+            participantName: null,
+            blockReason: null,
+          },
+          calibration: {
+            isReady: false,
+            hasCalibrationSession: false,
+            isCalibrationApplied: false,
+            isValidationPassed: false,
+            status: "idle",
+            validationStatus: "idle",
+            validationQuality: null,
+            averageAccuracyDegrees: null,
+            averagePrecisionDegrees: null,
+            sampleCount: 0,
+            blockReason: null,
+          },
+          readingMaterial: {
+            isReady: false,
+            hasReadingMaterial: false,
+            documentId: null,
+            title: null,
+            sourceSetupId: null,
+            blockReason: null,
+          },
+        },
+      }),
+      invalidatesTags: ["Eyetracker", "Experiment"],
     }),
   }),
 })

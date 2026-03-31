@@ -206,10 +206,8 @@ const experimentSlice = createSlice({
           })
         : null
       const validationPassed = calibration.validation.result?.passed === true
-      const calibrationReady =
-        session.setup.calibrationCompleted || validationPassed
-      const effectiveCalibrationReady =
-        calibrationReady || state.stepThree.externalCalibrationCompleted
+      const authoritativeCalibrationReady =
+        session.setup.calibration.isReady || validationPassed
 
       state.stepOne = {
         ...state.stepOne,
@@ -217,7 +215,7 @@ const experimentSlice = createSlice({
         overwriteExistingLicence: false,
         saveLicence: false,
         licenceFileName: null,
-        selectionConfirmed: session.setup.eyeTrackerSetupCompleted,
+        selectionConfirmed: session.setup.eyeTracker.isReady,
         lastSyncedFingerprint: eyeTrackerFingerprint,
       }
 
@@ -228,18 +226,20 @@ const experimentSlice = createSlice({
         sex: participant?.sex ?? "",
         eyeCondition: participant?.existingEyeCondition ?? "",
         readingProficiency: participant?.readingProficiency ?? "",
-        participantConfirmed: session.setup.participantSetupCompleted,
+        participantConfirmed: session.setup.participant.isReady,
         lastSyncedFingerprint: participantFingerprint,
       }
 
       state.stepThree = {
         ...state.stepThree,
-        externalCalibrationCompleted: effectiveCalibrationReady,
+        externalCalibrationCompleted: authoritativeCalibrationReady,
         useLocalCalibration: false,
-        calibrationSkipped: calibrationReady ? false : state.stepThree.calibrationSkipped,
+        calibrationSkipped: false,
         internalCalibrationStatus:
-          effectiveCalibrationReady
+          authoritativeCalibrationReady
             ? "completed"
+            : calibration.validation.result && calibration.validation.result.passed === false
+              ? "failed"
             : calibration.status === "running" || calibration.validation.status === "running"
               ? "running"
               : calibration.status === "failed" ||
@@ -248,13 +248,13 @@ const experimentSlice = createSlice({
                 ? "failed"
                 : "pending",
         lastAppliedAtUnixMs:
-          calibrationReady
-            ? calibration.completedAtUnixMs
-            : state.stepThree.lastAppliedAtUnixMs,
+          calibration.validation.completedAtUnixMs ??
+          calibration.completedAtUnixMs ??
+          state.stepThree.lastAppliedAtUnixMs,
         lastQuality:
-          effectiveCalibrationReady
-            ? calibration.validation.result?.quality ?? state.stepThree.lastQuality ?? "unknown"
-            : null,
+          session.setup.calibration.validationQuality ??
+          calibration.validation.result?.quality ??
+          null,
         lastCalibrationSessionId:
           calibration.sessionId ?? state.stepThree.lastCalibrationSessionId,
         lastCalibrationStatus:
