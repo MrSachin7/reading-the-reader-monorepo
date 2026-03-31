@@ -216,7 +216,9 @@ public sealed record InterventionEventSnapshot(
     string Reason,
     long AppliedAtUnixMs,
     ReadingPresentationSnapshot AppliedPresentation,
-    ReaderAppearanceSnapshot AppliedAppearance)
+    ReaderAppearanceSnapshot AppliedAppearance,
+    string? ModuleId = null,
+    IReadOnlyDictionary<string, string?>? Parameters = null)
 {
     public InterventionEventSnapshot Copy()
     {
@@ -227,7 +229,9 @@ public sealed record InterventionEventSnapshot(
             Reason,
             AppliedAtUnixMs,
             AppliedPresentation.Copy(),
-            AppliedAppearance.Copy());
+            AppliedAppearance.Copy(),
+            InterventionContractValueHelpers.NormalizeOptionalText(ModuleId),
+            InterventionContractValueHelpers.CloneParameters(Parameters));
     }
 }
 
@@ -286,12 +290,42 @@ public sealed record ApplyInterventionCommand(
     string Trigger,
     string Reason,
     ReadingPresentationPatch Presentation,
-    ReaderAppearancePatch Appearance);
+    ReaderAppearancePatch Appearance,
+    string? ModuleId = null,
+    IReadOnlyDictionary<string, string?>? Parameters = null)
+{
+    public ApplyInterventionCommand Copy()
+    {
+        return new ApplyInterventionCommand(
+            Source,
+            Trigger,
+            Reason,
+            Presentation with { },
+            Appearance with { },
+            InterventionContractValueHelpers.NormalizeOptionalText(ModuleId),
+            InterventionContractValueHelpers.CloneParameters(Parameters));
+    }
+}
 
 public sealed record ReaderAppearancePatch(
     string? ThemeMode,
     string? Palette,
     string? AppFont);
+
+internal static class InterventionContractValueHelpers
+{
+    public static IReadOnlyDictionary<string, string?>? CloneParameters(IReadOnlyDictionary<string, string?>? parameters)
+    {
+        return parameters is null
+            ? null
+            : new Dictionary<string, string?>(parameters, StringComparer.Ordinal);
+    }
+
+    public static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+}
 
 public sealed record UpdateParticipantViewportCommand(
     double ScrollProgress,

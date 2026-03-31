@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import { ModeToggle } from "@/components/theme/mode-toggle"
 import { PaletteToggle } from "@/components/theme/palette-toggle"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -18,18 +19,18 @@ import {
 } from "@/components/ui/sheet"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { type FontTheme, FONTS } from "@/hooks/use-font-theme"
+import type { InterventionModuleDescriptor, InterventionParameterValues } from "@/lib/intervention-modules"
 import type { DecisionConfiguration, DecisionState } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
 import { normalizeFontTheme, type ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
+import { groupInterventionModules } from "@/modules/pages/researcher/current-live/lib/group-intervention-modules"
 import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 import {
   formatDurationMs,
   formatPercent,
   getLatencyBars,
   getLatencyTone,
-  PRESENTATION_FONT_LABELS,
 } from "@/modules/pages/researcher/current-live/utils"
 
 function ControlRow({
@@ -191,6 +192,7 @@ function LatencySignal({ latencyMs }: { latencyMs: number | null | undefined }) 
 }
 
 type LiveControlsColumnProps = {
+  interventionModules: InterventionModuleDescriptor[]
   followParticipant: boolean
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
@@ -207,13 +209,14 @@ type LiveControlsColumnProps = {
   presentation: ReadingPresentationSettings
   readerOptions: LiveReaderOptions
   onFollowParticipantChange: (checked: boolean) => void
-  onReaderAppearanceChange: (
-    next: Partial<ReaderAppearanceSettings>,
-    reason: string
-  ) => void
   onReaderOptionChange: (key: keyof LiveReaderOptions, value: boolean) => void
   onCommitIntervention: (
-    next: { presentation?: Partial<ReadingPresentationSettings> },
+    next: {
+      moduleId: string
+      parameters: InterventionParameterValues
+      presentation?: Partial<ReadingPresentationSettings>
+      appearance?: Partial<ReaderAppearanceSettings>
+    },
     reason: string
   ) => void
   onApproveProposal: (proposalId: string) => void
@@ -224,6 +227,7 @@ type LiveControlsColumnProps = {
 }
 
 export function LiveControlsColumn({
+  interventionModules,
   followParticipant,
   decisionConfiguration,
   decisionState,
@@ -240,7 +244,6 @@ export function LiveControlsColumn({
   presentation,
   readerOptions,
   onFollowParticipantChange,
-  onReaderAppearanceChange,
   onReaderOptionChange,
   onCommitIntervention,
   onApproveProposal,
@@ -250,6 +253,11 @@ export function LiveControlsColumn({
   onExecutionModeChange,
 }: LiveControlsColumnProps) {
   const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false)
+  const [moduleDrafts, setModuleDrafts] = useState<Record<string, InterventionParameterValues>>({})
+  const groupedInterventionModules = useMemo(
+    () => groupInterventionModules(interventionModules),
+    [interventionModules]
+  )
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -275,6 +283,413 @@ export function LiveControlsColumn({
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [isReaderControlsOpen])
+
+  function getCurrentParameterValue(
+    module: InterventionModuleDescriptor,
+    parameter: InterventionModuleDescriptor["parameters"][number]
+  ) {
+    switch (module.moduleId) {
+      case "font-family":
+        return presentation.fontFamily
+      case "font-size":
+        return String(presentation.fontSizePx)
+      case "line-width":
+        return String(presentation.lineWidthPx)
+      case "line-height":
+        return String(presentation.lineHeight)
+      case "letter-spacing":
+        return String(presentation.letterSpacingEm)
+      case "theme-mode":
+        return appearance.themeMode
+      case "palette":
+        return appearance.palette
+      case "participant-edit-lock":
+        return String(!presentation.editableByExperimenter)
+      default:
+        return parameter.defaultValue ?? parameter.options[0]?.value ?? (parameter.valueKind === "boolean" ? "false" : "")
+    }
+  }
+
+  function getDraftParameters(module: InterventionModuleDescriptor) {
+    const existingDraft = moduleDrafts[module.moduleId]
+    if (existingDraft) {
+      return existingDraft
+    }
+
+    return Object.fromEntries(
+      module.parameters.map((parameter) => [parameter.key, getCurrentParameterValue(module, parameter)])
+    ) as InterventionParameterValues
+  }
+
+  function updateDraftParameter(
+    module: InterventionModuleDescriptor,
+    parameterKey: string,
+    value: string
+  ) {
+    setModuleDrafts((previous) => ({
+      ...previous,
+      [module.moduleId]: {
+        ...(previous[module.moduleId] ?? getDraftParameters(module)),
+        [parameterKey]: value,
+      },
+    }))
+  }
+
+  function commitModule(
+    module: InterventionModuleDescriptor,
+    nextParameters: InterventionParameterValues,
+    reasonOverride?: string
+  ) {
+    setModuleDrafts((previous) => ({
+      ...previous,
+      [module.moduleId]: { ...nextParameters },
+    }))
+
+    const parameter = module.parameters[0]
+    const rawValue = parameter ? nextParameters[parameter.key] ?? "" : ""
+
+    switch (module.moduleId) {
+      case "font-family":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { fontFamily: normalizeFontTheme(rawValue) },
+          },
+          `Changed ${module.displayName.toLowerCase()} to ${getOptionLabel(parameter!, rawValue)}`
+        )
+        return
+
+      case "font-size":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { fontSizePx: Number(rawValue) },
+          },
+          "Adjusted font size"
+        )
+        return
+
+      case "line-width":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { lineWidthPx: Number(rawValue) },
+          },
+          "Adjusted line width"
+        )
+        return
+
+      case "line-height":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { lineHeight: Number(rawValue) },
+          },
+          "Adjusted line height"
+        )
+        return
+
+      case "letter-spacing":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { letterSpacingEm: Number(rawValue) },
+          },
+          "Adjusted letter spacing"
+        )
+        return
+
+      case "theme-mode":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            appearance: { themeMode: rawValue as ReaderAppearanceSettings["themeMode"] },
+          },
+          rawValue === "dark"
+            ? "Switched reader theme to dark mode"
+            : "Switched reader theme to light mode"
+        )
+        return
+
+      case "palette":
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            appearance: { palette: rawValue as ReaderAppearanceSettings["palette"] },
+          },
+          `Changed reader palette to ${getOptionLabel(parameter!, rawValue).toLowerCase()}`
+        )
+        return
+
+      case "participant-edit-lock": {
+        const locked = rawValue === "true"
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+            presentation: { editableByExperimenter: !locked },
+          },
+          locked
+            ? "Locked participant-side presentation changes"
+            : "Unlocked participant-side presentation changes"
+        )
+        return
+      }
+
+      default:
+        onCommitIntervention(
+          {
+            moduleId: module.moduleId,
+            parameters: nextParameters,
+          },
+          reasonOverride ?? `Applied ${module.displayName.toLowerCase()}`
+        )
+        return
+    }
+  }
+
+  function renderModuleControl(module: InterventionModuleDescriptor) {
+    const parameter = module.parameters[0]
+    if (!parameter) {
+      return renderGenericModuleControl(module)
+    }
+
+    switch (module.moduleId) {
+      case "font-family":
+        return (
+          <Field key={module.moduleId}>
+            <FieldLabel>{parameter.displayName}</FieldLabel>
+            <Select
+              value={presentation.fontFamily}
+              onValueChange={(value) => commitModule(module, { [parameter.key]: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={module.displayName} />
+              </SelectTrigger>
+              <SelectContent>
+                {parameter.options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )
+
+      case "participant-edit-lock":
+        return (
+          <div
+            key={module.moduleId}
+            className="flex items-center justify-between rounded-[1.1rem] border bg-muted/20 px-4 py-3"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{module.displayName}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{module.description}</p>
+            </div>
+            <Switch
+              checked={!presentation.editableByExperimenter}
+              onCheckedChange={(checked) => commitModule(module, { [parameter.key]: checked ? "true" : "false" })}
+            />
+          </div>
+        )
+
+      case "theme-mode":
+        return (
+          <Field key={module.moduleId}>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <FieldLabel>{module.displayName}</FieldLabel>
+              <ModeToggle
+                className="shrink-0"
+                value={appearance.themeMode}
+                onValueChange={(value) => commitModule(module, { [parameter.key]: value })}
+              />
+            </div>
+            <p className="text-xs leading-5 text-muted-foreground">{module.description}</p>
+          </Field>
+        )
+
+      case "palette":
+        return (
+          <Field key={module.moduleId}>
+            <FieldLabel>{module.displayName}</FieldLabel>
+            <div className="mt-2">
+              <ThemePalette
+                value={appearance.palette}
+                onValueChange={(value) => commitModule(module, { [parameter.key]: value })}
+              />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{module.description}</p>
+          </Field>
+        )
+
+      case "font-size":
+        return renderSliderField(
+          module,
+          parameter,
+          presentation.fontSizePx,
+          `${presentation.fontSizePx}px`,
+          (value) => commitModule(module, { [parameter.key]: String(value) })
+        )
+
+      case "line-width":
+        return renderSliderField(
+          module,
+          parameter,
+          presentation.lineWidthPx,
+          `${presentation.lineWidthPx}px`,
+          (value) => commitModule(module, { [parameter.key]: String(value) })
+        )
+
+      case "line-height":
+        return renderSliderField(
+          module,
+          parameter,
+          presentation.lineHeight,
+          presentation.lineHeight.toFixed(2),
+          (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
+        )
+
+      case "letter-spacing":
+        return renderSliderField(
+          module,
+          parameter,
+          presentation.letterSpacingEm,
+          `${presentation.letterSpacingEm.toFixed(2)}em`,
+          (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
+        )
+
+      default:
+        return renderGenericModuleControl(module)
+    }
+  }
+
+  function renderGenericModuleControl(module: InterventionModuleDescriptor) {
+    const draftParameters = getDraftParameters(module)
+    const canApply =
+      module.parameters.length > 0 &&
+      module.parameters.every((parameter) => {
+        if (!parameter.required) {
+          return true
+        }
+
+        const value = draftParameters[parameter.key]
+        return typeof value === "string" && value.trim().length > 0
+      })
+
+    return (
+      <div key={module.moduleId} className="rounded-[1.1rem] border bg-background/80 px-4 py-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{module.displayName}</p>
+          <p className="text-xs leading-5 text-muted-foreground">{module.description}</p>
+        </div>
+
+        {module.parameters.length > 0 ? (
+          <div className="mt-4 space-y-3">
+            {module.parameters.map((parameter) => {
+              const draftValue = draftParameters[parameter.key] ?? ""
+              const hint = formatParameterHint(parameter)
+
+              if (parameter.options.length > 0) {
+                return (
+                  <Field key={`${module.moduleId}:${parameter.key}`}>
+                    <FieldLabel>{parameter.displayName}</FieldLabel>
+                    <Select
+                      value={draftValue}
+                      onValueChange={(value) => updateDraftParameter(module, parameter.key, value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={parameter.displayName} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {parameter.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      {parameter.description}
+                      {hint ? ` · ${hint}` : ""}
+                    </p>
+                  </Field>
+                )
+              }
+
+              if (parameter.valueKind === "boolean") {
+                return (
+                  <div
+                    key={`${module.moduleId}:${parameter.key}`}
+                    className="flex items-center justify-between rounded-[1rem] border bg-muted/20 px-3 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{parameter.displayName}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {parameter.description}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={draftValue === "true"}
+                      onCheckedChange={(checked) =>
+                        updateDraftParameter(module, parameter.key, checked ? "true" : "false")
+                      }
+                    />
+                  </div>
+                )
+              }
+
+              return (
+                <Field key={`${module.moduleId}:${parameter.key}`}>
+                  <FieldLabel>{parameter.displayName}</FieldLabel>
+                  <Input
+                    type={parameter.valueKind === "string" ? "text" : "number"}
+                    value={draftValue}
+                    min={parameter.minValue ?? undefined}
+                    max={parameter.maxValue ?? undefined}
+                    step={parameter.step ?? undefined}
+                    placeholder={parameter.defaultValue ?? undefined}
+                    onChange={(event) => updateDraftParameter(module, parameter.key, event.target.value)}
+                  />
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {parameter.description}
+                    {hint ? ` · ${hint}` : ""}
+                  </p>
+                </Field>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-[1rem] border border-dashed bg-muted/10 px-3 py-3 text-xs leading-5 text-muted-foreground">
+            This module is registered without researcher-editable parameters.
+          </p>
+        )}
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {module.parameters.length > 1
+              ? "Apply all parameter values together."
+              : "Metadata-driven manual intervention."}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canApply}
+            onClick={() => commitModule(module, draftParameters)}
+          >
+            Apply
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Sheet open={isReaderControlsOpen} onOpenChange={setIsReaderControlsOpen}>
@@ -379,157 +794,18 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <SectionLabel>Presentation</SectionLabel>
-
-              <Field>
-                <FieldLabel>Font family</FieldLabel>
-                <Select
-                  value={normalizeFontTheme(presentation.fontFamily)}
-                  onValueChange={(value) =>
-                    onCommitIntervention(
-                      { presentation: { fontFamily: value as FontTheme } },
-                      `Changed font family to ${PRESENTATION_FONT_LABELS[value as FontTheme]}`
-                    )
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose font" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FONTS.map((font) => (
-                      <SelectItem key={font} value={font}>
-                        {PRESENTATION_FONT_LABELS[font]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <div className="flex items-center justify-between rounded-[1.1rem] border bg-muted/20 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Lock participant editing</p>
+              {groupedInterventionModules.length > 0 ? (
+                groupedInterventionModules.map((group) => (
+                  <div key={group.key} className="space-y-4">
+                    <SectionLabel>{group.title}</SectionLabel>
+                    {group.modules.map((module) => renderModuleControl(module))}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[1.1rem] border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                  No intervention modules are registered for this session.
                 </div>
-                <Switch
-                  checked={!presentation.editableByExperimenter}
-                  onCheckedChange={(checked) =>
-                    onCommitIntervention(
-                      { presentation: { editableByExperimenter: !checked } },
-                      checked
-                        ? "Locked participant-side presentation changes"
-                        : "Unlocked participant-side presentation changes"
-                    )
-                  }
-                />
-              </div>
-
-              <Field>
-                <div className="mb-2 flex items-center justify-between">
-                  <FieldLabel>Font size</FieldLabel>
-                  <span className="text-xs text-muted-foreground">{presentation.fontSizePx}px</span>
-                </div>
-                <Slider
-                  min={14}
-                  max={28}
-                  step={2}
-                  value={[presentation.fontSizePx]}
-                  onValueChange={(value) =>
-                    onCommitIntervention(
-                      { presentation: { fontSizePx: value[0] ?? presentation.fontSizePx } },
-                      "Adjusted font size"
-                    )
-                  }
-                />
-              </Field>
-
-              <Field>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <FieldLabel>Theme mode</FieldLabel>
-                  <ModeToggle
-                    className="shrink-0"
-                    value={appearance.themeMode}
-                    onValueChange={(value) =>
-                      onReaderAppearanceChange(
-                        { themeMode: value },
-                        value === "dark" ? "Switched reader theme to dark mode" : "Switched reader theme to light mode"
-                      )
-                    }
-                  />
-                </div>
-              </Field>
-
-              <Field>
-                <FieldLabel>Color palette</FieldLabel>
-                <div className="mt-2">
-                  <ThemePalette
-                    value={appearance.palette}
-                    onValueChange={(value) =>
-                      onReaderAppearanceChange(
-                        { palette: value },
-                        `Changed reader palette to ${value.replace("-", " ")}`
-                      )
-                    }
-                  />
-                </div>
-              </Field>
-
-              <Field>
-                <div className="mb-2 flex items-center justify-between">
-                  <FieldLabel>Line width</FieldLabel>
-                  <span className="text-xs text-muted-foreground">{presentation.lineWidthPx}px</span>
-                </div>
-                <Slider
-                  min={520}
-                  max={920}
-                  step={20}
-                  value={[presentation.lineWidthPx]}
-                  onValueChange={(value) =>
-                    onCommitIntervention(
-                      { presentation: { lineWidthPx: value[0] ?? presentation.lineWidthPx } },
-                      "Adjusted line width"
-                    )
-                  }
-                />
-              </Field>
-
-              <Field>
-                <div className="mb-2 flex items-center justify-between">
-                  <FieldLabel>Line height</FieldLabel>
-                  <span className="text-xs text-muted-foreground">{presentation.lineHeight.toFixed(2)}</span>
-                </div>
-                <Slider
-                  min={1.2}
-                  max={2.2}
-                  step={0.05}
-                  value={[presentation.lineHeight]}
-                  onValueChange={(value) =>
-                    onCommitIntervention(
-                      { presentation: { lineHeight: value[0] ?? presentation.lineHeight } },
-                      "Adjusted line height"
-                    )
-                  }
-                />
-              </Field>
-
-              <Field>
-                <div className="mb-2 flex items-center justify-between">
-                  <FieldLabel>Letter spacing</FieldLabel>
-                  <span className="text-xs text-muted-foreground">
-                    {presentation.letterSpacingEm.toFixed(2)}em
-                  </span>
-                </div>
-                <Slider
-                  min={0}
-                  max={0.12}
-                  step={0.01}
-                  value={[presentation.letterSpacingEm]}
-                  onValueChange={(value) =>
-                    onCommitIntervention(
-                      { presentation: { letterSpacingEm: value[0] ?? presentation.letterSpacingEm } },
-                      "Adjusted letter spacing"
-                    )
-                  }
-                />
-              </Field>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -630,5 +906,48 @@ export function LiveControlsColumn({
         </SheetContent>
       </div>
     </Sheet>
+  )
+}
+
+function getOptionLabel(
+  parameter: InterventionModuleDescriptor["parameters"][number],
+  value: string
+) {
+  return parameter.options.find((option) => option.value === value)?.displayName ?? value
+}
+
+function formatParameterHint(parameter: InterventionModuleDescriptor["parameters"][number]) {
+  const parts = [
+    parameter.unit ? `unit ${parameter.unit}` : null,
+    parameter.minValue !== null ? `min ${parameter.minValue}` : null,
+    parameter.maxValue !== null ? `max ${parameter.maxValue}` : null,
+    parameter.step !== null ? `step ${parameter.step}` : null,
+  ].filter(Boolean)
+
+  return parts.join(" · ")
+}
+
+function renderSliderField(
+  module: InterventionModuleDescriptor,
+  parameter: InterventionModuleDescriptor["parameters"][number],
+  currentValue: number,
+  formattedValue: string,
+  onValueChange: (value: number) => void
+) {
+  return (
+    <Field key={module.moduleId}>
+      <div className="mb-2 flex items-center justify-between">
+        <FieldLabel>{parameter.displayName}</FieldLabel>
+        <span className="text-xs text-muted-foreground">{formattedValue}</span>
+      </div>
+      <Slider
+        min={parameter.minValue ?? currentValue}
+        max={parameter.maxValue ?? currentValue}
+        step={parameter.step ?? 1}
+        value={[currentValue]}
+        onValueChange={(value) => onValueChange(value[0] ?? currentValue)}
+      />
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">{module.description}</p>
+    </Field>
   )
 }

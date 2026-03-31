@@ -18,6 +18,10 @@ export {
   useUpdateReaderShellSettingsMutation,
 } from "./reader-shell-settings-api"
 export {
+  interventionModulesApi,
+  useGetInterventionModulesQuery,
+} from "./intervention-modules-api"
+export {
   experimentSessionApi,
   useFinishExperimentSessionMutation,
   useGetExperimentSessionQuery,

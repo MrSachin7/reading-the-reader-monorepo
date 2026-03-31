@@ -8,7 +8,8 @@ public sealed class ReadingInterventionRuntimeTests
     [Fact]
     public void Apply_ProducesInterventionEvent_AndUpdatedPresentation()
     {
-        var sut = new ReadingInterventionRuntime();
+        var sut = new ReadingInterventionRuntime(
+            new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All));
 
         var result = sut.Apply(
             ReadingPresentationSnapshot.Default,
@@ -26,13 +27,15 @@ public sealed class ReadingInterventionRuntimeTests
         Assert.Equal("manual", result.Event.Source);
         Assert.Equal("researcher-ui", result.Event.Trigger);
         Assert.Equal("Increase font size for readability", result.Event.Reason);
+        Assert.Equal(ReadingInterventionModuleIds.FontSize, result.Event.ModuleId);
         Assert.Equal(12345, result.Event.AppliedAtUnixMs);
     }
 
     [Fact]
     public void Apply_ReturnsNull_WhenPresentationWouldNotChange()
     {
-        var sut = new ReadingInterventionRuntime();
+        var sut = new ReadingInterventionRuntime(
+            new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All));
 
         var result = sut.Apply(
             ReadingPresentationSnapshot.Default,
@@ -41,17 +44,13 @@ public sealed class ReadingInterventionRuntimeTests
                 "manual",
                 "researcher-ui",
                 "No-op",
-                new ReadingPresentationPatch(
-                    ReadingPresentationSnapshot.Default.FontFamily,
-                    ReadingPresentationSnapshot.Default.FontSizePx,
-                    ReadingPresentationSnapshot.Default.LineWidthPx,
-                    ReadingPresentationSnapshot.Default.LineHeight,
-                    ReadingPresentationSnapshot.Default.LetterSpacingEm,
-                    ReadingPresentationSnapshot.Default.EditableByResearcher),
-                new ReaderAppearancePatch(
-                    ReaderAppearanceSnapshot.Default.ThemeMode,
-                    ReaderAppearanceSnapshot.Default.Palette,
-                    ReaderAppearanceSnapshot.Default.AppFont)),
+                new ReadingPresentationPatch(null, null, null, null, null, null),
+                new ReaderAppearancePatch(null, null, null),
+                ReadingInterventionModuleIds.FontSize,
+                new Dictionary<string, string?>
+                {
+                    ["fontSizePx"] = ReadingPresentationSnapshot.Default.FontSizePx.ToString()
+                }),
             12345);
 
         Assert.Null(result);

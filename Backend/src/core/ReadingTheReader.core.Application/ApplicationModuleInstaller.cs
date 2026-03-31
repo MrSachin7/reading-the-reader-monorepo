@@ -12,6 +12,12 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton(calibrationOptions);
         collection.AddSingleton<IParticipantService, ParticipantService>();
         collection.AddSingleton<IReadingMaterialSetupService, ReadingMaterialSetupService>();
+        foreach (var module in BuiltInReadingInterventionModules.All)
+        {
+            collection.AddSingleton(typeof(IReadingInterventionModule), module);
+        }
+
+        collection.AddSingleton<IReadingInterventionModuleRegistry, ReadingInterventionModuleRegistry>();
         collection.AddSingleton<IReadingInterventionRuntime, ReadingInterventionRuntime>();
         collection.AddSingleton<IDecisionContextFactory, DecisionContextFactory>();
         collection.AddSingleton<IDecisionStrategy, RuleBasedDecisionStrategy>();

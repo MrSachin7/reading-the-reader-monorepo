@@ -13,8 +13,8 @@ This roadmap treats Reading the Reader as a brownfield thesis platform that alre
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Experiment Authority & Sensing Boundary** - Isolate sensing and orchestration so the thesis has a defensible core runtime.
-- [ ] **Phase 2: Swappable Decision Strategies** - Make decision logic pluggable for manual, rule-based, hybrid, and external-provider modes.
-- [ ] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
+- [x] **Phase 2: Swappable Decision Strategies** - Make decision logic pluggable for manual, rule-based, hybrid, and external-provider modes.
+- [x] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
 - [ ] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
 - [ ] **Phase 5: Controlled Markdown Reading Baseline** - Keep Markdown reading stable while researchers configure and lock presentation conditions.
 - [ ] **Phase 6: Researcher Live Mirror & Session Operations** - Keep the live researcher console trustworthy during active experiment runs.
@@ -47,7 +47,12 @@ Plans:
   1. Manual, rule-based, hybrid, and external AI-driven decision providers can be added or swapped through one stable strategy contract.
   2. Decision strategies can request or approve interventions without embedding strategy-specific branching across sensing, reader, live-control, or export code paths.
   3. Adding a new decision strategy requires additive registration and contract compliance rather than edits across unrelated modules.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 02-01-PLAN.md - Establish the stable strategy contract, curated decision context, and contract tests before runtime lifecycle changes.
+- [x] 02-02-PLAN.md - Wire additive provider registration, proposal lifecycle handling, and researcher-first supervision into authoritative runtime behavior.
+- [x] 02-03-PLAN.md - Expose decision configuration and proposal provenance through backend/frontend contracts plus replay/export.
+- [x] 02-04-PLAN.md - Surface named experiment conditions and live supervisory controls in researcher workflows.
 
 ### Phase 3: Pluggable Intervention Modules
 **Goal**: New intervention types can be integrated as explicit modules with inspectable contracts instead of invasive runtime rewrites.
@@ -57,7 +62,12 @@ Plans:
   1. New micro-interventions can be added through a defined module boundary without invasive rewrites to session orchestration or the reader runtime.
   2. Each intervention exposes its supported parameters, required inputs, and safe application rules in a form future contributors and researchers can inspect.
   3. Researcher controls and runtime APIs can reference intervention modules through consistent metadata instead of type-specific special cases.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 03-01-PLAN.md - Define explicit intervention-module contracts, first catalog descriptors, additive registry wiring, and catalog guardrail tests.
+- [x] 03-02-PLAN.md - Migrate runtime execution, decision proposals, and replay/export provenance to the intervention-module boundary.
+- [x] 03-03-PLAN.md - Expose an authoritative intervention-module catalog API and align frontend contract mirrors to module-based provenance.
+- [x] 03-04-PLAN.md - Refactor researcher live controls and metadata/history views to consume module metadata while preserving the current workflow.
 **UI hint**: yes
 
 ### Phase 4: Device Setup & Calibration Workflow
@@ -125,8 +135,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Experiment Authority & Sensing Boundary | 5/5 | Completed | 2026-03-26 |
-| 2. Swappable Decision Strategies | 0/TBD | Not started | - |
-| 3. Pluggable Intervention Modules | 0/TBD | Not started | - |
+| 2. Swappable Decision Strategies | 4/4 | Completed | 2026-03-31 |
+| 3. Pluggable Intervention Modules | 4/4 | Completed | 2026-03-31 |
 | 4. Device Setup & Calibration Workflow | 0/TBD | Not started | - |
 | 5. Controlled Markdown Reading Baseline | 0/TBD | Not started | - |
 | 6. Researcher Live Mirror & Session Operations | 0/TBD | Not started | - |

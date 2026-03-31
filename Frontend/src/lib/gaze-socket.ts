@@ -10,6 +10,7 @@ import {
   type ParticipantViewportSnapshot,
   type ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
+import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import { reportAppError } from "@/redux/error-reporter"
 
@@ -118,6 +119,8 @@ type ClientEnvelope =
         source: string;
         trigger: string;
         reason: string;
+        moduleId?: string | null;
+        parameters?: InterventionParameterValues | null;
         presentation: {
           fontFamily?: string | null;
           fontSizePx?: number | null;
@@ -181,6 +184,8 @@ type ApplyInterventionPayload = {
   source: string;
   trigger: string;
   reason: string;
+  moduleId?: string | null;
+  parameters?: InterventionParameterValues | null;
   presentation: {
     fontFamily?: string | null;
     fontSizePx?: number | null;

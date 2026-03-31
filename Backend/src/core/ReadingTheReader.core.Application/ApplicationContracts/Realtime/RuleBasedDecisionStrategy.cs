@@ -3,6 +3,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
 {
     private static readonly TimeSpan InterventionCooldown = TimeSpan.FromSeconds(45);
+    private const int InterventionStepPx = 2;
 
     public string ProviderId => DecisionProviderIds.RuleBased;
 
@@ -27,12 +28,14 @@ public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
             }
         }
 
-        if (context.Presentation.FontSizePx >= ReadingPresentationRules.MaxFontSizePx)
+        if (context.Presentation.FontSizePx >= BuiltInReadingInterventionModules.ManagedFontSizeMax)
         {
             return ValueTask.FromResult<DecisionProposalSnapshot?>(null);
         }
 
-        var updatedFontSize = Math.Min(context.Presentation.FontSizePx + 2, ReadingPresentationRules.MaxFontSizePx);
+        var updatedFontSize = Math.Min(
+            context.Presentation.FontSizePx + InterventionStepPx,
+            BuiltInReadingInterventionModules.ManagedFontSizeMax);
         if (updatedFontSize == context.Presentation.FontSizePx)
         {
             return ValueTask.FromResult<DecisionProposalSnapshot?>(null);
@@ -50,7 +53,12 @@ public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
             signal.SignalType,
             "Increase font size to reduce local reading strain.",
             new ReadingPresentationPatch(null, updatedFontSize, null, null, null, null),
-            new ReaderAppearancePatch(null, null, null));
+            new ReaderAppearancePatch(null, null, null),
+            ReadingInterventionModuleIds.FontSize,
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["fontSizePx"] = updatedFontSize.ToString()
+            });
 
         return ValueTask.FromResult<DecisionProposalSnapshot?>(new DecisionProposalSnapshot(
             Guid.NewGuid(),

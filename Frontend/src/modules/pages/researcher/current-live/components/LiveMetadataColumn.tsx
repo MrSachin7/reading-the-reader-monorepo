@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
 
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Badge } from "@/components/ui/badge"
@@ -9,8 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import type {
   DecisionConfiguration,
   DecisionState,
+  DecisionProposalIntervention,
+  InterventionEventSnapshot,
   LiveReadingSessionSnapshot,
 } from "@/lib/experiment-session"
+import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
 import type { RemoteTokenAttentionStats } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
 import { formatAbsoluteTime, formatDurationMs, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
@@ -31,6 +34,7 @@ function MetadataRow({
 }
 
 type LiveMetadataColumnProps = {
+  interventionModules: InterventionModuleDescriptor[]
   session: ActiveLiveExperimentSession
   readingSession: LiveReadingSessionSnapshot
   decisionConfiguration: DecisionConfiguration
@@ -48,6 +52,7 @@ type LiveMetadataColumnProps = {
 }
 
 export function LiveMetadataColumn({
+  interventionModules,
   session,
   readingSession,
   decisionConfiguration,
@@ -58,6 +63,11 @@ export function LiveMetadataColumn({
   followParticipant,
   topAttentionTokens,
 }: LiveMetadataColumnProps) {
+  const moduleLookup = useMemo(
+    () => new Map(interventionModules.map((module) => [module.moduleId, module] as const)),
+    [interventionModules]
+  )
+
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
       <Card className="h-full min-h-0 rounded-[1.6rem] bg-card/96 shadow-sm">
@@ -145,12 +155,20 @@ export function LiveMetadataColumn({
                   {readingSession.latestIntervention ? (
                     <div className="rounded-[1rem] border bg-muted/20 p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{readingSession.latestIntervention.source}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{readingSession.latestIntervention.source}</Badge>
+                          <Badge variant="secondary">
+                            {getModuleDisplayName(moduleLookup, readingSession.latestIntervention.moduleId)}
+                          </Badge>
+                        </div>
                         <span className="text-xs text-muted-foreground">
                           {formatAbsoluteTime(readingSession.latestIntervention.appliedAtUnixMs)}
                         </span>
                       </div>
                       <p className="mt-3 text-sm leading-6">{readingSession.latestIntervention.reason}</p>
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        {formatInterventionParameters(moduleLookup, readingSession.latestIntervention)}
+                      </p>
                     </div>
                   ) : (
                     <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
@@ -203,7 +221,12 @@ export function LiveMetadataColumn({
                     {decisionState.recentProposalHistory.map((proposal) => (
                       <div key={proposal.proposalId} className="px-4 py-3 text-sm">
                         <div className="flex items-center justify-between gap-3">
-                          <Badge variant="outline">{proposal.status}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{proposal.status}</Badge>
+                            <Badge variant="secondary">
+                              {getModuleDisplayName(moduleLookup, proposal.proposedIntervention.moduleId)}
+                            </Badge>
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {formatAbsoluteTime(proposal.resolvedAtUnixMs ?? proposal.proposedAtUnixMs)}
                           </span>
@@ -211,6 +234,9 @@ export function LiveMetadataColumn({
                         <p className="mt-2 font-medium leading-5">{proposal.rationale}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {proposal.conditionLabel} · {proposal.providerId} · {proposal.executionMode}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatProposalParameters(moduleLookup, proposal.proposedIntervention)}
                         </p>
                       </div>
                     ))}
@@ -235,15 +261,19 @@ export function LiveMetadataColumn({
                     {readingSession.recentInterventions.map((event) => (
                       <div key={event.id} className="px-4 py-3 text-sm">
                         <div className="flex items-center justify-between gap-3">
-                          <Badge variant="outline">{event.source}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{event.source}</Badge>
+                            <Badge variant="secondary">
+                              {getModuleDisplayName(moduleLookup, event.moduleId)}
+                            </Badge>
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {formatAbsoluteTime(event.appliedAtUnixMs)}
                           </span>
                         </div>
                         <p className="mt-2 font-medium leading-5">{event.reason}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {event.appliedPresentation.fontFamily}, {event.appliedPresentation.fontSizePx}px,{" "}
-                          {event.appliedPresentation.lineWidthPx}px
+                          {formatInterventionParameters(moduleLookup, event)}
                         </p>
                       </div>
                     ))}
@@ -260,4 +290,75 @@ export function LiveMetadataColumn({
       </Card>
     </div>
   )
+}
+
+function getModuleDisplayName(
+  moduleLookup: Map<string, InterventionModuleDescriptor>,
+  moduleId: string | null
+) {
+  if (!moduleId) {
+    return "Legacy patch"
+  }
+
+  return moduleLookup.get(moduleId)?.displayName ?? moduleId
+}
+
+function formatParameterValue(
+  moduleLookup: Map<string, InterventionModuleDescriptor>,
+  moduleId: string | null,
+  parameters: Record<string, string | null> | null
+) {
+  if (!parameters) {
+    return "No module parameters recorded."
+  }
+
+  if (!moduleId) {
+    return formatRawParameters(parameters)
+  }
+
+  const module = moduleLookup.get(moduleId)
+  if (!module) {
+    return formatRawParameters(parameters)
+  }
+
+  const formatted = module.parameters.flatMap((parameter) => {
+    const rawValue = parameters[parameter.key]
+    if (rawValue === undefined || rawValue === null) {
+      return []
+    }
+
+    if (moduleId === "participant-edit-lock") {
+      return rawValue === "true" ? "Participant editing locked" : "Participant editing unlocked"
+    }
+
+    const optionLabel =
+      parameter.options.find((option) => option.value === rawValue)?.displayName ?? rawValue
+    const suffix = parameter.unit ? ` ${parameter.unit}` : ""
+    return `${parameter.displayName}: ${optionLabel}${suffix}`
+  })
+
+  return formatted.length > 0 ? formatted.join(" · ") : module.description
+}
+
+function formatRawParameters(parameters: Record<string, string | null>) {
+  const entries = Object.entries(parameters)
+  if (entries.length === 0) {
+    return "No module parameters recorded."
+  }
+
+  return entries.map(([key, value]) => `${key}: ${value ?? "-"}`).join(" · ")
+}
+
+function formatInterventionParameters(
+  moduleLookup: Map<string, InterventionModuleDescriptor>,
+  event: InterventionEventSnapshot
+) {
+  return formatParameterValue(moduleLookup, event.moduleId, event.parameters)
+}
+
+function formatProposalParameters(
+  moduleLookup: Map<string, InterventionModuleDescriptor>,
+  intervention: DecisionProposalIntervention
+) {
+  return formatParameterValue(moduleLookup, intervention.moduleId, intervention.parameters)
 }

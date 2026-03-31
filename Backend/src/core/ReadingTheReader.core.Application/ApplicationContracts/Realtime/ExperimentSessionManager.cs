@@ -14,6 +14,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
     private readonly IExperimentReplayExportStoreAdapter _experimentReplayExportStoreAdapter;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
+    private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
@@ -46,6 +47,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         IExperimentStateStoreAdapter experimentStateStoreAdapter,
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
         IReadingInterventionRuntime readingInterventionRuntime,
+        IReadingInterventionModuleRegistry interventionModuleRegistry,
         IDecisionStrategyCoordinator decisionStrategyCoordinator)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
@@ -53,6 +55,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _experimentStateStoreAdapter = experimentStateStoreAdapter;
         _experimentReplayExportStoreAdapter = experimentReplayExportStoreAdapter;
         _readingInterventionRuntime = readingInterventionRuntime;
+        _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
 
         RestoreLatestSnapshot();
@@ -819,6 +822,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
             _decisionState.Copy());
+    }
+
+    public IReadOnlyList<ReadingInterventionModuleDescriptor> GetInterventionModules()
+    {
+        return _interventionModuleRegistry.List();
     }
 
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
