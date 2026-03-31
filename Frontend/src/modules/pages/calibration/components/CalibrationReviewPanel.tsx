@@ -41,13 +41,13 @@ type ReviewResult = {
 export function CalibrationReviewPanel({
   validationResult,
   completedAtUnixMs,
-  onAccept,
+  onReturnToWorkflow,
   onRerunValidation,
   onStartRun,
 }: {
   validationResult: ReviewResult | null
   completedAtUnixMs: number | null
-  onAccept: () => void
+  onReturnToWorkflow: () => void
   onRerunValidation: () => void
   onStartRun: () => void
 }) {
@@ -104,6 +104,15 @@ export function CalibrationReviewPanel({
       </div>
 
       <div className="mt-6 rounded-[1.5rem] border bg-slate-50/80 p-5">
+        <div className="mb-4 rounded-[1.25rem] border border-slate-200 bg-white/80 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Next in setup workflow</p>
+          <p className="mt-2 text-sm font-semibold text-slate-950">
+            {validationResult?.passed
+              ? "Return to the experiment setup to confirm calibration is ready and finish the remaining steps."
+              : "Return to the experiment setup or rerun this step. Session start stays blocked until validation passes."}
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold">Point-by-point review</p>
@@ -156,11 +165,14 @@ export function CalibrationReviewPanel({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        {validationResult?.passed ? (
-          <Button onClick={onAccept}>Return to experiment</Button>
-        ) : (
-          <Button onClick={onRerunValidation}>Run validation again</Button>
-        )}
+        <Button onClick={onReturnToWorkflow}>
+          {validationResult?.passed ? "Return to setup workflow" : "Return with blocker"}
+        </Button>
+        {!validationResult?.passed ? (
+          <Button variant="outline" onClick={onRerunValidation}>
+            Run validation again
+          </Button>
+        ) : null}
         <Button variant="outline" onClick={onStartRun}>
           Run full calibration again
         </Button>

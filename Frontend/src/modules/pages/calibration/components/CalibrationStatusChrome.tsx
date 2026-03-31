@@ -1,6 +1,4 @@
 "use client"
-
-import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,9 +6,11 @@ import { Button } from "@/components/ui/button"
 export function CalibrationStatusChrome({
   statusMessage,
   errorMessage,
+  onBack,
 }: {
   statusMessage: string
   errorMessage: string | null
+  onBack: () => void
 }) {
   return (
     <>
@@ -23,11 +23,9 @@ export function CalibrationStatusChrome({
       </div>
 
       <div className="absolute top-5 left-5 z-20">
-        <Button asChild variant="outline" className="bg-white/88 backdrop-blur">
-          <Link href="/experiment">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
+        <Button variant="outline" className="bg-white/88 backdrop-blur" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
+          Return to setup
         </Button>
       </div>
     </>

@@ -11,9 +11,85 @@ public sealed class ExperimentSessionAuthorityTests
     {
         var harness = RealtimeTestDoubles.CreateHarness();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+        var noTrackerError = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+        Assert.Equal("Select and license an eye tracker before starting the session.", noTrackerError.Message);
+        Assert.Equal(noTrackerError.Message, harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.Reason);
 
-        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.SetCurrentEyeTrackerAsync(new EyeTrackerDevice
+        {
+            Name = "Tobii Pro Nano",
+            Model = "Nano",
+            SerialNumber = "nano-001",
+            HasSavedLicence = true
+        });
+
+        var participantError = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+        Assert.Equal("Save the participant information before starting the session.", participantError.Message);
+        Assert.Equal(participantError.Message, harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.Reason);
+
+        await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+        {
+            Name = "Participant 1",
+            Age = 29,
+            Sex = "female",
+            ExistingEyeCondition = "none",
+            ReadingProficiency = "advanced"
+        });
+
+        var calibrationError = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+        Assert.Equal("Calibration validation must pass before the session can start.", calibrationError.Message);
+        Assert.Equal(calibrationError.Message, harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.Reason);
+
+        await harness.SessionManager.SetCalibrationStateAsync(new CalibrationSessionSnapshot(
+            Guid.NewGuid(),
+            "completed",
+            CalibrationPatterns.ScreenBasedNinePoint,
+            1_710_000_000_000,
+            1_710_000_001_000,
+            1_710_000_002_000,
+            [],
+            new CalibrationRunResult(
+                "applied",
+                true,
+                9,
+                [],
+                new CalibrationValidationResult(
+                    true,
+                    "good",
+                    0.5,
+                    0.2,
+                    9,
+                    [],
+                    []),
+                []),
+            new CalibrationValidationSnapshot(
+                "completed",
+                1_710_000_001_000,
+                1_710_000_001_500,
+                1_710_000_002_000,
+                [],
+                new CalibrationValidationResult(
+                    true,
+                    "good",
+                    0.5,
+                    0.2,
+                    9,
+                    [],
+                    []),
+                []),
+            []));
+
+        var readingMaterialError = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+        Assert.Equal("Choose the reading material before starting the session.", readingMaterialError.Message);
+        Assert.Equal(readingMaterialError.Message, harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.Reason);
+
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "doc-1",
+            "Sample document",
+            "# Hello reader",
+            null,
+            ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default));
 
         var started = await harness.SessionManager.StartSessionAsync();
 
@@ -22,10 +98,11 @@ public sealed class ExperimentSessionAuthorityTests
         var snapshot = harness.SessionManager.GetCurrentSnapshot();
         Assert.True(snapshot.IsActive);
         Assert.NotNull(snapshot.SessionId);
-        Assert.True(snapshot.Setup.EyeTrackerSetupCompleted);
-        Assert.True(snapshot.Setup.ParticipantSetupCompleted);
-        Assert.True(snapshot.Setup.CalibrationCompleted);
-        Assert.True(snapshot.Setup.ReadingMaterialSetupCompleted);
+        Assert.True(snapshot.Setup.IsReadyForSessionStart);
+        Assert.True(snapshot.Setup.EyeTracker.IsReady);
+        Assert.True(snapshot.Setup.Participant.IsReady);
+        Assert.True(snapshot.Setup.Calibration.IsReady);
+        Assert.True(snapshot.Setup.ReadingMaterial.IsReady);
         Assert.Contains(
             harness.StateStore.SavedSnapshots,
             saved => saved.IsActive && saved.SessionId == snapshot.SessionId);

@@ -3,13 +3,21 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 
 namespace ReadingTheReader.WebApi.EyeTrackerEndpoints;
 
+public sealed record SelectEyeTrackerResponse(
+    EyeTrackerSummaryResponse SelectedTracker,
+    ExperimentSetupSnapshot Setup);
+
 public sealed class SelectEyeTrackerEndpoint : Endpoint<SelectEyeTrackerRequest>
 {
     private readonly IEyeTrackerService _eyeTrackerService;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
 
-    public SelectEyeTrackerEndpoint(IEyeTrackerService eyeTrackerService)
+    public SelectEyeTrackerEndpoint(
+        IEyeTrackerService eyeTrackerService,
+        IExperimentSessionQueryService experimentSessionQueryService)
     {
         _eyeTrackerService = eyeTrackerService;
+        _experimentSessionQueryService = experimentSessionQueryService;
     }
 
     public override void Configure()
@@ -51,7 +59,27 @@ public sealed class SelectEyeTrackerEndpoint : Endpoint<SelectEyeTrackerRequest>
             return;
         }
 
-        await Send.OkAsync(cancellation: ct);
+        var snapshot = _experimentSessionQueryService.GetCurrentSnapshot();
+        var selectedTracker = snapshot.EyeTrackerDevice;
+        if (selectedTracker is null)
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await HttpContext.Response.WriteAsJsonAsync(
+                new { message = "Eye tracker selection completed but no authoritative device state was projected." },
+                ct);
+            return;
+        }
+
+        var response = new SelectEyeTrackerResponse(
+            new EyeTrackerSummaryResponse(
+                selectedTracker.Name,
+                selectedTracker.Model,
+                selectedTracker.SerialNumber,
+                selectedTracker.HasSavedLicence,
+                true),
+            snapshot.Setup);
+
+        await Send.OkAsync(response, ct);
     }
 }
 

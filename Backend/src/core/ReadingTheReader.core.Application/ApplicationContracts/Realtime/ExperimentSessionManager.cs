@@ -1209,26 +1209,91 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         CalibrationSessionSnapshot calibrationSnapshot,
         LiveReadingSessionSnapshot liveReadingSession)
     {
-        var eyeTrackerSetupCompleted = session.EyeTrackerDevice is not null &&
-                                       !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
-        var participantSetupCompleted = session.Participant is not null &&
-                                        !string.IsNullOrWhiteSpace(session.Participant.Name);
-        var calibrationCompleted = CalibrationSessionSnapshots.IsReadyForSession(calibrationSnapshot);
-        var readingMaterialSetupCompleted = liveReadingSession.Content is not null &&
-                                            !string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown);
+        const string eyeTrackerBlockReason = "Select and license an eye tracker before starting the session.";
+        const string participantBlockReason = "Save the participant information before starting the session.";
+        const string calibrationBlockReason = "Calibration validation must pass before the session can start.";
+        const string readingMaterialBlockReason = "Choose the reading material before starting the session.";
 
-        var currentStepIndex =
-            !eyeTrackerSetupCompleted ? 0 :
-            !participantSetupCompleted ? 1 :
-            !calibrationCompleted ? 2 :
-            3;
+        var hasSelectedEyeTracker = session.EyeTrackerDevice is not null &&
+                                    !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
+        var hasAppliedLicence = hasSelectedEyeTracker;
+        var hasSavedLicence = session.EyeTrackerDevice?.HasSavedLicence == true;
+        var eyeTracker = new EyeTrackerSetupReadinessSnapshot(
+            hasSelectedEyeTracker && hasAppliedLicence,
+            hasSelectedEyeTracker,
+            hasAppliedLicence,
+            hasSavedLicence,
+            hasSelectedEyeTracker && !hasSavedLicence,
+            NormalizeNullableText(session.EyeTrackerDevice?.SerialNumber),
+            NormalizeNullableText(session.EyeTrackerDevice?.Name),
+            hasSelectedEyeTracker && hasAppliedLicence ? null : eyeTrackerBlockReason);
+
+        var hasParticipant = session.Participant is not null &&
+                             !string.IsNullOrWhiteSpace(session.Participant.Name);
+        var participant = new ParticipantSetupReadinessSnapshot(
+            hasParticipant,
+            hasParticipant,
+            NormalizeNullableText(session.Participant?.Name),
+            hasParticipant ? null : participantBlockReason);
+
+        var validationResult = calibrationSnapshot.Validation.Result ?? calibrationSnapshot.Result?.Validation;
+        var isCalibrationApplied = CalibrationSessionSnapshots.IsApplied(calibrationSnapshot);
+        var isValidationPassed = validationResult?.Passed == true;
+        var calibration = new CalibrationSetupReadinessSnapshot(
+            isCalibrationApplied && isValidationPassed,
+            calibrationSnapshot.SessionId.HasValue,
+            isCalibrationApplied,
+            isValidationPassed,
+            string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status,
+            string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status,
+            NormalizeNullableText(validationResult?.Quality),
+            validationResult?.AverageAccuracyDegrees,
+            validationResult?.AveragePrecisionDegrees,
+            validationResult?.SampleCount ?? 0,
+            isCalibrationApplied && isValidationPassed ? null : calibrationBlockReason);
+
+        var hasReadingMaterial = liveReadingSession.Content is not null &&
+                                 !string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown);
+        var readingMaterial = new ReadingMaterialSetupReadinessSnapshot(
+            hasReadingMaterial,
+            hasReadingMaterial,
+            NormalizeNullableText(liveReadingSession.Content?.DocumentId),
+            NormalizeNullableText(liveReadingSession.Content?.Title),
+            NormalizeNullableText(liveReadingSession.Content?.SourceSetupId),
+            hasReadingMaterial ? null : readingMaterialBlockReason);
+
+        var currentStepIndex = 3;
+        ExperimentSetupBlockerSnapshot? blocker = null;
+
+        if (!eyeTracker.IsReady)
+        {
+            currentStepIndex = 0;
+            blocker = new ExperimentSetupBlockerSnapshot("eye-tracker", "Eye tracker", eyeTracker.BlockReason ?? eyeTrackerBlockReason);
+        }
+        else if (!participant.IsReady)
+        {
+            currentStepIndex = 1;
+            blocker = new ExperimentSetupBlockerSnapshot("participant", "Participant", participant.BlockReason ?? participantBlockReason);
+        }
+        else if (!calibration.IsReady)
+        {
+            currentStepIndex = 2;
+            blocker = new ExperimentSetupBlockerSnapshot("calibration", "Calibration", calibration.BlockReason ?? calibrationBlockReason);
+        }
+        else if (!readingMaterial.IsReady)
+        {
+            currentStepIndex = 3;
+            blocker = new ExperimentSetupBlockerSnapshot("reading-material", "Reading material", readingMaterial.BlockReason ?? readingMaterialBlockReason);
+        }
 
         return new ExperimentSetupSnapshot(
-            eyeTrackerSetupCompleted,
-            participantSetupCompleted,
-            calibrationCompleted,
-            readingMaterialSetupCompleted,
-            currentStepIndex);
+            blocker is null,
+            currentStepIndex,
+            blocker,
+            eyeTracker,
+            participant,
+            calibration,
+            readingMaterial);
     }
 
     private static void EnsureSetupIsReadyForStart(
@@ -1236,25 +1301,14 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         CalibrationSessionSnapshot calibrationSnapshot,
         LiveReadingSessionSnapshot liveReadingSession)
     {
-        if (session.EyeTrackerDevice is null || string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber))
+        var setup = BuildSetupSnapshot(session, calibrationSnapshot, liveReadingSession);
+        if (setup.IsReadyForSessionStart)
         {
-            throw new InvalidOperationException("Select and license an eye tracker before starting the session.");
+            return;
         }
 
-        if (session.Participant is null || string.IsNullOrWhiteSpace(session.Participant.Name))
-        {
-            throw new InvalidOperationException("Save the participant information before starting the session.");
-        }
-
-        if (!CalibrationSessionSnapshots.IsReadyForSession(calibrationSnapshot))
-        {
-            throw new InvalidOperationException("Calibration validation must pass before the session can start.");
-        }
-
-        if (liveReadingSession.Content is null || string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown))
-        {
-            throw new InvalidOperationException("Choose the reading material before starting the session.");
-        }
+        throw new InvalidOperationException(
+            setup.CurrentBlocker?.Reason ?? "Complete setup before starting the session.");
     }
 
     private static IReadOnlyList<InterventionEventSnapshot> BuildRecentInterventionHistory(
