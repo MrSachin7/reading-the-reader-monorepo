@@ -21,12 +21,9 @@ import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
-import { MOCK_READING_MD } from "@/modules/pages/reading/content/mockReading"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
-import { useAppSelector, useGetReaderShellSettingsQuery } from "@/redux"
-
-const MOCK_DOC_ID = "mock-reading-v1"
+import { useGetReaderShellSettingsQuery } from "@/redux"
 
 function FullscreenGate({
   isVisible,
@@ -68,7 +65,6 @@ function FullscreenGate({
 export function ReadingPage() {
   const liveSession = useLiveExperimentSession()
   const liveGaze = useLiveGazeStream({ enabled: Boolean(liveSession?.eyeTrackerDevice) })
-  const draftReadingSession = useAppSelector((state) => state.experiment.readingSession)
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
@@ -104,28 +100,25 @@ export function ReadingPage() {
 
   useReaderAppearanceSync(liveReaderAppearance)
 
-  const markdown =
-    liveReadingSession?.content?.markdown ??
-    (draftReadingSession.source === "custom" && draftReadingSession.customMarkdown.trim().length > 0
-      ? draftReadingSession.customMarkdown
-      : MOCK_READING_MD)
-  const docId = liveReadingSession?.content?.documentId ?? MOCK_DOC_ID
-  const title =
-    liveReadingSession?.content?.title ??
-    (draftReadingSession.title.trim().length > 0
-      ? draftReadingSession.title.trim()
-      : "Reading as Deliberate Attention")
-  const presentation = normalizeReadingPresentation({
-    fontFamily: liveReadingSession?.presentation.fontFamily,
-    fontSizePx: liveReadingSession?.presentation.fontSizePx,
-    lineWidthPx: liveReadingSession?.presentation.lineWidthPx,
-    lineHeight: liveReadingSession?.presentation.lineHeight,
-    letterSpacingEm: liveReadingSession?.presentation.letterSpacingEm,
-    editableByExperimenter: liveReadingSession?.presentation.editableByResearcher,
-  })
+  if (liveSession === null) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-10 md:px-8">
+        <div className="mx-auto max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading reading session</CardTitle>
+              <CardDescription>
+                Waiting for the authoritative experiment state before rendering the participant view.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </main>
+    )
+  }
 
-  if (!liveSession?.isActive) {
-    const isCompleted = Boolean(liveSession?.stoppedAtUnixMs)
+  if (!liveSession.isActive) {
+    const isCompleted = Boolean(liveSession.stoppedAtUnixMs)
 
     return (
       <main className="min-h-screen bg-background px-4 py-10 md:px-8">
@@ -139,7 +132,7 @@ export function ReadingPage() {
                   : "Start the reading session from the experiment setup flow before opening the participant view."}
               </CardDescription>
               <ExperimentCompletionActions
-                session={liveSession ?? null}
+                session={liveSession}
                 source="participant-view"
                 className="pt-4"
               />
@@ -149,6 +142,41 @@ export function ReadingPage() {
       </main>
     )
   }
+
+  const liveContent = liveReadingSession?.content ?? null
+
+  if (!liveContent || liveContent.markdown.trim().length === 0) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-10 md:px-8">
+        <div className="mx-auto max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reading baseline unavailable</CardTitle>
+              <CardDescription>
+                The session is active, but the authoritative reading baseline has not been configured yet.
+                Return to the experiment setup flow and save the reading baseline before opening the
+                participant view.
+              </CardDescription>
+              <ExperimentCompletionActions
+                session={liveSession}
+                source="participant-view"
+                className="pt-4"
+              />
+            </CardHeader>
+          </Card>
+        </div>
+      </main>
+    )
+  }
+
+  const presentation = normalizeReadingPresentation({
+    fontFamily: liveReadingSession?.presentation.fontFamily,
+    fontSizePx: liveReadingSession?.presentation.fontSizePx,
+    lineWidthPx: liveReadingSession?.presentation.lineWidthPx,
+    lineHeight: liveReadingSession?.presentation.lineHeight,
+    letterSpacingEm: liveReadingSession?.presentation.letterSpacingEm,
+    editableByExperimenter: liveReadingSession?.presentation.editableByResearcher,
+  })
 
   return (
     <div className="relative">
@@ -160,10 +188,10 @@ export function ReadingPage() {
         />
       </div>
       <ReaderShell
-        docId={docId}
-        markdown={markdown}
+        docId={liveContent.documentId}
+        markdown={liveContent.markdown}
         presentation={presentation}
-        experimentSetupName={title}
+        experimentSetupName={liveContent.title}
         preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
         highlightContext={readerOptions.highlightContext}
         displayGazePosition={readerOptions.displayGazePosition}

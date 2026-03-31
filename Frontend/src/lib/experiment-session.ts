@@ -47,6 +47,10 @@ export type ReadingMaterialSetupReadinessSnapshot = {
   documentId: string | null
   title: string | null
   sourceSetupId: string | null
+  usesSavedSetup: boolean
+  configuredAtUnixMs: number | null
+  allowsResearcherPresentationChanges: boolean
+  isPresentationLocked: boolean
   blockReason: string | null
 }
 
@@ -82,6 +86,7 @@ export type ReadingPresentationSnapshot = {
   lineHeight: number
   letterSpacingEm: number
   editableByResearcher: boolean
+  isPresentationLocked?: boolean
 }
 
 export type ReaderAppearanceSnapshot = ReaderAppearanceSettings
@@ -92,6 +97,7 @@ export type ReadingContentSnapshot = {
   markdown: string
   sourceSetupId: string | null
   updatedAtUnixMs: number
+  usesSavedSetup?: boolean
 }
 
 export type ParticipantViewportSnapshot = {

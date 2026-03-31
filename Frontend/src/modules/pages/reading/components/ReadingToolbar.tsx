@@ -16,6 +16,7 @@ type ReadingToolbarProps = {
   experimentSetupName: string | null;
   fontSizePx: number;
   lineWidthPx: number;
+  allowPresentationAdjustments?: boolean;
   showBackButton?: boolean;
   onIncreaseFont: () => void;
   onDecreaseFont: () => void;
@@ -30,6 +31,7 @@ export function ReadingToolbar({
   experimentSetupName,
   fontSizePx,
   lineWidthPx,
+  allowPresentationAdjustments = true,
   showBackButton = true,
   onIncreaseFont,
   onDecreaseFont,
@@ -38,10 +40,10 @@ export function ReadingToolbar({
   onReset,
   onEnterFocus,
 }: ReadingToolbarProps) {
-  const canDecreaseFont = fontSizePx > FONT_SIZE_MIN;
-  const canIncreaseFont = fontSizePx < FONT_SIZE_MAX;
-  const canDecreaseWidth = lineWidthPx > LINE_WIDTH_MIN;
-  const canIncreaseWidth = lineWidthPx < LINE_WIDTH_MAX;
+  const canDecreaseFont = allowPresentationAdjustments && fontSizePx > FONT_SIZE_MIN;
+  const canIncreaseFont = allowPresentationAdjustments && fontSizePx < FONT_SIZE_MAX;
+  const canDecreaseWidth = allowPresentationAdjustments && lineWidthPx > LINE_WIDTH_MIN;
+  const canIncreaseWidth = allowPresentationAdjustments && lineWidthPx < LINE_WIDTH_MAX;
 
   return (
     <div className="sticky top-0 z-20 border-b bg-card/95 px-4 py-3 backdrop-blur md:px-6">
@@ -66,6 +68,11 @@ export function ReadingToolbar({
             </p>
           </>
         ) : null}
+
+        <Separator orientation="vertical" className="hidden h-6 md:block" />
+        <p className="text-sm text-muted-foreground">
+          {allowPresentationAdjustments ? "Baseline adjustable" : "Baseline locked"}
+        </p>
 
         <Separator orientation="vertical" className="hidden h-6 md:block" />
 
@@ -115,7 +122,7 @@ export function ReadingToolbar({
 
         <div className="ml-auto" />
 
-        <Button variant="secondary" size="sm" onClick={onReset}>
+        <Button variant="secondary" size="sm" onClick={onReset} disabled={!allowPresentationAdjustments}>
           Reset
         </Button>
         <Button size="sm" onClick={onEnterFocus}>
