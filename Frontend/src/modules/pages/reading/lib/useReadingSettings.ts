@@ -165,15 +165,25 @@ function getExperimentSetupNameSnapshot() {
   return readStoredString(EXPERIMENT_SETUP_NAME_KEY) ?? null;
 }
 
+function writeReadingPresentationSnapshot(presentation: ReadingPresentationSettings) {
+  writeStoredValue(FONT_SIZE_KEY, String(presentation.fontSizePx));
+  writeStoredValue(LINE_WIDTH_KEY, String(presentation.lineWidthPx));
+  writeStoredValue(LINE_HEIGHT_KEY, String(presentation.lineHeight));
+  writeStoredValue(LETTER_SPACING_KEY, String(presentation.letterSpacingEm));
+  writeStoredValue(FONT_FAMILY_KEY, presentation.fontFamily);
+  writeStoredValue(EDITABLE_BY_EXPERIMENTER_KEY, String(presentation.editableByExperimenter));
+}
+
 export function applyReadingPresentationSettings(setup: StoredReadingPresentationSettings) {
-  writeStoredValue(FONT_SIZE_KEY, String(setup.fontSizePx));
-  writeStoredValue(LINE_WIDTH_KEY, String(setup.lineWidthPx));
-  writeStoredValue(LINE_HEIGHT_KEY, String(setup.lineHeight));
-  writeStoredValue(LETTER_SPACING_KEY, String(setup.letterSpacingEm));
-  writeStoredValue(FONT_FAMILY_KEY, setup.fontFamily);
-  writeStoredValue(EDITABLE_BY_EXPERIMENTER_KEY, String(setup.editableByExperimenter));
+  writeReadingPresentationSnapshot(setup);
   writeStoredValue(EXPERIMENT_SETUP_ID_KEY, setup.id);
   writeStoredValue(EXPERIMENT_SETUP_NAME_KEY, setup.name);
+}
+
+export function applyReadingPresentationDraft(presentation: ReadingPresentationSettings) {
+  writeReadingPresentationSnapshot(presentation);
+  removeStoredValue(EXPERIMENT_SETUP_ID_KEY);
+  removeStoredValue(EXPERIMENT_SETUP_NAME_KEY);
 }
 
 export function clearAppliedExperimentSetup() {

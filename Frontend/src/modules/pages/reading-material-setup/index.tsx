@@ -18,7 +18,11 @@ import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader"
 import { MOCK_READING_MD } from "@/modules/pages/reading/content/mockReading"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
-import { applyReadingPresentationSettings, useReadingSettings } from "@/modules/pages/reading/lib/useReadingSettings"
+import {
+  applyReadingPresentationDraft,
+  applyReadingPresentationSettings,
+  useReadingSettings,
+} from "@/modules/pages/reading/lib/useReadingSettings"
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize"
 import {
   type CreateReadingMaterialSetupRequest,
@@ -83,6 +87,10 @@ function formatDate(unixMs: number) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(unixMs))
+}
+
+function describeControlState(editableByExperimenter: boolean) {
+  return editableByExperimenter ? "Live-adjustable baseline" : "Locked baseline"
 }
 
 function normalizeReadingMaterialSetup(
@@ -168,6 +176,12 @@ export default function ReadingMaterialSetupPage() {
     draft.markdown !== defaultDraft.markdown ||
     draft.title === "Untitled text"
 
+  const deriveDraftSource = React.useCallback((nextDraft: DraftState): "preset" | "custom" => {
+    return nextDraft.title === defaultDraft.title && nextDraft.markdown === defaultDraft.markdown
+      ? "preset"
+      : "custom"
+  }, [])
+
   const syncReadingSession = React.useCallback(
     (nextDraft: DraftState, source: "preset" | "custom") => {
       dispatch(setReadingSessionTitle(nextDraft.title))
@@ -243,8 +257,21 @@ export default function ReadingMaterialSetupPage() {
     setSaveError(null)
     setSelectionError(null)
     setDraft(defaultDraft)
+    applyReadingPresentationDraft(defaultDraft)
     syncReadingSession(defaultDraft, "preset")
   }, [syncReadingSession])
+
+  const applyLocalDraft = React.useCallback(
+    (nextDraft: DraftState, source: "preset" | "custom") => {
+      setSelectedSetupId(null)
+      setSaveError(null)
+      setSelectionError(null)
+      setDraft(nextDraft)
+      syncReadingSession(nextDraft, source)
+      applyReadingPresentationDraft(nextDraft)
+    },
+    [syncReadingSession]
+  )
 
   const handleSave = React.useCallback(async () => {
     setSaveError(null)
@@ -303,7 +330,7 @@ export default function ReadingMaterialSetupPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
               <div className="space-y-1.5">
                 <CardTitle className="text-xl">Saved reading material setups</CardTitle>
-                <CardDescription>Reusable cards for step 4.</CardDescription>
+                <CardDescription>Reusable controlled baselines for the experiment setup step.</CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={handleStartNew}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -342,6 +369,9 @@ export default function ReadingMaterialSetupPage() {
                       <div className="space-y-1">
                         <p className="text-sm font-semibold">{setup.name}</p>
                         <p className="text-xs text-muted-foreground">{setup.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {describeControlState(setup.editableByExperimenter)}
+                        </p>
                         <p className="text-xs text-muted-foreground">Saved {formatDate(setup.updatedAtUnixMs)}</p>
                       </div>
                       {selectedSetupId === setup.id ? <Check className="h-4 w-4 text-primary" /> : null}
@@ -355,21 +385,22 @@ export default function ReadingMaterialSetupPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Reading text</CardTitle>
-              <CardDescription>Use the markdown below as the live preview.</CardDescription>
+              <CardDescription>
+                Edit a local draft here. It becomes the authoritative participant baseline only after
+                you save it into the experiment setup flow.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedSetupId(null)
                     const nextDraft = {
                       ...draft,
                       title: defaultDraft.title,
                       markdown: defaultDraft.markdown,
                     }
-                    setDraft(nextDraft)
-                    syncReadingSession(nextDraft, "preset")
+                    applyLocalDraft(nextDraft, "preset")
                   }}
                   className={`w-full rounded-2xl border p-5 text-left transition-colors ${
                     isBuiltInSelected
@@ -390,7 +421,6 @@ export default function ReadingMaterialSetupPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedSetupId(null)
                     const nextDraft = {
                       ...draft,
                       title:
@@ -402,8 +432,7 @@ export default function ReadingMaterialSetupPage() {
                           ? ""
                           : draft.markdown,
                     }
-                    setDraft(nextDraft)
-                    syncReadingSession(nextDraft, "custom")
+                    applyLocalDraft(nextDraft, "custom")
                   }}
                   className={`w-full rounded-2xl border p-5 text-left transition-colors ${
                     isCustomSelected
@@ -440,8 +469,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.title}
                     onChange={(event) => {
                       const nextDraft = { ...draft, title: event.target.value }
-                      setDraft(nextDraft)
-                      syncReadingSession(nextDraft, "custom")
+                      applyLocalDraft(nextDraft, "custom")
                     }}
                     placeholder="Enter a title for this reading text"
                   />
@@ -454,8 +482,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.markdown}
                     onChange={(event) => {
                       const nextDraft = { ...draft, markdown: event.target.value }
-                      setDraft(nextDraft)
-                      syncReadingSession(nextDraft, "custom")
+                      applyLocalDraft(nextDraft, "custom")
                     }}
                     className="min-h-56 resize-y"
                   />
@@ -468,8 +495,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.researcherQuestions}
                     onChange={(event) => {
                       const nextDraft = { ...draft, researcherQuestions: event.target.value }
-                      setDraft(nextDraft)
-                      syncReadingSession(nextDraft, "custom")
+                      applyLocalDraft(nextDraft, "custom")
                     }}
                     className="min-h-32 resize-y"
                   />
@@ -498,9 +524,10 @@ export default function ReadingMaterialSetupPage() {
                   <FieldLabel htmlFor="material-font-family">Font family</FieldLabel>
                   <Select
                     value={draft.fontFamily}
-                    onValueChange={(value) =>
-                      setDraft((current) => ({ ...current, fontFamily: value as FontTheme }))
-                    }
+                    onValueChange={(value) => {
+                      const nextDraft = { ...draft, fontFamily: value as FontTheme }
+                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                    }}
                   >
                     <SelectTrigger id="material-font-family" className="w-full">
                       <SelectValue placeholder="Choose a font" />
@@ -525,9 +552,10 @@ export default function ReadingMaterialSetupPage() {
                     max={28}
                     step={1}
                     value={[draft.fontSizePx]}
-                    onValueChange={(value) =>
-                      setDraft((current) => ({ ...current, fontSizePx: value[0] ?? current.fontSizePx }))
-                    }
+                    onValueChange={(value) => {
+                      const nextDraft = { ...draft, fontSizePx: value[0] ?? draft.fontSizePx }
+                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                    }}
                   />
                 </Field>
 
@@ -541,9 +569,10 @@ export default function ReadingMaterialSetupPage() {
                     max={920}
                     step={20}
                     value={[draft.lineWidthPx]}
-                    onValueChange={(value) =>
-                      setDraft((current) => ({ ...current, lineWidthPx: value[0] ?? current.lineWidthPx }))
-                    }
+                    onValueChange={(value) => {
+                      const nextDraft = { ...draft, lineWidthPx: value[0] ?? draft.lineWidthPx }
+                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                    }}
                   />
                 </Field>
 
@@ -557,9 +586,10 @@ export default function ReadingMaterialSetupPage() {
                     max={2.2}
                     step={0.05}
                     value={[draft.lineHeight]}
-                    onValueChange={(value) =>
-                      setDraft((current) => ({ ...current, lineHeight: value[0] ?? current.lineHeight }))
-                    }
+                    onValueChange={(value) => {
+                      const nextDraft = { ...draft, lineHeight: value[0] ?? draft.lineHeight }
+                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                    }}
                   />
                 </Field>
 
@@ -575,12 +605,13 @@ export default function ReadingMaterialSetupPage() {
                     max={0.12}
                     step={0.01}
                     value={[draft.letterSpacingEm]}
-                    onValueChange={(value) =>
-                      setDraft((current) => ({
-                        ...current,
-                        letterSpacingEm: value[0] ?? current.letterSpacingEm,
-                      }))
-                    }
+                    onValueChange={(value) => {
+                      const nextDraft = {
+                        ...draft,
+                        letterSpacingEm: value[0] ?? draft.letterSpacingEm,
+                      }
+                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                    }}
                   />
                 </Field>
 
@@ -593,17 +624,19 @@ export default function ReadingMaterialSetupPage() {
                         ) : (
                           <Lock className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <FieldLabel className="text-sm">Editable later by experimenter</FieldLabel>
+                        <FieldLabel className="text-sm">Allow live researcher adjustments</FieldLabel>
                       </div>
                       <FieldDescription>
-                        If enabled, the second-screen experimenter may adjust these values live during the reading session.
+                        If enabled, the researcher may still tune typography during the live session.
+                        If disabled, this becomes a locked participant baseline.
                       </FieldDescription>
                     </div>
                     <Switch
                       checked={draft.editableByExperimenter}
-                      onCheckedChange={(checked) =>
-                        setDraft((current) => ({ ...current, editableByExperimenter: checked }))
-                      }
+                      onCheckedChange={(checked) => {
+                        const nextDraft = { ...draft, editableByExperimenter: checked }
+                        applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                      }}
                     />
                   </div>
                 </Field>
@@ -613,12 +646,15 @@ export default function ReadingMaterialSetupPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Save reading material setup</CardTitle>
-              <CardDescription>Save the whole setup as a single record.</CardDescription>
+              <CardTitle className="text-xl">Save reusable baseline</CardTitle>
+              <CardDescription>
+                Save the text and presentation condition as one reusable reading baseline. You will still
+                choose and save it into the active experiment session separately.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="rounded-2xl border bg-muted/30 p-4">
-                <p className="text-sm font-medium">Current combination</p>
+                <p className="text-sm font-medium">Current baseline draft</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Text: {draft.title.trim().length > 0 ? draft.title : "Untitled"}
                 </p>
@@ -627,6 +663,13 @@ export default function ReadingMaterialSetupPage() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Font: {FONT_LABELS[draft.fontFamily]} {draft.fontSizePx}px
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Control: {describeControlState(draft.editableByExperimenter)}
+                </p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  This page edits local preview state and reusable saved setups. The participant route
+                  follows the authoritative session baseline only after you save one in the experiment setup flow.
                 </p>
               </div>
 

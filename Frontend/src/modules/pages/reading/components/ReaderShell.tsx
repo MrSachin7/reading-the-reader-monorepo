@@ -192,10 +192,11 @@ export function ReaderShell({
     },
     [captureContextAnchor, onPresentationChange, presentation]
   );
+  const canAdjustPresentation = Boolean(onPresentationChange) && presentation.editableByExperimenter;
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (!onPresentationChange || event.metaKey || event.ctrlKey || event.altKey) {
+      if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
 
@@ -212,6 +213,15 @@ export function ReaderShell({
       }
 
       if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (!canAdjustPresentation) {
+        if (event.key.toLowerCase() === "r") {
+          event.preventDefault();
+          resetToTop();
+        }
+
         return;
       }
 
@@ -244,7 +254,7 @@ export function ReaderShell({
         resetToTop();
       }
     },
-    [isFocusMode, onPresentationChange, presentation.fontSizePx, presentation.lineWidthPx, resetToTop, updatePresentation]
+    [canAdjustPresentation, isFocusMode, presentation.fontSizePx, presentation.lineWidthPx, resetToTop, updatePresentation]
   );
 
   useEffect(() => {
@@ -400,6 +410,7 @@ export function ReaderShell({
             experimentSetupName={experimentSetupName}
             fontSizePx={presentation.fontSizePx}
             lineWidthPx={presentation.lineWidthPx}
+            allowPresentationAdjustments={canAdjustPresentation}
             showBackButton={showBackButton}
             onIncreaseFont={() => updatePresentation({ fontSizePx: presentation.fontSizePx + 2 })}
             onDecreaseFont={() => updatePresentation({ fontSizePx: presentation.fontSizePx - 2 })}

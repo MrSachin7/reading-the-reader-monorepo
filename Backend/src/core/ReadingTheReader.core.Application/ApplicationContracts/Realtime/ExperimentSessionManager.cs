@@ -1254,12 +1254,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         var hasReadingMaterial = liveReadingSession.Content is not null &&
                                  !string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown);
+        var usesSavedSetup = hasReadingMaterial && liveReadingSession.Content?.UsesSavedSetup == true;
+        var allowsResearcherPresentationChanges = hasReadingMaterial && liveReadingSession.Presentation.EditableByResearcher;
         var readingMaterial = new ReadingMaterialSetupReadinessSnapshot(
             hasReadingMaterial,
             hasReadingMaterial,
             NormalizeNullableText(liveReadingSession.Content?.DocumentId),
             NormalizeNullableText(liveReadingSession.Content?.Title),
             NormalizeNullableText(liveReadingSession.Content?.SourceSetupId),
+            usesSavedSetup,
+            hasReadingMaterial ? liveReadingSession.Content?.UpdatedAtUnixMs : null,
+            allowsResearcherPresentationChanges,
+            hasReadingMaterial && liveReadingSession.Presentation.IsPresentationLocked,
             hasReadingMaterial ? null : readingMaterialBlockReason);
 
         var currentStepIndex = 3;

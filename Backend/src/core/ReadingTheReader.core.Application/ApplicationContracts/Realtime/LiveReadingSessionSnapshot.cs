@@ -119,6 +119,8 @@ public sealed record ReadingPresentationSnapshot(
         0,
         true);
 
+    public bool IsPresentationLocked => !EditableByResearcher;
+
     public ReadingPresentationSnapshot Copy()
     {
         return this with { };
@@ -132,6 +134,8 @@ public sealed record ReadingContentSnapshot(
     string? SourceSetupId,
     long UpdatedAtUnixMs)
 {
+    public bool UsesSavedSetup => !string.IsNullOrWhiteSpace(SourceSetupId);
+
     public ReadingContentSnapshot Copy()
     {
         return this with { };
