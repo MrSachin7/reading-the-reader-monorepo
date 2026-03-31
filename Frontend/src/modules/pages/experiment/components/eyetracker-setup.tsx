@@ -6,6 +6,7 @@ import { useForm, useWatch } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/error-utils"
+import type { EyeTrackerSetupReadinessSnapshot } from "@/lib/experiment-session"
 import {
   setStepOneLastSyncedFingerprint,
   setStepOneLicenceFileName,
@@ -36,12 +37,14 @@ type EyetrackerSetupFormValues = {
 }
 
 type EyetrackerSetupProps = {
+  setup: EyeTrackerSetupReadinessSnapshot
   onCompletionChange?: (isComplete: boolean) => void
   onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
   onSubmittingChange?: (isSubmitting: boolean) => void
 }
 
 export function EyetrackerSetup({
+  setup,
   onCompletionChange,
   onSubmitRequestChange,
   onSubmittingChange,
@@ -103,9 +106,13 @@ export function EyetrackerSetup({
     saveLicence: Boolean(saveLicence),
     licenceFileName: displayedLicenceFileName ?? null,
   })
-  const isComplete =
-    stepOneDraft.selectionConfirmed ||
-    Boolean(selectedSerialNumber && (displayedLicenceFileName || (hasSavedLicence && !overwriteExistingLicence)))
+  const hasUnsavedLocalChanges =
+    stepOneDraft.lastSyncedFingerprint !== null &&
+    stepOneDraft.lastSyncedFingerprint !== currentFingerprint
+  const isComplete = Boolean(
+    selectedSerialNumber &&
+      (displayedLicenceFileName || (hasSavedLicence && !overwriteExistingLicence))
+  )
 
   React.useEffect(() => {
     onCompletionChange?.(isComplete)
@@ -217,14 +224,14 @@ export function EyetrackerSetup({
     }
 
     try {
-      await selectEyetracker({
+      const selection = await selectEyetracker({
         serialNumber: currentValues.serialNumber,
         saveLicence: currentValues.saveLicence,
         licenceFile: currentValues.licenceFile,
       }).unwrap()
       dispatch(setStepOneLastSyncedFingerprint(nextFingerprint))
-      dispatch(setStepOneSelectionConfirmed(true))
-      return true
+      dispatch(setStepOneSelectionConfirmed(selection.setup.eyeTracker.isReady))
+      return selection.setup.eyeTracker.isReady
     } catch (error) {
       setSubmitError(getErrorMessage(error, "Failed to select eyetracker. Please try again."))
       return false
@@ -258,6 +265,53 @@ export function EyetrackerSetup({
       </CardHeader>
 
       <CardContent className="space-y-5">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Active tracker</p>
+            <p className="mt-2 text-sm font-semibold">
+              {setup.selectedTrackerName ?? setup.selectedTrackerSerialNumber ?? "No tracker selected"}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Licence state</p>
+            <p className="mt-2 text-sm font-semibold">
+              {setup.hasAppliedLicence ? "Applied to selected tracker" : "Still required"}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Workflow status</p>
+            <p className="mt-2 text-sm font-semibold">{setup.isReady ? "Ready for start gate" : "Blocked"}</p>
+          </div>
+        </div>
+
+        {setup.isReady ? (
+          <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
+            <Info />
+            <AlertTitle>Eyetracker is ready</AlertTitle>
+            <AlertDescription>
+              The backend session snapshot confirms that the selected tracker is licensed and ready
+              for the experiment workflow.
+            </AlertDescription>
+          </Alert>
+        ) : setup.blockReason ? (
+          <Alert>
+            <Info />
+            <AlertTitle>Eyetracker step still needs attention</AlertTitle>
+            <AlertDescription>{setup.blockReason}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        {hasUnsavedLocalChanges ? (
+          <Alert className="border-amber-400/50 bg-amber-500/5 text-amber-950 dark:text-amber-100">
+            <Info />
+            <AlertTitle>Local tracker changes are not applied yet</AlertTitle>
+            <AlertDescription>
+              Save this step again if you want the backend workflow to use the currently selected
+              tracker or licence file.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <Form {...form}>
           <form className="space-y-5" onSubmit={(event) => event.preventDefault()}>
             <section className="space-y-3 rounded-lg border bg-card p-4">

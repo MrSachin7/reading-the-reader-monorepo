@@ -1,4 +1,5 @@
 export type CalibrationPattern = string
+export type CalibrationQuality = "good" | "fair" | "poor"
 
 export type CalibrationPointDefinition = {
   pointId: string
@@ -35,16 +36,19 @@ export type CalibrationValidationPointResult = CalibrationPointDefinition & {
   averageAccuracyDegrees: number | null
   averagePrecisionDegrees: number | null
   sampleCount: number
-  quality: "good" | "fair" | "poor"
+  quality: CalibrationQuality
   notes: string[]
 }
 
-export type CalibrationValidationResult = {
+export type CalibrationValidationSummary = {
   passed: boolean
-  quality: "good" | "fair" | "poor"
+  quality: CalibrationQuality
   averageAccuracyDegrees: number | null
   averagePrecisionDegrees: number | null
   sampleCount: number
+}
+
+export type CalibrationValidationResult = CalibrationValidationSummary & {
   points: CalibrationValidationPointResult[]
   notes: string[]
 }

@@ -1,6 +1,4 @@
 "use client"
-
-import Link from "next/link"
 import { XCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,9 +6,11 @@ import { Button } from "@/components/ui/button"
 export function CalibrationFailurePanel({
   errorMessage,
   onReset,
+  onReturnToWorkflow,
 }: {
   errorMessage: string | null
   onReset: () => void
+  onReturnToWorkflow: () => void
 }) {
   return (
     <div className="absolute top-1/2 left-1/2 z-20 w-[min(92vw,760px)] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-amber-400/30 bg-white/92 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
@@ -22,7 +22,8 @@ export function CalibrationFailurePanel({
             The calibration flow did not complete.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            Restart the flow, keep the participant steady, and repeat the calibration and validation targets.
+            Returning to the experiment page keeps the calibration step blocked until this route
+            finishes with a passed validation result.
           </p>
           {errorMessage ? (
             <p className="mt-3 text-sm leading-7 text-amber-700">{errorMessage}</p>
@@ -32,8 +33,8 @@ export function CalibrationFailurePanel({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={onReset}>Reset calibration</Button>
-        <Button asChild variant="outline">
-          <Link href="/experiment">Back to experiment</Link>
+        <Button variant="outline" onClick={onReturnToWorkflow}>
+          Return to setup workflow
         </Button>
       </div>
     </div>

@@ -1,14 +1,63 @@
-import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { CalibrationQuality, CalibrationSessionSnapshot } from "@/lib/calibration"
 import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
+export type ExperimentSetupBlockerSnapshot = {
+  stepKey: string
+  stepLabel: string
+  reason: string
+}
+
+export type EyeTrackerSetupReadinessSnapshot = {
+  isReady: boolean
+  hasSelectedEyeTracker: boolean
+  hasAppliedLicence: boolean
+  hasSavedLicence: boolean
+  savedLicenceMissing: boolean
+  selectedTrackerSerialNumber: string | null
+  selectedTrackerName: string | null
+  blockReason: string | null
+}
+
+export type ParticipantSetupReadinessSnapshot = {
+  isReady: boolean
+  hasParticipant: boolean
+  participantName: string | null
+  blockReason: string | null
+}
+
+export type CalibrationSetupReadinessSnapshot = {
+  isReady: boolean
+  hasCalibrationSession: boolean
+  isCalibrationApplied: boolean
+  isValidationPassed: boolean
+  status: string
+  validationStatus: string
+  validationQuality: CalibrationQuality | null
+  averageAccuracyDegrees: number | null
+  averagePrecisionDegrees: number | null
+  sampleCount: number
+  blockReason: string | null
+}
+
+export type ReadingMaterialSetupReadinessSnapshot = {
+  isReady: boolean
+  hasReadingMaterial: boolean
+  documentId: string | null
+  title: string | null
+  sourceSetupId: string | null
+  blockReason: string | null
+}
+
 export type ExperimentSetupSnapshot = {
-  eyeTrackerSetupCompleted: boolean
-  participantSetupCompleted: boolean
-  calibrationCompleted: boolean
-  readingMaterialSetupCompleted: boolean
+  isReadyForSessionStart: boolean
   currentStepIndex: number
+  currentBlocker: ExperimentSetupBlockerSnapshot | null
+  eyeTracker: EyeTrackerSetupReadinessSnapshot
+  participant: ParticipantSetupReadinessSnapshot
+  calibration: CalibrationSetupReadinessSnapshot
+  readingMaterial: ReadingMaterialSetupReadinessSnapshot
 }
 
 export type ExperimentParticipantSnapshot = {

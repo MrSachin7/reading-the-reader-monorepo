@@ -11,12 +11,12 @@ This is a brownfield thesis platform. Some v1 requirements are already partly or
 
 ### Setup and Calibration
 
-- [ ] **SETUP-01**: Researcher can detect connected eye trackers from inside the application without manual device configuration.
-- [ ] **SETUP-02**: Researcher can select exactly one active eye tracker and provide the required license material before streaming begins.
-- [ ] **SETUP-03**: Researcher can complete calibration and validation from inside the application without using separate external calibration software.
-- [ ] **SETUP-04**: Researcher can view calibration quality metrics before starting a session.
-- [ ] **SETUP-05**: System blocks session start until required setup steps are completed successfully.
-- [ ] **SETUP-06**: Researcher can follow a guided experiment workflow covering device, license, calibration, reading content, and session start.
+- [x] **SETUP-01**: Researcher can detect connected eye trackers from inside the application without manual device configuration.
+- [x] **SETUP-02**: Researcher can select exactly one active eye tracker and provide the required license material before streaming begins.
+- [x] **SETUP-03**: Researcher can complete calibration and validation from inside the application without using separate external calibration software.
+- [x] **SETUP-04**: Researcher can view calibration quality metrics before starting a session.
+- [x] **SETUP-05**: System blocks session start until required setup steps are completed successfully.
+- [x] **SETUP-06**: Researcher can follow a guided experiment workflow covering device, license, calibration, reading content, and session start.
 
 ### Participant Reading Experience
 
@@ -85,12 +85,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SETUP-01 | Phase 4 | Pending |
-| SETUP-02 | Phase 4 | Pending |
-| SETUP-03 | Phase 4 | Pending |
-| SETUP-04 | Phase 4 | Pending |
-| SETUP-05 | Phase 4 | Pending |
-| SETUP-06 | Phase 4 | Pending |
+| SETUP-01 | Phase 4 | Validated (Phase 4 Plan 02) |
+| SETUP-02 | Phase 4 | Validated (Phase 4 Plan 02) |
+| SETUP-03 | Phase 4 | Validated (Phase 4 Plan 04) |
+| SETUP-04 | Phase 4 | Validated (Phase 4 Plan 04) |
+| SETUP-05 | Phase 4 | Validated (Phase 4 Plan 04) |
+| SETUP-06 | Phase 4 | Validated (Phase 4 Plan 04) |
 | READ-01 | Phase 5 | Pending |
 | READ-02 | Phase 5 | Pending |
 | READ-03 | Phase 5 | Pending |
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-31 after Phase 3 execution*
+*Last updated: 2026-03-31 after Phase 4 plan 04-04 execution*

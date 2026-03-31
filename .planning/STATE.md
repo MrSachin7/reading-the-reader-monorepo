@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: execution
-stopped_at: Phase 3 completed
-last_updated: "2026-03-31T00:00:00Z"
-last_activity: 2026-03-31 - Phase 3 was executed, verified, and closed on the working branch, including backend module contracts, runtime provenance, catalog API, and metadata-driven researcher controls.
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-03-31T11:13:06Z"
+last_activity: 2026-03-31 - Phase 4 plan 04-04 executed in the workspace with reliable calibration-route return handling, explicit interruption messaging, and final setup workflow regressions.
 progress:
   total_phases: 8
-  completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 38
+  completed_phases: 4
+  total_plans: 17
+  completed_plans: 17
+  percent: 50
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Build a defendable, modular adaptive reading platform that supports real Tobii-backed experiments and interchangeable intervention and decision modules without breaking the participant reading flow or the researcher workflow.
-**Current focus:** Phase 4 - Device Setup & Calibration Workflow
+**Current focus:** Phase 5 - Controlled Markdown Reading Baseline
 
 ## Current Position
 
-Phase: 4 of 8 (Device Setup & Calibration Workflow)
-Plan: 0 of TBD in current phase
-Status: Phase 3 completed and verified; Phase 4 is the next planning target
-Last activity: 2026-03-31 - Phase 3 was executed, verified, and closed on the working branch, including backend module contracts, runtime provenance, catalog API, and metadata-driven researcher controls.
+Phase: 5 of 8 (Controlled Markdown Reading Baseline)
+Plan: 0 planned
+Status: Phase 4 complete; ready to begin Phase 5 planning
+Last activity: 2026-03-31 - 04-04 closed Phase 4 with calibration-route return reliability, explicit interruption outcomes, dedicated calibration projection tests, and final setup validation.
 
-Progress: [####------] 38%
+Progress: [#####-----] 50%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 13
+- Total plans completed: 17
 - Average duration: -
 - Total execution time: 1 session
 
@@ -47,11 +47,12 @@ Progress: [####------] 38%
 | 1 | 5 | 1 session | - |
 | 2 | 4 | 1 session | - |
 | 3 | 4 | 1 session | - |
+| 4 | 4 | 1 session | - |
 
 **Recent Trend:**
 
-- Last 5 plans: 02-04, 03-01, 03-02, 03-03, 03-04 completed
-- Trend: Positive after Phase 3 execution
+- Last 5 plans: 03-04, 04-01, 04-02, 04-03, 04-04 completed
+- Trend: Positive after closing Phase 4
 
 ## Accumulated Context
 
@@ -64,6 +65,12 @@ Recent decisions affecting current work:
 - Phase 1 is now complete: backend authority, ingress, observation, sensing, and query seams are explicit and validated.
 - Phase 2 is now complete: decision strategy contracts, provider registration, supervisory controls, and replay/export provenance are all verified and documented.
 - Phase 3 is now complete: intervention modules, module provenance, catalog discovery, and metadata-driven researcher controls are all verified.
+- Phase 4 now projects setup readiness as nested backend-owned step snapshots with one authoritative blocker reason that session start reuses directly.
+- Phase 4 selection and calibration transport now return enough authoritative data that the workflow can consume backend truth immediately after tracker selection and during setup hydration.
+- Phase 4 guided setup now separates local form drafts from authoritative completion, with the reading-material step saved explicitly before Start is enabled.
+- Phase 4 calibration hydration now follows backend readiness instead of preserving a local completion override after route returns.
+- The calibration route now persists explicit interruption, failure, and passed-validation outcomes back into the experiment workflow so route return never degrades into generic pending status.
+- Dedicated calibration projection tests are part of Phase 4 validation, not optional follow-up coverage.
 - Researcher-operated experiment reliability is prioritized ahead of lower-priority study tooling.
 - Replay, export, and extension guidance close the roadmap because they convert working flows into thesis evidence.
 
@@ -73,12 +80,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4 planning should turn the existing setup/calibration flows into one guided Tobii-ready workflow with proper gating.
+- Frontend lint still has unrelated `@next/next/no-assign-module-variable` errors in researcher-live files; they are logged in `.planning/phases/04-device-setup-calibration-workflow/deferred-items.md`.
+- Manual-only Phase 4 follow-up remains on real Tobii/browser UAT for fullscreen interruption clarity and operator understanding.
 - Phase 7 planning should define how context-preservation quality will be evaluated under live interventions.
 - Phase 8 planning should pin down the exact provenance fields needed for reproducible replay and export.
 
 ## Session Continuity
 
-Last session: 2026-03-26T10:56:04.485Z
-Stopped at: Phase 3 completed
+Last session: 2026-03-31T11:13:06Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: .planning/ROADMAP.md

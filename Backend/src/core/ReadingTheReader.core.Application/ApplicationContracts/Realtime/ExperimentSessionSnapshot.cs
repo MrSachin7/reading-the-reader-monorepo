@@ -2,22 +2,129 @@ using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 
+public sealed record ExperimentSetupBlockerSnapshot(
+    string StepKey,
+    string StepLabel,
+    string Reason)
+{
+    public ExperimentSetupBlockerSnapshot Copy()
+    {
+        return new ExperimentSetupBlockerSnapshot(
+            StepKey,
+            StepLabel,
+            Reason);
+    }
+}
+
+public sealed record EyeTrackerSetupReadinessSnapshot(
+    bool IsReady,
+    bool HasSelectedEyeTracker,
+    bool HasAppliedLicence,
+    bool HasSavedLicence,
+    bool SavedLicenceMissing,
+    string? SelectedTrackerSerialNumber,
+    string? SelectedTrackerName,
+    string? BlockReason)
+{
+    public EyeTrackerSetupReadinessSnapshot Copy()
+    {
+        return new EyeTrackerSetupReadinessSnapshot(
+            IsReady,
+            HasSelectedEyeTracker,
+            HasAppliedLicence,
+            HasSavedLicence,
+            SavedLicenceMissing,
+            SelectedTrackerSerialNumber,
+            SelectedTrackerName,
+            BlockReason);
+    }
+}
+
+public sealed record ParticipantSetupReadinessSnapshot(
+    bool IsReady,
+    bool HasParticipant,
+    string? ParticipantName,
+    string? BlockReason)
+{
+    public ParticipantSetupReadinessSnapshot Copy()
+    {
+        return new ParticipantSetupReadinessSnapshot(
+            IsReady,
+            HasParticipant,
+            ParticipantName,
+            BlockReason);
+    }
+}
+
+public sealed record CalibrationSetupReadinessSnapshot(
+    bool IsReady,
+    bool HasCalibrationSession,
+    bool IsCalibrationApplied,
+    bool IsValidationPassed,
+    string Status,
+    string ValidationStatus,
+    string? ValidationQuality,
+    double? AverageAccuracyDegrees,
+    double? AveragePrecisionDegrees,
+    int SampleCount,
+    string? BlockReason)
+{
+    public CalibrationSetupReadinessSnapshot Copy()
+    {
+        return new CalibrationSetupReadinessSnapshot(
+            IsReady,
+            HasCalibrationSession,
+            IsCalibrationApplied,
+            IsValidationPassed,
+            Status,
+            ValidationStatus,
+            ValidationQuality,
+            AverageAccuracyDegrees,
+            AveragePrecisionDegrees,
+            SampleCount,
+            BlockReason);
+    }
+}
+
+public sealed record ReadingMaterialSetupReadinessSnapshot(
+    bool IsReady,
+    bool HasReadingMaterial,
+    string? DocumentId,
+    string? Title,
+    string? SourceSetupId,
+    string? BlockReason)
+{
+    public ReadingMaterialSetupReadinessSnapshot Copy()
+    {
+        return new ReadingMaterialSetupReadinessSnapshot(
+            IsReady,
+            HasReadingMaterial,
+            DocumentId,
+            Title,
+            SourceSetupId,
+            BlockReason);
+    }
+}
+
 public sealed record ExperimentSetupSnapshot(
-    bool EyeTrackerSetupCompleted,
-    bool ParticipantSetupCompleted,
-    bool CalibrationCompleted,
-    bool ReadingMaterialSetupCompleted,
-    int CurrentStepIndex
-)
+    bool IsReadyForSessionStart,
+    int CurrentStepIndex,
+    ExperimentSetupBlockerSnapshot? CurrentBlocker,
+    EyeTrackerSetupReadinessSnapshot EyeTracker,
+    ParticipantSetupReadinessSnapshot Participant,
+    CalibrationSetupReadinessSnapshot Calibration,
+    ReadingMaterialSetupReadinessSnapshot ReadingMaterial)
 {
     public ExperimentSetupSnapshot Copy()
     {
         return new ExperimentSetupSnapshot(
-            EyeTrackerSetupCompleted,
-            ParticipantSetupCompleted,
-            CalibrationCompleted,
-            ReadingMaterialSetupCompleted,
-            CurrentStepIndex);
+            IsReadyForSessionStart,
+            CurrentStepIndex,
+            CurrentBlocker?.Copy(),
+            EyeTracker.Copy(),
+            Participant.Copy(),
+            Calibration.Copy(),
+            ReadingMaterial.Copy());
     }
 }
 
@@ -48,7 +155,16 @@ public sealed record ExperimentSessionSnapshot(
             Participant?.Copy(),
             EyeTrackerDevice?.Copy(),
             Calibration is null ? CalibrationSessionSnapshots.CreateIdle() : CopyCalibration(Calibration),
-            Setup is null ? new ExperimentSetupSnapshot(false, false, false, false, 0) : Setup.Copy(),
+            Setup is null
+                ? new ExperimentSetupSnapshot(
+                    false,
+                    0,
+                    null,
+                    new EyeTrackerSetupReadinessSnapshot(false, false, false, false, false, null, null, null),
+                    new ParticipantSetupReadinessSnapshot(false, false, null, null),
+                    new CalibrationSetupReadinessSnapshot(false, false, false, false, "idle", "idle", null, null, null, 0, null),
+                    new ReadingMaterialSetupReadinessSnapshot(false, false, null, null, null, null))
+                : Setup.Copy(),
             ReceivedGazeSamples,
             LatestGazeSample?.Copy(),
             ConnectedClients,

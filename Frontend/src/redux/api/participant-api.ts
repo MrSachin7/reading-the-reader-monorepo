@@ -22,6 +22,7 @@ export const participantApi = baseApi.injectEndpoints({
           ReadingProficiency: readingProficiency,
         },
       }),
+      invalidatesTags: ["Experiment"],
     }),
   }),
 })
