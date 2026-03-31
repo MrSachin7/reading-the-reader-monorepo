@@ -36,9 +36,9 @@ This is a brownfield thesis platform. Some v1 requirements are already partly or
 ### Modularity and Extensibility
 
 - [x] **MOD-01**: System exposes a stable sensing boundary that isolates eye-tracker integration from decision-making and UI adaptation logic.
-- [ ] **MOD-02**: System exposes a stable decision-strategy boundary so manual, rule-based, hybrid, and external AI-driven strategies can be added or swapped without rewriting the whole application.
-- [ ] **MOD-03**: System exposes a stable intervention boundary so new micro-intervention modules can be added with additive code rather than invasive rewrites.
-- [ ] **MOD-04**: Intervention modules declare their supported parameters or required inputs clearly enough for researchers and future developers to understand how to use them.
+- [x] **MOD-02**: System exposes a stable decision-strategy boundary so manual, rule-based, hybrid, and external AI-driven strategies can be added or swapped without rewriting the whole application.
+- [x] **MOD-03**: System exposes a stable intervention boundary so new micro-intervention modules can be added with additive code rather than invasive rewrites.
+- [x] **MOD-04**: Intervention modules declare their supported parameters or required inputs clearly enough for researchers and future developers to understand how to use them.
 - [x] **MOD-05**: Architecture and code organization preserve strict separation between sensing, session orchestration, decision strategy, intervention application, researcher controls, and participant UI adaptation.
 
 ### Context Preservation and Reading Flow
@@ -101,9 +101,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIVE-04 | Phase 6 | Pending |
 | LIVE-05 | Phase 6 | Pending |
 | MOD-01 | Phase 1 | Validated (Phase 1) |
-| MOD-02 | Phase 2 | Pending |
-| MOD-03 | Phase 3 | Pending |
-| MOD-04 | Phase 3 | Pending |
+| MOD-02 | Phase 2 | Validated (Phase 2) |
+| MOD-03 | Phase 3 | Validated (Phase 3) |
+| MOD-04 | Phase 3 | Validated (Phase 3) |
 | MOD-05 | Phase 1 | Validated (Phase 1) |
 | FLOW-01 | Phase 7 | Pending |
 | FLOW-02 | Phase 7 | Pending |
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after Phase 1 execution*
+*Last updated: 2026-03-31 after Phase 3 execution*

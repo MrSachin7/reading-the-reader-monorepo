@@ -62,6 +62,7 @@ export const baseApi = createApi({
     "CalibrationSettings",
     "ReaderShellSettings",
     "ReplayExport",
+    "InterventionModule",
   ],
   endpoints: () => ({}),
 })

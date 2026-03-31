@@ -21,6 +21,24 @@ public sealed class ExperimentReplayExportSerializerTests
             serializer.Serialize(roundTripped, ExperimentReplayExportFormats.Json));
     }
 
+    [Fact]
+    public void ModuleProvenance_RoundTrips()
+    {
+        var serializer = new ExperimentReplayExportSerializer();
+        var export = CreateReplayExport();
+
+        var json = serializer.Serialize(export, ExperimentReplayExportFormats.Json);
+        var roundTripped = serializer.Deserialize(json, ExperimentReplayExportFormats.Json);
+
+        var intervention = Assert.Single(roundTripped.InterventionEvents);
+        Assert.Equal(ReadingInterventionModuleIds.FontSize, intervention.Intervention.ModuleId);
+        Assert.Equal("20", Assert.Contains("fontSizePx", intervention.Intervention.Parameters!));
+
+        var proposal = Assert.Single(roundTripped.DecisionProposalEvents);
+        Assert.Equal(ReadingInterventionModuleIds.FontSize, proposal.Proposal.ProposedIntervention.ModuleId);
+        Assert.Equal("20", Assert.Contains("fontSizePx", proposal.Proposal.ProposedIntervention.Parameters!));
+    }
+
     private static ExperimentReplayExport CreateReplayExport()
     {
         var sessionId = Guid.Parse("9d0f4abc-6b53-4e54-a8fa-8f57c1a8cd11");
@@ -57,7 +75,12 @@ public sealed class ExperimentReplayExportSerializerTests
             "Adjusted font size",
             1_710_000_002_000,
             presentation,
-            appearance);
+            appearance,
+            ReadingInterventionModuleIds.FontSize,
+            new Dictionary<string, string?>
+            {
+                ["fontSizePx"] = "20"
+            });
         var readingSession = new LiveReadingSessionSnapshot(
             content,
             presentation,
@@ -88,7 +111,12 @@ public sealed class ExperimentReplayExportSerializerTests
                 "attention-summary",
                 "Increase font size to reduce local reading strain.",
                 new ReadingPresentationPatch(null, 20, null, null, null, null),
-                new ReaderAppearancePatch(null, null, null)));
+                new ReaderAppearancePatch(null, null, null),
+                ReadingInterventionModuleIds.FontSize,
+                new Dictionary<string, string?>
+                {
+                    ["fontSizePx"] = "20"
+                }));
         var initialSnapshot = new ExperimentSessionSnapshot(
             sessionId,
             true,

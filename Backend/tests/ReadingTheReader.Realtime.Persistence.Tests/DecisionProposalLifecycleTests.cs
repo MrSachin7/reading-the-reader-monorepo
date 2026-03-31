@@ -37,6 +37,10 @@ public sealed class DecisionProposalLifecycleTests
         Assert.NotNull(update.DecisionState.ActiveProposal);
         Assert.Equal(DecisionProposalStatus.Pending, update.DecisionState.ActiveProposal!.Status);
         Assert.Equal(DecisionProviderIds.RuleBased, update.DecisionState.ActiveProposal.ProviderId);
+        Assert.Equal(ReadingInterventionModuleIds.FontSize, update.DecisionState.ActiveProposal.ProposedIntervention.ModuleId);
+        Assert.Equal(
+            "20",
+            Assert.Contains("fontSizePx", update.DecisionState.ActiveProposal.ProposedIntervention.Parameters!));
         Assert.Empty(update.DecisionState.RecentProposalHistory);
         Assert.DoesNotContain(
             harness.Broadcaster.Broadcasts,
@@ -76,11 +80,13 @@ public sealed class DecisionProposalLifecycleTests
         Assert.NotEmpty(update.DecisionState.RecentProposalHistory);
         Assert.Equal(DecisionProposalStatus.AutoApplied, update.DecisionState.RecentProposalHistory[0].Status);
         Assert.NotNull(update.DecisionState.RecentProposalHistory[0].AppliedInterventionId);
+        Assert.Equal(ReadingInterventionModuleIds.FontSize, update.DecisionState.RecentProposalHistory[0].ProposedIntervention.ModuleId);
         Assert.Contains(
             harness.Broadcaster.Broadcasts,
             message => message.MessageType == MessageTypes.InterventionEvent
                        && message.Payload is InterventionEventSnapshot intervention
-                       && intervention.Source == DecisionProviderIds.RuleBased);
+                       && intervention.Source == DecisionProviderIds.RuleBased
+                       && intervention.ModuleId == ReadingInterventionModuleIds.FontSize);
     }
 
     [Fact]
@@ -114,8 +120,13 @@ public sealed class DecisionProposalLifecycleTests
             "manual",
             "researcher-ui",
             "Researcher override",
-            new ReadingPresentationPatch(null, 24, null, null, null, null),
-            new ReaderAppearancePatch(null, null, null)));
+            new ReadingPresentationPatch(null, null, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null),
+            ReadingInterventionModuleIds.FontSize,
+            new Dictionary<string, string?>
+            {
+                ["fontSizePx"] = "24"
+            }));
 
         var update = GetLatestDecisionUpdate(harness);
 
@@ -127,7 +138,8 @@ public sealed class DecisionProposalLifecycleTests
             harness.Broadcaster.Broadcasts,
             message => message.MessageType == MessageTypes.InterventionEvent
                        && message.Payload is InterventionEventSnapshot intervention
-                       && intervention.Source == "manual");
+                       && intervention.Source == "manual"
+                       && intervention.ModuleId == ReadingInterventionModuleIds.FontSize);
     }
 
     private static DecisionRealtimeUpdateSnapshot GetLatestDecisionUpdate(RealtimeTestDoubles.RuntimeHarness harness)

@@ -124,7 +124,7 @@ public sealed record DecisionProposalSnapshot(
             ResolvedAtUnixMs,
             ResolutionSource,
             AppliedInterventionId,
-            ProposedIntervention with { });
+            ProposedIntervention.Copy());
     }
 
     public DecisionProposalSnapshot WithResolution(

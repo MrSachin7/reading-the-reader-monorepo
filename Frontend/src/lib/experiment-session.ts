@@ -1,4 +1,5 @@
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
@@ -72,6 +73,8 @@ export type InterventionEventSnapshot = {
   appliedAtUnixMs: number
   appliedPresentation: ReadingPresentationSnapshot
   appliedAppearance: ReaderAppearanceSnapshot
+  moduleId: string | null
+  parameters: InterventionParameterValues | null
 }
 
 export type DecisionConfiguration = {
@@ -91,6 +94,8 @@ export type DecisionProposalIntervention = {
   source: string
   trigger: string
   reason: string
+  moduleId: string | null
+  parameters: InterventionParameterValues | null
   presentation: {
     fontFamily: string | null
     fontSizePx: number | null

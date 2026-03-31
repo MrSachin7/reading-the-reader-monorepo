@@ -2,6 +2,12 @@ using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 
+public static class ExperimentReplayFieldNames
+{
+    public const string ModuleId = "moduleId";
+    public const string Parameters = "parameters";
+}
+
 public sealed record ExperimentReplayMetadata(
     string Format,
     int Version,

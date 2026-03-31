@@ -16,6 +16,10 @@ import {
   subscribeToGaze,
   updateReadingAttentionSummary,
 } from "@/lib/gaze-socket"
+import {
+  FALLBACK_INTERVENTION_MODULES,
+  type InterventionParameterValues,
+} from "@/lib/intervention-modules"
 import { EMPTY_READING_ATTENTION_SUMMARY } from "@/lib/reading-attention-summary"
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
@@ -38,7 +42,7 @@ import type {
   ActiveLiveExperimentSession,
   LiveReaderOptions,
 } from "@/modules/pages/researcher/current-live/types"
-import { useGetReaderShellSettingsQuery } from "@/redux"
+import { useGetInterventionModulesQuery, useGetReaderShellSettingsQuery } from "@/redux"
 
 function EmptyState({
   title,
@@ -174,6 +178,9 @@ function ResearcherCurrentLiveBody({
   validityRate,
 }: ResearcherCurrentLiveBodyProps) {
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
+  const { data: interventionModules = [] } = useGetInterventionModulesQuery()
+  const effectiveInterventionModules =
+    interventionModules.length > 0 ? interventionModules : FALLBACK_INTERVENTION_MODULES
   const readingSession = session.readingSession
   const content = readingSession.content!
   const [tokenAttention, setTokenAttention] = useState<RemoteTokenAttentionSnapshot>(
@@ -296,6 +303,8 @@ function ResearcherCurrentLiveBody({
 
   const commitIntervention = useCallback((
     next: {
+      moduleId: string
+      parameters: InterventionParameterValues
       presentation?: Partial<typeof DEFAULT_READING_PRESENTATION>
       appearance?: Partial<ReaderAppearanceSettings>
     },
@@ -305,6 +314,8 @@ function ResearcherCurrentLiveBody({
       source: "manual",
       trigger: "researcher-ui",
       reason,
+      moduleId: next.moduleId,
+      parameters: next.parameters,
       presentation: {
         fontFamily: next.presentation?.fontFamily ?? null,
         fontSizePx: next.presentation?.fontSizePx ?? null,
@@ -358,6 +369,7 @@ function ResearcherCurrentLiveBody({
       ) : null}
       <div className="mx-auto grid h-full w-full max-w-[1680px] min-h-0 gap-4 overflow-hidden xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
         <LiveControlsColumn
+          interventionModules={effectiveInterventionModules}
           followParticipant={followParticipant}
           decisionConfiguration={session.decisionConfiguration}
           decisionState={session.decisionState}
@@ -376,9 +388,6 @@ function ResearcherCurrentLiveBody({
           presentation={presentation}
           readerOptions={readerOptions}
           onFollowParticipantChange={setFollowParticipant}
-          onReaderAppearanceChange={(appearance, reason) =>
-            commitIntervention({ appearance }, reason)
-          }
           onReaderOptionChange={setReaderOption}
           onCommitIntervention={commitIntervention}
           onApproveProposal={(proposalId) => approveDecisionProposal(proposalId)}
@@ -402,6 +411,7 @@ function ResearcherCurrentLiveBody({
         />
 
         <LiveMetadataColumn
+          interventionModules={effectiveInterventionModules}
           session={session}
           readingSession={readingSession}
           decisionConfiguration={session.decisionConfiguration}

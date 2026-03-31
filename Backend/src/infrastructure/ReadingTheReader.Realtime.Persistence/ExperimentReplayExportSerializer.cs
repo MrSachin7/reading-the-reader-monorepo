@@ -15,6 +15,8 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
         WriteIndented = false
     };
 
+    // Keep nested provenance fields like `moduleId` and `parameters` inside the JSON payloads.
+
     public string Serialize(ExperimentReplayExport exportDocument, string format)
     {
         return ExperimentReplayExportFormats.Normalize(format) switch
