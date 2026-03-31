@@ -2,9 +2,11 @@ import type { CalibrationSessionSnapshot } from "@/lib/calibration"
 import {
   EMPTY_DECISION_CONFIGURATION,
   EMPTY_DECISION_STATE,
+  EMPTY_LIVE_MONITORING,
   EMPTY_READING_SESSION,
   type DecisionRealtimeUpdate,
   type ExperimentSessionSnapshot,
+  type ExperimentLiveMonitoringSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
   type ParticipantViewportSnapshot,
@@ -335,9 +337,44 @@ function patchReadingSession(
 
   latestExperimentSession = {
     ...latestExperimentSession,
+    liveMonitoring: deriveLiveMonitoringSnapshot(
+      latestExperimentSession.liveMonitoring,
+      latestExperimentSession.isActive,
+      latestExperimentSession.setup.isReadyForSessionStart,
+      latestReadingSession
+    ),
     readingSession: latestReadingSession,
   };
   emitExperimentSession();
+}
+
+function deriveLiveMonitoringSnapshot(
+  current: ExperimentLiveMonitoringSnapshot,
+  isActive: boolean,
+  isReadyForSessionStart: boolean,
+  readingSession: LiveReadingSessionSnapshot | null
+): ExperimentLiveMonitoringSnapshot {
+  const viewport = readingSession?.participantViewport
+  const focus = readingSession?.focus
+  const hasParticipantViewConnection = viewport?.isConnected ?? false
+  const hasParticipantViewportData =
+    hasParticipantViewConnection &&
+    (viewport?.viewportWidthPx ?? 0) > 0 &&
+    (viewport?.viewportHeightPx ?? 0) > 0 &&
+    (viewport?.updatedAtUnixMs ?? 0) > 0
+  const hasReadingFocusSignal = (focus?.updatedAtUnixMs ?? 0) > 0
+
+  return {
+    ...current,
+    canStartSession: isReadyForSessionStart && !isActive,
+    canFinishSession: isActive,
+    hasParticipantViewConnection,
+    hasParticipantViewportData,
+    participantViewportUpdatedAtUnixMs:
+      (viewport?.updatedAtUnixMs ?? 0) > 0 ? viewport?.updatedAtUnixMs ?? null : null,
+    hasReadingFocusSignal,
+    focusUpdatedAtUnixMs: (focus?.updatedAtUnixMs ?? 0) > 0 ? focus?.updatedAtUnixMs ?? null : null,
+  }
 }
 
 function patchDecisionRealtimeUpdate(update: DecisionRealtimeUpdate) {
@@ -386,6 +423,12 @@ function handleMessage(raw: MessageEvent<string>) {
       latestReadingSession = message.payload.readingSession ?? latestReadingSession ?? EMPTY_READING_SESSION;
       latestExperimentSession = {
         ...message.payload,
+        liveMonitoring: deriveLiveMonitoringSnapshot(
+          message.payload.liveMonitoring ?? EMPTY_LIVE_MONITORING,
+          message.payload.isActive,
+          message.payload.setup.isReadyForSessionStart,
+          latestReadingSession
+        ),
         readingSession: latestReadingSession,
         decisionConfiguration: message.payload.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION,
         decisionState: message.payload.decisionState ?? EMPTY_DECISION_STATE,

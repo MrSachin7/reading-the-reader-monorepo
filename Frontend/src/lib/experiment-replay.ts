@@ -5,6 +5,7 @@ import type {
   DecisionProposalSnapshot,
   DecisionState,
   ExperimentEyeTrackerSnapshot,
+  ExperimentLiveMonitoringSnapshot,
   ExperimentParticipantSnapshot,
   InterventionEventSnapshot,
   LiveReadingSessionSnapshot,
@@ -154,6 +155,18 @@ const decisionStateSchema = z.object({
   recentProposalHistory: z.array(decisionProposalSchema),
 })
 
+const liveMonitoringSchema = z.object({
+  canStartSession: z.boolean(),
+  canFinishSession: z.boolean(),
+  isGazeStreamingActive: z.boolean(),
+  gazeSubscriberCount: z.number(),
+  hasParticipantViewConnection: z.boolean(),
+  hasParticipantViewportData: z.boolean(),
+  participantViewportUpdatedAtUnixMs: z.number().nullable(),
+  hasReadingFocusSignal: z.boolean(),
+  focusUpdatedAtUnixMs: z.number().nullable(),
+})
+
 const readingAttentionTokenStatsSchema = z.object({
   fixationMs: z.number(),
   fixationCount: z.number(),
@@ -195,6 +208,7 @@ const replaySessionSnapshotSchema = z.object({
   eyeTrackerDevice: eyeTrackerSchema.nullable(),
   receivedGazeSamples: z.number(),
   latestGazeSample: gazeDataSchema.nullable(),
+  liveMonitoring: liveMonitoringSchema,
   readingSession: liveReadingSessionSchema.nullable(),
   decisionConfiguration: decisionConfigurationSchema,
   decisionState: decisionStateSchema,
@@ -287,6 +301,7 @@ export type ReplaySessionSnapshot = {
   eyeTrackerDevice: ExperimentEyeTrackerSnapshot | null
   receivedGazeSamples: number
   latestGazeSample: GazeData | null
+  liveMonitoring: ExperimentLiveMonitoringSnapshot
   readingSession: LiveReadingSessionSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
@@ -584,6 +599,12 @@ function copyDecisionConfiguration(
   return { ...configuration }
 }
 
+function copyLiveMonitoring(
+  monitoring: ExperimentLiveMonitoringSnapshot
+): ExperimentLiveMonitoringSnapshot {
+  return { ...monitoring }
+}
+
 function copyDecisionState(state: DecisionState): DecisionState {
   return {
     ...state,
@@ -598,6 +619,7 @@ function copySessionSnapshot(snapshot: ReplaySessionSnapshot): ReplaySessionSnap
     participant: snapshot.participant ? { ...snapshot.participant } : null,
     eyeTrackerDevice: snapshot.eyeTrackerDevice ? { ...snapshot.eyeTrackerDevice } : null,
     latestGazeSample: snapshot.latestGazeSample ? { ...snapshot.latestGazeSample } : null,
+    liveMonitoring: copyLiveMonitoring(snapshot.liveMonitoring),
     readingSession: copyReadingSession(snapshot.readingSession),
     decisionConfiguration: copyDecisionConfiguration(snapshot.decisionConfiguration),
     decisionState: copyDecisionState(snapshot.decisionState),

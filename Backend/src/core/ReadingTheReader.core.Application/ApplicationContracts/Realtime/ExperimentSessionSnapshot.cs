@@ -136,6 +136,43 @@ public sealed record ExperimentSetupSnapshot(
     }
 }
 
+public sealed record ExperimentLiveMonitoringSnapshot(
+    bool CanStartSession,
+    bool CanFinishSession,
+    bool IsGazeStreamingActive,
+    int GazeSubscriberCount,
+    bool HasParticipantViewConnection,
+    bool HasParticipantViewportData,
+    long? ParticipantViewportUpdatedAtUnixMs,
+    bool HasReadingFocusSignal,
+    long? FocusUpdatedAtUnixMs)
+{
+    public static ExperimentLiveMonitoringSnapshot Empty { get; } = new(
+        false,
+        false,
+        false,
+        0,
+        false,
+        false,
+        null,
+        false,
+        null);
+
+    public ExperimentLiveMonitoringSnapshot Copy()
+    {
+        return new ExperimentLiveMonitoringSnapshot(
+            CanStartSession,
+            CanFinishSession,
+            IsGazeStreamingActive,
+            GazeSubscriberCount,
+            HasParticipantViewConnection,
+            HasParticipantViewportData,
+            ParticipantViewportUpdatedAtUnixMs,
+            HasReadingFocusSignal,
+            FocusUpdatedAtUnixMs);
+    }
+}
+
 public sealed record ExperimentSessionSnapshot(
     Guid? SessionId,
     bool IsActive,
@@ -148,6 +185,7 @@ public sealed record ExperimentSessionSnapshot(
     long ReceivedGazeSamples,
     GazeData? LatestGazeSample,
     int ConnectedClients,
+    ExperimentLiveMonitoringSnapshot LiveMonitoring,
     LiveReadingSessionSnapshot? ReadingSession,
     DecisionConfigurationSnapshot DecisionConfiguration,
     DecisionRuntimeStateSnapshot DecisionState
@@ -176,6 +214,7 @@ public sealed record ExperimentSessionSnapshot(
             ReceivedGazeSamples,
             LatestGazeSample?.Copy(),
             ConnectedClients,
+            LiveMonitoring?.Copy() ?? ExperimentLiveMonitoringSnapshot.Empty.Copy(),
             ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty,
             DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy(),
             DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy());

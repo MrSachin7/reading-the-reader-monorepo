@@ -105,6 +105,7 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             0,
             null,
             1,
+            new ExperimentLiveMonitoringSnapshot(true, true, false, 0, true, true, 1_710_001_001_500, true, 1_710_001_001_600),
             readingSession,
             decisionConfiguration,
             DecisionRuntimeStateSnapshot.Empty);
