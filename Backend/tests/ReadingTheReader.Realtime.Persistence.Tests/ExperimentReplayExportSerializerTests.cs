@@ -132,7 +132,7 @@ public sealed class ExperimentReplayExportSerializerTests
                 new EyeTrackerSetupReadinessSnapshot(true, true, true, true, false, "nano-001", "Tobii Pro Nano", null),
                 new ParticipantSetupReadinessSnapshot(true, true, "Participant 1", null),
                 new CalibrationSetupReadinessSnapshot(true, true, true, true, "completed", "completed", "good", 0.5, 0.2, 9, null),
-                new ReadingMaterialSetupReadinessSnapshot(true, true, "doc-1", "Sample reading", null, null)),
+                new ReadingMaterialSetupReadinessSnapshot(true, true, "doc-1", "Sample reading", null, false, 1_710_000_000_500, true, false, null)),
             0,
             null,
             1,

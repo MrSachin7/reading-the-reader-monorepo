@@ -46,6 +46,10 @@ export const EMPTY_EXPERIMENT_SETUP: ExperimentSetupSnapshot = {
     documentId: null,
     title: null,
     sourceSetupId: null,
+    usesSavedSetup: false,
+    configuredAtUnixMs: null,
+    allowsResearcherPresentationChanges: false,
+    isPresentationLocked: false,
     blockReason: null,
   },
 }

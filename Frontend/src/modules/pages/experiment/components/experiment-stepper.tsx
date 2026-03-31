@@ -532,6 +532,19 @@ function SessionContentStep({
     readingSession.source === "preset"
       ? "Default presentation"
       : selectedSavedSetup?.name ?? "Custom presentation"
+  const localReadingBaselineLabel =
+    readingSession.source === "preset"
+      ? "Built-in baseline"
+      : experimentSetupId
+        ? "Saved baseline"
+        : "Local draft"
+  const localControlLabel = selectedSavedSetup
+    ? selectedSavedSetup.editableByExperimenter
+      ? "Live-adjustable"
+      : "Locked"
+    : readingSession.source === "preset"
+      ? "Live-adjustable"
+      : "Local draft"
 
   React.useEffect(() => {
     onCompletionChange?.(hasSelectedMaterial)
@@ -705,6 +718,10 @@ function SessionContentStep({
               <span className="font-medium text-foreground">
                 {selectedPresentationLabel} · {selectedConditionLabel}
               </span>
+              {" · "}
+              <span className="font-medium text-foreground">
+                {localReadingBaselineLabel} · {localControlLabel}
+              </span>
             </div>
           ) : null}
 
@@ -712,17 +729,17 @@ function SessionContentStep({
             <Alert className="border-amber-400/50 bg-amber-500/5 text-amber-950 dark:text-amber-100">
               <AlertTitle>Save the reading setup</AlertTitle>
               <AlertDescription>
-                The current reading selection is only in local draft state. Save it here so the
-                backend session snapshot and start gate reflect the same content.
+                The current reading baseline is still local draft state. Save it here so the
+                backend session snapshot, participant route, and start gate all reflect the same condition.
               </AlertDescription>
             </Alert>
           ) : null}
 
           {!hasUnsavedDraft && isAuthoritativelyReady ? (
             <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
-              <AlertTitle>Reading material is ready</AlertTitle>
+              <AlertTitle>Reading baseline is ready</AlertTitle>
               <AlertDescription>
-                {authoritativeReadingTitle ?? "The selected reading material"} is already saved in
+                {authoritativeReadingTitle ?? "The selected reading baseline"} is already saved in
                 the authoritative session setup.
               </AlertDescription>
             </Alert>
@@ -801,8 +818,8 @@ export function ExperimentStepper() {
         ...state,
         isReady: false,
         isAvailable: true,
-        blockReason: "The current reading selection has not been saved to the session yet.",
-        summary: "Save the current reading selection so the backend setup and start gate stay aligned.",
+        blockReason: "The current reading baseline has not been saved to the session yet.",
+        summary: "Save the current reading baseline so the backend setup and start gate stay aligned.",
       }
     })
   }, [hasUnsavedReadingDraft, workflowStepStates])
@@ -835,7 +852,7 @@ export function ExperimentStepper() {
         appFont: font,
       }).unwrap()
     } catch (error) {
-      setStartError(getErrorMessage(error, "Could not save the reading session setup."))
+      setStartError(getErrorMessage(error, "Could not save the reading session baseline."))
     }
   }, [
     presentation.editableByExperimenter,
@@ -1061,7 +1078,7 @@ export function ExperimentStepper() {
               disabled={!hasLocalReadingSelection || isSavingReadingSession}
               onClick={() => void saveReadingSessionDraft()}
             >
-              {isSavingReadingSession ? "Saving session setup..." : "Save session setup"}
+              {isSavingReadingSession ? "Saving session baseline..." : "Save session baseline"}
             </Button>
           ) : (
             <Button

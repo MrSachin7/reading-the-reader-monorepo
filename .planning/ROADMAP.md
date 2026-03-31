@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Swappable Decision Strategies** - Make decision logic pluggable for manual, rule-based, hybrid, and external-provider modes.
 - [x] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
 - [x] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
-- [ ] **Phase 5: Controlled Markdown Reading Baseline** - Keep Markdown reading stable while researchers configure and lock presentation conditions.
+- [x] **Phase 5: Controlled Markdown Reading Baseline** - Keep Markdown reading stable while researchers configure and lock presentation conditions.
 - [ ] **Phase 6: Researcher Live Mirror & Session Operations** - Keep the live researcher console trustworthy during active experiment runs.
 - [ ] **Phase 7: Context-Preserving Adaptive Reading** - Preserve reading position and rhythm when live interventions change layout.
 - [ ] **Phase 8: Replayable Experiment Evidence & Thesis Guidance** - Produce reproducible exports, replay fidelity, and extension guidance for thesis defense.
@@ -95,7 +95,12 @@ Plans:
   2. Researcher can configure typography, spacing, contrast, and related readability settings for a session.
   3. Researcher can lock or constrain presentation conditions so the participant view stays experimentally controlled.
   4. Participant reading view remains usable and visually stable throughout a live session under the configured conditions.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 05-01-PLAN.md - Harden the backend-owned reading baseline contract and pin active-session authority with Wave 0 tests.
+- [x] 05-02-PLAN.md - Clarify researcher reading-baseline setup, saved setup semantics, and experiment-stepper baseline application.
+- [x] 05-03-PLAN.md - Stabilize the participant reading route by removing ambiguous fallbacks and enforcing lock-aware reader behavior.
+- [x] 05-04-PLAN.md - Align dependent contract consumers, run closeout regressions, and finalize Phase 5 validation evidence.
 **UI hint**: yes
 
 ### Phase 6: Researcher Live Mirror & Session Operations
@@ -142,7 +147,7 @@ Plans:
 | 2. Swappable Decision Strategies | 4/4 | Completed | 2026-03-31 |
 | 3. Pluggable Intervention Modules | 4/4 | Completed | 2026-03-31 |
 | 4. Device Setup & Calibration Workflow | 4/4 | Completed | 2026-03-31 |
-| 5. Controlled Markdown Reading Baseline | 0/TBD | Not started | - |
+| 5. Controlled Markdown Reading Baseline | 4/4 | Completed | 2026-03-31 |
 | 6. Researcher Live Mirror & Session Operations | 0/TBD | Not started | - |
 | 7. Context-Preserving Adaptive Reading | 0/TBD | Not started | - |
 | 8. Replayable Experiment Evidence & Thesis Guidance | 0/TBD | Not started | - |

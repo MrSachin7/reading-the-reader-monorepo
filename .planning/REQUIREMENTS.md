@@ -20,10 +20,10 @@ This is a brownfield thesis platform. Some v1 requirements are already partly or
 
 ### Participant Reading Experience
 
-- [ ] **READ-01**: Participant can read Markdown-based experiment content inside the application.
-- [ ] **READ-02**: Researcher can configure session presentation settings such as typography, spacing, contrast, and related readability controls.
-- [ ] **READ-03**: Participant reading view stays usable and visually stable during a live experiment session.
-- [ ] **READ-04**: Researcher can lock or constrain presentation conditions for a session so experimental conditions remain controlled.
+- [x] **READ-01**: Participant can read Markdown-based experiment content inside the application.
+- [x] **READ-02**: Researcher can configure session presentation settings such as typography, spacing, contrast, and related readability controls.
+- [x] **READ-03**: Participant reading view stays usable and visually stable during a live experiment session.
+- [x] **READ-04**: Researcher can lock or constrain presentation conditions for a session so experimental conditions remain controlled.
 
 ### Researcher Live Observation and Control
 
@@ -91,10 +91,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETUP-04 | Phase 4 | Validated (Phase 4 Plan 04) |
 | SETUP-05 | Phase 4 | Validated (Phase 4 Plan 04) |
 | SETUP-06 | Phase 4 | Validated (Phase 4 Plan 04) |
-| READ-01 | Phase 5 | Pending |
-| READ-02 | Phase 5 | Pending |
-| READ-03 | Phase 5 | Pending |
-| READ-04 | Phase 5 | Pending |
+| READ-01 | Phase 5 | Validated (Phase 5 Plan 03) |
+| READ-02 | Phase 5 | Validated (Phase 5 Plan 02) |
+| READ-03 | Phase 5 | Validated (Phase 5 Plan 03) |
+| READ-04 | Phase 5 | Validated (Phase 5 Plan 04) |
 | LIVE-01 | Phase 6 | Pending |
 | LIVE-02 | Phase 6 | Pending |
 | LIVE-03 | Phase 6 | Pending |
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-31 after Phase 4 plan 04-04 execution*
+*Last updated: 2026-03-31 after Phase 5 plan 05-04 execution*

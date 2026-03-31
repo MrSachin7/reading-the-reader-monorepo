@@ -136,6 +136,39 @@ public sealed class ExperimentSetupWorkflowTests
     }
 
     [Fact]
+    public async Task GetCurrentSnapshot_WhenReadingSessionUsesSavedSetup_ProjectsControlledBaselineSemantics()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "setup-42",
+            "Locked saved baseline",
+            "# Controlled text",
+            "setup-42",
+            new ReadingPresentationSnapshot(
+                "merriweather",
+                20,
+                640,
+                1.75,
+                0.02,
+                false),
+            ReaderAppearanceSnapshot.Default));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(snapshot.Setup.ReadingMaterial.IsReady);
+        Assert.Equal("setup-42", snapshot.Setup.ReadingMaterial.DocumentId);
+        Assert.Equal("Locked saved baseline", snapshot.Setup.ReadingMaterial.Title);
+        Assert.Equal("setup-42", snapshot.Setup.ReadingMaterial.SourceSetupId);
+        Assert.True(snapshot.Setup.ReadingMaterial.UsesSavedSetup);
+        Assert.NotNull(snapshot.Setup.ReadingMaterial.ConfiguredAtUnixMs);
+        Assert.False(snapshot.Setup.ReadingMaterial.AllowsResearcherPresentationChanges);
+        Assert.True(snapshot.Setup.ReadingMaterial.IsPresentationLocked);
+        Assert.True(snapshot.ReadingSession!.Content!.UsesSavedSetup);
+        Assert.True(snapshot.ReadingSession.Presentation.IsPresentationLocked);
+    }
+
+    [Fact]
     public async Task GetCurrentSnapshot_WhenSetupIsReady_ProjectsReadyWorkflowForSessionStart()
     {
         var harness = RealtimeTestDoubles.CreateHarness();
@@ -152,6 +185,9 @@ public sealed class ExperimentSetupWorkflowTests
         Assert.Equal("good", snapshot.Setup.Calibration.ValidationQuality);
         Assert.True(snapshot.Setup.ReadingMaterial.IsReady);
         Assert.Equal("Sample document", snapshot.Setup.ReadingMaterial.Title);
+        Assert.False(snapshot.Setup.ReadingMaterial.UsesSavedSetup);
+        Assert.True(snapshot.Setup.ReadingMaterial.AllowsResearcherPresentationChanges);
+        Assert.False(snapshot.Setup.ReadingMaterial.IsPresentationLocked);
     }
 
     [Fact]

@@ -92,6 +92,10 @@ public sealed record ReadingMaterialSetupReadinessSnapshot(
     string? DocumentId,
     string? Title,
     string? SourceSetupId,
+    bool UsesSavedSetup,
+    long? ConfiguredAtUnixMs,
+    bool AllowsResearcherPresentationChanges,
+    bool IsPresentationLocked,
     string? BlockReason)
 {
     public ReadingMaterialSetupReadinessSnapshot Copy()
@@ -102,6 +106,10 @@ public sealed record ReadingMaterialSetupReadinessSnapshot(
             DocumentId,
             Title,
             SourceSetupId,
+            UsesSavedSetup,
+            ConfiguredAtUnixMs,
+            AllowsResearcherPresentationChanges,
+            IsPresentationLocked,
             BlockReason);
     }
 }
@@ -163,7 +171,7 @@ public sealed record ExperimentSessionSnapshot(
                     new EyeTrackerSetupReadinessSnapshot(false, false, false, false, false, null, null, null),
                     new ParticipantSetupReadinessSnapshot(false, false, null, null),
                     new CalibrationSetupReadinessSnapshot(false, false, false, false, "idle", "idle", null, null, null, 0, null),
-                    new ReadingMaterialSetupReadinessSnapshot(false, false, null, null, null, null))
+                    new ReadingMaterialSetupReadinessSnapshot(false, false, null, null, null, false, null, false, false, null))
                 : Setup.Copy(),
             ReceivedGazeSamples,
             LatestGazeSample?.Copy(),
