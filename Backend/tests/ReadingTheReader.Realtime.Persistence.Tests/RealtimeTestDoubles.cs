@@ -13,6 +13,7 @@ public sealed class RealtimeTestDoubles
         var broadcaster = new FakeClientBroadcasterAdapter();
         var stateStore = new FakeExperimentStateStoreAdapter();
         var replayExportStore = new FakeExperimentReplayExportStoreAdapter();
+        var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
         var decisionContextFactory = new DecisionContextFactory();
         var strategyRegistry = new DecisionStrategyRegistry(
@@ -28,6 +29,7 @@ public sealed class RealtimeTestDoubles
             stateStore,
             replayExportStore,
             interventionRuntime,
+            interventionModuleRegistry,
             strategyCoordinator);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
@@ -253,6 +255,8 @@ public sealed class RealtimeTestDoubles
     public sealed class FakeReadingInterventionRuntime : IReadingInterventionRuntime
     {
         public Func<ReadingPresentationSnapshot, ReaderAppearanceSnapshot, ApplyInterventionCommand, long, InterventionExecutionResult?>? ApplyOverride { get; set; }
+        private readonly ReadingInterventionRuntime _runtime =
+            new(new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All));
 
         public InterventionExecutionResult? Apply(
             ReadingPresentationSnapshot currentPresentation,
@@ -265,7 +269,7 @@ public sealed class RealtimeTestDoubles
                 return ApplyOverride(currentPresentation, currentAppearance, command, appliedAtUnixMs);
             }
 
-            return new ReadingInterventionRuntime().Apply(currentPresentation, currentAppearance, command, appliedAtUnixMs);
+            return _runtime.Apply(currentPresentation, currentAppearance, command, appliedAtUnixMs);
         }
     }
 

@@ -4,6 +4,8 @@ public interface IExperimentSessionQueryService
 {
     ExperimentSessionSnapshot GetCurrentSnapshot();
 
+    IReadOnlyList<ReadingInterventionModuleDescriptor> GetInterventionModules();
+
     ValueTask<ExperimentReplayExport?> GetLatestReplayExportAsync(CancellationToken ct = default);
 
     ValueTask<IReadOnlyCollection<SavedExperimentReplayExportSummary>> ListSavedReplayExportsAsync(CancellationToken ct = default);

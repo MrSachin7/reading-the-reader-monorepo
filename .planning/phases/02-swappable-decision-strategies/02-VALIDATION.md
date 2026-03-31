@@ -1,9 +1,9 @@
 ---
 phase: 02
 slug: swappable-decision-strategies
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-26
 ---
 
@@ -39,14 +39,14 @@ created: 2026-03-26
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 02-01-01 | 02-01 | 1 | MOD-02 | contract test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionStrategyContractTests"` | ❌ W0 | ⬜ pending |
-| 02-01-02 | 02-01 | 1 | MOD-02 | context mapping | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionContextFactoryTests"` | ❌ W0 | ⬜ pending |
-| 02-02-01 | 02-02 | 2 | MOD-02 | lifecycle test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionProposalLifecycleTests"` | ❌ W0 | ⬜ pending |
-| 02-02-02 | 02-02 | 2 | MOD-02 | integration/build | `dotnet test Backend/reading-the-reader-backend.sln --no-restore` | ✅ existing | ⬜ pending |
-| 02-03-01 | 02-03 | 3 | MOD-02 | serializer test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~ExperimentReplayExportSerializerTests"` | ✅ existing | ⬜ pending |
-| 02-03-02 | 02-03 | 3 | MOD-02 | frontend contract build | `bun run build --cwd Frontend` | ✅ existing | ⬜ pending |
-| 02-04-01 | 02-04 | 4 | MOD-02 | frontend supervisory build | `bun run build --cwd Frontend` | ✅ existing | ⬜ pending |
-| 02-04-02 | 02-04 | 4 | MOD-02 | end-to-end regression | `dotnet test Backend/reading-the-reader-backend.sln --no-restore` | ✅ existing | ⬜ pending |
+| 02-01-01 | 02-01 | 1 | MOD-02 | contract test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionStrategyContractTests"` | ✅ existing | ✅ green |
+| 02-01-02 | 02-01 | 1 | MOD-02 | context mapping | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionContextFactoryTests"` | ✅ existing | ✅ green |
+| 02-02-01 | 02-02 | 2 | MOD-02 | lifecycle test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~DecisionProposalLifecycleTests"` | ✅ existing | ✅ green |
+| 02-02-02 | 02-02 | 2 | MOD-02 | integration/build | `dotnet test Backend/reading-the-reader-backend.sln --no-restore` | ✅ existing | ✅ green |
+| 02-03-01 | 02-03 | 3 | MOD-02 | serializer test | `dotnet test Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/ReadingTheReader.Realtime.Persistence.Tests.csproj --no-restore --filter "FullyQualifiedName~ExperimentReplayExportSerializerTests"` | ✅ existing | ✅ green |
+| 02-03-02 | 02-03 | 3 | MOD-02 | frontend contract build | `bun run build --cwd Frontend` | ✅ existing | ✅ green |
+| 02-04-01 | 02-04 | 4 | MOD-02 | frontend supervisory build | `bun run build --cwd Frontend` | ✅ existing | ✅ green |
+| 02-04-02 | 02-04 | 4 | MOD-02 | end-to-end regression | `dotnet test Backend/reading-the-reader-backend.sln --no-restore` | ✅ existing | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,9 +54,9 @@ created: 2026-03-26
 
 ## Wave 0 Requirements
 
-- [ ] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionStrategyContractTests.cs` - pins provider contract semantics, provider ids, and proposal status defaults
-- [ ] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionContextFactoryTests.cs` - proves curated decision context is derived from authoritative session state without exposing full runtime internals
-- [ ] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionProposalLifecycleTests.cs` - proves advisory, autonomous, superseded, and manual-override behavior
+- [x] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionStrategyContractTests.cs` - pins provider contract semantics, provider ids, and proposal status defaults
+- [x] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionContextFactoryTests.cs` - proves curated decision context is derived from authoritative session state without exposing full runtime internals
+- [x] `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/DecisionProposalLifecycleTests.cs` - proves advisory, autonomous, superseded, and manual-override behavior
 
 ---
 
@@ -72,11 +72,11 @@ created: 2026-03-26
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers missing strategy/proposal tests before lifecycle refactors
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 120s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers missing strategy/proposal tests before lifecycle refactors
+- [x] No watch-mode flags
+- [x] Feedback latency < 120s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-03-31 based on local automated verification; manual UAT checks remain recommended for later thesis sessions.

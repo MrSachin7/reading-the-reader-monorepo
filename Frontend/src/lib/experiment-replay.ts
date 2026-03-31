@@ -11,6 +11,7 @@ import type {
   ParticipantViewportSnapshot,
   ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
+import { cloneInterventionParameters } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { GazeData } from "@/lib/gaze-socket"
 
@@ -94,6 +95,8 @@ const interventionSchema = z.object({
     palette: "default",
     appFont: "geist",
   }),
+  moduleId: z.string().nullable().default(null),
+  parameters: z.record(z.string(), z.string().nullable()).nullable().default(null),
 })
 
 const decisionConfigurationSchema = z.object({
@@ -113,6 +116,8 @@ const decisionProposalInterventionSchema = z.object({
   source: z.string(),
   trigger: z.string(),
   reason: z.string(),
+  moduleId: z.string().nullable().default(null),
+  parameters: z.record(z.string(), z.string().nullable()).nullable().default(null),
   presentation: z.object({
     fontFamily: z.string().nullable(),
     fontSizePx: z.number().nullable(),
@@ -492,6 +497,7 @@ function copyIntervention(
     ...intervention,
     appliedPresentation: { ...intervention.appliedPresentation },
     appliedAppearance: { ...intervention.appliedAppearance },
+    parameters: cloneInterventionParameters(intervention.parameters),
   }
 }
 
@@ -547,6 +553,7 @@ function copyReadingSession(
       ...item,
       appliedPresentation: { ...item.appliedPresentation },
       appliedAppearance: { ...item.appliedAppearance },
+      parameters: cloneInterventionParameters(item.parameters),
     })),
     attentionSummary: copyAttentionSummary(session.attentionSummary),
   }
@@ -564,6 +571,7 @@ function copyDecisionProposal(
     signal: { ...proposal.signal },
     proposedIntervention: {
       ...proposal.proposedIntervention,
+      parameters: cloneInterventionParameters(proposal.proposedIntervention.parameters),
       presentation: { ...proposal.proposedIntervention.presentation },
       appearance: { ...proposal.proposedIntervention.appearance },
     },
