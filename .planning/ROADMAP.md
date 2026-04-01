@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Pluggable Intervention Modules** - Make micro-interventions additive, inspectable, and safe to integrate.
 - [x] **Phase 4: Device Setup & Calibration Workflow** - Make the full Tobii setup path reliable and gate session start correctly.
 - [x] **Phase 5: Controlled Markdown Reading Baseline** - Keep Markdown reading stable while researchers configure and lock presentation conditions.
-- [ ] **Phase 6: Researcher Live Mirror & Session Operations** - Keep the live researcher console trustworthy during active experiment runs.
+- [x] **Phase 6: Researcher Live Mirror & Session Operations** - Keep the live researcher console trustworthy during active experiment runs.
 - [ ] **Phase 7: Context-Preserving Adaptive Reading** - Preserve reading position and rhythm when live interventions change layout.
 - [ ] **Phase 8: Replayable Experiment Evidence & Thesis Guidance** - Produce reproducible exports, replay fidelity, and extension guidance for thesis defense.
 
@@ -112,7 +112,12 @@ Plans:
   2. Researcher can watch a real-time mirrored participant view on a second screen during an active session.
   3. Researcher can see experiment health indicators, including sample rate, validity rate, and latency, while the session is running.
   4. Researcher can manually trigger micro-interventions and immediately see what fired, when it happened, and what source or rationale was associated with it.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 06-01-PLAN.md - Harden the live-session monitoring contract and pin Phase 6 authority assumptions with Wave 0 tests.
+- [x] 06-02-PLAN.md - Promote exact-mirror-first rendering and explicit degraded-fallback trust signaling in the researcher live reader.
+- [x] 06-03-PLAN.md - Restructure the live controls into a coherent operator console and tighten the workflow handoff between setup, live run, and finish.
+- [x] 06-04-PLAN.md - Clarify live chronology and latest-status evidence, then close the phase with regressions and validation evidence.
 **UI hint**: yes
 
 ### Phase 7: Context-Preserving Adaptive Reading
@@ -148,6 +153,6 @@ Plans:
 | 3. Pluggable Intervention Modules | 4/4 | Completed | 2026-03-31 |
 | 4. Device Setup & Calibration Workflow | 4/4 | Completed | 2026-03-31 |
 | 5. Controlled Markdown Reading Baseline | 4/4 | Completed | 2026-03-31 |
-| 6. Researcher Live Mirror & Session Operations | 0/TBD | Not started | - |
+| 6. Researcher Live Mirror & Session Operations | 4/4 | Completed | 2026-03-31 |
 | 7. Context-Preserving Adaptive Reading | 0/TBD | Not started | - |
 | 8. Replayable Experiment Evidence & Thesis Guidance | 0/TBD | Not started | - |

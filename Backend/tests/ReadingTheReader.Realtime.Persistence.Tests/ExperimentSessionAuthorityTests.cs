@@ -99,6 +99,11 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(snapshot.IsActive);
         Assert.NotNull(snapshot.SessionId);
         Assert.True(snapshot.Setup.IsReadyForSessionStart);
+        Assert.False(snapshot.LiveMonitoring.CanStartSession);
+        Assert.True(snapshot.LiveMonitoring.CanFinishSession);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewportData);
+        Assert.False(snapshot.LiveMonitoring.HasReadingFocusSignal);
         Assert.True(snapshot.Setup.EyeTracker.IsReady);
         Assert.True(snapshot.Setup.Participant.IsReady);
         Assert.True(snapshot.Setup.Calibration.IsReady);
@@ -149,6 +154,10 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(harness.ReplayExportStore.LatestExport.Statistics.ParticipantViewportEventCount >= 1);
         Assert.True(harness.ReplayExportStore.LatestExport.Statistics.ReadingFocusEventCount >= 1);
         Assert.False(harness.ReplayExportStore.LatestExport.FinalSnapshot.IsActive);
+        Assert.False(finalSnapshot.LiveMonitoring.CanFinishSession);
+        Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewportData);
+        Assert.True(finalSnapshot.LiveMonitoring.HasReadingFocusSignal);
         Assert.True(harness.StateStore.SavedSnapshots.Count >= 3);
         Assert.Equal(finalSnapshot.SessionId, harness.StateStore.SavedSnapshots.Last().SessionId);
         Assert.Contains(
@@ -157,5 +166,62 @@ public sealed class ExperimentSessionAuthorityTests
                        && message.Payload is ExperimentSessionSnapshot stoppedSnapshot
                        && !stoppedSnapshot.IsActive
                        && stoppedSnapshot.SessionId == finalSnapshot.SessionId);
+    }
+
+    [Fact]
+    public async Task GetCurrentSnapshot_WhenParticipantViewConnects_ProjectsLiveMonitoringSemantics()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+
+        var readySnapshot = harness.SessionManager.GetCurrentSnapshot();
+        Assert.True(readySnapshot.LiveMonitoring.CanStartSession);
+        Assert.False(readySnapshot.LiveMonitoring.CanFinishSession);
+        Assert.False(readySnapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.False(readySnapshot.LiveMonitoring.HasParticipantViewportData);
+        Assert.False(readySnapshot.LiveMonitoring.HasReadingFocusSignal);
+
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0.42, 320, 1440, 900, 2800, 920));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1"));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.False(snapshot.LiveMonitoring.CanStartSession);
+        Assert.True(snapshot.LiveMonitoring.CanFinishSession);
+        Assert.True(snapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.True(snapshot.LiveMonitoring.HasParticipantViewportData);
+        Assert.NotNull(snapshot.LiveMonitoring.ParticipantViewportUpdatedAtUnixMs);
+        Assert.True(snapshot.LiveMonitoring.HasReadingFocusSignal);
+        Assert.NotNull(snapshot.LiveMonitoring.FocusUpdatedAtUnixMs);
+    }
+
+    [Fact]
+    public async Task DisconnectParticipantViewAsync_WhenLastViewDisconnects_ClearsMonitorabilitySignals()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0.42, 320, 1440, 900, 2800, 920));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1"));
+
+        await harness.SessionManager.DisconnectParticipantViewAsync("participant-1");
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(snapshot.LiveMonitoring.CanFinishSession);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewportData);
+        Assert.True(snapshot.LiveMonitoring.HasReadingFocusSignal);
+        Assert.False(snapshot.ReadingSession!.ParticipantViewport.IsConnected);
+        Assert.False(snapshot.ReadingSession.Focus.IsInsideReadingArea);
     }
 }

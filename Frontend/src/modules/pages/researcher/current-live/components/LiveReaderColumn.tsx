@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
-import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
+import type { LiveMirrorTrustState, LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 
 type LiveReaderColumnProps = {
   content: ReadingContentSnapshot
@@ -16,7 +16,7 @@ type LiveReaderColumnProps = {
   followParticipant: boolean
   readerOptions: LiveReaderOptions
   exactMirrorEnabled: boolean
-  mirrorStatusLabel: string
+  mirrorTrustState: LiveMirrorTrustState
   showReadingDynamics: boolean
   tokenAttention: RemoteTokenAttentionSnapshot
   onTokenAttentionChange: (snapshot: RemoteTokenAttentionSnapshot) => void
@@ -69,7 +69,7 @@ export function LiveReaderColumn({
   followParticipant,
   readerOptions,
   exactMirrorEnabled,
-  mirrorStatusLabel,
+  mirrorTrustState,
   showReadingDynamics,
   tokenAttention,
   onTokenAttentionChange,
@@ -120,12 +120,14 @@ export function LiveReaderColumn({
           <span
             className={cn(
               "inline-flex rounded-full border px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm backdrop-blur",
-              showExactMirror
+              mirrorTrustState.tone === "positive"
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-                : "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                : mirrorTrustState.tone === "warning"
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                  : "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-200"
             )}
           >
-            {mirrorStatusLabel}
+            {mirrorTrustState.label}
           </span>
         </div>
         {showReadingDynamics ? (
@@ -137,11 +139,24 @@ export function LiveReaderColumn({
             </span>
           </div>
         ) : null}
+        {mirrorTrustState.kind === "approximate" ? (
+          <div className="absolute inset-x-4 top-14 z-10 rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 shadow-sm backdrop-blur">
+            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+              {mirrorTrustState.headline}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-amber-900/85 dark:text-amber-100/85">
+              {mirrorTrustState.detail}
+            </p>
+          </div>
+        ) : null}
 
         {canAttemptExactMirror ? (
           <div
             ref={stageHostRef}
-            className="flex h-full w-full items-center justify-center overflow-hidden bg-muted/10 p-3"
+            className={cn(
+              "flex h-full w-full items-center justify-center overflow-hidden bg-muted/10 p-3",
+              mirrorTrustState.kind === "approximate" && "pt-32"
+            )}
           >
             {showExactMirror ? (
               <div
@@ -201,43 +216,45 @@ export function LiveReaderColumn({
             )}
           </div>
         ) : (
-          <ReaderShell
-            docId={content.documentId}
-            markdown={content.markdown}
-            presentation={presentation}
-            experimentSetupName={content.title}
-            preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
-            highlightContext={readerOptions.highlightContext}
-            displayGazePosition={false}
-            enableLiveGazeTracking={false}
-            highlightTokensBeingLookedAt={false}
-            highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
-            showToolbar={readerOptions.showToolbar}
-            showBackButton={readerOptions.showBackButton}
-            showLixScores={readerOptions.showLixScores}
-            viewportScrollProgress={
-              followParticipant ? readingSession.participantViewport.scrollProgress : null
-            }
-            viewportScrollTopPx={
-              followParticipant ? readingSession.participantViewport.scrollTopPx : null
-            }
-            remoteFocus={{
-              isInsideReadingArea: readingSession.focus.isInsideReadingArea,
-              normalizedContentX: readingSession.focus.normalizedContentX,
-              normalizedContentY: readingSession.focus.normalizedContentY,
-              activeTokenId: readingSession.focus.activeTokenId,
-              updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
-            }}
-            remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
-            onRemoteTokenAttentionChange={onTokenAttentionChange}
-            showRemoteFocusMarker={readerOptions.displayGazePosition}
-            embedded
-            frameClassName="mx-auto rounded-none border-0 shadow-none"
-            frameStyle={{
-              width: "100%",
-              maxWidth: "980px",
-            }}
-          />
+          <div className={cn("h-full overflow-auto", mirrorTrustState.kind === "approximate" && "pt-28")}>
+            <ReaderShell
+              docId={content.documentId}
+              markdown={content.markdown}
+              presentation={presentation}
+              experimentSetupName={content.title}
+              preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
+              highlightContext={readerOptions.highlightContext}
+              displayGazePosition={false}
+              enableLiveGazeTracking={false}
+              highlightTokensBeingLookedAt={false}
+              highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
+              showToolbar={readerOptions.showToolbar}
+              showBackButton={readerOptions.showBackButton}
+              showLixScores={readerOptions.showLixScores}
+              viewportScrollProgress={
+                followParticipant ? readingSession.participantViewport.scrollProgress : null
+              }
+              viewportScrollTopPx={
+                followParticipant ? readingSession.participantViewport.scrollTopPx : null
+              }
+              remoteFocus={{
+                isInsideReadingArea: readingSession.focus.isInsideReadingArea,
+                normalizedContentX: readingSession.focus.normalizedContentX,
+                normalizedContentY: readingSession.focus.normalizedContentY,
+                activeTokenId: readingSession.focus.activeTokenId,
+                updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
+              }}
+              remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
+              onRemoteTokenAttentionChange={onTokenAttentionChange}
+              showRemoteFocusMarker={readerOptions.displayGazePosition}
+              embedded
+              frameClassName="mx-auto rounded-none border-0 shadow-none"
+              frameStyle={{
+                width: "100%",
+                maxWidth: "980px",
+              }}
+            />
+          </div>
         )}
       </div>
     </div>

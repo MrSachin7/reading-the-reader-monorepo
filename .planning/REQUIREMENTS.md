@@ -27,11 +27,11 @@ This is a brownfield thesis platform. Some v1 requirements are already partly or
 
 ### Researcher Live Observation and Control
 
-- [ ] **LIVE-01**: Researcher can view a real-time mirrored representation of the participant reading session on a second screen.
-- [ ] **LIVE-02**: Researcher live view displays experiment health indicators including sample rate, validity rate, and latency.
-- [ ] **LIVE-03**: Researcher can manually trigger micro-interventions during an active session.
-- [ ] **LIVE-04**: Researcher can see what intervention was triggered, when it happened, and what source or rationale was associated with it.
-- [ ] **LIVE-05**: Researcher can start, stop, and monitor an experiment session from the platform without leaving the experiment workflow.
+- [x] **LIVE-01**: Researcher can view a real-time mirrored representation of the participant reading session on a second screen.
+- [x] **LIVE-02**: Researcher live view displays experiment health indicators including sample rate, validity rate, and latency.
+- [x] **LIVE-03**: Researcher can manually trigger micro-interventions during an active session.
+- [x] **LIVE-04**: Researcher can see what intervention was triggered, when it happened, and what source or rationale was associated with it.
+- [x] **LIVE-05**: Researcher can start, stop, and monitor an experiment session from the platform without leaving the experiment workflow.
 
 ### Modularity and Extensibility
 
@@ -95,11 +95,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | READ-02 | Phase 5 | Validated (Phase 5 Plan 02) |
 | READ-03 | Phase 5 | Validated (Phase 5 Plan 03) |
 | READ-04 | Phase 5 | Validated (Phase 5 Plan 04) |
-| LIVE-01 | Phase 6 | Pending |
-| LIVE-02 | Phase 6 | Pending |
-| LIVE-03 | Phase 6 | Pending |
-| LIVE-04 | Phase 6 | Pending |
-| LIVE-05 | Phase 6 | Pending |
+| LIVE-01 | Phase 6 | Validated (Phase 6 Plan 02) |
+| LIVE-02 | Phase 6 | Validated (Phase 6 Plan 03) |
+| LIVE-03 | Phase 6 | Validated (Phase 6 Plan 03) |
+| LIVE-04 | Phase 6 | Validated (Phase 6 Plan 04) |
+| LIVE-05 | Phase 6 | Validated (Phase 6 Plan 03) |
 | MOD-01 | Phase 1 | Validated (Phase 1) |
 | MOD-02 | Phase 2 | Validated (Phase 2) |
 | MOD-03 | Phase 3 | Validated (Phase 3) |
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-31 after Phase 5 plan 05-04 execution*
+*Last updated: 2026-03-31 after Phase 6 plan 06-04 execution*

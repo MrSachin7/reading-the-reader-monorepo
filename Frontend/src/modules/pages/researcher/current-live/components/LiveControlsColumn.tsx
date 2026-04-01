@@ -20,16 +20,21 @@ import {
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import type { InterventionModuleDescriptor, InterventionParameterValues } from "@/lib/intervention-modules"
-import type { DecisionConfiguration, DecisionState } from "@/lib/experiment-session"
+import type {
+  DecisionConfiguration,
+  DecisionState,
+  ExperimentLiveMonitoringSnapshot,
+} from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
 import { normalizeFontTheme, type ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import { groupInterventionModules } from "@/modules/pages/researcher/current-live/lib/group-intervention-modules"
-import type { LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
+import type { LiveMirrorTrustState, LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 import {
   formatDurationMs,
   formatPercent,
   getLatencyBars,
+  getLiveHealthState,
   getLatencyTone,
 } from "@/modules/pages/researcher/current-live/utils"
 
@@ -194,6 +199,8 @@ function LatencySignal({ latencyMs }: { latencyMs: number | null | undefined }) 
 type LiveControlsColumnProps = {
   interventionModules: InterventionModuleDescriptor[]
   followParticipant: boolean
+  liveMonitoring: ExperimentLiveMonitoringSnapshot
+  mirrorTrustState: LiveMirrorTrustState
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
   activeWord: string | null
@@ -229,6 +236,8 @@ type LiveControlsColumnProps = {
 export function LiveControlsColumn({
   interventionModules,
   followParticipant,
+  liveMonitoring,
+  mirrorTrustState,
   decisionConfiguration,
   decisionState,
   activeWord,
@@ -258,6 +267,13 @@ export function LiveControlsColumn({
     () => groupInterventionModules(interventionModules),
     [interventionModules]
   )
+  const liveHealth = getLiveHealthState({
+    sampleRateHz,
+    validityRate,
+    latencyMs,
+    hasParticipantViewConnection: liveMonitoring.hasParticipantViewConnection,
+    hasParticipantViewportData: liveMonitoring.hasParticipantViewportData,
+  })
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -697,7 +713,29 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <SectionLabel>Decision supervision</SectionLabel>
+              <SectionLabel>Session operations</SectionLabel>
+
+              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">Live health</p>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
+                      liveHealth.tone === "positive"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                        : liveHealth.tone === "warning"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                          : "border-rose-500/30 bg-rose-500/10 text-rose-700"
+                    )}
+                  >
+                    {liveHealth.label}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-foreground">{mirrorTrustState.headline}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {liveHealth.detail}
+                </p>
+              </div>
 
               <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
                 <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>
@@ -771,6 +809,17 @@ export function LiveControlsColumn({
                 <MetricItem label="Validity" value={formatPercent(validityRate)} />
                 <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
                 <MetricItem label="Participant" value={participantName ?? "Not registered"} />
+                <MetricItem label="Mirror" value={mirrorTrustState.label} />
+                <MetricItem
+                  label="Viewport"
+                  value={
+                    liveMonitoring.hasParticipantViewportData
+                      ? "Measured"
+                      : liveMonitoring.hasParticipantViewConnection
+                        ? "Pending"
+                        : "Offline"
+                  }
+                />
                 <MetricItem label="Heat map" value={readingDynamicsEnabled ? "Live" : "Off"} />
                 <MetricItem
                   label="Current dwell"

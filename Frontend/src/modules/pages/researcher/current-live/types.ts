@@ -15,6 +15,13 @@ export type LiveDecisionConfiguration = DecisionConfiguration
 export type LiveDecisionState = DecisionState
 export type LiveInterventionModule = InterventionModuleDescriptor
 export type GroupedLiveInterventionModules = LiveInterventionModuleGroup[]
+export type LiveMirrorTrustState = {
+  kind: "exact" | "approximate" | "manual"
+  label: string
+  headline: string
+  detail: string
+  tone: "positive" | "warning" | "neutral"
+}
 
 export type ActiveLiveExperimentSession = ExperimentSessionSnapshot & {
   readingSession: LiveReadingSessionSnapshot

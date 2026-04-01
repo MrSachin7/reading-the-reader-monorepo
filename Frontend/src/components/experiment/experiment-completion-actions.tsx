@@ -100,6 +100,16 @@ export function ExperimentCompletionActions({
 
   return (
     <div className={cn("flex w-full flex-col items-start gap-3", className)}>
+      <div className="space-y-1">
+        <p className="text-sm font-medium">
+          {canFinish ? "Session is live" : "Session complete"}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {canFinish
+            ? "Use this surface to finish the run once the participant session is over."
+            : "Download or save replay evidence after the run has ended."}
+        </p>
+      </div>
       <div
         className={cn(
           "flex gap-2",

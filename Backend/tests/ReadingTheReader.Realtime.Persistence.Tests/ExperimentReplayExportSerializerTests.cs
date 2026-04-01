@@ -136,6 +136,7 @@ public sealed class ExperimentReplayExportSerializerTests
             0,
             null,
             1,
+            new ExperimentLiveMonitoringSnapshot(true, true, false, 0, true, true, 1_710_000_001_500, true, 1_710_000_001_600),
             readingSession,
             decisionConfiguration,
             new DecisionRuntimeStateSnapshot(false, null, [proposal]));

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-03-31T16:25:00Z"
-last_activity: 2026-03-31 - Phase 5 executed in the workspace with backend-owned reading-baseline semantics, baseline-focused setup UX, and an authoritative participant reader without active-session mock fallbacks.
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-03-31T12:38:16Z"
+last_activity: 2026-03-31 - Phase 6 executed with authoritative live-monitoring contracts, explicit mirror trust states, clearer researcher workflow handoff, and stronger runtime evidence in the live console.
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 21
-  completed_plans: 21
-  percent: 63
+  completed_phases: 6
+  total_plans: 25
+  completed_plans: 25
+  percent: 75
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Build a defendable, modular adaptive reading platform that supports real Tobii-backed experiments and interchangeable intervention and decision modules without breaking the participant reading flow or the researcher workflow.
-**Current focus:** Phase 6 - Researcher Live Mirror & Session Operations
+**Current focus:** Phase 7 - Context-Preserving Adaptive Reading
 
 ## Current Position
 
-Phase: 6 of 8 (Researcher Live Mirror & Session Operations)
+Phase: 7 of 8 (Context-Preserving Adaptive Reading)
 Plan: 0 planned
-Status: Phase 5 complete; ready to begin Phase 6 planning
-Last activity: 2026-03-31 - Phase 5 closed with authoritative reading-baseline contracts, clearer researcher baseline setup, and participant-reader fallback removal.
+Status: Phase 6 complete; ready to begin Phase 7 planning
+Last activity: 2026-03-31 - Phase 6 closed with live-monitoring contracts, exact-mirror-first trust states, operator-console health/handoff improvements, and clearer runtime evidence.
 
-Progress: [######----] 63%
+Progress: [########--] 75%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 21
+- Total plans completed: 25
 - Average duration: -
 - Total execution time: 1 session
 
@@ -49,11 +49,12 @@ Progress: [######----] 63%
 | 3 | 4 | 1 session | - |
 | 4 | 4 | 1 session | - |
 | 5 | 4 | 1 session | - |
+| 6 | 4 | 1 session | - |
 
 **Recent Trend:**
 
-- Last 5 plans: 04-04, 05-01, 05-02, 05-03, 05-04 completed
-- Trend: Positive after closing Phase 5
+- Last 5 plans: 05-04, 06-01, 06-02, 06-03, 06-04 completed
+- Trend: Positive after closing Phase 6
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - Phase 5 is now complete: saved reading setups act as reusable baseline artifacts, and the active reading session is the only authoritative participant baseline during live use.
 - Phase 5 removed ambiguous active-session mock/draft fallbacks from the participant route and replaced them with explicit loading and missing-baseline states.
 - Phase 5 made presentation lock semantics part of the controlled session condition across backend readiness, setup workflow copy, and reader controls.
+- Phase 6 is now complete: the authoritative session contract projects explicit live-monitoring semantics for start/finish state, participant-view readiness, and focus freshness.
+- Phase 6 makes exact participant mirroring the preferred trust state and falls back to supervisory mode with explicit warning treatment when exact mirroring degrades.
+- Phase 6 keeps live supervision aligned with the existing experiment workflow by improving the handoff between setup, participant view, and researcher live console instead of inventing a second lifecycle path.
 - Researcher-operated experiment reliability is prioritized ahead of lower-priority study tooling.
 - Replay, export, and extension guidance close the roadmap because they convert working flows into thesis evidence.
 
@@ -87,11 +91,12 @@ None yet.
 - Frontend lint still has unrelated `@next/next/no-assign-module-variable` errors in researcher-live files; they are logged in `.planning/phases/04-device-setup-calibration-workflow/deferred-items.md`.
 - Manual-only Phase 4 follow-up remains on real Tobii/browser UAT for fullscreen interruption clarity and operator understanding.
 - Manual-only Phase 5 follow-up remains on thesis-grade readability and operator clarity checks for locked versus live-adjustable baselines.
+- Manual-only Phase 6 follow-up remains on second-screen/fullscreen UAT to confirm degraded exact-mirror signaling under real operator conditions.
 - Phase 7 planning should define how context-preservation quality will be evaluated under live interventions.
 - Phase 8 planning should pin down the exact provenance fields needed for reproducible replay and export.
 
 ## Session Continuity
 
-Last session: 2026-03-31T16:25:00Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-03-31T12:38:16Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: .planning/ROADMAP.md

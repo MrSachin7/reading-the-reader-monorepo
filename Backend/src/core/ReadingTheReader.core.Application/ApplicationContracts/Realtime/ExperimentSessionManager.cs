@@ -806,6 +806,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         var session = Volatile.Read(ref _session);
         var latest = Volatile.Read(ref _latestGazeSample);
+        var setup = BuildSetupSnapshot(session, _calibrationSnapshot, _liveReadingSession);
+        var liveMonitoring = BuildLiveMonitoringSnapshot(
+            session,
+            setup,
+            _liveReadingSession,
+            Volatile.Read(ref _isHardwareTracking) == 1,
+            _gazeSubscribers.Count);
 
         return new ExperimentSessionSnapshot(
             session.Id,
@@ -815,10 +822,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             session.Participant?.Copy(),
             session.EyeTrackerDevice?.Copy(),
             _calibrationSnapshot,
-            BuildSetupSnapshot(session, _calibrationSnapshot, _liveReadingSession),
+            setup,
             Interlocked.Read(ref _receivedGazeSamples),
             latest?.Copy(),
             _clientBroadcasterAdapter.ConnectedClients,
+            liveMonitoring,
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
             _decisionState.Copy());
@@ -1300,6 +1308,34 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             participant,
             calibration,
             readingMaterial);
+    }
+
+    private static ExperimentLiveMonitoringSnapshot BuildLiveMonitoringSnapshot(
+        ExperimentSession session,
+        ExperimentSetupSnapshot setup,
+        LiveReadingSessionSnapshot liveReadingSession,
+        bool isGazeStreamingActive,
+        int gazeSubscriberCount)
+    {
+        var participantViewport = liveReadingSession.ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected;
+        var focus = liveReadingSession.Focus ?? ReadingFocusSnapshot.Empty;
+        var hasParticipantViewportData =
+            participantViewport.IsConnected &&
+            participantViewport.ViewportWidthPx > 0 &&
+            participantViewport.ViewportHeightPx > 0 &&
+            participantViewport.UpdatedAtUnixMs > 0;
+        var hasReadingFocusSignal = focus.UpdatedAtUnixMs > 0;
+
+        return new ExperimentLiveMonitoringSnapshot(
+            setup.IsReadyForSessionStart && !session.IsActive,
+            session.IsActive,
+            isGazeStreamingActive,
+            Math.Max(gazeSubscriberCount, 0),
+            participantViewport.IsConnected,
+            hasParticipantViewportData,
+            participantViewport.UpdatedAtUnixMs > 0 ? participantViewport.UpdatedAtUnixMs : null,
+            hasReadingFocusSignal,
+            focus.UpdatedAtUnixMs > 0 ? focus.UpdatedAtUnixMs : null);
     }
 
     private static void EnsureSetupIsReadyForStart(

@@ -40,8 +40,10 @@ import { LiveMetadataColumn } from "@/modules/pages/researcher/current-live/comp
 import { LiveReaderColumn } from "@/modules/pages/researcher/current-live/components/LiveReaderColumn"
 import type {
   ActiveLiveExperimentSession,
+  LiveMirrorTrustState,
   LiveReaderOptions,
 } from "@/modules/pages/researcher/current-live/types"
+import { getLiveMirrorTrustState } from "@/modules/pages/researcher/current-live/utils"
 import { useGetInterventionModulesQuery, useGetReaderShellSettingsQuery } from "@/redux"
 
 function EmptyState({
@@ -333,37 +335,35 @@ function ResearcherCurrentLiveBody({
   }, [])
 
   const participantViewport = readingSession.participantViewport
-  const participantViewportReady =
-    participantViewport.isConnected &&
-    participantViewport.viewportWidthPx > 0 &&
-    participantViewport.viewportHeightPx > 0 &&
-    participantViewport.updatedAtUnixMs > 0
-  const exactMirrorEnabled =
-    followParticipant && fullscreen.isFullscreen && fullscreen.isVisible && participantViewportReady
-  const mirrorStatusLabel = exactMirrorEnabled
-    ? "Exact mirror"
-    : !followParticipant
-      ? "Manual view"
-      : !fullscreen.isFullscreen
-        ? "Enter full screen for exact mirror"
-        : !fullscreen.isVisible
-          ? "Bring this tab back to the front"
-          : !participantViewport.isConnected
-            ? "Waiting for participant view"
-            : "Approximate follow"
+  const mirrorTrustState: LiveMirrorTrustState = getLiveMirrorTrustState({
+    followParticipant,
+    hasParticipantViewConnection: session.liveMonitoring.hasParticipantViewConnection,
+    hasParticipantViewportData: session.liveMonitoring.hasParticipantViewportData,
+    isFullscreen: fullscreen.isFullscreen,
+    isVisible: fullscreen.isVisible,
+  })
+  const exactMirrorEnabled = mirrorTrustState.kind === "exact"
 
   return (
     <main className="h-screen overflow-hidden bg-background px-4 py-5 md:px-8 md:py-8">
-      {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
+      {mirrorTrustState.kind === "approximate" ? (
         <div className="pointer-events-none fixed inset-x-4 top-4 z-30 flex justify-center md:inset-x-8">
-          <div className="pointer-events-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-2xl border bg-card/96 px-4 py-3 shadow-lg backdrop-blur">
-            <p className="text-sm text-foreground">
-              Researcher live view works best in full screen. Exact mirror falls back until this page
-              is visible and full screen.
-            </p>
-            <Button onClick={() => void fullscreen.requestFullscreen()} className="shrink-0">
-              Enter full screen
-            </Button>
+          <div className="pointer-events-auto w-full max-w-4xl rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                  {mirrorTrustState.headline}
+                </p>
+                <p className="mt-1 text-sm text-amber-900/85 dark:text-amber-100/85">
+                  {mirrorTrustState.detail}
+                </p>
+              </div>
+              {!fullscreen.isFullscreen ? (
+                <Button onClick={() => void fullscreen.requestFullscreen()} className="shrink-0">
+                  Enter full screen
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}
@@ -371,6 +371,8 @@ function ResearcherCurrentLiveBody({
         <LiveControlsColumn
           interventionModules={effectiveInterventionModules}
           followParticipant={followParticipant}
+          liveMonitoring={session.liveMonitoring}
+          mirrorTrustState={mirrorTrustState}
           decisionConfiguration={session.decisionConfiguration}
           decisionState={session.decisionState}
           activeWord={activeWord}
@@ -404,7 +406,7 @@ function ResearcherCurrentLiveBody({
           followParticipant={followParticipant}
           readerOptions={readerOptions}
           exactMirrorEnabled={exactMirrorEnabled}
-          mirrorStatusLabel={mirrorStatusLabel}
+          mirrorTrustState={mirrorTrustState}
           showReadingDynamics={readerOptions.showFixationHeatmap}
           tokenAttention={tokenAttention}
           onTokenAttentionChange={setTokenAttention}
@@ -414,6 +416,8 @@ function ResearcherCurrentLiveBody({
           interventionModules={effectiveInterventionModules}
           session={session}
           readingSession={readingSession}
+          liveMonitoring={session.liveMonitoring}
+          mirrorTrustState={mirrorTrustState}
           decisionConfiguration={session.decisionConfiguration}
           decisionState={session.decisionState}
           activeWord={activeWord}

@@ -4,6 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
 import { BookOpen, Crosshair, FileText, Plus, ScanEye } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
@@ -1017,11 +1018,22 @@ export function ExperimentStepper() {
 
         {setup.isReadyForSessionStart ? (
           <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
-            <AlertTitle>Session setup is ready</AlertTitle>
+            <AlertTitle>
+              {experimentSession?.isActive ? "Session is running" : "Session setup is ready"}
+            </AlertTitle>
             <AlertDescription>
-              Device, participant, calibration, and reading material are all aligned with the
-              backend start gate. You can start the reading session from here.
+              {experimentSession?.isActive
+                ? "The backend session is active. Use the participant route and researcher live console as the two runtime surfaces for the study."
+                : "Device, participant, calibration, and reading material are all aligned with the backend start gate. You can start the reading session from here."}
             </AlertDescription>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/reading">Open participant view</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/researcher/current-live">Open live console</Link>
+              </Button>
+            </div>
           </Alert>
         ) : setup.currentBlocker ? (
           <Alert>
@@ -1066,7 +1078,16 @@ export function ExperimentStepper() {
           <Button disabled={step === 0} onClick={() => setStep(step - 1)}>
             Previous
           </Button>
-          {step < steps.length - 1 ? (
+          {experimentSession?.isActive ? (
+            <div className="flex flex-wrap gap-3">
+              <Button asChild variant="outline">
+                <Link href="/reading">Participant view</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/researcher/current-live">Researcher live view</Link>
+              </Button>
+            </div>
+          ) : step < steps.length - 1 ? (
             <Button
               disabled={step === steps.length - 1 || !canAdvance}
               onClick={handleNext}
