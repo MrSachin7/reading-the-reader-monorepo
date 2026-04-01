@@ -10,12 +10,16 @@ import type {
   DecisionConfiguration,
   DecisionState,
   DecisionProposalIntervention,
+  ExperimentLiveMonitoringSnapshot,
   InterventionEventSnapshot,
   LiveReadingSessionSnapshot,
 } from "@/lib/experiment-session"
 import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
 import type { RemoteTokenAttentionStats } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
-import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
+import type {
+  ActiveLiveExperimentSession,
+  LiveMirrorTrustState,
+} from "@/modules/pages/researcher/current-live/types"
 import { formatAbsoluteTime, formatDurationMs, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
 
 function MetadataRow({
@@ -37,6 +41,8 @@ type LiveMetadataColumnProps = {
   interventionModules: InterventionModuleDescriptor[]
   session: ActiveLiveExperimentSession
   readingSession: LiveReadingSessionSnapshot
+  liveMonitoring: ExperimentLiveMonitoringSnapshot
+  mirrorTrustState: LiveMirrorTrustState
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
   activeWord: string | null
@@ -55,6 +61,8 @@ export function LiveMetadataColumn({
   interventionModules,
   session,
   readingSession,
+  liveMonitoring,
+  mirrorTrustState,
   decisionConfiguration,
   decisionState,
   activeWord,
@@ -130,6 +138,53 @@ export function LiveMetadataColumn({
                   <MetadataRow label="Focused block" value={formatNumeric(activeBlockLix, 1)} />
                   <MetadataRow label="Samples" value={session.receivedGazeSamples.toLocaleString()} />
                 </dl>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Runtime evidence
+                </p>
+                <div className="mt-3 space-y-3">
+                  <div className="rounded-[1rem] border bg-muted/20 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant="outline">{mirrorTrustState.label}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {liveMonitoring.hasParticipantViewportData ? "Viewport measured" : "Viewport not exact"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6">{mirrorTrustState.detail}</p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        Viewport signal
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {liveMonitoring.hasParticipantViewConnection
+                          ? liveMonitoring.hasParticipantViewportData
+                            ? "Connected and measured"
+                            : "Connected, waiting for exact viewport"
+                          : "Participant view offline"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Last update {formatAbsoluteTime(liveMonitoring.participantViewportUpdatedAtUnixMs)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        Focus signal
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {liveMonitoring.hasReadingFocusSignal ? "Live focus updates received" : "No live focus signal yet"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Last update {formatAbsoluteTime(liveMonitoring.focusUpdatedAtUnixMs)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-[1.2rem] border bg-background/80 p-4">

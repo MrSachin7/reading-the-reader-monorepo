@@ -27,6 +27,10 @@ public sealed class ExperimentSetupWorkflowTests
         Assert.Equal("idle", snapshot.Setup.Calibration.Status);
         Assert.Equal("idle", snapshot.Setup.Calibration.ValidationStatus);
         Assert.False(snapshot.Setup.ReadingMaterial.IsReady);
+        Assert.False(snapshot.LiveMonitoring.CanStartSession);
+        Assert.False(snapshot.LiveMonitoring.CanFinishSession);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewConnection);
+        Assert.False(snapshot.LiveMonitoring.HasParticipantViewportData);
     }
 
     [Fact]
@@ -188,6 +192,8 @@ public sealed class ExperimentSetupWorkflowTests
         Assert.False(snapshot.Setup.ReadingMaterial.UsesSavedSetup);
         Assert.True(snapshot.Setup.ReadingMaterial.AllowsResearcherPresentationChanges);
         Assert.False(snapshot.Setup.ReadingMaterial.IsPresentationLocked);
+        Assert.True(snapshot.LiveMonitoring.CanStartSession);
+        Assert.False(snapshot.LiveMonitoring.CanFinishSession);
     }
 
     [Fact]

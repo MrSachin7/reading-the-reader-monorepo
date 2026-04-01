@@ -64,6 +64,18 @@ export type ExperimentSetupSnapshot = {
   readingMaterial: ReadingMaterialSetupReadinessSnapshot
 }
 
+export type ExperimentLiveMonitoringSnapshot = {
+  canStartSession: boolean
+  canFinishSession: boolean
+  isGazeStreamingActive: boolean
+  gazeSubscriberCount: number
+  hasParticipantViewConnection: boolean
+  hasParticipantViewportData: boolean
+  participantViewportUpdatedAtUnixMs: number | null
+  hasReadingFocusSignal: boolean
+  focusUpdatedAtUnixMs: number | null
+}
+
 export type ExperimentParticipantSnapshot = {
   name: string
   age: number
@@ -210,9 +222,22 @@ export type ExperimentSessionSnapshot = {
   receivedGazeSamples: number
   latestGazeSample: unknown
   connectedClients: number
+  liveMonitoring: ExperimentLiveMonitoringSnapshot
   readingSession: LiveReadingSessionSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
+}
+
+export const EMPTY_LIVE_MONITORING: ExperimentLiveMonitoringSnapshot = {
+  canStartSession: false,
+  canFinishSession: false,
+  isGazeStreamingActive: false,
+  gazeSubscriberCount: 0,
+  hasParticipantViewConnection: false,
+  hasParticipantViewportData: false,
+  participantViewportUpdatedAtUnixMs: null,
+  hasReadingFocusSignal: false,
+  focusUpdatedAtUnixMs: null,
 }
 
 export type DecisionRealtimeUpdate = {
