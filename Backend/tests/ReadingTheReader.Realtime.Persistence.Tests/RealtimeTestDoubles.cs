@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
 
@@ -129,13 +135,13 @@ public sealed class RealtimeTestDoubles
             CancellationToken ct = default)
         {
             var id = $"{name}-{format}".Replace(' ', '-');
-            var timestamp = exportDocument.Metadata.ExportedAtUnixMs;
+            var timestamp = exportDocument.Manifest.ExportedAtUnixMs;
             var summary = new SavedExperimentReplayExportSummary(
                 id,
                 name,
                 $"{id}.{format}",
                 format,
-                exportDocument.Metadata.SessionId,
+                exportDocument.Experiment.SessionId,
                 timestamp,
                 timestamp,
                 timestamp);

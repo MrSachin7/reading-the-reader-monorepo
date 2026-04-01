@@ -1,5 +1,7 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.WebApi.Contracts.ExperimentSession;
 
 namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
@@ -26,7 +28,7 @@ public sealed class CreateSavedExperimentReplayExportEndpoint : Endpoint<SaveExp
             if (!ExperimentReplayExportFormats.IsSupported(req.Format))
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await HttpContext.Response.WriteAsJsonAsync(new { message = "Replay export format must be either 'json' or 'csv'." }, ct);
+                await HttpContext.Response.WriteAsJsonAsync(new { message = "Replay export format must be 'json'." }, ct);
                 return;
             }
 

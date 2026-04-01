@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;
@@ -49,10 +50,10 @@ public sealed class InMemoryExperimentReplayExportStoreAdapter : IExperimentRepl
                 name.Trim(),
                 $"experiment-replay-export-{id[..8]}{ExperimentReplayExportFormats.GetFileExtension(normalizedFormat)}",
                 normalizedFormat,
-                exportDocument.Metadata.SessionId,
+                exportDocument.Experiment.SessionId,
                 now,
                 now,
-                exportDocument.Metadata.ExportedAtUnixMs);
+                exportDocument.Manifest.ExportedAtUnixMs);
 
             _saved[id] = (summary, _serializer.Serialize(exportDocument, normalizedFormat));
             return ValueTask.FromResult(summary.Copy());

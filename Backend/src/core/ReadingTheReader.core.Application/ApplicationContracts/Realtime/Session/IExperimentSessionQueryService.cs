@@ -1,4 +1,7 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 public interface IExperimentSessionQueryService
 {

@@ -1,323 +1,178 @@
-import { z } from "zod"
-
-import type {
-  DecisionConfiguration,
-  DecisionProposalSnapshot,
-  DecisionState,
-  ExperimentEyeTrackerSnapshot,
-  ExperimentLiveMonitoringSnapshot,
-  ExperimentParticipantSnapshot,
-  InterventionEventSnapshot,
-  LayoutInterventionGuardrailSnapshot,
-  LiveReadingSessionSnapshot,
-  ParticipantViewportSnapshot,
-  ReadingContextPreservationSnapshot,
-  ReadingFocusSnapshot,
+import {
+  EMPTY_DECISION_STATE,
+  EMPTY_LIVE_MONITORING,
+  type DecisionConfiguration,
+  type DecisionProposalSnapshot,
+  type DecisionState,
+  type ExperimentEyeTrackerSnapshot,
+  type ExperimentLiveMonitoringSnapshot,
+  type ExperimentParticipantSnapshot,
+  type InterventionEventSnapshot,
+  type LiveReadingSessionSnapshot,
+  type ParticipantViewportSnapshot,
+  type ReadingContentSnapshot,
+  type ReadingFocusSnapshot,
+  type ReadingPresentationSnapshot,
+  type ReaderAppearanceSnapshot,
 } from "@/lib/experiment-session"
 import { cloneInterventionParameters } from "@/lib/intervention-modules"
-import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { GazeData } from "@/lib/gaze-socket"
+import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
+import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 
-const gazeDataSchema = z.object({
-  deviceTimeStamp: z.number(),
-  leftEyeX: z.number(),
-  leftEyeY: z.number(),
-  leftEyeValidity: z.string(),
-  rightEyeX: z.number(),
-  rightEyeY: z.number(),
-  rightEyeValidity: z.string(),
-})
+type ReplayProducer = {
+  appName: string
+  backendSdk: string
+  backendSdkVersion: string
+  exporterVersion: string
+}
 
-const participantSchema = z.object({
-  name: z.string(),
-  age: z.number(),
-  sex: z.string(),
-  existingEyeCondition: z.string(),
-  readingProficiency: z.string(),
-})
+type ReplayManifest = {
+  schema: string
+  version: number
+  exportedAtUnixMs: number
+  completionSource: string
+  exportProfile: string
+  producer: ReplayProducer
+  savedName?: string | null
+}
 
-const eyeTrackerSchema = z.object({
-  name: z.string(),
-  model: z.string(),
-  serialNumber: z.string(),
-  hasSavedLicence: z.boolean(),
-})
+type ReplayCalibrationSummary = {
+  pattern: string | null
+  applied: boolean
+  validationPassed: boolean
+  quality: string | null
+  averageAccuracyDegrees: number | null
+  averagePrecisionDegrees: number | null
+  sampleCount: number
+}
 
-const readingPresentationSchema = z.object({
-  fontFamily: z.string(),
-  fontSizePx: z.number(),
-  lineWidthPx: z.number(),
-  lineHeight: z.number(),
-  letterSpacingEm: z.number(),
-  editableByResearcher: z.boolean(),
-})
+type ReplayParticipant = {
+  name: string
+  age: number | null
+  sex: string | null
+  existingEyeCondition: string | null
+  readingProficiency: string | null
+}
 
-const readerAppearanceSchema = z.object({
-  themeMode: z.enum(["light", "dark"]),
-  palette: z.enum(["default", "sepia", "high-contrast"]),
-  appFont: z.enum(["geist", "inter", "space-grotesk", "merriweather"]),
-})
+type ReplayDevice = {
+  name: string | null
+  model: string | null
+  serialNumber: string | null
+  hasSavedLicence: boolean | null
+}
 
-const readingContentSchema = z.object({
-  documentId: z.string(),
-  title: z.string(),
-  markdown: z.string(),
-  sourceSetupId: z.string().nullable(),
-  updatedAtUnixMs: z.number(),
-})
+type ReplayEyePoint2D = { x: number | null; y: number | null; validity: string }
+type ReplayEyePoint3D = { x: number | null; y: number | null; z: number | null }
+type ReplayEyePupil = { diameterMm: number | null; validity: string }
+type ReplayEyeOrigin3D = { x: number | null; y: number | null; z: number | null; validity: string }
+type ReplayEyeTrackBoxPoint = { x: number | null; y: number | null; z: number | null }
+type ReplayEyeSample = {
+  gazePoint2D: ReplayEyePoint2D
+  gazePoint3D: ReplayEyePoint3D | null
+  pupil: ReplayEyePupil | null
+  gazeOrigin3D: ReplayEyeOrigin3D | null
+  gazeOriginTrackBox: ReplayEyeTrackBoxPoint | null
+}
 
-const participantViewportSchema = z.object({
-  isConnected: z.boolean(),
-  scrollProgress: z.number(),
-  scrollTopPx: z.number(),
-  viewportWidthPx: z.number(),
-  viewportHeightPx: z.number(),
-  contentHeightPx: z.number(),
-  contentWidthPx: z.number(),
-  updatedAtUnixMs: z.number(),
-})
+export type ExperimentLifecycleEventRecord = {
+  sequenceNumber: number
+  eventType: string
+  source: string
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+}
 
-const readingFocusSchema = z.object({
-  isInsideReadingArea: z.boolean(),
-  normalizedContentX: z.number().nullable(),
-  normalizedContentY: z.number().nullable(),
-  activeTokenId: z.string().nullable(),
-  activeBlockId: z.string().nullable(),
-  updatedAtUnixMs: z.number(),
-})
+export type RawGazeSampleRecord = {
+  sequenceNumber: number
+  capturedAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  deviceTimeStampUs: number
+  systemTimeStampUs: number | null
+  left: ReplayEyeSample | null
+  right: ReplayEyeSample | null
+}
 
-const readingContextPreservationSchema = z.object({
-  status: z.enum(["preserved", "degraded", "failed"]),
-  anchorSource: z.enum(["active-token", "fallback-token", "block-anchor", "scroll-only"]),
-  anchorTokenId: z.string().nullable(),
-  anchorBlockId: z.string().nullable(),
-  anchorErrorPx: z.number().nullable(),
-  viewportDeltaPx: z.number().nullable(),
-  interventionAppliedAtUnixMs: z.number(),
-  measuredAtUnixMs: z.number(),
-  reason: z.string().nullable(),
-})
+export type ParticipantViewportEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  viewport: ParticipantViewportSnapshot
+}
 
-const layoutInterventionGuardrailSchema = z.object({
-  status: z.enum(["applied", "suppressed"]),
-  reason: z.enum(["cooldown-active", "change-too-large", "no-op-layout-change"]).nullable(),
-  affectedProperties: z.array(
-    z.enum(["font-family", "font-size", "line-width", "line-height", "letter-spacing"])
-  ),
-  evaluatedAtUnixMs: z.number(),
-  cooldownUntilUnixMs: z.number().nullable(),
-})
+export type ReadingFocusEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  focus: ReadingFocusSnapshot
+}
 
-const interventionSchema = z.object({
-  id: z.string(),
-  source: z.string(),
-  trigger: z.string(),
-  reason: z.string(),
-  appliedAtUnixMs: z.number(),
-  appliedPresentation: readingPresentationSchema,
-  appliedAppearance: readerAppearanceSchema.default({
-    themeMode: "light",
-    palette: "default",
-    appFont: "geist",
-  }),
-  moduleId: z.string().nullable().default(null),
-  parameters: z.record(z.string(), z.string().nullable()).nullable().default(null),
-})
+export type ReadingAttentionEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  summary: ReadingAttentionSummarySnapshot
+}
 
-const decisionConfigurationSchema = z.object({
-  conditionLabel: z.string(),
-  providerId: z.string(),
-  executionMode: z.string(),
-})
+export type DecisionProposalEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  proposal: DecisionProposalSnapshot
+}
 
-const decisionSignalSchema = z.object({
-  signalType: z.string(),
-  summary: z.string(),
-  observedAtUnixMs: z.number(),
-  confidence: z.number().nullable(),
-})
+export type InterventionEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  intervention: InterventionEventSnapshot
+}
 
-const decisionProposalInterventionSchema = z.object({
-  source: z.string(),
-  trigger: z.string(),
-  reason: z.string(),
-  moduleId: z.string().nullable().default(null),
-  parameters: z.record(z.string(), z.string().nullable()).nullable().default(null),
-  presentation: z.object({
-    fontFamily: z.string().nullable(),
-    fontSizePx: z.number().nullable(),
-    lineWidthPx: z.number().nullable(),
-    lineHeight: z.number().nullable(),
-    letterSpacingEm: z.number().nullable(),
-    editableByResearcher: z.boolean().nullable(),
-  }),
-  appearance: z.object({
-    themeMode: z.string().nullable(),
-    palette: z.string().nullable(),
-    appFont: z.string().nullable(),
-  }),
-})
-
-const decisionProposalSchema = z.object({
-  proposalId: z.string(),
-  conditionLabel: z.string(),
-  providerId: z.string(),
-  executionMode: z.string(),
-  status: z.string(),
-  signal: decisionSignalSchema,
-  rationale: z.string(),
-  proposedAtUnixMs: z.number(),
-  resolvedAtUnixMs: z.number().nullable(),
-  resolutionSource: z.string().nullable(),
-  appliedInterventionId: z.string().nullable(),
-  proposedIntervention: decisionProposalInterventionSchema,
-})
-
-const decisionStateSchema = z.object({
-  automationPaused: z.boolean(),
-  activeProposal: decisionProposalSchema.nullable(),
-  recentProposalHistory: z.array(decisionProposalSchema),
-})
-
-const liveMonitoringSchema = z.object({
-  canStartSession: z.boolean(),
-  canFinishSession: z.boolean(),
-  isGazeStreamingActive: z.boolean(),
-  gazeSubscriberCount: z.number(),
-  hasParticipantViewConnection: z.boolean(),
-  hasParticipantViewportData: z.boolean(),
-  participantViewportUpdatedAtUnixMs: z.number().nullable(),
-  hasReadingFocusSignal: z.boolean(),
-  focusUpdatedAtUnixMs: z.number().nullable(),
-})
-
-const readingAttentionTokenStatsSchema = z.object({
-  fixationMs: z.number(),
-  fixationCount: z.number(),
-  skimCount: z.number(),
-  maxFixationMs: z.number(),
-  lastFixationMs: z.number(),
-})
-
-const readingAttentionSummarySchema = z.object({
-  updatedAtUnixMs: z.number(),
-  tokenStats: z.record(z.string(), readingAttentionTokenStatsSchema),
-  currentTokenId: z.string().nullable(),
-  currentTokenDurationMs: z.number().nullable(),
-  fixatedTokenCount: z.number(),
-  skimmedTokenCount: z.number(),
-})
-
-const liveReadingSessionSchema = z.object({
-  content: readingContentSchema.nullable(),
-  presentation: readingPresentationSchema,
-  appearance: readerAppearanceSchema.default({
-    themeMode: "light",
-    palette: "default",
-    appFont: "geist",
-  }),
-  participantViewport: participantViewportSchema,
-  focus: readingFocusSchema,
-  latestContextPreservation: readingContextPreservationSchema.nullable().default(null),
-  recentContextPreservationEvents: z.array(readingContextPreservationSchema).default([]),
-  latestLayoutGuardrail: layoutInterventionGuardrailSchema.nullable().default(null),
-  latestIntervention: interventionSchema.nullable(),
-  recentInterventions: z.array(interventionSchema),
-  attentionSummary: readingAttentionSummarySchema.nullable().default(null),
-})
-
-const replaySessionSnapshotSchema = z.object({
-  sessionId: z.string().nullable(),
-  isActive: z.boolean(),
-  startedAtUnixMs: z.number(),
-  stoppedAtUnixMs: z.number().nullable(),
-  participant: participantSchema.nullable(),
-  eyeTrackerDevice: eyeTrackerSchema.nullable(),
-  receivedGazeSamples: z.number(),
-  latestGazeSample: gazeDataSchema.nullable(),
-  liveMonitoring: liveMonitoringSchema,
-  readingSession: liveReadingSessionSchema.nullable(),
-  decisionConfiguration: decisionConfigurationSchema,
-  decisionState: decisionStateSchema,
-})
-
-const replayMetadataSchema = z.object({
-  format: z.string(),
-  version: z.number(),
-  exportedAtUnixMs: z.number(),
-  sessionId: z.string().nullable(),
-  completionSource: z.string(),
-  startedAtUnixMs: z.number(),
-  endedAtUnixMs: z.number().nullable(),
-  durationMs: z.number().nullable(),
-  savedName: z.string().nullable().optional(),
-})
-
-const replayStatisticsSchema = z.object({
-  lifecycleEventCount: z.number(),
-  gazeSampleCount: z.number(),
-  readingSessionStateCount: z.number(),
-  participantViewportEventCount: z.number(),
-  readingFocusEventCount: z.number(),
-  decisionProposalEventCount: z.number(),
-  interventionEventCount: z.number(),
-})
-
-const timedRecordSchema = z.object({
-  sequenceNumber: z.number(),
-  elapsedSinceStartMs: z.number().nullable(),
-})
-
-const lifecycleRecordSchema = timedRecordSchema.extend({
-  eventType: z.string(),
-  source: z.string(),
-  occurredAtUnixMs: z.number(),
-})
-
-const gazeRecordSchema = timedRecordSchema.extend({
-  capturedAtUnixMs: z.number(),
-  sample: gazeDataSchema,
-})
-
-const readingSessionStateRecordSchema = timedRecordSchema.extend({
-  reason: z.string(),
-  occurredAtUnixMs: z.number(),
-  session: liveReadingSessionSchema,
-})
-
-const participantViewportEventRecordSchema = timedRecordSchema.extend({
-  occurredAtUnixMs: z.number(),
-  viewport: participantViewportSchema,
-})
-
-const readingFocusEventRecordSchema = timedRecordSchema.extend({
-  occurredAtUnixMs: z.number(),
-  focus: readingFocusSchema,
-})
-
-const interventionEventRecordSchema = timedRecordSchema.extend({
-  occurredAtUnixMs: z.number(),
-  intervention: interventionSchema,
-})
-
-const decisionProposalEventRecordSchema = timedRecordSchema.extend({
-  occurredAtUnixMs: z.number(),
-  proposal: decisionProposalSchema,
-})
-
-const experimentReplayExportSchema = z.object({
-  metadata: replayMetadataSchema,
-  statistics: replayStatisticsSchema,
-  initialSnapshot: replaySessionSnapshotSchema,
-  finalSnapshot: replaySessionSnapshotSchema,
-  lifecycleEvents: z.array(lifecycleRecordSchema),
-  gazeSamples: z.array(gazeRecordSchema),
-  readingSessionStates: z.array(readingSessionStateRecordSchema),
-  participantViewportEvents: z.array(participantViewportEventRecordSchema),
-  readingFocusEvents: z.array(readingFocusEventRecordSchema),
-  decisionProposalEvents: z.array(decisionProposalEventRecordSchema),
-  interventionEvents: z.array(interventionEventRecordSchema),
-})
+export type ExperimentReplayExport = {
+  manifest: ReplayManifest
+  experiment: {
+    sessionId: string | null
+    startedAtUnixMs: number
+    endedAtUnixMs: number | null
+    durationMs: number | null
+    condition: DecisionConfiguration
+    participant: ReplayParticipant | null
+    device: ReplayDevice | null
+    calibration: ReplayCalibrationSummary
+    lifecycleEvents: ExperimentLifecycleEventRecord[]
+  }
+  content: ReadingContentSnapshot & {
+    contentHash: string
+    tokenization: { strategy: string; version: string }
+  }
+  sensing: { gazeSamples: RawGazeSampleRecord[] }
+  derived: {
+    viewportEvents: ParticipantViewportEventRecord[]
+    focusEvents: ReadingFocusEventRecord[]
+    attentionEvents: ReadingAttentionEventRecord[]
+  }
+  interventions: {
+    decisionProposals: DecisionProposalEventRecord[]
+    interventionEvents: InterventionEventRecord[]
+  }
+  replay: {
+    baseline: {
+      presentation: ReadingPresentationSnapshot
+      appearance: ReaderAppearanceSnapshot
+    }
+  }
+  annotations: Array<{
+    id: string
+    sequenceNumber: number
+    occurredAtUnixMs: number
+    elapsedSinceStartMs: number | null
+    author: string | null
+    category: string | null
+    note: string
+    targetTokenId: string | null
+    targetBlockId: string | null
+  }>
+}
 
 export type ReplaySessionSnapshot = {
   sessionId: string | null
@@ -334,26 +189,15 @@ export type ReplaySessionSnapshot = {
   decisionState: DecisionState
 }
 
-export type ExperimentReplayMetadata = z.infer<typeof replayMetadataSchema>
-export type ExperimentReplayStatistics = z.infer<typeof replayStatisticsSchema>
-export type ExperimentLifecycleEventRecord = z.infer<typeof lifecycleRecordSchema>
-export type GazeSampleRecord = z.infer<typeof gazeRecordSchema>
-export type ReadingSessionStateRecord = z.infer<typeof readingSessionStateRecordSchema>
-export type ParticipantViewportEventRecord = z.infer<typeof participantViewportEventRecordSchema>
-export type ReadingFocusEventRecord = z.infer<typeof readingFocusEventRecordSchema>
-export type DecisionProposalEventRecord = z.infer<typeof decisionProposalEventRecordSchema>
-export type InterventionEventRecord = z.infer<typeof interventionEventRecordSchema>
-export type ExperimentReplayExport = z.infer<typeof experimentReplayExportSchema>
-
 export type ReplayFrame = {
   currentTimeMs: number
   durationMs: number
   progress: number
   session: ReplaySessionSnapshot
-  gazeRecord: GazeSampleRecord | null
+  gazeRecord: RawGazeSampleRecord | null
   viewportRecord: ParticipantViewportEventRecord | null
   focusRecord: ReadingFocusEventRecord | null
-  readingSessionStateRecord: ReadingSessionStateRecord | null
+  attentionRecord: ReadingAttentionEventRecord | null
   decisionProposalRecord: DecisionProposalEventRecord | null
   interventionRecord: InterventionEventRecord | null
   lifecycleRecord: ExperimentLifecycleEventRecord | null
@@ -367,275 +211,65 @@ export type ReplayKeyEvent = {
   detail: string
 }
 
-function getErrorMessage(error: z.ZodError) {
-  const details = error.issues
-    .slice(0, 4)
-    .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
-    .join("; ")
-
-  return details.length > 0 ? details : "The file does not match the replay export format."
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }
 
-function parseCsvRows(input: string) {
-  const rows: string[][] = []
-  let row: string[] = []
-  let field = ""
-  let index = 0
-  let inQuotes = false
-
-  while (index < input.length) {
-    const character = input[index]!
-
-    if (inQuotes) {
-      if (character === "\"") {
-        if (input[index + 1] === "\"") {
-          field += "\""
-          index += 1
-        } else {
-          inQuotes = false
-        }
-      } else {
-        field += character
-      }
-
-      index += 1
-      continue
-    }
-
-    if (character === "\"") {
-      inQuotes = true
-      index += 1
-      continue
-    }
-
-    if (character === ",") {
-      row.push(field)
-      field = ""
-      index += 1
-      continue
-    }
-
-    if (character === "\r" || character === "\n") {
-      row.push(field)
-      field = ""
-
-      if (row.some((value) => value.length > 0)) {
-        rows.push(row)
-      }
-
-      row = []
-      if (character === "\r" && input[index + 1] === "\n") {
-        index += 2
-      } else {
-        index += 1
-      }
-
-      continue
-    }
-
-    field += character
-    index += 1
+function resolveRecordTimeMs(startedAtUnixMs: number, elapsedSinceStartMs: number | null | undefined, absoluteUnixMs: number | null | undefined) {
+  if (typeof elapsedSinceStartMs === "number" && Number.isFinite(elapsedSinceStartMs)) {
+    return Math.max(0, elapsedSinceStartMs)
   }
-
-  if (field.length > 0 || row.length > 0) {
-    row.push(field)
-    if (row.some((value) => value.length > 0)) {
-      rows.push(row)
-    }
+  if (typeof absoluteUnixMs === "number" && Number.isFinite(absoluteUnixMs) && startedAtUnixMs > 0) {
+    return Math.max(0, absoluteUnixMs - startedAtUnixMs)
   }
-
-  return rows
+  return 0
 }
 
-function parseReplayCsv(input: string) {
-  const rows = parseCsvRows(input)
-  if (rows.length < 2) {
-    throw new Error("The uploaded file is not a valid replay CSV export.")
-  }
-
-  const [header, ...dataRows] = rows
-  if (!header || header.length < 3) {
-    throw new Error("The uploaded CSV is missing the replay export columns.")
-  }
-
-  const sectionIndex = header.findIndex((value) => value === "Section")
-  const payloadIndex = header.findIndex((value) => value === "PayloadJson")
-  const recordIndex = header.findIndex((value) => value === "Index")
-
-  if (sectionIndex < 0 || payloadIndex < 0) {
-    throw new Error("The uploaded CSV is missing the replay export columns.")
-  }
-
-  const buckets = new Map<string, Array<{ index: number | null; payload: unknown }>>()
-
-  for (const row of dataRows) {
-    const section = row[sectionIndex]?.trim()
-    const payloadText = row[payloadIndex]
-
-    if (!section || typeof payloadText !== "string" || payloadText.trim().length === 0) {
-      continue
+function findLatestIndexAtOrBefore<T>(records: readonly T[], targetTimeMs: number, getTimeMs: (record: T) => number) {
+  let low = 0
+  let high = records.length - 1
+  let answer = -1
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2)
+    if (getTimeMs(records[mid]!) <= targetTimeMs) {
+      answer = mid
+      low = mid + 1
+    } else {
+      high = mid - 1
     }
-
-    let payload: unknown
-    try {
-      payload = JSON.parse(payloadText)
-    } catch {
-      throw new Error(`The replay CSV contains invalid JSON payload data in section '${section}'.`)
-    }
-
-    const indexValue = recordIndex >= 0 ? row[recordIndex] : undefined
-    const parsedIndex =
-      typeof indexValue === "string" && indexValue.trim().length > 0 ? Number(indexValue) : null
-
-    const entries = buckets.get(section) ?? []
-    entries.push({
-      index: Number.isFinite(parsedIndex) ? parsedIndex : null,
-      payload,
-    })
-    buckets.set(section, entries)
   }
+  return answer
+}
 
-  const getSingle = (section: string) => {
-    const item = buckets.get(section)?.[0]?.payload
-    if (item === undefined) {
-      throw new Error(`The replay CSV is missing the '${section}' section.`)
-    }
-
-    return item
-  }
-
-  const getMany = (section: string) =>
-    [...(buckets.get(section) ?? [])]
-      .sort((left, right) => (left.index ?? Number.MAX_SAFE_INTEGER) - (right.index ?? Number.MAX_SAFE_INTEGER))
-      .map((item) => item.payload)
-
+function buildReadingContent(content: ExperimentReplayExport["content"]): ReadingContentSnapshot {
   return {
-    metadata: getSingle("metadata"),
-    statistics: getSingle("statistics"),
-    initialSnapshot: getSingle("initialSnapshot"),
-    finalSnapshot: getSingle("finalSnapshot"),
-    lifecycleEvents: getMany("lifecycleEvent"),
-    gazeSamples: getMany("gazeSample"),
-    readingSessionStates: getMany("readingSessionState"),
-    participantViewportEvents: getMany("participantViewportEvent"),
-    readingFocusEvents: getMany("readingFocusEvent"),
-    decisionProposalEvents: getMany("decisionProposalEvent"),
-    interventionEvents: getMany("interventionEvent"),
+    documentId: content.documentId,
+    title: content.title,
+    markdown: content.markdown,
+    sourceSetupId: content.sourceSetupId ?? null,
+    updatedAtUnixMs: content.updatedAtUnixMs,
+    usesSavedSetup: Boolean(content.sourceSetupId),
   }
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
+function buildReadingPresentation(presentation: ReadingPresentationSnapshot): ReadingPresentationSnapshot {
+  return { ...presentation, isPresentationLocked: !presentation.editableByResearcher }
 }
 
-function copyIntervention(
-  intervention: InterventionEventSnapshot | null | undefined
-): InterventionEventSnapshot | null {
-  if (!intervention) {
-    return null
-  }
+function buildReaderAppearance(appearance: ReaderAppearanceSnapshot): ReaderAppearanceSnapshot {
+  return normalizeReaderAppearance(appearance)
+}
 
+function buildIntervention(intervention: InterventionEventSnapshot): InterventionEventSnapshot {
   return {
     ...intervention,
-    appliedPresentation: { ...intervention.appliedPresentation },
-    appliedAppearance: { ...intervention.appliedAppearance },
+    appliedPresentation: buildReadingPresentation(intervention.appliedPresentation),
+    appliedAppearance: buildReaderAppearance(intervention.appliedAppearance),
     parameters: cloneInterventionParameters(intervention.parameters),
   }
 }
 
-function copyViewport(
-  viewport: ParticipantViewportSnapshot | null | undefined
-): ParticipantViewportSnapshot | null {
-  if (!viewport) {
-    return null
-  }
-
-  return { ...viewport }
-}
-
-function copyFocus(focus: ReadingFocusSnapshot | null | undefined): ReadingFocusSnapshot | null {
-  if (!focus) {
-    return null
-  }
-
-  return { ...focus }
-}
-
-function copyContextPreservation(
-  snapshot: ReadingContextPreservationSnapshot | null | undefined
-): ReadingContextPreservationSnapshot | null {
-  if (!snapshot) {
-    return null
-  }
-
-  return { ...snapshot }
-}
-
-function copyLayoutGuardrail(
-  snapshot: LayoutInterventionGuardrailSnapshot | null | undefined
-): LayoutInterventionGuardrailSnapshot | null {
-  if (!snapshot) {
-    return null
-  }
-
-  return {
-    ...snapshot,
-    affectedProperties: [...snapshot.affectedProperties],
-  }
-}
-
-function copyAttentionSummary(
-  summary: ReadingAttentionSummarySnapshot | null | undefined
-): ReadingAttentionSummarySnapshot | null {
-  if (!summary) {
-    return null
-  }
-
-  return {
-    ...summary,
-    tokenStats: Object.fromEntries(
-      Object.entries(summary.tokenStats).map(([tokenId, stats]) => [tokenId, { ...stats }])
-    ),
-  }
-}
-
-function copyReadingSession(
-  session: LiveReadingSessionSnapshot | null | undefined
-): LiveReadingSessionSnapshot | null {
-  if (!session) {
-    return null
-  }
-
-  return {
-    ...session,
-    content: session.content ? { ...session.content } : null,
-    presentation: { ...session.presentation },
-    appearance: { ...session.appearance },
-    participantViewport: { ...session.participantViewport },
-    focus: { ...session.focus },
-    latestContextPreservation: copyContextPreservation(session.latestContextPreservation),
-    recentContextPreservationEvents: session.recentContextPreservationEvents.map((item) => ({
-      ...item,
-    })),
-    latestLayoutGuardrail: copyLayoutGuardrail(session.latestLayoutGuardrail),
-    latestIntervention: copyIntervention(session.latestIntervention),
-    recentInterventions: session.recentInterventions.map((item) => ({
-      ...item,
-      appliedPresentation: { ...item.appliedPresentation },
-      appliedAppearance: { ...item.appliedAppearance },
-      parameters: cloneInterventionParameters(item.parameters),
-    })),
-    attentionSummary: copyAttentionSummary(session.attentionSummary),
-  }
-}
-
-function copyDecisionProposal(
-  proposal: DecisionProposalSnapshot | null | undefined
-): DecisionProposalSnapshot | null {
-  if (!proposal) {
-    return null
-  }
-
+function buildDecisionProposal(proposal: DecisionProposalSnapshot): DecisionProposalSnapshot {
   return {
     ...proposal,
     signal: { ...proposal.signal },
@@ -648,137 +282,158 @@ function copyDecisionProposal(
   }
 }
 
-function copyDecisionConfiguration(
-  configuration: DecisionConfiguration
-): DecisionConfiguration {
-  return { ...configuration }
-}
-
-function copyLiveMonitoring(
-  monitoring: ExperimentLiveMonitoringSnapshot
-): ExperimentLiveMonitoringSnapshot {
-  return { ...monitoring }
-}
-
-function copyDecisionState(state: DecisionState): DecisionState {
+function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSessionSnapshot {
   return {
-    ...state,
-    activeProposal: copyDecisionProposal(state.activeProposal),
-    recentProposalHistory: state.recentProposalHistory.map((proposal) => copyDecisionProposal(proposal)!),
+    content: buildReadingContent(replay.content),
+    presentation: buildReadingPresentation(replay.replay.baseline.presentation),
+    appearance: buildReaderAppearance(replay.replay.baseline.appearance),
+    participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0 },
+    focus: { isInsideReadingArea: false, normalizedContentX: null, normalizedContentY: null, activeTokenId: null, activeBlockId: null, updatedAtUnixMs: 0 },
+    latestContextPreservation: null,
+    recentContextPreservationEvents: [],
+    latestLayoutGuardrail: null,
+    latestIntervention: null,
+    recentInterventions: [],
+    attentionSummary: null,
   }
 }
 
-function copySessionSnapshot(snapshot: ReplaySessionSnapshot): ReplaySessionSnapshot {
+function buildGazeData(sample: RawGazeSampleRecord): GazeData {
   return {
-    ...snapshot,
-    participant: snapshot.participant ? { ...snapshot.participant } : null,
-    eyeTrackerDevice: snapshot.eyeTrackerDevice ? { ...snapshot.eyeTrackerDevice } : null,
-    latestGazeSample: snapshot.latestGazeSample ? { ...snapshot.latestGazeSample } : null,
-    liveMonitoring: copyLiveMonitoring(snapshot.liveMonitoring),
-    readingSession: copyReadingSession(snapshot.readingSession),
-    decisionConfiguration: copyDecisionConfiguration(snapshot.decisionConfiguration),
-    decisionState: copyDecisionState(snapshot.decisionState),
+    deviceTimeStamp: sample.deviceTimeStampUs,
+    systemTimeStamp: sample.systemTimeStampUs,
+    leftEyeX: sample.left?.gazePoint2D.x ?? 0,
+    leftEyeY: sample.left?.gazePoint2D.y ?? 0,
+    leftEyeValidity: sample.left?.gazePoint2D.validity ?? "Invalid",
+    rightEyeX: sample.right?.gazePoint2D.x ?? 0,
+    rightEyeY: sample.right?.gazePoint2D.y ?? 0,
+    rightEyeValidity: sample.right?.gazePoint2D.validity ?? "Invalid",
+    leftEyePositionInUserX: sample.left?.gazePoint3D?.x ?? null,
+    leftEyePositionInUserY: sample.left?.gazePoint3D?.y ?? null,
+    leftEyePositionInUserZ: sample.left?.gazePoint3D?.z ?? null,
+    leftPupilDiameterMm: sample.left?.pupil?.diameterMm ?? null,
+    leftPupilValidity: sample.left?.pupil?.validity ?? "Invalid",
+    leftGazeOriginInUserX: sample.left?.gazeOrigin3D?.x ?? null,
+    leftGazeOriginInUserY: sample.left?.gazeOrigin3D?.y ?? null,
+    leftGazeOriginInUserZ: sample.left?.gazeOrigin3D?.z ?? null,
+    leftGazeOriginValidity: sample.left?.gazeOrigin3D?.validity ?? "Invalid",
+    leftGazeOriginInTrackBoxX: sample.left?.gazeOriginTrackBox?.x ?? null,
+    leftGazeOriginInTrackBoxY: sample.left?.gazeOriginTrackBox?.y ?? null,
+    leftGazeOriginInTrackBoxZ: sample.left?.gazeOriginTrackBox?.z ?? null,
+    rightEyePositionInUserX: sample.right?.gazePoint3D?.x ?? null,
+    rightEyePositionInUserY: sample.right?.gazePoint3D?.y ?? null,
+    rightEyePositionInUserZ: sample.right?.gazePoint3D?.z ?? null,
+    rightPupilDiameterMm: sample.right?.pupil?.diameterMm ?? null,
+    rightPupilValidity: sample.right?.pupil?.validity ?? "Invalid",
+    rightGazeOriginInUserX: sample.right?.gazeOrigin3D?.x ?? null,
+    rightGazeOriginInUserY: sample.right?.gazeOrigin3D?.y ?? null,
+    rightGazeOriginInUserZ: sample.right?.gazeOrigin3D?.z ?? null,
+    rightGazeOriginValidity: sample.right?.gazeOrigin3D?.validity ?? "Invalid",
+    rightGazeOriginInTrackBoxX: sample.right?.gazeOriginTrackBox?.x ?? null,
+    rightGazeOriginInTrackBoxY: sample.right?.gazeOriginTrackBox?.y ?? null,
+    rightGazeOriginInTrackBoxZ: sample.right?.gazeOriginTrackBox?.z ?? null,
   }
 }
 
-function resolveRecordTimeMs(
-  startedAtUnixMs: number,
-  elapsedSinceStartMs: number | null | undefined,
-  absoluteUnixMs: number | null | undefined
-) {
-  if (typeof elapsedSinceStartMs === "number" && Number.isFinite(elapsedSinceStartMs)) {
-    return Math.max(0, elapsedSinceStartMs)
+function buildDecisionStateAtTime(replay: ExperimentReplayExport, currentTimeMs: number): DecisionState {
+  const startedAtUnixMs = replay.experiment.startedAtUnixMs
+  const lastIndex = findLatestIndexAtOrBefore(replay.interventions.decisionProposals, currentTimeMs, (record) =>
+    resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+  )
+  if (lastIndex < 0) {
+    return { ...EMPTY_DECISION_STATE, automationPaused: false, recentProposalHistory: [] }
   }
 
-  if (typeof absoluteUnixMs === "number" && Number.isFinite(absoluteUnixMs) && startedAtUnixMs > 0) {
-    return Math.max(0, absoluteUnixMs - startedAtUnixMs)
+  const latestById = new Map<string, { proposal: DecisionProposalSnapshot; timeMs: number }>()
+  for (let index = 0; index <= lastIndex; index += 1) {
+    const record = replay.interventions.decisionProposals[index]!
+    latestById.set(record.proposal.proposalId, {
+      proposal: record.proposal,
+      timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
+    })
   }
 
-  return 0
+  const latestEntries = [...latestById.values()].sort((left, right) => right.timeMs - left.timeMs)
+  const active = latestEntries.find((entry) => entry.proposal.status === "pending")
+
+  return {
+    automationPaused: false,
+    activeProposal: active ? buildDecisionProposal(active.proposal) : null,
+    recentProposalHistory: latestEntries
+      .filter((entry) => entry.proposal.status !== "pending")
+      .slice(0, 25)
+      .map((entry) => buildDecisionProposal(entry.proposal)),
+  }
 }
 
-function findLatestIndexAtOrBefore<T>(
-  records: readonly T[],
-  targetTimeMs: number,
-  getTimeMs: (record: T) => number
-) {
-  let low = 0
-  let high = records.length - 1
-  let answer = -1
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2)
-    const timeMs = getTimeMs(records[mid]!)
-
-    if (timeMs <= targetTimeMs) {
-      answer = mid
-      low = mid + 1
-      continue
-    }
-
-    high = mid - 1
+function buildLiveMonitoring(isActive: boolean, readingSession: LiveReadingSessionSnapshot, receivedGazeSamples: number): ExperimentLiveMonitoringSnapshot {
+  const viewport = readingSession.participantViewport
+  const focus = readingSession.focus
+  return {
+    ...EMPTY_LIVE_MONITORING,
+    canStartSession: false,
+    canFinishSession: isActive,
+    isGazeStreamingActive: isActive && receivedGazeSamples > 0,
+    hasParticipantViewConnection: viewport.isConnected,
+    hasParticipantViewportData: viewport.isConnected && viewport.viewportWidthPx > 0 && viewport.viewportHeightPx > 0 && viewport.updatedAtUnixMs > 0,
+    participantViewportUpdatedAtUnixMs: viewport.updatedAtUnixMs > 0 ? viewport.updatedAtUnixMs : null,
+    hasReadingFocusSignal: focus.updatedAtUnixMs > 0,
+    focusUpdatedAtUnixMs: focus.updatedAtUnixMs > 0 ? focus.updatedAtUnixMs : null,
   }
-
-  return answer
 }
 
-function normalizeStateTitle(reason: string) {
-  switch (reason) {
-    case "reading-session-configured":
-      return "Reading material prepared"
-    case "intervention-applied":
-      return "Presentation updated"
-    case "session-started":
-      return "Playback baseline"
-    default:
-      return reason
-        .split("-")
-        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-        .join(" ")
+function normalizeLifecycleTitle(eventType: string) {
+  if (eventType === "session-started") {
+    return "Session started"
+  }
+  if (eventType === "session-stopped") {
+    return "Session finished"
+  }
+  return eventType
+    .split("-")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ")
+}
+
+function normalizeReadingAttentionSummary(summary: ReadingAttentionSummarySnapshot): ReadingAttentionSummarySnapshot {
+  return {
+    ...summary,
+    tokenStats: Object.fromEntries(Object.entries(summary.tokenStats).map(([tokenId, stats]) => [tokenId, { ...stats }])),
   }
 }
 
 export function parseExperimentReplayExport(input: string | unknown): ExperimentReplayExport {
-  let parsedInput = input
-
+  let parsed: unknown = input
   if (typeof input === "string") {
     const trimmed = input.trim()
-    if (trimmed.startsWith("{")) {
-      try {
-        parsedInput = JSON.parse(trimmed)
-      } catch {
-        throw new Error("The uploaded file is not valid JSON.")
-      }
-    } else {
-      parsedInput = parseReplayCsv(input)
+    if (!trimmed.startsWith("{")) {
+      throw new Error("Unsupported replay format. Upload a replay JSON exported from this application.")
+    }
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      throw new Error("The uploaded file is not valid JSON.")
     }
   }
 
-  const result = experimentReplayExportSchema.safeParse(parsedInput)
-  if (!result.success) {
-    throw new Error(getErrorMessage(result.error))
+  if (!isRecord(parsed) || !isRecord(parsed.manifest) || !isRecord(parsed.experiment) || !isRecord(parsed.content) || !isRecord(parsed.sensing) || !isRecord(parsed.derived) || !isRecord(parsed.interventions) || !isRecord(parsed.replay)) {
+    throw new Error("The file does not match the replay export format.")
   }
 
-  if (result.data.metadata.format !== "reading-the-reader.experiment-replay") {
-    throw new Error("Unsupported export format. Upload a replay JSON or CSV exported from this application.")
+  if (parsed.manifest.schema !== "rtr.experiment-export" || parsed.manifest.version !== 2) {
+    throw new Error("Unsupported replay format. Upload a replay JSON exported from this application.")
   }
 
-  return result.data
+  return parsed as ExperimentReplayExport
 }
 
 export function resolveReplayDurationMs(replay: ExperimentReplayExport) {
-  if (typeof replay.metadata.durationMs === "number" && Number.isFinite(replay.metadata.durationMs)) {
-    return Math.max(0, replay.metadata.durationMs)
+  if (typeof replay.experiment.durationMs === "number" && Number.isFinite(replay.experiment.durationMs)) {
+    return Math.max(0, replay.experiment.durationMs)
   }
-
-  if (
-    replay.metadata.startedAtUnixMs > 0 &&
-    typeof replay.metadata.endedAtUnixMs === "number" &&
-    Number.isFinite(replay.metadata.endedAtUnixMs)
-  ) {
-    return Math.max(0, replay.metadata.endedAtUnixMs - replay.metadata.startedAtUnixMs)
+  if (typeof replay.experiment.endedAtUnixMs === "number" && replay.experiment.startedAtUnixMs > 0) {
+    return Math.max(0, replay.experiment.endedAtUnixMs - replay.experiment.startedAtUnixMs)
   }
-
   return 0
 }
 
@@ -786,96 +441,89 @@ export function formatReplayClock(durationMs: number) {
   const totalSeconds = Math.max(0, Math.floor(durationMs / 1000))
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
-
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
 
 export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs: number): ReplayFrame {
   const durationMs = resolveReplayDurationMs(replay)
-  const currentTimeMs = clamp(requestedTimeMs, 0, durationMs)
-  const startedAtUnixMs = replay.metadata.startedAtUnixMs
+  const currentTimeMs = Math.min(Math.max(requestedTimeMs, 0), durationMs)
+  const startedAtUnixMs = replay.experiment.startedAtUnixMs
 
-  const gazeIndex = findLatestIndexAtOrBefore(replay.gazeSamples, currentTimeMs, (record) =>
+  const gazeIndex = findLatestIndexAtOrBefore(replay.sensing.gazeSamples, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.capturedAtUnixMs)
   )
-  const viewportIndex = findLatestIndexAtOrBefore(replay.participantViewportEvents, currentTimeMs, (record) =>
+  const viewportIndex = findLatestIndexAtOrBefore(replay.derived.viewportEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
-  const focusIndex = findLatestIndexAtOrBefore(replay.readingFocusEvents, currentTimeMs, (record) =>
+  const focusIndex = findLatestIndexAtOrBefore(replay.derived.focusEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
-  const stateIndex = findLatestIndexAtOrBefore(replay.readingSessionStates, currentTimeMs, (record) =>
+  const attentionIndex = findLatestIndexAtOrBefore(replay.derived.attentionEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
-  const decisionProposalIndex = findLatestIndexAtOrBefore(replay.decisionProposalEvents, currentTimeMs, (record) =>
+  const proposalIndex = findLatestIndexAtOrBefore(replay.interventions.decisionProposals, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
-  const interventionIndex = findLatestIndexAtOrBefore(replay.interventionEvents, currentTimeMs, (record) =>
+  const interventionIndex = findLatestIndexAtOrBefore(replay.interventions.interventionEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
-  const lifecycleIndex = findLatestIndexAtOrBefore(replay.lifecycleEvents, currentTimeMs, (record) =>
+  const lifecycleIndex = findLatestIndexAtOrBefore(replay.experiment.lifecycleEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
 
-  const gazeRecord = gazeIndex >= 0 ? replay.gazeSamples[gazeIndex]! : null
-  const viewportRecord = viewportIndex >= 0 ? replay.participantViewportEvents[viewportIndex]! : null
-  const focusRecord = focusIndex >= 0 ? replay.readingFocusEvents[focusIndex]! : null
-  const readingSessionStateRecord = stateIndex >= 0 ? replay.readingSessionStates[stateIndex]! : null
-  const decisionProposalRecord = decisionProposalIndex >= 0 ? replay.decisionProposalEvents[decisionProposalIndex]! : null
-  const interventionRecord = interventionIndex >= 0 ? replay.interventionEvents[interventionIndex]! : null
-  const lifecycleRecord = lifecycleIndex >= 0 ? replay.lifecycleEvents[lifecycleIndex]! : null
+  const gazeRecord = gazeIndex >= 0 ? replay.sensing.gazeSamples[gazeIndex]! : null
+  const viewportRecord = viewportIndex >= 0 ? replay.derived.viewportEvents[viewportIndex]! : null
+  const focusRecord = focusIndex >= 0 ? replay.derived.focusEvents[focusIndex]! : null
+  const attentionRecord = attentionIndex >= 0 ? replay.derived.attentionEvents[attentionIndex]! : null
+  const decisionProposalRecord = proposalIndex >= 0 ? replay.interventions.decisionProposals[proposalIndex]! : null
+  const interventionRecord = interventionIndex >= 0 ? replay.interventions.interventionEvents[interventionIndex]! : null
+  const lifecycleRecord = lifecycleIndex >= 0 ? replay.experiment.lifecycleEvents[lifecycleIndex]! : null
 
-  const snapshot = copySessionSnapshot(replay.initialSnapshot)
-  const baseReadingSession =
-    copyReadingSession(readingSessionStateRecord?.session ?? snapshot.readingSession ?? replay.finalSnapshot.readingSession) ??
-    null
+  const readingSession = buildEmptyReadingSession(replay)
+  const recentInterventions = interventionIndex >= 0
+    ? replay.interventions.interventionEvents.slice(0, interventionIndex + 1).slice(-25).reverse().map((record) => buildIntervention(record.intervention))
+    : []
 
-  if (baseReadingSession && viewportRecord) {
-    baseReadingSession.participantViewport = copyViewport(viewportRecord.viewport) ?? baseReadingSession.participantViewport
+  readingSession.participantViewport = viewportRecord ? { ...viewportRecord.viewport } : readingSession.participantViewport
+  readingSession.focus = focusRecord ? { ...focusRecord.focus } : readingSession.focus
+  readingSession.attentionSummary = attentionRecord ? normalizeReadingAttentionSummary(attentionRecord.summary) : null
+  readingSession.recentInterventions = recentInterventions
+  readingSession.latestIntervention = recentInterventions[0] ?? null
+  if (readingSession.latestIntervention) {
+    readingSession.presentation = { ...readingSession.latestIntervention.appliedPresentation }
+    readingSession.appearance = { ...readingSession.latestIntervention.appliedAppearance }
   }
 
-  if (baseReadingSession && focusRecord) {
-    baseReadingSession.focus = copyFocus(focusRecord.focus) ?? baseReadingSession.focus
-  }
-
-  if (baseReadingSession && interventionRecord) {
-    baseReadingSession.latestIntervention = copyIntervention(interventionRecord.intervention)
-    baseReadingSession.presentation = { ...interventionRecord.intervention.appliedPresentation }
-    baseReadingSession.appearance = { ...interventionRecord.intervention.appliedAppearance }
-  }
-
-  snapshot.readingSession = baseReadingSession
-  snapshot.receivedGazeSamples = gazeIndex >= 0 ? gazeIndex + 1 : 0
-  snapshot.latestGazeSample = gazeRecord ? { ...gazeRecord.sample } : null
-  snapshot.isActive = currentTimeMs < durationMs
-  snapshot.stoppedAtUnixMs = currentTimeMs >= durationMs ? replay.finalSnapshot.stoppedAtUnixMs : null
-  if (decisionProposalRecord) {
-    snapshot.decisionState = {
-      ...snapshot.decisionState,
-      activeProposal:
-        decisionProposalRecord.proposal.status === "pending"
-          ? copyDecisionProposal(decisionProposalRecord.proposal)
-          : snapshot.decisionState.activeProposal?.proposalId === decisionProposalRecord.proposal.proposalId
-            ? null
-            : snapshot.decisionState.activeProposal,
-      recentProposalHistory: [
-        copyDecisionProposal(decisionProposalRecord.proposal)!,
-        ...snapshot.decisionState.recentProposalHistory.filter(
-          (proposal) => proposal.proposalId !== decisionProposalRecord.proposal.proposalId
-        ),
-      ].slice(0, 25),
-    }
+  const receivedGazeSamples = gazeIndex >= 0 ? gazeIndex + 1 : 0
+  const isActive = currentTimeMs < durationMs
+  const session: ReplaySessionSnapshot = {
+    sessionId: replay.experiment.sessionId,
+    isActive,
+    startedAtUnixMs: replay.experiment.startedAtUnixMs,
+    stoppedAtUnixMs: isActive ? null : replay.experiment.endedAtUnixMs,
+    participant: replay.experiment.participant
+      ? { name: replay.experiment.participant.name, age: replay.experiment.participant.age ?? 0, sex: replay.experiment.participant.sex ?? "", existingEyeCondition: replay.experiment.participant.existingEyeCondition ?? "", readingProficiency: replay.experiment.participant.readingProficiency ?? "" }
+      : null,
+    eyeTrackerDevice: replay.experiment.device
+      ? { name: replay.experiment.device.name ?? "", model: replay.experiment.device.model ?? "", serialNumber: replay.experiment.device.serialNumber ?? "", hasSavedLicence: replay.experiment.device.hasSavedLicence ?? false }
+      : null,
+    receivedGazeSamples,
+    latestGazeSample: gazeRecord ? buildGazeData(gazeRecord) : null,
+    liveMonitoring: buildLiveMonitoring(isActive, readingSession, receivedGazeSamples),
+    readingSession,
+    decisionConfiguration: { ...replay.experiment.condition },
+    decisionState: buildDecisionStateAtTime(replay, currentTimeMs),
   }
 
   return {
     currentTimeMs,
     durationMs,
     progress: durationMs <= 0 ? 0 : currentTimeMs / durationMs,
-    session: snapshot,
+    session,
     gazeRecord,
     viewportRecord,
     focusRecord,
-    readingSessionStateRecord,
+    attentionRecord,
     decisionProposalRecord,
     interventionRecord,
     lifecycleRecord,
@@ -883,24 +531,35 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
 }
 
 export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyEvent[] {
-  const startedAtUnixMs = replay.metadata.startedAtUnixMs
+  const startedAtUnixMs = replay.experiment.startedAtUnixMs
   const events: ReplayKeyEvent[] = []
 
-  for (const record of replay.readingSessionStates) {
-    if (record.reason === "session-started") {
-      continue
-    }
-
+  for (const record of replay.experiment.lifecycleEvents) {
     events.push({
-      id: `state-${record.sequenceNumber}`,
-      kind: "state",
+      id: `lifecycle-${record.sequenceNumber}`,
+      kind: "lifecycle",
       timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
-      title: normalizeStateTitle(record.reason),
-      detail: record.session.content?.title ?? "Reading session",
+      title: normalizeLifecycleTitle(record.eventType),
+      detail: record.source,
     })
   }
 
-  for (const record of replay.interventionEvents) {
+  let previousViewportConnection: boolean | null = null
+  for (const record of replay.derived.viewportEvents) {
+    if (previousViewportConnection === record.viewport.isConnected) {
+      continue
+    }
+    previousViewportConnection = record.viewport.isConnected
+    events.push({
+      id: `connection-${record.sequenceNumber}`,
+      kind: "connection",
+      timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
+      title: record.viewport.isConnected ? "Participant view connected" : "Participant view disconnected",
+      detail: record.viewport.isConnected ? "Viewport telemetry became available." : "Viewport telemetry stopped updating.",
+    })
+  }
+
+  for (const record of replay.interventions.interventionEvents) {
     events.push({
       id: `intervention-${record.sequenceNumber}`,
       kind: "intervention",
@@ -910,7 +569,7 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
     })
   }
 
-  for (const record of replay.decisionProposalEvents) {
+  for (const record of replay.interventions.decisionProposals) {
     events.push({
       id: `proposal-${record.sequenceNumber}`,
       kind: "proposal",

@@ -1,6 +1,6 @@
 using ReadingTheReader.core.Domain;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 
 public interface ISensingOperations
 {

@@ -2,6 +2,12 @@ using Microsoft.Extensions.DependencyInjection;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.Participants;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 namespace ReadingTheReader.core.Application;
 

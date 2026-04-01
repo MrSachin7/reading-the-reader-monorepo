@@ -288,7 +288,7 @@ export default function ReplayPage() {
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Replay</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            The export was loaded, but it does not contain a reading session snapshot.
+            The export was loaded, but it does not contain the baseline and timeline data needed for replay.
           </p>
         </header>
         <Alert variant="destructive">

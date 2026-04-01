@@ -1,5 +1,7 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.WebApi.Contracts.ExperimentSession;
 
 namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;

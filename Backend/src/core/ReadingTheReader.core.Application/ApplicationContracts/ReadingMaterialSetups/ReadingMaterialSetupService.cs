@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;

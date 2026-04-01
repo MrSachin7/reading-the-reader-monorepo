@@ -1,4 +1,4 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
 public sealed record ReaderShellViewSettings(
     bool PreserveContextOnIntervention,
