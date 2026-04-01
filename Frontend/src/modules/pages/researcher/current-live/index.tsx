@@ -126,15 +126,15 @@ export default function ResearcherCurrentLivePage() {
     return (
       <main className="min-h-screen bg-background px-4 py-10 md:px-8">
         <div className="mx-auto max-w-3xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>{isCompleted ? "Experiment completed" : "No ongoing experiment"}</CardTitle>
-              <CardDescription>
-                {isCompleted
-                  ? "The export includes experiment context, replay baseline data, viewport and focus history, intervention and proposal history, attention events, and the enriched raw gaze stream."
-                  : "Start the participant reading session from the experiment setup flow before opening the researcher live view."}
-              </CardDescription>
-              <ExperimentCompletionActions
+            <Card>
+              <CardHeader>
+                <CardTitle>{isCompleted ? "Session complete" : "No ongoing experiment"}</CardTitle>
+                <CardDescription>
+                  {isCompleted
+                    ? "Export or save the session."
+                    : "Start the participant reading session from the experiment setup flow before opening the researcher live view."}
+                </CardDescription>
+                <ExperimentCompletionActions
                 session={session}
                 source="researcher-live-view"
                 className="pt-4"

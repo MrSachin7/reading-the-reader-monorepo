@@ -28,6 +28,7 @@ export {
   useGetSavedExperimentReplayExportByIdQuery,
   useGetSavedExperimentReplayExportsQuery,
   useLazyGetSavedExperimentReplayExportByIdQuery,
+  useResetExperimentSessionMutation,
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,

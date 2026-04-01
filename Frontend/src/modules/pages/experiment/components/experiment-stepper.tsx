@@ -53,8 +53,6 @@ import { EyetrackerSetup } from "./eyetracker-setup"
 import { CalibrationStep } from "./calibration-step"
 import {
   EMPTY_EXPERIMENT_SETUP,
-  formatCalibrationMetric,
-  formatCalibrationQualityLabel,
   getAuthoritativeWorkflowStepStates,
   type AuthoritativeWorkflowStepState,
 } from "./utils"
@@ -162,14 +160,14 @@ const steps: ExperimentStep[] = [
     value: 1,
     name: "step2",
     label: "Participant info",
-    description: "Capture the participant details used to identify and group the session.",
+    description: "Record the participant details.",
     icon: FileText,
   },
   {
     value: 2,
     name: "step3",
     label: "Calibration",
-    description: "Run calibration and confirm that validation quality is acceptable before starting.",
+    description: "Open the calibration page, complete it, and come back here when it is done.",
     icon: ScanEye,
   },
   {
@@ -355,7 +353,7 @@ function ParticipantInformationForm({
         </div>
         <CardTitle className="mt-3 text-3xl tracking-tight">Capture participant information.</CardTitle>
         <CardDescription className="max-w-3xl text-base leading-7">
-          Record the participant details used to identify the session and group the reading data.
+          Record the participant details.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
@@ -496,20 +494,12 @@ type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
   currentConditionLabel?: string
   automationPaused?: boolean
-  isAuthoritativelyReady?: boolean
-  authoritativeReadingTitle?: string | null
-  authoritativeBlockReason?: string | null
-  hasUnsavedDraft?: boolean
 }
 
 function SessionContentStep({
   onCompletionChange,
   currentConditionLabel = "Manual only",
   automationPaused = false,
-  isAuthoritativelyReady = false,
-  authoritativeReadingTitle = null,
-  authoritativeBlockReason = null,
-  hasUnsavedDraft = false,
 }: SessionContentStepProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -565,8 +555,7 @@ function SessionContentStep({
           </div>
           <CardTitle className="mt-3 text-3xl tracking-tight">Choose the text and session setup.</CardTitle>
           <CardDescription className="max-w-3xl text-base leading-7">
-            Pick a saved reading material setup or create a new one. Each card should already
-            bundle the reading text, questions, and experiment setup.
+            Pick a saved reading material setup or create a new one.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -726,32 +715,6 @@ function SessionContentStep({
             </div>
           ) : null}
 
-          {hasUnsavedDraft ? (
-            <Alert className="border-amber-400/50 bg-amber-500/5 text-amber-950 dark:text-amber-100">
-              <AlertTitle>Save the reading setup</AlertTitle>
-              <AlertDescription>
-                The current reading baseline is still local draft state. Save it here so the
-                backend session snapshot, participant route, and start gate all reflect the same condition.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          {!hasUnsavedDraft && isAuthoritativelyReady ? (
-            <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
-              <AlertTitle>Reading baseline is ready</AlertTitle>
-              <AlertDescription>
-                {authoritativeReadingTitle ?? "The selected reading baseline"} is already saved in
-                the authoritative session setup.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          {!hasUnsavedDraft && !isAuthoritativelyReady && authoritativeBlockReason ? (
-            <Alert>
-              <AlertTitle>Start is still blocked</AlertTitle>
-              <AlertDescription>{authoritativeBlockReason}</AlertDescription>
-            </Alert>
-          ) : null}
         </CardContent>
       </Card>
     </div>
@@ -809,28 +772,21 @@ export function ExperimentStepper() {
     (setup.readingMaterial.documentId !== readingDocumentId ||
       setup.readingMaterial.sourceSetupId !== readingSourceSetupId ||
       setup.readingMaterial.title !== readingTitle)
-  const displayedWorkflowStepStates = React.useMemo(() => {
-    return workflowStepStates.map((state) => {
-      if (state.index !== 3 || !hasUnsavedReadingDraft) {
-        return state
-      }
-
-      return {
-        ...state,
-        isReady: false,
-        isAvailable: true,
-        blockReason: "The current reading baseline has not been saved to the session yet.",
-        summary: "Save the current reading baseline so the backend setup and start gate stay aligned.",
-      }
-    })
-  }, [hasUnsavedReadingDraft, workflowStepStates])
+  const displayedWorkflowStepStates = workflowStepStates
   const canAdvance =
     step < steps.length - 1 &&
     !isStepSubmitting &&
     ((displayedWorkflowStepStates[step]?.isReady ?? false) || (stepCompletion[step] ?? false))
+  const canStartReadingSession =
+    workflowStepStates.slice(0, 3).every((state) => state.isReady) && hasLocalReadingSelection
 
   const saveReadingSessionDraft = React.useCallback(async () => {
     setStartError(null)
+    if (!hasLocalReadingSelection) {
+      setStartError("Choose the reading material before starting the session.")
+      return false
+    }
+
     const markdown =
       readingSession.source === "custom" && readingSession.customMarkdown.trim().length > 0
         ? readingSession.customMarkdown
@@ -852,10 +808,13 @@ export function ExperimentStepper() {
         palette,
         appFont: font,
       }).unwrap()
+      return true
     } catch (error) {
-      setStartError(getErrorMessage(error, "Could not save the reading session baseline."))
+      setStartError(getErrorMessage(error, "Could not prepare the reading session."))
+      return false
     }
   }, [
+    hasLocalReadingSelection,
     presentation.editableByExperimenter,
     presentation.fontFamily,
     presentation.fontSizePx,
@@ -876,13 +835,26 @@ export function ExperimentStepper() {
   const handleStartReadingSession = React.useCallback(async () => {
     setStartError(null)
 
+    if (hasUnsavedReadingDraft || !(workflowStepStates[3]?.isReady ?? false)) {
+      const didSaveReadingSession = await saveReadingSessionDraft()
+      if (!didSaveReadingSession) {
+        return
+      }
+    }
+
     try {
       await startExperimentSession().unwrap()
       router.push("/reading")
     } catch (error) {
       setStartError(getErrorMessage(error, "Could not start the reading session."))
     }
-  }, [router, startExperimentSession])
+  }, [
+    hasUnsavedReadingDraft,
+    router,
+    saveReadingSessionDraft,
+    startExperimentSession,
+    workflowStepStates,
+  ])
 
   React.useEffect(() => {
     if (!experimentSession) {
@@ -1009,63 +981,8 @@ export function ExperimentStepper() {
               experimentSession?.decisionConfiguration?.executionMode
             )}
             automationPaused={experimentSession?.decisionState?.automationPaused ?? false}
-            isAuthoritativelyReady={displayedWorkflowStepStates[3]?.isReady ?? false}
-            authoritativeReadingTitle={setup.readingMaterial.title}
-            authoritativeBlockReason={displayedWorkflowStepStates[3]?.blockReason}
-            hasUnsavedDraft={hasUnsavedReadingDraft}
           />
         )}
-
-        {setup.isReadyForSessionStart ? (
-          <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
-            <AlertTitle>
-              {experimentSession?.isActive ? "Session is running" : "Session setup is ready"}
-            </AlertTitle>
-            <AlertDescription>
-              {experimentSession?.isActive
-                ? "The backend session is active. Use the participant route and researcher live console as the two runtime surfaces for the study."
-                : "Device, participant, calibration, and reading material are all aligned with the backend start gate. You can start the reading session from here."}
-            </AlertDescription>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/reading">Open participant view</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/researcher/current-live">Open live console</Link>
-              </Button>
-            </div>
-          </Alert>
-        ) : setup.currentBlocker ? (
-          <Alert>
-            <AlertTitle>Start is blocked by {setup.currentBlocker.stepLabel}</AlertTitle>
-            <AlertDescription>{setup.currentBlocker.reason}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        {step === 2 && setup.calibration.hasCalibrationSession ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-wrap gap-4 pt-6 text-sm text-muted-foreground">
-              <div>
-                Quality: <span className="font-medium text-foreground">
-                  {formatCalibrationQualityLabel(setup.calibration.validationQuality)}
-                </span>
-              </div>
-              <div>
-                Accuracy: <span className="font-medium text-foreground">
-                  {formatCalibrationMetric(setup.calibration.averageAccuracyDegrees)}
-                </span>
-              </div>
-              <div>
-                Precision: <span className="font-medium text-foreground">
-                  {formatCalibrationMetric(setup.calibration.averagePrecisionDegrees)}
-                </span>
-              </div>
-              <div>
-                Samples: <span className="font-medium text-foreground">{setup.calibration.sampleCount}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
 
         {startError ? (
           <Alert variant="destructive">
@@ -1078,35 +995,19 @@ export function ExperimentStepper() {
           <Button disabled={step === 0} onClick={() => setStep(step - 1)}>
             Previous
           </Button>
-          {experimentSession?.isActive ? (
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant="outline">
-                <Link href="/reading">Participant view</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/researcher/current-live">Researcher live view</Link>
-              </Button>
-            </div>
-          ) : step < steps.length - 1 ? (
+          {step < steps.length - 1 ? (
             <Button
               disabled={step === steps.length - 1 || !canAdvance}
               onClick={handleNext}
             >
               Next
             </Button>
-          ) : !(displayedWorkflowStepStates[3]?.isReady ?? false) ? (
-            <Button
-              disabled={!hasLocalReadingSelection || isSavingReadingSession}
-              onClick={() => void saveReadingSessionDraft()}
-            >
-              {isSavingReadingSession ? "Saving session baseline..." : "Save session baseline"}
-            </Button>
           ) : (
             <Button
-              disabled={!setup.isReadyForSessionStart || isStartingExperimentSession}
+              disabled={!canStartReadingSession || isSavingReadingSession || isStartingExperimentSession}
               onClick={() => void handleStartReadingSession()}
             >
-              {isStartingExperimentSession
+              {isSavingReadingSession || isStartingExperimentSession
                 ? "Starting session..."
                 : "Start reading session"}
             </Button>

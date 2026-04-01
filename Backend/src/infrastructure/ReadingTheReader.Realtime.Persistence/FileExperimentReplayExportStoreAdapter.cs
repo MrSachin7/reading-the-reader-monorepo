@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
@@ -8,6 +9,7 @@ namespace ReadingTheReader.Realtime.Persistence;
 public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayExportStoreAdapter
 {
     private static readonly Regex InvalidFileNameCharactersRegex = new($"[{Regex.Escape(new string(Path.GetInvalidFileNameChars()))}]", RegexOptions.Compiled);
+    private static readonly JsonSerializerOptions SummaryJsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly string _latestFilePath;
     private readonly string _savedDirectoryPath;
@@ -55,14 +57,20 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         CancellationToken ct = default)
     {
         Directory.CreateDirectory(_savedDirectoryPath);
-        DeleteLegacyMetadataFiles();
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var normalizedFormat = ExperimentReplayExportFormats.Normalize(format);
         var exportFileName = BuildUniqueFileName(name, normalizedFormat);
         var exportPath = Path.Combine(_savedDirectoryPath, exportFileName);
         await WriteContentAsync(exportPath, _serializer.Serialize(exportDocument, normalizedFormat), ct);
-        return ToSummary(exportFileName, normalizedFormat, exportDocument, now);
+        var summary = ToSummary(exportFileName, normalizedFormat, exportDocument, now);
+
+        if (normalizedFormat == ExperimentReplayExportFormats.Csv)
+        {
+            await WriteSummaryMetadataAsync(exportPath, summary, ct);
+        }
+
+        return summary;
     }
 
     public async ValueTask<IReadOnlyCollection<SavedExperimentReplayExportSummary>> ListSavedAsync(CancellationToken ct = default)
@@ -72,23 +80,38 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
             return Array.Empty<SavedExperimentReplayExportSummary>();
         }
 
-        DeleteLegacyMetadataFiles();
-
         var exportFiles = Directory
             .EnumerateFiles(_savedDirectoryPath, "*.*", SearchOption.TopDirectoryOnly)
-            .Where(path => string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase))
+            .Where(path =>
+            {
+                var extension = Path.GetExtension(path);
+                return !path.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase) &&
+                       (string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(extension, ".csv", StringComparison.OrdinalIgnoreCase));
+            })
             .ToArray();
         var items = new List<SavedExperimentReplayExportSummary>(exportFiles.Length);
 
         foreach (var exportFile in exportFiles)
         {
+            var format = GetFormatFromPath(exportFile);
+            if (format == ExperimentReplayExportFormats.Csv)
+            {
+                var csvSummary = await ReadSummaryMetadataAsync(exportFile, ct);
+                if (csvSummary is not null)
+                {
+                    items.Add(csvSummary);
+                }
+
+                continue;
+            }
+
             var exportDocument = await ReadExportAsync(exportFile, ct);
             if (exportDocument is null)
             {
                 continue;
             }
 
-            var format = GetFormatFromPath(exportFile);
             items.Add(ToSummary(Path.GetFileName(exportFile), format, exportDocument, GetUpdatedAtUnixMs(exportFile)));
         }
 
@@ -102,12 +125,20 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
             return null;
         }
 
-        DeleteLegacyMetadataFiles();
-
         var fileName = id.Trim();
-        if (!fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        if (!fileName.Contains('.'))
         {
-            fileName = $"{fileName}.json";
+            var jsonPath = Path.Combine(_savedDirectoryPath, Path.GetFileName($"{fileName}.json"));
+            if (File.Exists(jsonPath))
+            {
+                return await ReadExportAsync(jsonPath, ct);
+            }
+
+            var csvPath = Path.Combine(_savedDirectoryPath, Path.GetFileName($"{fileName}.csv"));
+            if (File.Exists(csvPath))
+            {
+                return await ReadExportAsync(csvPath, ct);
+            }
         }
 
         var exportPath = Path.Combine(_savedDirectoryPath, Path.GetFileName(fileName));
@@ -176,20 +207,39 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
     private static string GetFormatFromPath(string path)
     {
-        return ExperimentReplayExportFormats.Json;
+        return string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase)
+            ? ExperimentReplayExportFormats.Csv
+            : ExperimentReplayExportFormats.Json;
     }
 
-    private void DeleteLegacyMetadataFiles()
+    private static string GetMetadataPath(string exportPath)
     {
-        if (!Directory.Exists(_savedDirectoryPath))
+        return $"{exportPath}.meta.json";
+    }
+
+    private static async ValueTask WriteSummaryMetadataAsync(
+        string exportPath,
+        SavedExperimentReplayExportSummary summary,
+        CancellationToken ct)
+    {
+        await WriteContentAsync(
+            GetMetadataPath(exportPath),
+            JsonSerializer.Serialize(summary, SummaryJsonOptions),
+            ct);
+    }
+
+    private static async ValueTask<SavedExperimentReplayExportSummary?> ReadSummaryMetadataAsync(
+        string exportPath,
+        CancellationToken ct)
+    {
+        var metadataPath = GetMetadataPath(exportPath);
+        if (!File.Exists(metadataPath))
         {
-            return;
+            return null;
         }
 
-        foreach (var metadataFile in Directory.GetFiles(_savedDirectoryPath, "*.meta.json", SearchOption.TopDirectoryOnly))
-        {
-            File.Delete(metadataFile);
-        }
+        var content = await File.ReadAllTextAsync(metadataPath, ct);
+        return JsonSerializer.Deserialize<SavedExperimentReplayExportSummary>(content, SummaryJsonOptions);
     }
 
     private static long GetUpdatedAtUnixMs(string path)

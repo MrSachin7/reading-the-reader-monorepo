@@ -22,6 +22,7 @@ export {
   useGetSavedExperimentReplayExportByIdQuery,
   useGetSavedExperimentReplayExportsQuery,
   useLazyGetSavedExperimentReplayExportByIdQuery,
+  useResetExperimentSessionMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
   useGetReadingMaterialSetupsQuery,
@@ -57,6 +58,8 @@ export { makeStore } from "./store"
 export type { AppDispatch, AppStore, RootState } from "./store"
 export {
   resetStepOneState,
+  resetStepTwoState,
+  resetStepThreeState,
   setStepOneLastSyncedFingerprint,
   setStepOneLicenceFileName,
   setStepOneOverwriteExistingLicence,
