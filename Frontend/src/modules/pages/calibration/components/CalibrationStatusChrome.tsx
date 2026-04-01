@@ -15,8 +15,7 @@ export function CalibrationStatusChrome({
   return (
     <>
       <div className="pointer-events-none absolute top-5 left-1/2 z-20 w-[min(92vw,880px)] -translate-x-1/2 rounded-full border border-slate-900/10 bg-white/84 px-5 py-3 text-center shadow-sm backdrop-blur">
-        <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Calibration</p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{statusMessage}</p>
+        <p className="text-sm leading-6 text-slate-700">{statusMessage}</p>
         {errorMessage ? (
           <p className="mt-2 text-sm leading-6 text-amber-700">{errorMessage}</p>
         ) : null}

@@ -28,7 +28,7 @@ public sealed class CreateSavedExperimentReplayExportEndpoint : Endpoint<SaveExp
             if (!ExperimentReplayExportFormats.IsSupported(req.Format))
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await HttpContext.Response.WriteAsJsonAsync(new { message = "Replay export format must be 'json'." }, ct);
+                await HttpContext.Response.WriteAsJsonAsync(new { message = "Replay export format must be 'json' or 'csv'." }, ct);
                 return;
             }
 

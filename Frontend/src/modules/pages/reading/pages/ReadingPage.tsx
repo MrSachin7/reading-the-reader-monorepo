@@ -132,15 +132,15 @@ export function ReadingPage() {
     return (
       <main className="min-h-screen bg-background px-4 py-10 md:px-8">
         <div className="mx-auto max-w-3xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>{isCompleted ? "Experiment completed" : "No active experiment"}</CardTitle>
-              <CardDescription>
-                {isCompleted
-                  ? "The experiment has been finished. Download the replay-ready JSON export below."
-                  : "Start the reading session from the experiment setup flow before opening the participant view."}
-              </CardDescription>
-              <ExperimentCompletionActions
+            <Card>
+              <CardHeader>
+                <CardTitle>{isCompleted ? "Session complete" : "No active experiment"}</CardTitle>
+                <CardDescription>
+                  {isCompleted
+                    ? "Export or save the session."
+                    : "Start the reading session from the experiment setup flow before opening the participant view."}
+                </CardDescription>
+                <ExperimentCompletionActions
                 session={liveSession}
                 source="participant-view"
                 className="pt-4"

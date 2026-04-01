@@ -33,7 +33,7 @@ public sealed class DownloadExperimentExportEndpoint : EndpointWithoutRequest
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             await HttpContext.Response.WriteAsJsonAsync(new
             {
-                message = "Replay export format must be 'json'."
+                message = "Replay export format must be 'json' or 'csv'."
             }, ct);
             return;
         }
