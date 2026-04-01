@@ -50,6 +50,8 @@ public interface IExperimentRuntimeAuthority
 
     Task<ExperimentSessionSnapshot> FinishSessionAsync(FinishExperimentCommand command, CancellationToken ct = default);
 
+    Task<ExperimentSessionSnapshot> ResetSessionAsync(CancellationToken ct = default);
+
     ValueTask SubscribeGazeDataAsync(string connectionId, CancellationToken ct = default);
 
     ValueTask UnsubscribeGazeDataAsync(string connectionId, CancellationToken ct = default);

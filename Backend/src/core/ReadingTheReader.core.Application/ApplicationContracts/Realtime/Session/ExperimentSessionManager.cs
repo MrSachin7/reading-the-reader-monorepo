@@ -775,6 +775,41 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return await StopSessionCoreAsync(source, ct) ?? GetCurrentSnapshot();
     }
 
+    public async Task<ExperimentSessionSnapshot> ResetSessionAsync(CancellationToken ct = default)
+    {
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var current = Volatile.Read(ref _session);
+            if (current.IsActive)
+            {
+                throw new InvalidOperationException("Finish the current session before starting a new one.");
+            }
+
+            StopHardwareStreaming();
+            Interlocked.Exchange(ref _isGazeStreamingSuppressed, 0);
+            Interlocked.Exchange(ref _receivedGazeSamples, 0);
+            Interlocked.Exchange(ref _eventSequenceNumber, 0);
+            Volatile.Write(ref _latestGazeSample, null);
+            Volatile.Write(ref _session, ExperimentSession.Inactive);
+            _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
+            _liveReadingSession = LiveReadingSessionSnapshot.Empty;
+            _decisionConfiguration = DecisionConfigurationSnapshot.Default.Copy();
+            _decisionState = DecisionRuntimeStateSnapshot.Empty.Copy();
+            _lastLayoutInterventionAppliedAtUnixMs = 0;
+            ResetReplayHistory();
+
+            var snapshot = GetCurrentSnapshot();
+            await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentState, snapshot, ct);
+            return snapshot;
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+    }
+
     public ValueTask<ExperimentReplayExport?> GetLatestReplayExportAsync(CancellationToken ct = default)
     {
         return _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);

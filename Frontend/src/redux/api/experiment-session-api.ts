@@ -1,7 +1,7 @@
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
 import { baseApi } from "@/redux/api/base-api"
 
-export type ReplayExportFormat = "json"
+export type ReplayExportFormat = "json" | "csv"
 
 export type UpsertReadingSessionPayload = {
   documentId: string
@@ -90,6 +90,13 @@ export const experimentSessionApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Experiment"],
     }),
+    resetExperimentSession: builder.mutation<ExperimentSessionSnapshot, void>({
+      query: () => ({
+        url: "/experiment-session/reset",
+        method: "POST",
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
     saveExperimentReplayExport: builder.mutation<
       SavedExperimentReplayExportSummary,
       { name: string; format: ReplayExportFormat }
@@ -130,6 +137,7 @@ export const {
   useFinishExperimentSessionMutation,
   useGetSavedExperimentReplayExportsQuery,
   useLazyGetSavedExperimentReplayExportByIdQuery,
+  useResetExperimentSessionMutation,
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,

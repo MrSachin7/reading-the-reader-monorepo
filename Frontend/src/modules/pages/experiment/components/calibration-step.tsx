@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  formatCalibrationMetric,
   formatCalibrationQualityLabel,
   type CalibrationStepProps,
 } from "./utils"
@@ -82,46 +81,17 @@ export function CalibrationStep({
           Run the Tobii calibration and validation.
         </CardTitle>
         <CardDescription className="max-w-3xl text-base leading-7">
-          This flow drives Tobii&apos;s screen-based calibration from the backend, then shows
-          validation metrics before the session can start. Open the full calibration page, guide the
-          participant through the targets, and return here once validation passes.
+          Open the calibration page, complete the calibration, and come back here when it is done.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6 pt-8">
-        <div className="grid gap-3 md:grid-cols-4">
-          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Workflow</p>
-            <p className="mt-2 text-sm font-semibold">{setup.isReady ? "Ready" : "Blocked"}</p>
-          </div>
-          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Validation quality</p>
-            <p className="mt-2 text-sm font-semibold">
-              {formatCalibrationQualityLabel(setup.validationQuality)}
-            </p>
-          </div>
-          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Accuracy</p>
-            <p className="mt-2 text-sm font-semibold">
-              {formatCalibrationMetric(setup.averageAccuracyDegrees)}
-            </p>
-          </div>
-          <div className="rounded-[1.25rem] border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Precision</p>
-            <p className="mt-2 text-sm font-semibold">
-              {formatCalibrationMetric(setup.averagePrecisionDegrees)}
-            </p>
-          </div>
-        </div>
-
         <div className="rounded-[1.75rem] border bg-muted/20 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-base font-semibold">Launch the calibration screen.</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The backend enters Tobii calibration mode, collects the configured points, applies the
-                result on the selected eye tracker, then runs a validation pass to estimate accuracy
-                and precision.
+                Guide the participant through the calibration and return when it has passed.
               </p>
             </div>
             <Button asChild>
@@ -130,11 +100,6 @@ export function CalibrationStep({
                 {isComplete ? "Run again" : "Open calibration"}
               </Link>
             </Button>
-          </div>
-          <div className="mt-4 text-sm leading-6 text-muted-foreground">
-            The experiment workflow only becomes ready when the backend reports a validated
-            calibration result. Leaving full screen, hiding the tab, or backing out interrupts the
-            route and keeps this step blocked until the researcher reruns it.
           </div>
         </div>
 
