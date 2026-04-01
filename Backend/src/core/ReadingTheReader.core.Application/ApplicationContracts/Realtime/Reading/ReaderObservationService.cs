@@ -26,6 +26,11 @@ public sealed class ReaderObservationService : IReaderObservationService
         CancellationToken ct = default)
         => _sessionManager.UpdateReadingFocusAsync(command, ct);
 
+    public ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
+        UpdateReadingContextPreservationCommand command,
+        CancellationToken ct = default)
+        => _sessionManager.UpdateReadingContextPreservationAsync(command, ct);
+
     public ValueTask<ReadingAttentionSummarySnapshot> UpdateReadingAttentionSummaryAsync(
         UpdateReadingAttentionSummaryCommand command,
         CancellationToken ct = default)

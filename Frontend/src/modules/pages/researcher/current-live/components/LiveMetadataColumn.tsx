@@ -188,6 +188,119 @@ export function LiveMetadataColumn({
               </div>
 
               <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Context preservation
+                  </p>
+                  <Badge
+                    variant={
+                      readingSession.latestContextPreservation?.status === "failed"
+                        ? "destructive"
+                        : "outline"
+                    }
+                  >
+                    {readingSession.latestContextPreservation?.status ?? "pending"}
+                  </Badge>
+                </div>
+
+                {readingSession.latestContextPreservation ? (
+                  <div className="mt-3 space-y-3">
+                    <div className="rounded-[1rem] border bg-muted/20 p-4">
+                      <p className="text-sm font-medium text-foreground">
+                        {readingSession.latestContextPreservation.status === "preserved"
+                          ? "preserved"
+                          : readingSession.latestContextPreservation.status === "degraded"
+                            ? "degraded"
+                            : "failed"}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        anchor source {readingSession.latestContextPreservation.anchorSource}
+                        {readingSession.latestContextPreservation.reason
+                          ? ` • ${readingSession.latestContextPreservation.reason}`
+                          : ""}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          anchorErrorPx
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          {formatNumeric(readingSession.latestContextPreservation.anchorErrorPx, 1)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          viewportDeltaPx
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          {formatNumeric(readingSession.latestContextPreservation.viewportDeltaPx, 1)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3 text-xs leading-5 text-muted-foreground">
+                      measured {formatAbsoluteTime(readingSession.latestContextPreservation.measuredAtUnixMs)}
+                      {readingSession.latestContextPreservation.anchorTokenId
+                        ? ` • token ${readingSession.latestContextPreservation.anchorTokenId}`
+                        : ""}
+                      {readingSession.latestContextPreservation.anchorBlockId
+                        ? ` • block ${readingSession.latestContextPreservation.anchorBlockId}`
+                        : ""}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+                    Waiting for the next layout-changing intervention to produce a measured continuity result.
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Continuity history
+                  </p>
+                  <Badge variant="outline">{readingSession.recentContextPreservationEvents.length}</Badge>
+                </div>
+
+                {readingSession.recentContextPreservationEvents.length > 0 ? (
+                  <div className="divide-y">
+                    {readingSession.recentContextPreservationEvents.map((event) => (
+                      <div
+                        key={`${event.measuredAtUnixMs}:${event.anchorSource}:${event.anchorTokenId ?? event.anchorBlockId ?? "none"}`}
+                        className="px-4 py-3 text-sm"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={event.status === "failed" ? "destructive" : "outline"}
+                            >
+                              {event.status}
+                            </Badge>
+                            <Badge variant="secondary">{event.anchorSource}</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatAbsoluteTime(event.measuredAtUnixMs)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                          error {formatNumeric(event.anchorErrorPx, 1)} px • viewport {formatNumeric(event.viewportDeltaPx, 1)} px
+                          {event.reason ? ` • ${event.reason}` : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-4 pb-4 text-sm text-muted-foreground">
+                    No continuity samples yet.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Decision state</p>
                 <div className="mt-3 rounded-[1rem] border bg-muted/20 p-4">
                   <div className="flex items-center justify-between gap-3">

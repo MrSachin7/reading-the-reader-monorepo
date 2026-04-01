@@ -10,6 +10,7 @@ import {
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
   type ParticipantViewportSnapshot,
+  type ReadingContextPreservationSnapshot,
   type ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
 import type { InterventionParameterValues } from "@/lib/intervention-modules"
@@ -56,6 +57,11 @@ type ServerEnvelope =
       type: "readingFocusChanged";
       sentAtUnixMs: number;
       payload: ReadingFocusSnapshot;
+    }
+  | {
+      type: "readingContextPreservationChanged";
+      sentAtUnixMs: number;
+      payload: ReadingContextPreservationSnapshot;
     }
   | {
       type: "readingAttentionSummaryChanged";
@@ -110,6 +116,10 @@ type ClientEnvelope =
         activeTokenId: string | null;
         activeBlockId: string | null;
       };
+    }
+  | {
+      type: "readingContextPreservationUpdated";
+      payload: ReadingContextPreservationSnapshot;
     }
   | {
       type: "readingAttentionSummaryUpdated";
@@ -181,6 +191,7 @@ type ReadingFocusPayload = {
   activeTokenId: string | null;
   activeBlockId: string | null;
 };
+type ReadingContextPreservationPayload = ReadingContextPreservationSnapshot;
 type ReadingAttentionSummaryPayload = ReadingAttentionSummarySnapshot;
 type ApplyInterventionPayload = {
   source: string;
@@ -458,6 +469,20 @@ function handleMessage(raw: MessageEvent<string>) {
       return;
     }
 
+    if (message.type === "readingContextPreservationChanged") {
+      patchReadingSession((current) => ({
+        ...current,
+        latestContextPreservation: message.payload,
+        recentContextPreservationEvents: [
+          message.payload,
+          ...current.recentContextPreservationEvents,
+        ]
+          .sort((left, right) => right.measuredAtUnixMs - left.measuredAtUnixMs)
+          .slice(0, 10),
+      }));
+      return;
+    }
+
     if (message.type === "readingAttentionSummaryChanged") {
       patchReadingSession((current) => ({
         ...current,
@@ -638,6 +663,14 @@ export function updateReadingFocus(payload: ReadingFocusPayload) {
   connect();
   send({
     type: "readingFocusUpdated",
+    payload,
+  });
+}
+
+export function updateReadingContextPreservation(payload: ReadingContextPreservationPayload) {
+  connect();
+  send({
+    type: "readingContextPreservationUpdated",
     payload,
   });
 }

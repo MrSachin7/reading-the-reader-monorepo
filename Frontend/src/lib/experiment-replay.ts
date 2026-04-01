@@ -8,8 +8,10 @@ import type {
   ExperimentLiveMonitoringSnapshot,
   ExperimentParticipantSnapshot,
   InterventionEventSnapshot,
+  LayoutInterventionGuardrailSnapshot,
   LiveReadingSessionSnapshot,
   ParticipantViewportSnapshot,
+  ReadingContextPreservationSnapshot,
   ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
 import { cloneInterventionParameters } from "@/lib/intervention-modules"
@@ -82,6 +84,28 @@ const readingFocusSchema = z.object({
   activeTokenId: z.string().nullable(),
   activeBlockId: z.string().nullable(),
   updatedAtUnixMs: z.number(),
+})
+
+const readingContextPreservationSchema = z.object({
+  status: z.enum(["preserved", "degraded", "failed"]),
+  anchorSource: z.enum(["active-token", "fallback-token", "block-anchor", "scroll-only"]),
+  anchorTokenId: z.string().nullable(),
+  anchorBlockId: z.string().nullable(),
+  anchorErrorPx: z.number().nullable(),
+  viewportDeltaPx: z.number().nullable(),
+  interventionAppliedAtUnixMs: z.number(),
+  measuredAtUnixMs: z.number(),
+  reason: z.string().nullable(),
+})
+
+const layoutInterventionGuardrailSchema = z.object({
+  status: z.enum(["applied", "suppressed"]),
+  reason: z.enum(["cooldown-active", "change-too-large", "no-op-layout-change"]).nullable(),
+  affectedProperties: z.array(
+    z.enum(["font-family", "font-size", "line-width", "line-height", "letter-spacing"])
+  ),
+  evaluatedAtUnixMs: z.number(),
+  cooldownUntilUnixMs: z.number().nullable(),
 })
 
 const interventionSchema = z.object({
@@ -194,6 +218,9 @@ const liveReadingSessionSchema = z.object({
   }),
   participantViewport: participantViewportSchema,
   focus: readingFocusSchema,
+  latestContextPreservation: readingContextPreservationSchema.nullable().default(null),
+  recentContextPreservationEvents: z.array(readingContextPreservationSchema).default([]),
+  latestLayoutGuardrail: layoutInterventionGuardrailSchema.nullable().default(null),
   latestIntervention: interventionSchema.nullable(),
   recentInterventions: z.array(interventionSchema),
   attentionSummary: readingAttentionSummarySchema.nullable().default(null),
@@ -534,6 +561,29 @@ function copyFocus(focus: ReadingFocusSnapshot | null | undefined): ReadingFocus
   return { ...focus }
 }
 
+function copyContextPreservation(
+  snapshot: ReadingContextPreservationSnapshot | null | undefined
+): ReadingContextPreservationSnapshot | null {
+  if (!snapshot) {
+    return null
+  }
+
+  return { ...snapshot }
+}
+
+function copyLayoutGuardrail(
+  snapshot: LayoutInterventionGuardrailSnapshot | null | undefined
+): LayoutInterventionGuardrailSnapshot | null {
+  if (!snapshot) {
+    return null
+  }
+
+  return {
+    ...snapshot,
+    affectedProperties: [...snapshot.affectedProperties],
+  }
+}
+
 function copyAttentionSummary(
   summary: ReadingAttentionSummarySnapshot | null | undefined
 ): ReadingAttentionSummarySnapshot | null {
@@ -563,6 +613,11 @@ function copyReadingSession(
     appearance: { ...session.appearance },
     participantViewport: { ...session.participantViewport },
     focus: { ...session.focus },
+    latestContextPreservation: copyContextPreservation(session.latestContextPreservation),
+    recentContextPreservationEvents: session.recentContextPreservationEvents.map((item) => ({
+      ...item,
+    })),
+    latestLayoutGuardrail: copyLayoutGuardrail(session.latestLayoutGuardrail),
     latestIntervention: copyIntervention(session.latestIntervention),
     recentInterventions: session.recentInterventions.map((item) => ({
       ...item,

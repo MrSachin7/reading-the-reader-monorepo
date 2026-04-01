@@ -8,6 +8,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 {
     private const int MaxRecentInterventions = 25;
     private const int MaxRecentDecisionHistory = 25;
+    private const int MaxRecentContextPreservationEvents = 10;
 
     private readonly IEyeTrackerAdapter _eyeTrackerAdapter;
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
@@ -24,6 +25,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private int _isSubscribedToHardware;
     private int _isHardwareTracking;
     private int _isGazeStreamingSuppressed;
+    private long _lastLayoutInterventionAppliedAtUnixMs;
     private long _receivedGazeSamples;
     private long _eventSequenceNumber;
     private GazeData? _latestGazeSample;
@@ -60,6 +62,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         RestoreLatestSnapshot();
     }
+
+    private sealed record InterventionApplicationOutcome(
+        InterventionExecutionResult? Execution,
+        bool DidUpdateReadingSession);
 
     public async ValueTask SetCurrentParticipantAsync(Participant participant, CancellationToken ct = default)
     {
@@ -151,8 +157,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     UpdatedAtUnixMs = updatedAtUnixMs
                 },
                 Focus = ReadingFocusSnapshot.Empty,
+                LatestContextPreservation = null,
+                RecentContextPreservationEvents = [],
+                LatestLayoutGuardrail = null,
                 AttentionSummary = null,
             };
+            _lastLayoutInterventionAppliedAtUnixMs = 0;
 
             nextState = _liveReadingSession.Copy();
             RecordReadingSessionState("reading-session-configured", updatedAtUnixMs, nextState);
@@ -268,6 +278,36 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return focus;
     }
 
+    public async ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
+        UpdateReadingContextPreservationCommand command,
+        CancellationToken ct = default)
+    {
+        ReadingContextPreservationEventSnapshot contextPreservation;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            contextPreservation = NormalizeReadingContextPreservation(command);
+            _liveReadingSession = _liveReadingSession with
+            {
+                LatestContextPreservation = contextPreservation,
+                RecentContextPreservationEvents = BuildRecentContextPreservationHistory(
+                    _liveReadingSession.RecentContextPreservationEvents,
+                    contextPreservation)
+            };
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(
+            MessageTypes.ReadingContextPreservationChanged,
+            contextPreservation,
+            ct);
+        return contextPreservation;
+    }
+
     public async ValueTask<ReadingAttentionSummarySnapshot> UpdateReadingAttentionSummaryAsync(
         UpdateReadingAttentionSummaryCommand command,
         CancellationToken ct = default)
@@ -307,9 +347,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var supersededProposal = SupersedeActiveProposal(updatedAtUnixMs, "researcher");
-            var execution = ApplyInterventionCore(command, updatedAtUnixMs);
+            var outcome = ApplyInterventionCore(command, updatedAtUnixMs);
 
-            if (execution is null)
+            if (!outcome.DidUpdateReadingSession)
             {
                 if (supersededProposal is not null)
                 {
@@ -318,7 +358,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 return null;
             }
 
-            interventionEvent = execution.Event.Copy();
+            interventionEvent = outcome.Execution?.Event.Copy();
             nextState = _liveReadingSession.Copy();
             decisionUpdate = supersededProposal is null ? null : BuildDecisionRealtimeUpdate();
             await SaveCurrentSnapshotAsync(ct);
@@ -333,10 +373,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, decisionUpdate, ct);
         }
 
-        if (interventionEvent is not null && nextState is not null)
+        if (nextState is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
-            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            }
         }
 
         return interventionEvent;
@@ -406,12 +449,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
 
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var execution = ApplyInterventionCore(_decisionState.ActiveProposal.ProposedIntervention, updatedAtUnixMs);
+            var outcome = ApplyInterventionCore(_decisionState.ActiveProposal.ProposedIntervention, updatedAtUnixMs);
             var resolvedProposal = _decisionState.ActiveProposal.WithResolution(
                 DecisionProposalStatus.Approved,
                 updatedAtUnixMs,
                 NormalizeDecisionResolutionSource(source),
-                execution?.Event.Id);
+                outcome.Execution?.Event.Id);
 
             _decisionState = new DecisionRuntimeStateSnapshot(
                 _decisionState.AutomationPaused,
@@ -419,8 +462,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 BuildRecentProposalHistory(_decisionState.RecentProposalHistory, resolvedProposal));
 
             RecordDecisionProposalEvent(updatedAtUnixMs, resolvedProposal);
-            interventionEvent = execution?.Event.Copy();
-            nextState = execution is null ? null : _liveReadingSession.Copy();
+            interventionEvent = outcome.Execution?.Event.Copy();
+            nextState = outcome.DidUpdateReadingSession ? _liveReadingSession.Copy() : null;
             update = BuildDecisionRealtimeUpdate();
             await SaveCurrentSnapshotAsync(ct);
         }
@@ -430,10 +473,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
-        if (interventionEvent is not null && nextState is not null)
+        if (nextState is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
-            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            }
         }
 
         return update;
@@ -590,12 +636,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             if (string.Equals(_decisionConfiguration.ExecutionMode, DecisionExecutionModes.Autonomous, StringComparison.Ordinal))
             {
-                var execution = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
+                var outcome = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
                 var autoAppliedProposal = proposal.WithResolution(
                     DecisionProposalStatus.AutoApplied,
                     updatedAtUnixMs,
                     "system",
-                    execution?.Event.Id);
+                    outcome.Execution?.Event.Id);
 
                 _decisionState = new DecisionRuntimeStateSnapshot(
                     _decisionState.AutomationPaused,
@@ -603,8 +649,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     BuildRecentProposalHistory(_decisionState.RecentProposalHistory, autoAppliedProposal));
 
                 RecordDecisionProposalEvent(updatedAtUnixMs, autoAppliedProposal);
-                interventionEvent = execution?.Event.Copy();
-                nextState = execution is null ? null : _liveReadingSession.Copy();
+                interventionEvent = outcome.Execution?.Event.Copy();
+                nextState = outcome.DidUpdateReadingSession ? _liveReadingSession.Copy() : null;
             }
             else
             {
@@ -630,10 +676,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
         }
 
-        if (interventionEvent is not null && nextState is not null)
+        if (nextState is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
-            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+            }
         }
 
         return update ?? BuildDecisionRealtimeUpdate();
@@ -1029,6 +1078,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         Interlocked.Exchange(ref _receivedGazeSamples, snapshot.ReceivedGazeSamples);
         Volatile.Write(ref _latestGazeSample, snapshot.LatestGazeSample?.Copy());
         _liveReadingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
+        _lastLayoutInterventionAppliedAtUnixMs =
+            _liveReadingSession.LatestLayoutGuardrail is { Status: "applied" }
+                ? _liveReadingSession.LatestLayoutGuardrail.EvaluatedAtUnixMs
+                : 0;
         _decisionConfiguration = snapshot.DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy();
         _decisionState = snapshot.DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy();
     }
@@ -1371,8 +1424,50 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return items;
     }
 
-    private InterventionExecutionResult? ApplyInterventionCore(ApplyInterventionCommand command, long appliedAtUnixMs)
+    private static IReadOnlyList<ReadingContextPreservationEventSnapshot> BuildRecentContextPreservationHistory(
+        IReadOnlyList<ReadingContextPreservationEventSnapshot>? existing,
+        ReadingContextPreservationEventSnapshot next)
     {
+        var items = existing is null
+            ? new List<ReadingContextPreservationEventSnapshot>()
+            : existing.Select(item => item.Copy()).ToList();
+
+        items.Insert(0, next.Copy());
+        items = items
+            .OrderByDescending(item => item.MeasuredAtUnixMs)
+            .ToList();
+
+        if (items.Count > MaxRecentContextPreservationEvents)
+        {
+            items.RemoveRange(MaxRecentContextPreservationEvents, items.Count - MaxRecentContextPreservationEvents);
+        }
+
+        return items;
+    }
+
+    private static LayoutInterventionGuardrailSnapshot BuildLayoutGuardrailSnapshot(
+        string status,
+        string? reason,
+        IReadOnlyList<string> affectedProperties,
+        long evaluatedAtUnixMs,
+        long? cooldownUntilUnixMs)
+    {
+        return new LayoutInterventionGuardrailSnapshot(
+            LayoutInterventionGuardrailSnapshot.NormalizeStatus(status),
+            NormalizeNullableText(reason),
+            affectedProperties is null
+                ? []
+                : affectedProperties
+                    .Select(LayoutInterventionGuardrailSnapshot.NormalizeAffectedProperty)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray(),
+            Math.Max(evaluatedAtUnixMs, 0),
+            cooldownUntilUnixMs.HasValue ? Math.Max(cooldownUntilUnixMs.Value, 0) : null);
+    }
+
+    private InterventionApplicationOutcome ApplyInterventionCore(ApplyInterventionCommand command, long appliedAtUnixMs)
+    {
+        var requestedLayoutProperties = ReadingInterventionRuntime.GetRequestedLayoutProperties(command);
         var execution = _readingInterventionRuntime.Apply(
             _liveReadingSession.Presentation,
             _liveReadingSession.Appearance,
@@ -1381,13 +1476,75 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         if (execution is null)
         {
-            return null;
+            if (requestedLayoutProperties.Count > 0)
+            {
+                _liveReadingSession = _liveReadingSession with
+                {
+                    LatestLayoutGuardrail = BuildLayoutGuardrailSnapshot(
+                        "suppressed",
+                        "no-op-layout-change",
+                        requestedLayoutProperties,
+                        appliedAtUnixMs,
+                        null)
+                };
+                return new InterventionApplicationOutcome(null, true);
+            }
+
+            return new InterventionApplicationOutcome(null, false);
+        }
+
+        var layoutChange = ReadingInterventionRuntime.SummarizeLayoutChange(
+            _liveReadingSession.Presentation,
+            execution.Presentation);
+        var latestLayoutGuardrail = _liveReadingSession.LatestLayoutGuardrail;
+
+        if (layoutChange.IsLayoutAffecting)
+        {
+            if (layoutChange.ExceedsMaximumStep)
+            {
+                _liveReadingSession = _liveReadingSession with
+                {
+                    LatestLayoutGuardrail = BuildLayoutGuardrailSnapshot(
+                        "suppressed",
+                        "change-too-large",
+                        layoutChange.ChangedProperties,
+                        appliedAtUnixMs,
+                        null)
+                };
+                return new InterventionApplicationOutcome(null, true);
+            }
+
+            var cooldownUntilUnixMs = _lastLayoutInterventionAppliedAtUnixMs > 0
+                ? _lastLayoutInterventionAppliedAtUnixMs + ReadingInterventionRuntime.LayoutChangeCooldownMs
+                : (long?)null;
+            if (cooldownUntilUnixMs.HasValue && appliedAtUnixMs < cooldownUntilUnixMs.Value)
+            {
+                _liveReadingSession = _liveReadingSession with
+                {
+                    LatestLayoutGuardrail = BuildLayoutGuardrailSnapshot(
+                        "suppressed",
+                        "cooldown-active",
+                        layoutChange.ChangedProperties,
+                        appliedAtUnixMs,
+                        cooldownUntilUnixMs)
+                };
+                return new InterventionApplicationOutcome(null, true);
+            }
+
+            latestLayoutGuardrail = BuildLayoutGuardrailSnapshot(
+                "applied",
+                null,
+                layoutChange.ChangedProperties,
+                appliedAtUnixMs,
+                appliedAtUnixMs + ReadingInterventionRuntime.LayoutChangeCooldownMs);
+            _lastLayoutInterventionAppliedAtUnixMs = appliedAtUnixMs;
         }
 
         _liveReadingSession = _liveReadingSession with
         {
             Presentation = execution.Presentation.Copy(),
             Appearance = execution.Appearance.Copy(),
+            LatestLayoutGuardrail = latestLayoutGuardrail?.Copy(),
             LatestIntervention = execution.Event.Copy(),
             RecentInterventions = BuildRecentInterventionHistory(
                 _liveReadingSession.RecentInterventions,
@@ -1396,7 +1553,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         RecordInterventionEvent(appliedAtUnixMs, execution.Event);
         RecordReadingSessionState("intervention-applied", appliedAtUnixMs, _liveReadingSession.Copy());
-        return execution;
+        return new InterventionApplicationOutcome(execution, true);
     }
 
     private DecisionProposalSnapshot? SupersedeActiveProposal(long resolvedAtUnixMs, string resolutionSource)
@@ -1551,6 +1708,21 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             command.CurrentTokenDurationMs.HasValue ? Math.Max(command.CurrentTokenDurationMs.Value, 0) : null,
             Math.Max(command.FixatedTokenCount, 0),
             Math.Max(command.SkimmedTokenCount, 0));
+    }
+
+    private static ReadingContextPreservationEventSnapshot NormalizeReadingContextPreservation(
+        UpdateReadingContextPreservationCommand command)
+    {
+        return new ReadingContextPreservationEventSnapshot(
+            ReadingContextPreservationEventSnapshot.NormalizeStatus(command.Status),
+            ReadingContextPreservationEventSnapshot.NormalizeAnchorSource(command.AnchorSource),
+            NormalizeNullableText(command.AnchorTokenId),
+            NormalizeNullableText(command.AnchorBlockId),
+            command.AnchorErrorPx.HasValue ? Math.Max(command.AnchorErrorPx.Value, 0) : null,
+            command.ViewportDeltaPx,
+            Math.Max(command.InterventionAppliedAtUnixMs, 0),
+            Math.Max(command.MeasuredAtUnixMs, 0),
+            NormalizeNullableText(command.Reason));
     }
 
     private void StopHardwareStreaming()

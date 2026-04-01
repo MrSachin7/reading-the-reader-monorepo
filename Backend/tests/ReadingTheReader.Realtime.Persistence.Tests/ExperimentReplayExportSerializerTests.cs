@@ -87,6 +87,9 @@ public sealed class ExperimentReplayExportSerializerTests
             appearance,
             viewport,
             focus,
+            null,
+            [],
+            null,
             intervention,
             [intervention],
             attentionSummary);

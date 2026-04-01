@@ -24,6 +24,7 @@ import type {
   DecisionConfiguration,
   DecisionState,
   ExperimentLiveMonitoringSnapshot,
+  LayoutInterventionGuardrailSnapshot,
 } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
@@ -201,6 +202,7 @@ type LiveControlsColumnProps = {
   followParticipant: boolean
   liveMonitoring: ExperimentLiveMonitoringSnapshot
   mirrorTrustState: LiveMirrorTrustState
+  layoutGuardrail: LayoutInterventionGuardrailSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
   activeWord: string | null
@@ -238,6 +240,7 @@ export function LiveControlsColumn({
   followParticipant,
   liveMonitoring,
   mirrorTrustState,
+  layoutGuardrail,
   decisionConfiguration,
   decisionState,
   activeWord,
@@ -736,6 +739,37 @@ export function LiveControlsColumn({
                   {liveHealth.detail}
                 </p>
               </div>
+
+              {layoutGuardrail ? (
+                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">Layout guardrail</p>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
+                        layoutGuardrail.status === "suppressed"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                      )}
+                    >
+                      {layoutGuardrail.status === "suppressed" ? "Holding changes" : "Layout applied"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-foreground">
+                    {layoutGuardrail.reason
+                      ? `Latest reason: ${layoutGuardrail.reason}`
+                      : "The latest layout-affecting change was accepted."}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {layoutGuardrail.affectedProperties.length > 0
+                      ? `Fields: ${layoutGuardrail.affectedProperties.join(", ")}`
+                      : "No layout fields recorded."}
+                    {layoutGuardrail.cooldownUntilUnixMs
+                      ? ` • cooldown until ${new Date(layoutGuardrail.cooldownUntilUnixMs).toLocaleTimeString()}`
+                      : ""}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
                 <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>

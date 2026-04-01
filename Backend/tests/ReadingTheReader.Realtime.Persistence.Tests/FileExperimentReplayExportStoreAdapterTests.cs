@@ -81,6 +81,9 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
             focus,
             null,
             [],
+            null,
+            null,
+            [],
             attentionSummary);
         var decisionConfiguration = new DecisionConfigurationSnapshot(
             "Manual only",
