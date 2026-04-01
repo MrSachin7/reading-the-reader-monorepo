@@ -129,7 +129,7 @@ public sealed class DecisionProposalLifecycleTests
             ReadingInterventionModuleIds.FontSize,
             new Dictionary<string, string?>
             {
-                ["fontSizePx"] = "24"
+                ["fontSizePx"] = "20"
             }));
 
         var update = GetLatestDecisionUpdate(harness);
