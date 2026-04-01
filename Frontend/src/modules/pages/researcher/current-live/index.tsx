@@ -373,6 +373,7 @@ function ResearcherCurrentLiveBody({
           followParticipant={followParticipant}
           liveMonitoring={session.liveMonitoring}
           mirrorTrustState={mirrorTrustState}
+          layoutGuardrail={readingSession.latestLayoutGuardrail}
           decisionConfiguration={session.decisionConfiguration}
           decisionState={session.decisionState}
           activeWord={activeWord}

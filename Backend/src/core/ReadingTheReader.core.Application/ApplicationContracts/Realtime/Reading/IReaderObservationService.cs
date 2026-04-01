@@ -15,6 +15,10 @@ public interface IReaderObservationService
         UpdateReadingFocusCommand command,
         CancellationToken ct = default);
 
+    ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
+        UpdateReadingContextPreservationCommand command,
+        CancellationToken ct = default);
+
     ValueTask<ReadingAttentionSummarySnapshot> UpdateReadingAttentionSummaryAsync(
         UpdateReadingAttentionSummaryCommand command,
         CancellationToken ct = default);

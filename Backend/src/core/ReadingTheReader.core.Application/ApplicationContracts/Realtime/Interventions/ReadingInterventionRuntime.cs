@@ -5,6 +5,12 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interv
 
 public sealed class ReadingInterventionRuntime : IReadingInterventionRuntime
 {
+    public const long LayoutChangeCooldownMs = 1500;
+    public const int MaxFontSizeStepPx = 2;
+    public const int MaxLineWidthStepPx = 40;
+    public const double MaxLineHeightStep = 0.12;
+    public const double MaxLetterSpacingStep = 0.02;
+
     private readonly IReadingInterventionModuleRegistry _moduleRegistry;
 
     public ReadingInterventionRuntime(IReadingInterventionModuleRegistry moduleRegistry)
@@ -36,6 +42,104 @@ public sealed class ReadingInterventionRuntime : IReadingInterventionRuntime
             safeCurrentAppearance,
             safeCommand,
             appliedAtUnixMs);
+    }
+
+    public static IReadOnlyList<string> GetRequestedLayoutProperties(ApplyInterventionCommand command)
+    {
+        var requested = new List<string>();
+
+        if (string.Equals(command.ModuleId, ReadingInterventionModuleIds.FontFamily, StringComparison.Ordinal))
+        {
+            requested.Add("font-family");
+        }
+
+        if (string.Equals(command.ModuleId, ReadingInterventionModuleIds.FontSize, StringComparison.Ordinal))
+        {
+            requested.Add("font-size");
+        }
+
+        if (string.Equals(command.ModuleId, ReadingInterventionModuleIds.LineWidth, StringComparison.Ordinal))
+        {
+            requested.Add("line-width");
+        }
+
+        if (string.Equals(command.ModuleId, ReadingInterventionModuleIds.LineHeight, StringComparison.Ordinal))
+        {
+            requested.Add("line-height");
+        }
+
+        if (string.Equals(command.ModuleId, ReadingInterventionModuleIds.LetterSpacing, StringComparison.Ordinal))
+        {
+            requested.Add("letter-spacing");
+        }
+
+        if (command.Presentation.FontFamily is not null)
+        {
+            requested.Add("font-family");
+        }
+
+        if (command.Presentation.FontSizePx.HasValue)
+        {
+            requested.Add("font-size");
+        }
+
+        if (command.Presentation.LineWidthPx.HasValue)
+        {
+            requested.Add("line-width");
+        }
+
+        if (command.Presentation.LineHeight.HasValue)
+        {
+            requested.Add("line-height");
+        }
+
+        if (command.Presentation.LetterSpacingEm.HasValue)
+        {
+            requested.Add("letter-spacing");
+        }
+
+        return requested
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    public static LayoutInterventionChangeSummary SummarizeLayoutChange(
+        ReadingPresentationSnapshot currentPresentation,
+        ReadingPresentationSnapshot nextPresentation)
+    {
+        var changedProperties = new List<string>();
+        var exceedsMaximumStep = false;
+
+        if (!string.Equals(currentPresentation.FontFamily, nextPresentation.FontFamily, StringComparison.Ordinal))
+        {
+            changedProperties.Add("font-family");
+        }
+
+        if (currentPresentation.FontSizePx != nextPresentation.FontSizePx)
+        {
+            changedProperties.Add("font-size");
+            exceedsMaximumStep |= Math.Abs(nextPresentation.FontSizePx - currentPresentation.FontSizePx) > MaxFontSizeStepPx;
+        }
+
+        if (currentPresentation.LineWidthPx != nextPresentation.LineWidthPx)
+        {
+            changedProperties.Add("line-width");
+            exceedsMaximumStep |= Math.Abs(nextPresentation.LineWidthPx - currentPresentation.LineWidthPx) > MaxLineWidthStepPx;
+        }
+
+        if (Math.Abs(currentPresentation.LineHeight - nextPresentation.LineHeight) > double.Epsilon)
+        {
+            changedProperties.Add("line-height");
+            exceedsMaximumStep |= Math.Abs(nextPresentation.LineHeight - currentPresentation.LineHeight) > MaxLineHeightStep;
+        }
+
+        if (Math.Abs(currentPresentation.LetterSpacingEm - nextPresentation.LetterSpacingEm) > double.Epsilon)
+        {
+            changedProperties.Add("letter-spacing");
+            exceedsMaximumStep |= Math.Abs(nextPresentation.LetterSpacingEm - currentPresentation.LetterSpacingEm) > MaxLetterSpacingStep;
+        }
+
+        return new LayoutInterventionChangeSummary(changedProperties, exceedsMaximumStep);
     }
 
     private InterventionExecutionResult? ApplyModuleRequest(
@@ -376,4 +480,11 @@ public sealed class ReadingInterventionRuntime : IReadingInterventionRuntime
     {
         return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
     }
+}
+
+public sealed record LayoutInterventionChangeSummary(
+    IReadOnlyList<string> ChangedProperties,
+    bool ExceedsMaximumStep)
+{
+    public bool IsLayoutAffecting => ChangedProperties.Count > 0;
 }

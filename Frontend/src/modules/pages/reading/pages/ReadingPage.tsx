@@ -10,6 +10,7 @@ import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
   unregisterParticipantView,
+  updateReadingContextPreservation,
   updateParticipantViewport,
   updateReadingFocus,
 } from "@/lib/gaze-socket"
@@ -23,6 +24,7 @@ import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
+import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session"
 import { useGetReaderShellSettingsQuery } from "@/redux"
 
 function FullscreenGate({
@@ -93,6 +95,13 @@ export function ReadingPage() {
       activeBlockId: focus.activeBlockId,
     })
   }, [])
+
+  const handleContextPreservationChange = useCallback(
+    (snapshot: ReadingContextPreservationSnapshot) => {
+      updateReadingContextPreservation(snapshot)
+    },
+    []
+  )
 
   const liveReadingSession = liveSession?.readingSession
   const liveReaderAppearance =
@@ -203,6 +212,8 @@ export function ReadingPage() {
         gazeOverlayHasRecentPoint={liveGaze.hasRecentGaze}
         onViewportMetricsChange={handleViewportMetricsChange}
         onFocusChange={handleFocusChange}
+        onContextPreservationChange={handleContextPreservationChange}
+        interventionAppliedAtUnixMs={liveReadingSession?.latestIntervention?.appliedAtUnixMs ?? null}
       />
       {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
         <FullscreenGate

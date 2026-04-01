@@ -2,26 +2,50 @@
 
 import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
+import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session";
+
 type UsePreserveReadingContextParams = {
   containerRef: RefObject<HTMLElement | null>;
   contentRef: RefObject<HTMLElement | null>;
   enabled: boolean;
   highlightContext: boolean;
+  contentKey: string;
   interventionKey: string;
+  interventionAppliedAtUnixMs?: number | null;
+  onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
 };
 
 type TokenAnchor = {
   tokenId: string;
+  blockId: string | null;
+  centerY: number;
+};
+
+type BlockAnchor = {
+  blockId: string;
   centerY: number;
 };
 
 type ContextSnapshot = {
-  primaryAnchor: TokenAnchor;
+  primaryAnchor: TokenAnchor | null;
   fallbackAnchors: TokenAnchor[];
+  blockAnchor: BlockAnchor | null;
+  scrollTopPx: number;
+};
+
+type RestoreAttempt = {
+  anchorSource: ReadingContextPreservationSnapshot["anchorSource"];
+  anchorTokenId: string | null;
+  anchorBlockId: string | null;
+  anchorErrorPx: number | null;
+  highlightTokenId: string | null;
+  reason: string | null;
 };
 
 const PRIMARY_ANCHOR_MAX_ERROR_PX = 8;
 const FALLBACK_ANCHOR_MAX_ERROR_PX = 16;
+const TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX = 24;
+const BLOCK_ANCHOR_MAX_ERROR_PX = 28;
 const CONTEXT_HIGHLIGHT_DURATION_MS = 4000;
 const CONTEXT_HIGHLIGHT_MIN_VISIBLE_MS = 900;
 
@@ -30,8 +54,17 @@ function getTokenCenterY(token: HTMLElement) {
   return rect.top + rect.height / 2;
 }
 
+function getBlockCenterY(block: HTMLElement) {
+  const rect = block.getBoundingClientRect();
+  return rect.top + rect.height / 2;
+}
+
 function getTokenSelector(tokenId: string) {
   return `[data-token-id="${tokenId.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+}
+
+function getBlockSelector(blockId: string) {
+  return `[data-block-id="${blockId.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
 }
 
 function setVerticalCompensation(content: HTMLElement, offsetY: number) {
@@ -73,25 +106,64 @@ function clearContextHighlightFromElement(element: HTMLElement | null) {
   element.style.removeProperty("outline-offset");
 }
 
-function captureSnapshot(container: HTMLElement): ContextSnapshot | null {
+function captureBlockAnchor(
+  container: HTMLElement,
+  activeToken: HTMLElement | null
+) {
+  const activeBlock = activeToken?.closest<HTMLElement>("[data-block-id]") ?? null;
+  if (activeBlock?.dataset.blockId) {
+    return {
+      blockId: activeBlock.dataset.blockId,
+      centerY: getBlockCenterY(activeBlock),
+    } satisfies BlockAnchor;
+  }
+
+  const viewportCenterY = container.getBoundingClientRect().top + container.clientHeight / 2;
+  let closestBlock: BlockAnchor | null = null;
+
+  for (const block of container.querySelectorAll<HTMLElement>("[data-block-id]")) {
+    const blockId = block.dataset.blockId;
+    if (!blockId) {
+      continue;
+    }
+
+    const centerY = getBlockCenterY(block);
+    if (
+      closestBlock === null ||
+      Math.abs(centerY - viewportCenterY) < Math.abs(closestBlock.centerY - viewportCenterY)
+    ) {
+      closestBlock = { blockId, centerY };
+    }
+  }
+
+  return closestBlock;
+}
+
+function captureSnapshot(container: HTMLElement): ContextSnapshot {
   const orderedTokens = Array.from(
     container.querySelectorAll<HTMLElement>('[data-token-kind="word"]')
   );
-
-  if (orderedTokens.length === 0) {
-    return null;
-  }
-
   const activeToken =
     container.querySelector<HTMLElement>('[data-gaze-active="true"]') ?? null;
+  const blockAnchor = captureBlockAnchor(container, activeToken);
 
-  if (!activeToken) {
-    return null;
+  if (orderedTokens.length === 0 || !activeToken) {
+    return {
+      primaryAnchor: null,
+      fallbackAnchors: [],
+      blockAnchor,
+      scrollTopPx: container.scrollTop,
+    };
   }
 
   const activeTokenId = activeToken.dataset.tokenId;
   if (!activeTokenId) {
-    return null;
+    return {
+      primaryAnchor: null,
+      fallbackAnchors: [],
+      blockAnchor,
+      scrollTopPx: container.scrollTop,
+    };
   }
 
   const activeIndex = orderedTokens.findIndex(
@@ -99,7 +171,12 @@ function captureSnapshot(container: HTMLElement): ContextSnapshot | null {
   );
 
   if (activeIndex < 0) {
-    return null;
+    return {
+      primaryAnchor: null,
+      fallbackAnchors: [],
+      blockAnchor,
+      scrollTopPx: container.scrollTop,
+    };
   }
 
   const candidateIndexes = [
@@ -119,23 +196,22 @@ function captureSnapshot(container: HTMLElement): ContextSnapshot | null {
       return tokenId
         ? {
             tokenId,
+            blockId: token.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ?? null,
             centerY: getTokenCenterY(token),
           }
         : null;
     })
     .filter((anchor): anchor is TokenAnchor => anchor !== null);
 
-  if (anchors.length === 0) {
-    return null;
-  }
-
   return {
-    primaryAnchor: anchors[0],
+    primaryAnchor: anchors[0] ?? null,
     fallbackAnchors: anchors.slice(1),
+    blockAnchor,
+    scrollTopPx: container.scrollTop,
   };
 }
 
-function alignAnchor(
+function alignTokenAnchor(
   container: HTMLElement,
   content: HTMLElement,
   anchor: TokenAnchor
@@ -161,44 +237,172 @@ function alignAnchor(
   return Math.abs(finalCenterY - anchor.centerY);
 }
 
+function alignBlockAnchor(
+  container: HTMLElement,
+  content: HTMLElement,
+  anchor: BlockAnchor
+) {
+  const block = container.querySelector<HTMLElement>(getBlockSelector(anchor.blockId));
+  if (!block) {
+    return null;
+  }
+
+  clearVerticalCompensation(content);
+
+  const beforeCenterY = getBlockCenterY(block);
+  const beforeDeltaY = beforeCenterY - anchor.centerY;
+  const nextScrollTop = container.scrollTop + beforeDeltaY;
+  const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
+  container.scrollTop = Math.min(Math.max(nextScrollTop, 0), maxScrollTop);
+
+  const afterCenterY = getBlockCenterY(block);
+  const residualOffsetY = anchor.centerY - afterCenterY;
+  setVerticalCompensation(content, residualOffsetY);
+
+  const finalCenterY = getBlockCenterY(block);
+  return Math.abs(finalCenterY - anchor.centerY);
+}
+
+function restoreScrollOnly(container: HTMLElement, content: HTMLElement, snapshot: ContextSnapshot) {
+  clearVerticalCompensation(content);
+  const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
+  container.scrollTop = Math.min(Math.max(snapshot.scrollTopPx, 0), maxScrollTop);
+}
+
+function measureViewportDelta(container: HTMLElement, snapshot: ContextSnapshot) {
+  return Math.abs(container.scrollTop - snapshot.scrollTopPx);
+}
+
+function classifyRestoreAttempt(
+  snapshot: ContextSnapshot,
+  attempt: RestoreAttempt | null
+): Pick<ReadingContextPreservationSnapshot, "status" | "reason"> {
+  if (!attempt) {
+    return {
+      status: "failed",
+      reason: snapshot.primaryAnchor || snapshot.blockAnchor
+        ? "anchor-error-exceeded-threshold"
+        : "no-anchor-captured",
+    };
+  }
+
+  if (attempt.anchorSource === "active-token" && (attempt.anchorErrorPx ?? Infinity) <= PRIMARY_ANCHOR_MAX_ERROR_PX) {
+    return { status: "preserved", reason: null };
+  }
+
+  if (
+    attempt.anchorSource === "active-token" &&
+    (attempt.anchorErrorPx ?? Infinity) <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
+  ) {
+    return { status: "degraded", reason: "anchor-error-above-preserved-threshold" };
+  }
+
+  if (
+    attempt.anchorSource === "fallback-token" &&
+    (attempt.anchorErrorPx ?? Infinity) <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
+  ) {
+    return { status: "degraded", reason: attempt.reason ?? "fallback-token-used" };
+  }
+
+  if (
+    attempt.anchorSource === "block-anchor" &&
+    (attempt.anchorErrorPx ?? Infinity) <= BLOCK_ANCHOR_MAX_ERROR_PX
+  ) {
+    return { status: "degraded", reason: attempt.reason ?? "block-anchor-used" };
+  }
+
+  if (attempt.anchorSource === "scroll-only") {
+    return { status: "degraded", reason: attempt.reason ?? "scroll-only-fallback" };
+  }
+
+  return {
+    status: "failed",
+    reason: attempt.reason ?? "anchor-error-exceeded-threshold",
+  };
+}
+
 function restoreSnapshot(
   container: HTMLElement,
   content: HTMLElement,
   snapshot: ContextSnapshot
 ) {
-  const primaryError = alignAnchor(container, content, snapshot.primaryAnchor);
-  if (
-    primaryError !== null &&
-    primaryError <= PRIMARY_ANCHOR_MAX_ERROR_PX
-  ) {
-    return true;
-  }
-
-  let bestFallback: { anchor: TokenAnchor; error: number } | null = null;
-
-  for (const anchor of snapshot.fallbackAnchors) {
-    const error = alignAnchor(container, content, anchor);
-    if (error === null) {
-      continue;
+  const primaryAnchor = snapshot.primaryAnchor;
+  if (primaryAnchor) {
+    const primaryError = alignTokenAnchor(container, content, primaryAnchor);
+    if (
+      primaryError !== null &&
+      primaryError <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
+    ) {
+      return {
+        anchorSource: "active-token",
+        anchorTokenId: primaryAnchor.tokenId,
+        anchorBlockId: primaryAnchor.blockId,
+        anchorErrorPx: primaryError,
+        highlightTokenId: primaryAnchor.tokenId,
+        reason:
+          primaryError <= PRIMARY_ANCHOR_MAX_ERROR_PX
+            ? null
+            : "anchor-error-above-preserved-threshold",
+      } satisfies RestoreAttempt;
     }
 
-    if (!bestFallback || error < bestFallback.error) {
-      bestFallback = { anchor, error };
+    let bestFallback: { anchor: TokenAnchor; error: number } | null = null;
+
+    for (const anchor of snapshot.fallbackAnchors) {
+      const error = alignTokenAnchor(container, content, anchor);
+      if (error === null) {
+        continue;
+      }
+
+      if (!bestFallback || error < bestFallback.error) {
+        bestFallback = { anchor, error };
+      }
+    }
+
+    if (bestFallback && bestFallback.error <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX) {
+      alignTokenAnchor(container, content, bestFallback.anchor);
+      return {
+        anchorSource: "fallback-token",
+        anchorTokenId: bestFallback.anchor.tokenId,
+        anchorBlockId: bestFallback.anchor.blockId,
+        anchorErrorPx: bestFallback.error,
+        highlightTokenId: bestFallback.anchor.tokenId,
+        reason:
+          bestFallback.error <= FALLBACK_ANCHOR_MAX_ERROR_PX
+            ? "fallback-token-used"
+            : "fallback-token-error-high",
+      } satisfies RestoreAttempt;
     }
   }
 
-  if (bestFallback && bestFallback.error <= FALLBACK_ANCHOR_MAX_ERROR_PX) {
-    alignAnchor(container, content, bestFallback.anchor);
-    return true;
+  if (snapshot.blockAnchor) {
+    const blockError = alignBlockAnchor(container, content, snapshot.blockAnchor);
+    if (blockError !== null && blockError <= BLOCK_ANCHOR_MAX_ERROR_PX) {
+      return {
+        anchorSource: "block-anchor",
+        anchorTokenId: null,
+        anchorBlockId: snapshot.blockAnchor.blockId,
+        anchorErrorPx: blockError,
+        highlightTokenId: null,
+        reason: "block-anchor-used",
+      } satisfies RestoreAttempt;
+    }
   }
 
-  if (primaryError !== null) {
-    alignAnchor(container, content, snapshot.primaryAnchor);
-    return true;
+  if (!snapshot.primaryAnchor) {
+    restoreScrollOnly(container, content, snapshot);
+    return {
+      anchorSource: "scroll-only",
+      anchorTokenId: null,
+      anchorBlockId: snapshot.blockAnchor?.blockId ?? null,
+      anchorErrorPx: null,
+      highlightTokenId: null,
+      reason: "scroll-only-fallback",
+    } satisfies RestoreAttempt;
   }
 
   clearVerticalCompensation(content);
-  return false;
+  return null;
 }
 
 export function usePreserveReadingContext({
@@ -206,11 +410,15 @@ export function usePreserveReadingContext({
   contentRef,
   enabled,
   highlightContext,
+  contentKey,
   interventionKey,
+  interventionAppliedAtUnixMs = null,
+  onContextPreservationChange,
 }: UsePreserveReadingContextParams) {
   const shouldTrackContext = enabled || highlightContext;
   const latestSnapshotRef = useRef<ContextSnapshot | null>(null);
   const previousInterventionKeyRef = useRef<string | null>(null);
+  const previousContentKeyRef = useRef<string | null>(null);
   const highlightedTokenIdRef = useRef<string | null>(null);
   const highlightTimeoutRef = useRef<number | null>(null);
   const highlightFrameRef = useRef<number | null>(null);
@@ -298,7 +506,16 @@ export function usePreserveReadingContext({
     if (!shouldTrackContext || !container || !content) {
       clearContextHighlight(container ?? null);
       clearVerticalCompensation(content ?? null);
+      previousContentKeyRef.current = contentKey;
       previousInterventionKeyRef.current = interventionKey;
+      return;
+    }
+
+    if (previousContentKeyRef.current === null || previousContentKeyRef.current !== contentKey) {
+      previousContentKeyRef.current = contentKey;
+      previousInterventionKeyRef.current = interventionKey;
+      latestSnapshotRef.current = captureSnapshot(container);
+      clearVerticalCompensation(content);
       return;
     }
 
@@ -326,20 +543,40 @@ export function usePreserveReadingContext({
     let frameC = 0;
 
     frameA = window.requestAnimationFrame(() => {
+      let restoreAttempt: RestoreAttempt | null = null;
       if (enabled) {
-        restoreSnapshot(container, content, snapshot);
+        restoreAttempt = restoreSnapshot(container, content, snapshot);
       }
       frameB = window.requestAnimationFrame(() => {
         if (enabled) {
-          restoreSnapshot(container, content, snapshot);
+          restoreAttempt = restoreSnapshot(container, content, snapshot) ?? restoreAttempt;
         }
         frameC = window.requestAnimationFrame(() => {
           if (enabled) {
-            restoreSnapshot(container, content, snapshot);
+            restoreAttempt = restoreSnapshot(container, content, snapshot) ?? restoreAttempt;
           }
 
-          if (highlightContext) {
-            startContextHighlight(container, snapshot.primaryAnchor.tokenId);
+          if (highlightContext && restoreAttempt?.highlightTokenId) {
+            startContextHighlight(container, restoreAttempt.highlightTokenId);
+          }
+
+          if (enabled && onContextPreservationChange) {
+            const classification = classifyRestoreAttempt(snapshot, restoreAttempt);
+            onContextPreservationChange({
+              status: classification.status,
+              anchorSource: restoreAttempt?.anchorSource ?? (snapshot.blockAnchor ? "block-anchor" : "scroll-only"),
+              anchorTokenId: restoreAttempt?.anchorTokenId ?? snapshot.primaryAnchor?.tokenId ?? null,
+              anchorBlockId:
+                restoreAttempt?.anchorBlockId ??
+                snapshot.primaryAnchor?.blockId ??
+                snapshot.blockAnchor?.blockId ??
+                null,
+              anchorErrorPx: restoreAttempt?.anchorErrorPx ?? null,
+              viewportDeltaPx: measureViewportDelta(container, snapshot),
+              interventionAppliedAtUnixMs: interventionAppliedAtUnixMs ?? 0,
+              measuredAtUnixMs: Date.now(),
+              reason: classification.reason,
+            });
           }
 
           latestSnapshotRef.current = captureSnapshot(container);
@@ -355,10 +592,13 @@ export function usePreserveReadingContext({
   }, [
     clearContextHighlight,
     containerRef,
+    contentKey,
     contentRef,
     enabled,
     highlightContext,
+    interventionAppliedAtUnixMs,
     interventionKey,
+    onContextPreservationChange,
     shouldTrackContext,
     startContextHighlight,
   ]);

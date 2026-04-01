@@ -10,7 +10,6 @@ import {
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
   type ParticipantViewportSnapshot,
-  type ReadingAttentionSummarySnapshot,
   type ReadingContentSnapshot,
   type ReadingFocusSnapshot,
   type ReadingPresentationSnapshot,
@@ -18,6 +17,7 @@ import {
 } from "@/lib/experiment-session"
 import { cloneInterventionParameters } from "@/lib/intervention-modules"
 import type { GazeData } from "@/lib/gaze-socket"
+import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 
 type ReplayProducer = {
@@ -289,6 +289,9 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0 },
     focus: { isInsideReadingArea: false, normalizedContentX: null, normalizedContentY: null, activeTokenId: null, activeBlockId: null, updatedAtUnixMs: 0 },
+    latestContextPreservation: null,
+    recentContextPreservationEvents: [],
+    latestLayoutGuardrail: null,
     latestIntervention: null,
     recentInterventions: [],
     attentionSummary: null,

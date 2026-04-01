@@ -132,6 +132,26 @@ export type ReadingFocusSnapshot = {
   updatedAtUnixMs: number
 }
 
+export type ReadingContextPreservationSnapshot = {
+  status: "preserved" | "degraded" | "failed"
+  anchorSource: "active-token" | "fallback-token" | "block-anchor" | "scroll-only"
+  anchorTokenId: string | null
+  anchorBlockId: string | null
+  anchorErrorPx: number | null
+  viewportDeltaPx: number | null
+  interventionAppliedAtUnixMs: number
+  measuredAtUnixMs: number
+  reason: string | null
+}
+
+export type LayoutInterventionGuardrailSnapshot = {
+  status: "applied" | "suppressed"
+  reason: "cooldown-active" | "change-too-large" | "no-op-layout-change" | null
+  affectedProperties: Array<"font-family" | "font-size" | "line-width" | "line-height" | "letter-spacing">
+  evaluatedAtUnixMs: number
+  cooldownUntilUnixMs: number | null
+}
+
 export type InterventionEventSnapshot = {
   id: string
   source: string
@@ -205,6 +225,9 @@ export type LiveReadingSessionSnapshot = {
   appearance: ReaderAppearanceSnapshot
   participantViewport: ParticipantViewportSnapshot
   focus: ReadingFocusSnapshot
+  latestContextPreservation: ReadingContextPreservationSnapshot | null
+  recentContextPreservationEvents: ReadingContextPreservationSnapshot[]
+  latestLayoutGuardrail: LayoutInterventionGuardrailSnapshot | null
   latestIntervention: InterventionEventSnapshot | null
   recentInterventions: InterventionEventSnapshot[]
   attentionSummary: ReadingAttentionSummarySnapshot | null
@@ -278,6 +301,9 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     activeBlockId: null,
     updatedAtUnixMs: 0,
   },
+  latestContextPreservation: null,
+  recentContextPreservationEvents: [],
+  latestLayoutGuardrail: null,
   latestIntervention: null,
   recentInterventions: [],
   attentionSummary: null,
