@@ -178,7 +178,9 @@ public sealed class ReadingInterventionRuntime : IReadingInterventionRuntime
             nextPresentation.Copy(),
             nextAppearance.Copy(),
             module.Descriptor.ModuleId,
-            InterventionContractValueHelpers.CloneParameters(moduleResult.NormalizedParameters));
+            moduleResult.NormalizedParameters is null
+                ? null
+                : new Dictionary<string, string?>(moduleResult.NormalizedParameters, StringComparer.Ordinal));
 
         return new InterventionExecutionResult(nextPresentation, nextAppearance, interventionEvent);
     }
