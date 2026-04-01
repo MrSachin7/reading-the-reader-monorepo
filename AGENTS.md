@@ -108,12 +108,12 @@ The thesis focus is not only to ship a working system, but to defend a modular a
 - RTK Query failures are intercepted centrally in `Frontend/src/redux/middleware/error-middleware.ts`, then pushed into app state through `pushError` in `Frontend/src/redux/slices/app-slice.ts`.
 - Global runtime failures are captured in `Frontend/src/app/providers.tsx`, `Frontend/src/components/error/app-error-boundary.tsx`, `Frontend/src/components/error/error-runtime-monitor.tsx`, and `Frontend/src/redux/error-reporter.ts`.
 - Feature components catch async UI errors locally and reduce them to user-facing strings, for example `Frontend/src/modules/pages/settings/sections/CalibrationSettingsSection.tsx` and `Frontend/src/modules/pages/experiment/components/eyetracker-setup.tsx`.
-- Backend application services throw domain or argument exceptions and do not write HTTP responses directly. Examples include `ReadingMaterialSetupValidationException` from `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/ReadingMaterialSetups/ReadingMaterialSetupValidationException.cs` and `InvalidOperationException` throws in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/CalibrationService.cs`.
+- Backend application services throw domain or argument exceptions and do not write HTTP responses directly. Examples include `ReadingMaterialSetupValidationException` from `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/ReadingMaterialSetups/ReadingMaterialSetupValidationException.cs` and `InvalidOperationException` throws in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Calibration/CalibrationService.cs`.
 - Backend endpoint classes translate service exceptions into HTTP responses close to the transport boundary, as shown in `Backend/src/ReadingTheReader.WebApi/ReadingMaterialSetupEndpoints/CreateReadingMaterialSetupEndpoint.cs` and `Backend/src/ReadingTheReader.WebApi/CalibrationEndpoints/StartCalibrationEndpoint.cs`.
 - Realtime transport layers intentionally swallow disconnected-socket failures after cancellation checks in `Backend/src/infrastructure/ReadingTheReader.RealtimeMessenger/WebSocketRealtimeMessenger.cs` and `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`.
 ## Logging
 - Frontend logging is concentrated in transport and debugging utilities, not general UI rendering. See `Frontend/src/redux/api/base-api.ts` for REST request/response logs and `Frontend/src/lib/gaze-socket.ts` for WebSocket logs and parse failures.
-- Backend logging uses `Console.WriteLine` directly in `Backend/src/ReadingTheReader.WebApi/Program.cs`, `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`, `Backend/src/infrastructure/ReadingTheReader.TobiiEyetracker/TobiiEyeTrackerAdapter.cs`, and `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/ExperimentSessionManager.cs`.
+- Backend logging uses `Console.WriteLine` directly in `Backend/src/ReadingTheReader.WebApi/Program.cs`, `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`, `Backend/src/infrastructure/ReadingTheReader.TobiiEyetracker/TobiiEyeTrackerAdapter.cs`, and `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionManager.cs`.
 - No `ILogger` usage is detected. Follow the existing lightweight console logging style unless a broader logging refactor is introduced.
 ## Comments
 - Comments are sparse and usually reserved for boundary notes or intentional ignores, for example `// Modules installation` in `Backend/src/ReadingTheReader.WebApi/Program.cs` and `// Ignore disconnected sockets and send failures.` in `Backend/src/infrastructure/ReadingTheReader.RealtimeMessenger/WebSocketRealtimeMessenger.cs`.
@@ -148,7 +148,7 @@ The thesis focus is not only to ship a working system, but to defend a modular a
 ## Pattern Overview
 - Treat `Frontend/src/app` as route and layout wiring only; feature logic lives in `Frontend/src/modules`, `Frontend/src/lib`, and `Frontend/src/redux`.
 - Treat `Backend/src/ReadingTheReader.WebApi` as transport and composition only; session rules and workflow orchestration live in `Backend/src/core/ReadingTheReader.core.Application`.
-- Realtime behavior is split between REST commands under `/api` and a long-lived WebSocket channel under `/ws`, with both surfaces converging on `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/ExperimentSessionManager.cs`.
+- Realtime behavior is split between REST commands under `/api` and a long-lived WebSocket channel under `/ws`, with both surfaces converging on `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionManager.cs`.
 ## Frontend / Backend Responsibilities
 - `Frontend/src/app/layout.tsx` and `Frontend/src/app/providers.tsx` bootstrap global providers, theming, error boundaries, and Redux.
 - `Frontend/src/app/(with-sidebar)/*` hosts dashboard-style routes such as `Frontend/src/app/(with-sidebar)/experiment/page.tsx`, `Frontend/src/app/(with-sidebar)/settings/page.tsx`, and `Frontend/src/app/(with-sidebar)/reading-material/setup/page.tsx`.
@@ -184,7 +184,7 @@ The thesis focus is not only to ship a working system, but to defend a modular a
 - Used by: frontend REST calls and frontend WebSocket client.
 - Purpose: Hold workflow rules, orchestration, validation, and application contracts.
 - Location: `Backend/src/core/ReadingTheReader.core.Application`
-- Contains: service installers in `Backend/src/core/ReadingTheReader.core.Application/ApplicationModuleInstaller.cs`, orchestration in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/ExperimentSessionManager.cs`, calibration rules in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/CalibrationService.cs`, and infrastructure interfaces in `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/*.cs`.
+- Contains: service installers in `Backend/src/core/ReadingTheReader.core.Application/ApplicationModuleInstaller.cs`, orchestration in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionManager.cs`, calibration rules in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Calibration/CalibrationService.cs`, and infrastructure interfaces in `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/*.cs`.
 - Depends on: domain project reference in `Backend/src/core/ReadingTheReader.core.Application/ReadingTheReader.core.Application.csproj`.
 - Used by: Web API endpoints and infrastructure implementations.
 - Purpose: Keep core entity types separate from transport, filesystem, and Tobii SDK details.
@@ -204,10 +204,10 @@ The thesis focus is not only to ship a working system, but to defend a modular a
 - Backend session truth is centralized in the singleton `ExperimentSessionManager`; file-backed checkpointing is handled by `Backend/src/infrastructure/ReadingTheReader.Realtime.Persistence/ExperimentStateCheckpointWorker.cs`.
 ## Key Abstractions
 - Purpose: Single backend-owned aggregate for session activity, setup completion, calibration state, latest gaze state, connected clients, and reading-session metadata.
-- Examples: `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/ExperimentSessionSnapshot.cs`, `Frontend/src/lib/experiment-session.ts`.
+- Examples: `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionSnapshot.cs`, `Frontend/src/lib/experiment-session.ts`.
 - Pattern: Backend defines the canonical C# record; frontend mirrors the shape manually in TypeScript and updates it incrementally from WebSocket events.
 - Purpose: Give transport code stable entrypoints without exposing infrastructure details.
-- Examples: `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/IEyeTrackerService.cs`, `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/ICalibrationService.cs`, `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Participants/IParticipantService.cs`.
+- Examples: `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Sensing/IEyeTrackerService.cs`, `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Calibration/ICalibrationService.cs`, `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Participants/IParticipantService.cs`.
 - Pattern: Endpoints depend on interfaces; implementations are registered in `Backend/src/core/ReadingTheReader.core.Application/ApplicationModuleInstaller.cs`.
 - Purpose: Keep the application layer independent from hardware, broadcast transport, and persistence strategy.
 - Examples: `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/IEyeTrackerAdapter.cs`, `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/IClientBroadcasterAdapter.cs`, `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/IExperimentStateStoreAdapter.cs`.
@@ -219,7 +219,7 @@ The thesis focus is not only to ship a working system, but to defend a modular a
 - Reading session: `Backend/src/ReadingTheReader.WebApi/Contracts/ExperimentSession/UpsertReadingSessionRequest.cs` is consumed from `Frontend/src/redux/api/experiment-session-api.ts`.
 - Participant save: `Backend/src/ReadingTheReader.WebApi/Contracts/Participants/SaveParticipantRequest.cs` is shaped by `Frontend/src/redux/api/participant-api.ts`.
 - Reading-material setup: `Backend/src/ReadingTheReader.WebApi/Contracts/ReadingMaterialSetups/*.cs` is mirrored by `Frontend/src/redux/api/reading-material-api.ts`.
-- Backend message names live in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/MessageTypes.cs`.
+- Backend message names live in `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Messaging/MessageTypes.cs`.
 - Frontend envelope unions live in `Frontend/src/lib/gaze-socket.ts`.
 - Session, calibration, and reading-session payloads are mirrored in `Frontend/src/lib/experiment-session.ts`, `Frontend/src/lib/calibration.ts`, and `Frontend/src/lib/reading-attention-summary.ts`.
 - There is no generated shared package across `Frontend/` and `Backend/`. Contract alignment is manual, so changes to records such as `ExperimentSessionSnapshot`, `ReaderShellSettingsSnapshot`, or message type names must be updated on both sides.
