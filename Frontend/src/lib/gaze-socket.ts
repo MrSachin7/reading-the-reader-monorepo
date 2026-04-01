@@ -18,12 +18,37 @@ import { reportAppError } from "@/redux/error-reporter"
 
 export interface GazeData {
   deviceTimeStamp: number;
+  systemTimeStamp?: number | null;
   leftEyeX: number;
   leftEyeY: number;
   leftEyeValidity: string;
   rightEyeX: number;
   rightEyeY: number;
   rightEyeValidity: string;
+  leftEyePositionInUserX?: number | null;
+  leftEyePositionInUserY?: number | null;
+  leftEyePositionInUserZ?: number | null;
+  leftPupilDiameterMm?: number | null;
+  leftPupilValidity?: string;
+  leftGazeOriginInUserX?: number | null;
+  leftGazeOriginInUserY?: number | null;
+  leftGazeOriginInUserZ?: number | null;
+  leftGazeOriginValidity?: string;
+  leftGazeOriginInTrackBoxX?: number | null;
+  leftGazeOriginInTrackBoxY?: number | null;
+  leftGazeOriginInTrackBoxZ?: number | null;
+  rightEyePositionInUserX?: number | null;
+  rightEyePositionInUserY?: number | null;
+  rightEyePositionInUserZ?: number | null;
+  rightPupilDiameterMm?: number | null;
+  rightPupilValidity?: string;
+  rightGazeOriginInUserX?: number | null;
+  rightGazeOriginInUserY?: number | null;
+  rightGazeOriginInUserZ?: number | null;
+  rightGazeOriginValidity?: string;
+  rightGazeOriginInTrackBoxX?: number | null;
+  rightGazeOriginInTrackBoxY?: number | null;
+  rightGazeOriginInTrackBoxZ?: number | null;
 }
 
 type ServerEnvelope =

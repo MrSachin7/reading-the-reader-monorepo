@@ -1,4 +1,6 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 
 public static class ReadingInterventionModuleIds
 {

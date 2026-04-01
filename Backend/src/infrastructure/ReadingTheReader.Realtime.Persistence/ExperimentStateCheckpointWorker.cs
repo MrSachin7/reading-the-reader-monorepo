@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;

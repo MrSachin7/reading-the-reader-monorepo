@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;

@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using Xunit;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;

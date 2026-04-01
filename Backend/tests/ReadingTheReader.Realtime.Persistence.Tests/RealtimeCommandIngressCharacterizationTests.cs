@@ -1,5 +1,7 @@
 using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using Xunit;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;

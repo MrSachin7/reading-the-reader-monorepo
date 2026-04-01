@@ -1,6 +1,8 @@
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Domain;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 public sealed record ExperimentSetupBlockerSnapshot(
     string StepKey,

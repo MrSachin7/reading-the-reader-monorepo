@@ -1,4 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 using Xunit;
 
@@ -148,12 +151,12 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.False(finalSnapshot.IsActive);
         Assert.NotNull(finalSnapshot.StoppedAtUnixMs);
         Assert.NotNull(harness.ReplayExportStore.LatestExport);
-        Assert.Equal(finalSnapshot.SessionId, harness.ReplayExportStore.LatestExport!.Metadata.SessionId);
-        Assert.Equal("researcher-ui", harness.ReplayExportStore.LatestExport.Metadata.CompletionSource);
-        Assert.True(harness.ReplayExportStore.LatestExport.Statistics.GazeSampleCount >= 1);
-        Assert.True(harness.ReplayExportStore.LatestExport.Statistics.ParticipantViewportEventCount >= 1);
-        Assert.True(harness.ReplayExportStore.LatestExport.Statistics.ReadingFocusEventCount >= 1);
-        Assert.False(harness.ReplayExportStore.LatestExport.FinalSnapshot.IsActive);
+        Assert.Equal(finalSnapshot.SessionId, harness.ReplayExportStore.LatestExport!.Experiment.SessionId);
+        Assert.Equal("researcher-ui", harness.ReplayExportStore.LatestExport.Manifest.CompletionSource);
+        Assert.True(harness.ReplayExportStore.LatestExport.Sensing.GazeSamples.Count >= 1);
+        Assert.True(harness.ReplayExportStore.LatestExport.Derived.ViewportEvents.Count >= 1);
+        Assert.True(harness.ReplayExportStore.LatestExport.Derived.FocusEvents.Count >= 1);
+        Assert.Equal("doc-1", harness.ReplayExportStore.LatestExport.Content.DocumentId);
         Assert.False(finalSnapshot.LiveMonitoring.CanFinishSession);
         Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewConnection);
         Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewportData);

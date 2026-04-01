@@ -1,5 +1,7 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
@@ -31,7 +33,7 @@ public sealed class DownloadExperimentExportEndpoint : EndpointWithoutRequest
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             await HttpContext.Response.WriteAsJsonAsync(new
             {
-                message = "Replay export format must be either 'json' or 'csv'."
+                message = "Replay export format must be 'json'."
             }, ct);
             return;
         }
@@ -48,7 +50,7 @@ public sealed class DownloadExperimentExportEndpoint : EndpointWithoutRequest
             return;
         }
 
-        var sessionId = exportDocument.Metadata.SessionId?.ToString("N") ?? "latest";
+        var sessionId = exportDocument.Experiment.SessionId?.ToString("N") ?? "latest";
         var fileName = $"experiment-export-{sessionId}{ExperimentReplayExportFormats.GetFileExtension(format)}";
 
         HttpContext.Response.StatusCode = StatusCodes.Status200OK;

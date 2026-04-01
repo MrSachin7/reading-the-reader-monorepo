@@ -1,6 +1,7 @@
 using System.Globalization;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 
 public static class BuiltInReadingInterventionModules
 {
