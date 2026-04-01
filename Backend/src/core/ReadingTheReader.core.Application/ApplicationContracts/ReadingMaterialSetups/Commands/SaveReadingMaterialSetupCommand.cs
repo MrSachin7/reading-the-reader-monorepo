@@ -1,8 +1,7 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
+namespace ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
 
-public sealed class UpdateReadingMaterialSetupCommand
+public sealed class SaveReadingMaterialSetupCommand
 {
-    public string Id { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
     public string Markdown { get; init; } = string.Empty;
     public string FontFamily { get; init; } = string.Empty;

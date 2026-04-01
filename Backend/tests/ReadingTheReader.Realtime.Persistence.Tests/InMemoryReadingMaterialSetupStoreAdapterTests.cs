@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
+using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
 using ReadingTheReader.Realtime.Persistence;
 using Xunit;
 
