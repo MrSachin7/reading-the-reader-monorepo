@@ -29,11 +29,6 @@ export function CalibrationPreviewCard({
           <p className="mt-2 text-sm text-muted-foreground">
             {previewPoints.length} points are included in this preset.
           </p>
-          {showSavedDifferenceHint ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Draft differs from the saved backend preset and will take effect after saving.
-            </p>
-          ) : null}
         </div>
       </CardContent>
     </Card>

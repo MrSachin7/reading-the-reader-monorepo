@@ -21,9 +21,6 @@ function SettingsSectionNav() {
           <Settings2 className="h-5 w-5 text-foreground" />
           Settings
         </CardTitle>
-        <CardDescription>
-          Researcher-side defaults and calibration options, grouped by workflow instead of one long page.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <TabsList

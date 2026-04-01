@@ -386,8 +386,7 @@ export default function ReadingMaterialSetupPage() {
             <CardHeader>
               <CardTitle className="text-xl">Reading text</CardTitle>
               <CardDescription>
-                Edit a local draft here. It becomes the authoritative participant baseline only after
-                you save it into the experiment setup flow.
+                Edit a local draft here.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
