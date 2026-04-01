@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
+using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;

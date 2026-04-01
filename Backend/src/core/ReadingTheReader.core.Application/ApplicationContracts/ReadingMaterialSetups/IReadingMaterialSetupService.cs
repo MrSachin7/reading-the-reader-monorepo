@@ -1,3 +1,5 @@
+using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
+
 namespace ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 
 public interface IReadingMaterialSetupService

@@ -1,5 +1,6 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
+using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
 using ReadingTheReader.WebApi.Contracts.ReadingMaterialSetups;
 
 namespace ReadingTheReader.WebApi.ReadingMaterialSetupEndpoints;
