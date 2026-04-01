@@ -38,7 +38,6 @@ public sealed class ExperimentReplayExportSerializerTests
         var proposal = Assert.Single(roundTripped.Interventions.DecisionProposals);
         Assert.Equal(ReadingInterventionModuleIds.FontSize, proposal.Proposal.ProposedIntervention.ModuleId);
         Assert.Equal("20", Assert.Contains("fontSizePx", proposal.Proposal.ProposedIntervention.Parameters!));
-
         var gaze = Assert.Single(roundTripped.Sensing.GazeSamples);
         Assert.Equal(321, gaze.SystemTimeStampUs);
         Assert.Equal(3.2f, gaze.Left!.Pupil!.DiameterMm);

@@ -32,6 +32,10 @@ public sealed record ReadingFocusUpdatedRealtimeCommand(
     string ConnectionId,
     UpdateReadingFocusCommand Payload) : IRealtimeIngressCommand;
 
+public sealed record ReadingContextPreservationUpdatedRealtimeCommand(
+    string ConnectionId,
+    UpdateReadingContextPreservationCommand Payload) : IRealtimeIngressCommand;
+
 public sealed record ReadingAttentionSummaryUpdatedRealtimeCommand(
     string ConnectionId,
     UpdateReadingAttentionSummaryCommand Payload) : IRealtimeIngressCommand;
@@ -95,6 +99,11 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Reading focus payload is invalid.",
                 parsed => new ReadingFocusUpdatedRealtimeCommand(connectionId, parsed)),
+            MessageTypes.ReadingContextPreservationUpdated => Deserialize<UpdateReadingContextPreservationCommand>(
+                payload,
+                connectionId,
+                "Reading context preservation payload is invalid.",
+                parsed => new ReadingContextPreservationUpdatedRealtimeCommand(connectionId, parsed)),
             MessageTypes.ReadingAttentionSummaryUpdated => Deserialize<UpdateReadingAttentionSummaryCommand>(
                 payload,
                 connectionId,

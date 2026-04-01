@@ -227,4 +227,126 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.False(snapshot.ReadingSession!.ParticipantViewport.IsConnected);
         Assert.False(snapshot.ReadingSession.Focus.IsInsideReadingArea);
     }
+
+    [Fact]
+    public async Task UpdateReadingContextPreservationAsync_ProjectsLatestResultAndKeepsRecentHistoryOrderedByMeasuredTime()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+
+        var degraded = await harness.SessionManager.UpdateReadingContextPreservationAsync(
+            new UpdateReadingContextPreservationCommand(
+                "degraded",
+                "fallback-token",
+                "token-2",
+                "block-2",
+                42,
+                18,
+                1_710_000_003_000,
+                1_710_000_003_500,
+                "Anchor drift exceeded threshold"));
+
+        var preserved = await harness.SessionManager.UpdateReadingContextPreservationAsync(
+            new UpdateReadingContextPreservationCommand(
+                "preserved",
+                "active-token",
+                "token-3",
+                "block-3",
+                12,
+                4,
+                1_710_000_004_000,
+                1_710_000_005_000,
+                null));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+        var latest = Assert.IsType<ReadingContextPreservationEventSnapshot>(readingSession.LatestContextPreservation);
+
+        Assert.Equal("preserved", preserved.Status);
+        Assert.Equal("degraded", degraded.Status);
+        Assert.Equal("preserved", latest.Status);
+        Assert.Equal("active-token", latest.AnchorSource);
+        Assert.Equal(2, readingSession.RecentContextPreservationEvents.Count);
+        Assert.Collection(
+            readingSession.RecentContextPreservationEvents,
+            first =>
+            {
+                Assert.Equal("preserved", first.Status);
+                Assert.Equal(1_710_000_005_000, first.MeasuredAtUnixMs);
+            },
+            second =>
+            {
+                Assert.Equal("degraded", second.Status);
+                Assert.Equal(1_710_000_003_500, second.MeasuredAtUnixMs);
+            });
+
+        Assert.Contains(
+            harness.Broadcaster.Broadcasts,
+            message => message.MessageType == MessageTypes.ReadingContextPreservationChanged
+                       && message.Payload is ReadingContextPreservationEventSnapshot payload
+                       && payload.Status == "preserved"
+                       && payload.MeasuredAtUnixMs == 1_710_000_005_000);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenRepeatedLayoutChangeArrivesDuringCooldown_ProjectsCooldownActiveGuardrail()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+
+        var firstIntervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size once",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+        var secondIntervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size again immediately",
+            new ReadingPresentationPatch(null, 22, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+        var guardrail = Assert.IsType<LayoutInterventionGuardrailSnapshot>(readingSession.LatestLayoutGuardrail);
+
+        Assert.NotNull(firstIntervention);
+        Assert.Null(secondIntervention);
+        Assert.Equal("suppressed", guardrail.Status);
+        Assert.Equal("cooldown-active", guardrail.Reason);
+        Assert.Contains("font-size", guardrail.AffectedProperties);
+        Assert.NotNull(guardrail.CooldownUntilUnixMs);
+        Assert.Single(readingSession.RecentInterventions);
+        Assert.Equal(20, readingSession.Presentation.FontSizePx);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenLayoutChangeStepIsTooLarge_ProjectsChangeTooLargeGuardrail()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Jump font size too far",
+            new ReadingPresentationPatch(null, 26, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+        var guardrail = Assert.IsType<LayoutInterventionGuardrailSnapshot>(readingSession.LatestLayoutGuardrail);
+
+        Assert.Null(intervention);
+        Assert.Equal("suppressed", guardrail.Status);
+        Assert.Equal("change-too-large", guardrail.Reason);
+        Assert.Contains("font-size", guardrail.AffectedProperties);
+        Assert.Equal(18, readingSession.Presentation.FontSizePx);
+        Assert.Null(readingSession.LatestIntervention);
+        Assert.Empty(readingSession.RecentInterventions);
+    }
 }

@@ -176,6 +176,105 @@ public sealed record ReadingFocusSnapshot(
     }
 }
 
+public sealed record ReadingContextPreservationEventSnapshot(
+    string Status,
+    string AnchorSource,
+    string? AnchorTokenId,
+    string? AnchorBlockId,
+    double? AnchorErrorPx,
+    double? ViewportDeltaPx,
+    long InterventionAppliedAtUnixMs,
+    long MeasuredAtUnixMs,
+    string? Reason)
+{
+    public ReadingContextPreservationEventSnapshot Copy()
+    {
+        return new ReadingContextPreservationEventSnapshot(
+            NormalizeStatus(Status),
+            NormalizeAnchorSource(AnchorSource),
+            InterventionContractValueHelpers.NormalizeOptionalText(AnchorTokenId),
+            InterventionContractValueHelpers.NormalizeOptionalText(AnchorBlockId),
+            AnchorErrorPx,
+            ViewportDeltaPx,
+            InterventionAppliedAtUnixMs,
+            MeasuredAtUnixMs,
+            InterventionContractValueHelpers.NormalizeOptionalText(Reason));
+    }
+
+    public static string NormalizeStatus(string? status)
+    {
+        if (string.Equals(status?.Trim(), "degraded", StringComparison.OrdinalIgnoreCase))
+        {
+            return "degraded";
+        }
+
+        if (string.Equals(status?.Trim(), "failed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "failed";
+        }
+
+        return "preserved";
+    }
+
+    public static string NormalizeAnchorSource(string? anchorSource)
+    {
+        if (string.Equals(anchorSource?.Trim(), "fallback-token", StringComparison.OrdinalIgnoreCase))
+        {
+            return "fallback-token";
+        }
+
+        if (string.Equals(anchorSource?.Trim(), "block-anchor", StringComparison.OrdinalIgnoreCase))
+        {
+            return "block-anchor";
+        }
+
+        if (string.Equals(anchorSource?.Trim(), "scroll-only", StringComparison.OrdinalIgnoreCase))
+        {
+            return "scroll-only";
+        }
+
+        return "active-token";
+    }
+}
+
+public sealed record LayoutInterventionGuardrailSnapshot(
+    string Status,
+    string? Reason,
+    IReadOnlyList<string> AffectedProperties,
+    long EvaluatedAtUnixMs,
+    long? CooldownUntilUnixMs)
+{
+    public LayoutInterventionGuardrailSnapshot Copy()
+    {
+        return new LayoutInterventionGuardrailSnapshot(
+            NormalizeStatus(Status),
+            InterventionContractValueHelpers.NormalizeOptionalText(Reason),
+            AffectedProperties is null ? [] : [.. AffectedProperties.Select(NormalizeAffectedProperty)],
+            Math.Max(EvaluatedAtUnixMs, 0),
+            CooldownUntilUnixMs.HasValue ? Math.Max(CooldownUntilUnixMs.Value, 0) : null);
+    }
+
+    public static string NormalizeStatus(string? status)
+    {
+        return string.Equals(status?.Trim(), "suppressed", StringComparison.OrdinalIgnoreCase)
+            ? "suppressed"
+            : "applied";
+    }
+
+    public static string NormalizeAffectedProperty(string? affectedProperty)
+    {
+        return affectedProperty switch
+        {
+            "font-family" => "font-family",
+            "font-size" => "font-size",
+            "line-width" => "line-width",
+            "line-height" => "line-height",
+            "letter-spacing" => "letter-spacing",
+            _ => "font-size"
+        };
+    }
+}
+
 public sealed record ReadingAttentionTokenSnapshot(
     long FixationMs,
     int FixationCount,
@@ -245,6 +344,9 @@ public sealed record LiveReadingSessionSnapshot(
     ReaderAppearanceSnapshot Appearance,
     ParticipantViewportSnapshot ParticipantViewport,
     ReadingFocusSnapshot Focus,
+    ReadingContextPreservationEventSnapshot? LatestContextPreservation,
+    IReadOnlyList<ReadingContextPreservationEventSnapshot> RecentContextPreservationEvents,
+    LayoutInterventionGuardrailSnapshot? LatestLayoutGuardrail,
     InterventionEventSnapshot? LatestIntervention,
     IReadOnlyList<InterventionEventSnapshot> RecentInterventions,
     ReadingAttentionSummarySnapshot? AttentionSummary = null)
@@ -257,6 +359,9 @@ public sealed record LiveReadingSessionSnapshot(
         ReadingFocusSnapshot.Empty,
         null,
         [],
+        null,
+        null,
+        [],
         null);
 
     public LiveReadingSessionSnapshot Copy()
@@ -267,6 +372,9 @@ public sealed record LiveReadingSessionSnapshot(
             (Appearance ?? ReaderAppearanceSnapshot.Default).Copy(),
             (ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected).Copy(),
             (Focus ?? ReadingFocusSnapshot.Empty).Copy(),
+            LatestContextPreservation?.Copy(),
+            RecentContextPreservationEvents is null ? [] : [.. RecentContextPreservationEvents.Select(item => item.Copy())],
+            LatestLayoutGuardrail?.Copy(),
             LatestIntervention?.Copy(),
             RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())],
             AttentionSummary?.Copy());
@@ -345,6 +453,17 @@ public sealed record UpdateReadingFocusCommand(
     double? NormalizedContentY,
     string? ActiveTokenId,
     string? ActiveBlockId);
+
+public sealed record UpdateReadingContextPreservationCommand(
+    string Status,
+    string AnchorSource,
+    string? AnchorTokenId,
+    string? AnchorBlockId,
+    double? AnchorErrorPx,
+    double? ViewportDeltaPx,
+    long InterventionAppliedAtUnixMs,
+    long MeasuredAtUnixMs,
+    string? Reason);
 
 public sealed record UpdateReadingAttentionSummaryCommand(
     long UpdatedAtUnixMs,

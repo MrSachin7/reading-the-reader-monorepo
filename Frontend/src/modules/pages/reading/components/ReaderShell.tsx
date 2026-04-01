@@ -20,6 +20,7 @@ import {
 import { useRemoteTokenHighlight } from "@/modules/pages/reading/lib/useRemoteTokenHighlight";
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown";
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
+import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
 
 type ReaderViewportMetrics = {
@@ -48,6 +49,7 @@ type ReaderShellProps = {
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
   viewportScrollProgress?: number | null;
   viewportScrollTopPx?: number | null;
   remoteFocus?: {
@@ -65,6 +67,7 @@ type ReaderShellProps = {
   frameClassName?: string;
   frameStyle?: CSSProperties;
   embedded?: boolean;
+  interventionAppliedAtUnixMs?: number | null;
 };
 
 const FONT_FAMILY_STYLES = {
@@ -115,6 +118,7 @@ export function ReaderShell({
   onPresentationChange,
   onViewportMetricsChange,
   onFocusChange,
+  onContextPreservationChange,
   viewportScrollProgress = null,
   viewportScrollTopPx = null,
   remoteFocus = null,
@@ -126,6 +130,7 @@ export function ReaderShell({
   frameClassName,
   frameStyle,
   embedded = false,
+  interventionAppliedAtUnixMs = null,
 }: ReaderShellProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -178,7 +183,10 @@ export function ReaderShell({
     contentRef,
     enabled: preserveContextOnIntervention,
     highlightContext,
-    interventionKey: `${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}:${presentation.fontFamily}:${markdown}`,
+    contentKey: `${docId}:${markdown}`,
+    interventionKey: `${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}:${presentation.fontFamily}`,
+    interventionAppliedAtUnixMs,
+    onContextPreservationChange,
   });
 
   const updatePresentation = useCallback(
