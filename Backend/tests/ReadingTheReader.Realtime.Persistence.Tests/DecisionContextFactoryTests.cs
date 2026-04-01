@@ -36,7 +36,7 @@ public sealed class DecisionContextFactoryTests
             "manual",
             "researcher-ui",
             "Adjusted font size",
-            new ReadingPresentationPatch(null, 22, null, null, null, null),
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, "sepia", null)));
 
         Assert.NotNull(intervention);
@@ -61,10 +61,10 @@ public sealed class DecisionContextFactoryTests
         Assert.Single(context.RecentInterventions);
         Assert.Equal(intervention!.Id, context.RecentInterventions[0].Id);
         Assert.Null(context.RecentInterventions[0].ModuleId);
-        Assert.Equal("22", context.RecentInterventions[0].Parameters!["fontSizePx"]);
+        Assert.Equal("20", context.RecentInterventions[0].Parameters!["fontSizePx"]);
         Assert.Equal("sepia", context.RecentInterventions[0].Parameters!["palette"]);
         Assert.Equal("sepia", context.Appearance.Palette);
-        Assert.Equal(22, context.Presentation.FontSizePx);
+        Assert.Equal(20, context.Presentation.FontSizePx);
     }
 
     [Fact]
