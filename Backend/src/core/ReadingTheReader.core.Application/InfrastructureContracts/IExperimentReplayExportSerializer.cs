@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 
 namespace ReadingTheReader.core.Application.InfrastructureContracts;
 

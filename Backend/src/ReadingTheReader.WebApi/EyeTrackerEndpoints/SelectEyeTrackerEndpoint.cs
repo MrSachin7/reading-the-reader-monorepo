@@ -1,5 +1,7 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 namespace ReadingTheReader.WebApi.EyeTrackerEndpoints;
 

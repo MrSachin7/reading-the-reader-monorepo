@@ -1,4 +1,4 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 
 public interface IReadingInterventionModuleRegistry
 {

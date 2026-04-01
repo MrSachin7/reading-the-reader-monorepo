@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.Realtime.Persistence;
@@ -75,12 +76,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
         var exportFiles = Directory
             .EnumerateFiles(_savedDirectoryPath, "*.*", SearchOption.TopDirectoryOnly)
-            .Where(path =>
-            {
-                var extension = Path.GetExtension(path);
-                return string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase) ||
-                       string.Equals(extension, ".csv", StringComparison.OrdinalIgnoreCase);
-            })
+            .Where(path => string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase))
             .ToArray();
         var items = new List<SavedExperimentReplayExportSummary>(exportFiles.Length);
 
@@ -109,8 +105,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         DeleteLegacyMetadataFiles();
 
         var fileName = id.Trim();
-        if (!fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
-            !fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+        if (!fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
             fileName = $"{fileName}.json";
         }
@@ -127,15 +122,15 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
     {
         return new SavedExperimentReplayExportSummary(
             fileName,
-            string.IsNullOrWhiteSpace(exportDocument.Metadata.SavedName)
+            string.IsNullOrWhiteSpace(exportDocument.Manifest.SavedName)
                 ? Path.GetFileNameWithoutExtension(fileName)
-                : exportDocument.Metadata.SavedName!,
+                : exportDocument.Manifest.SavedName!,
             fileName,
             format,
-            exportDocument.Metadata.SessionId,
+            exportDocument.Experiment.SessionId,
             updatedAtUnixMs,
             updatedAtUnixMs,
-            exportDocument.Metadata.ExportedAtUnixMs);
+            exportDocument.Manifest.ExportedAtUnixMs);
     }
 
     private string BuildUniqueFileName(string name, string format)
@@ -181,9 +176,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
     private static string GetFormatFromPath(string path)
     {
-        return string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase)
-            ? ExperimentReplayExportFormats.Csv
-            : ExperimentReplayExportFormats.Json;
+        return ExperimentReplayExportFormats.Json;
     }
 
     private void DeleteLegacyMetadataFiles()

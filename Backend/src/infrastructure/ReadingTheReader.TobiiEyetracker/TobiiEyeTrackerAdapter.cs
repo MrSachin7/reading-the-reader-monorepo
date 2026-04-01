@@ -610,12 +610,37 @@ public class TobiiEyeTrackerAdapter : IEyeTrackerAdapter
         var gazeData = new GazeData
         {
             DeviceTimeStamp = e.DeviceTimeStamp,
-            LeftEyeX = e.LeftEye.GazePoint.PositionOnDisplayArea.X,
-            LeftEyeY = e.LeftEye.GazePoint.PositionOnDisplayArea.Y,
+            SystemTimeStamp = e.SystemTimeStamp,
+            LeftEyeX = (float)e.LeftEye.GazePoint.PositionOnDisplayArea.X,
+            LeftEyeY = (float)e.LeftEye.GazePoint.PositionOnDisplayArea.Y,
             LeftEyeValidity = e.LeftEye.GazePoint.Validity.ToString(),
-            RightEyeX = e.RightEye.GazePoint.PositionOnDisplayArea.X,
-            RightEyeY = e.RightEye.GazePoint.PositionOnDisplayArea.Y,
-            RightEyeValidity = e.RightEye.GazePoint.Validity.ToString()
+            LeftEyePositionInUserX = (float)e.LeftEye.GazePoint.PositionInUserCoordinates.X,
+            LeftEyePositionInUserY = (float)e.LeftEye.GazePoint.PositionInUserCoordinates.Y,
+            LeftEyePositionInUserZ = (float)e.LeftEye.GazePoint.PositionInUserCoordinates.Z,
+            LeftPupilDiameterMm = (float)e.LeftEye.Pupil.PupilDiameter,
+            LeftPupilValidity = e.LeftEye.Pupil.Validity.ToString(),
+            LeftGazeOriginInUserX = (float)e.LeftEye.GazeOrigin.PositionInUserCoordinates.X,
+            LeftGazeOriginInUserY = (float)e.LeftEye.GazeOrigin.PositionInUserCoordinates.Y,
+            LeftGazeOriginInUserZ = (float)e.LeftEye.GazeOrigin.PositionInUserCoordinates.Z,
+            LeftGazeOriginValidity = e.LeftEye.GazeOrigin.Validity.ToString(),
+            LeftGazeOriginInTrackBoxX = (float)e.LeftEye.GazeOrigin.PositionInTrackBoxCoordinates.X,
+            LeftGazeOriginInTrackBoxY = (float)e.LeftEye.GazeOrigin.PositionInTrackBoxCoordinates.Y,
+            LeftGazeOriginInTrackBoxZ = (float)e.LeftEye.GazeOrigin.PositionInTrackBoxCoordinates.Z,
+            RightEyeX = (float)e.RightEye.GazePoint.PositionOnDisplayArea.X,
+            RightEyeY = (float)e.RightEye.GazePoint.PositionOnDisplayArea.Y,
+            RightEyeValidity = e.RightEye.GazePoint.Validity.ToString(),
+            RightEyePositionInUserX = (float)e.RightEye.GazePoint.PositionInUserCoordinates.X,
+            RightEyePositionInUserY = (float)e.RightEye.GazePoint.PositionInUserCoordinates.Y,
+            RightEyePositionInUserZ = (float)e.RightEye.GazePoint.PositionInUserCoordinates.Z,
+            RightPupilDiameterMm = (float)e.RightEye.Pupil.PupilDiameter,
+            RightPupilValidity = e.RightEye.Pupil.Validity.ToString(),
+            RightGazeOriginInUserX = (float)e.RightEye.GazeOrigin.PositionInUserCoordinates.X,
+            RightGazeOriginInUserY = (float)e.RightEye.GazeOrigin.PositionInUserCoordinates.Y,
+            RightGazeOriginInUserZ = (float)e.RightEye.GazeOrigin.PositionInUserCoordinates.Z,
+            RightGazeOriginValidity = e.RightEye.GazeOrigin.Validity.ToString(),
+            RightGazeOriginInTrackBoxX = (float)e.RightEye.GazeOrigin.PositionInTrackBoxCoordinates.X,
+            RightGazeOriginInTrackBoxY = (float)e.RightEye.GazeOrigin.PositionInTrackBoxCoordinates.Y,
+            RightGazeOriginInTrackBoxZ = (float)e.RightEye.GazeOrigin.PositionInTrackBoxCoordinates.Z
         };
 
         gazeData.Sanitize();

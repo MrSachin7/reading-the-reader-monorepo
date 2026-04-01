@@ -1,5 +1,6 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
 namespace ReadingTheReader.WebApi.ReaderShellSettingsEndpoints;
 

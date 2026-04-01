@@ -1,6 +1,7 @@
 using System.Text.Json;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 
 public interface IRealtimeIngressCommand
 {

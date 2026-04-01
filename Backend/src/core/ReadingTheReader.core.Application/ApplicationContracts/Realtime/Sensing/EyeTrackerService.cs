@@ -1,7 +1,7 @@
-using ReadingTheReader.core.Application.InfrastructureContracts;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 
 public sealed class EyeTrackerService : IEyeTrackerService
 {

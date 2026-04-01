@@ -131,7 +131,7 @@ export default function ResearcherCurrentLivePage() {
               <CardTitle>{isCompleted ? "Experiment completed" : "No ongoing experiment"}</CardTitle>
               <CardDescription>
                 {isCompleted
-                  ? "The export includes session metadata, reading state history, interventions, viewport/focus updates, and the recorded gaze stream."
+                  ? "The export includes experiment context, replay baseline data, viewport and focus history, intervention and proposal history, attention events, and the enriched raw gaze stream."
                   : "Start the participant reading session from the experiment setup flow before opening the researcher live view."}
               </CardDescription>
               <ExperimentCompletionActions

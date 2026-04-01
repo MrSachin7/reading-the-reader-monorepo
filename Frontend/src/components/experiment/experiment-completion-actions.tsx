@@ -10,7 +10,6 @@ import { downloadExperimentExport } from "@/lib/experiment-export"
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
 import { getErrorMessage } from "@/lib/error-utils"
 import {
-  type ReplayExportFormat,
   useFinishExperimentSessionMutation,
   useSaveExperimentReplayExportMutation,
 } from "@/redux"
@@ -33,8 +32,6 @@ export function ExperimentCompletionActions({
     useFinishExperimentSessionMutation()
   const [saveExperimentReplayExport, { isLoading: isSaving }] =
     useSaveExperimentReplayExportMutation()
-  const [downloadFormat, setDownloadFormat] = useState<ReplayExportFormat>("json")
-  const [saveFormat, setSaveFormat] = useState<ReplayExportFormat>("json")
   const [isDownloading, setIsDownloading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
@@ -74,7 +71,7 @@ export function ExperimentCompletionActions({
     setIsDownloading(true)
 
     try {
-      await downloadExperimentExport(downloadFormat)
+      await downloadExperimentExport()
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not download the experiment export."))
     } finally {
@@ -87,15 +84,13 @@ export function ExperimentCompletionActions({
     setSaveSuccessMessage(null)
 
     try {
-      const saved = await saveExperimentReplayExport({ name: saveName.trim(), format: saveFormat }).unwrap()
-      setSaveSuccessMessage(`Saved ${saveFormat.toUpperCase()} as ${saved.name}.`)
+      const saved = await saveExperimentReplayExport({ name: saveName.trim(), format: "json" }).unwrap()
+      setSaveSuccessMessage(`Saved JSON as ${saved.name}.`)
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not save the replay export."))
     }
   }
 
-  const isDownloadFormatSelected = (format: ReplayExportFormat) => downloadFormat === format
-  const isSaveFormatSelected = (format: ReplayExportFormat) => saveFormat === format
   const isStacked = layout === "stacked"
 
   return (
@@ -123,31 +118,12 @@ export function ExperimentCompletionActions({
         ) : null}
         {canDownload ? (
           <>
-            <div
-              className={cn(
-                "rounded-lg border bg-muted/20 p-1",
-                isStacked ? "grid w-full grid-cols-2" : "inline-flex"
-              )}
-            >
-              {(["json", "csv"] as const).map((format) => (
-                <Button
-                  key={format}
-                  type="button"
-                  size="sm"
-                  variant={isDownloadFormatSelected(format) ? "default" : "ghost"}
-                  className={cn("h-8 px-3 uppercase", isStacked ? "w-full" : undefined)}
-                  onClick={() => setDownloadFormat(format)}
-                >
-                  {format}
-                </Button>
-              ))}
-            </div>
             <Button
               variant="outline"
               onClick={() => void handleDownload()}
               disabled={isDownloading}
             >
-              {isDownloading ? `Downloading ${downloadFormat.toUpperCase()}...` : `Download ${downloadFormat.toUpperCase()}`}
+              {isDownloading ? "Downloading JSON..." : "Download JSON"}
             </Button>
           </>
         ) : null}
@@ -158,27 +134,8 @@ export function ExperimentCompletionActions({
             <div className="space-y-1">
               <p className="text-sm font-medium">Save replay in backend</p>
               <p className="text-sm text-muted-foreground">
-                Save this replay export as JSON or CSV so it remains available later.
+                Save this replay export as JSON so it remains available later.
               </p>
-            </div>
-            <div
-              className={cn(
-                "rounded-lg border bg-muted/20 p-1",
-                isStacked ? "grid w-full grid-cols-2" : "inline-flex"
-              )}
-            >
-              {(["json", "csv"] as const).map((format) => (
-                <Button
-                  key={format}
-                  type="button"
-                  size="sm"
-                  variant={isSaveFormatSelected(format) ? "default" : "ghost"}
-                  className={cn("h-8 px-3 uppercase", isStacked ? "w-full" : undefined)}
-                  onClick={() => setSaveFormat(format)}
-                >
-                  {format}
-                </Button>
-              ))}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
@@ -197,7 +154,7 @@ export function ExperimentCompletionActions({
                 ) : (
                   <Save className="mr-2 h-4 w-4" />
                 )}
-                Save {saveFormat.toUpperCase()}
+                Save JSON
               </Button>
             </div>
           </div>

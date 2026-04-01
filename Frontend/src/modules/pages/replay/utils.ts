@@ -20,6 +20,8 @@ export function formatEventKind(kind: ReplayKeyEvent["kind"]) {
   switch (kind) {
     case "lifecycle":
       return "Session"
+    case "proposal":
+      return "Proposal"
     case "state":
       return "State"
     case "intervention":

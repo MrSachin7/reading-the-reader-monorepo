@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
 public sealed class ReaderShellSettingsService : IReaderShellSettingsService
 {

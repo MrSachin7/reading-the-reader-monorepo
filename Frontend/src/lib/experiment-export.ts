@@ -1,18 +1,19 @@
 import type { ReplayExportFormat } from "@/redux"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5190/api"
+const REPLAY_EXPORT_FORMAT: ReplayExportFormat = "json"
 
-function getFallbackFileName(format: ReplayExportFormat) {
-  return format === "csv" ? "experiment-export.csv" : "experiment-export.json"
+function getFallbackFileName() {
+  return "experiment-export.json"
 }
 
-function getFileName(contentDisposition: string | null, format: ReplayExportFormat) {
+function getFileName(contentDisposition: string | null) {
   if (!contentDisposition) {
-    return getFallbackFileName(format)
+    return getFallbackFileName()
   }
 
   const match = /filename=\"?([^\";]+)\"?/i.exec(contentDisposition)
-  return match?.[1] ?? getFallbackFileName(format)
+  return match?.[1] ?? getFallbackFileName()
 }
 
 async function readErrorMessage(response: Response) {
@@ -28,8 +29,8 @@ async function readErrorMessage(response: Response) {
   return response.statusText || "Could not download the experiment export."
 }
 
-export async function downloadExperimentExport(format: ReplayExportFormat) {
-  const response = await fetch(`${API_BASE_URL}/experiment-session/export?format=${encodeURIComponent(format)}`, {
+export async function downloadExperimentExport() {
+  const response = await fetch(`${API_BASE_URL}/experiment-session/export?format=${encodeURIComponent(REPLAY_EXPORT_FORMAT)}`, {
     method: "GET",
   })
 
@@ -41,7 +42,7 @@ export async function downloadExperimentExport(format: ReplayExportFormat) {
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement("a")
   link.href = url
-  link.download = getFileName(response.headers.get("content-disposition"), format)
+  link.download = getFileName(response.headers.get("content-disposition"))
   document.body.appendChild(link)
   link.click()
   link.remove()

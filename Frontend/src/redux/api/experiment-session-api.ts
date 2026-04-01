@@ -1,7 +1,7 @@
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
 import { baseApi } from "@/redux/api/base-api"
 
-export type ReplayExportFormat = "json" | "csv"
+export type ReplayExportFormat = "json"
 
 export type UpsertReadingSessionPayload = {
   documentId: string

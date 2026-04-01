@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using DomainParticipant = ReadingTheReader.core.Domain.Participant;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Participants;

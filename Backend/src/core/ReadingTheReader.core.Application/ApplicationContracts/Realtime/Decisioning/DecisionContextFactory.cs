@@ -1,4 +1,7 @@
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 
 public sealed class DecisionContextFactory : IDecisionContextFactory
 {

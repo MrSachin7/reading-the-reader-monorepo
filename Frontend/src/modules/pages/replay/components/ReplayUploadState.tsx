@@ -63,14 +63,14 @@ export function ReplayUploadState({
           <Input
             id={inputId}
             type="file"
-            accept=".json,.csv,application/json,text/csv"
+            accept=".json,application/json"
             className="sr-only"
             onChange={onInputChange}
           />
           <div className="flex h-18 w-18 items-center justify-center rounded-2xl border bg-background shadow-sm">
             <FileUp className="h-8 w-8 text-sky-500" />
           </div>
-          <p className="mt-6 text-xl font-semibold">Upload replay JSON or CSV</p>
+          <p className="mt-6 text-xl font-semibold">Upload replay JSON</p>
           <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
             Drop the exported file here or choose it from disk.
           </p>
