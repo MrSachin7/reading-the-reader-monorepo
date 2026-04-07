@@ -10,7 +10,7 @@ public sealed class ExperimentStateCheckpointWorker : BackgroundService
 {
     private readonly IExperimentSessionQueryService _sessionQueryService;
     private readonly IExperimentStateStoreAdapter _stateStoreAdapter;
-    private readonly TimeSpan _checkpointInterval;
+    private readonly TimeSpan _activeReplayInterval;
 
     public ExperimentStateCheckpointWorker(
         IExperimentSessionQueryService sessionQueryService,
@@ -20,18 +20,18 @@ public sealed class ExperimentStateCheckpointWorker : BackgroundService
         _sessionQueryService = sessionQueryService;
         _stateStoreAdapter = stateStoreAdapter;
 
-        var intervalMs = options.Value.CheckpointIntervalMilliseconds;
-        if (intervalMs < 250)
+        var intervalMs = options.Value.ActiveReplaySaveIntervalMilliseconds;
+        if (intervalMs < 100)
         {
-            intervalMs = 250;
+            intervalMs = 100;
         }
 
-        _checkpointInterval = TimeSpan.FromMilliseconds(intervalMs);
+        _activeReplayInterval = TimeSpan.FromMilliseconds(intervalMs);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(_checkpointInterval);
+        using var timer = new PeriodicTimer(_activeReplayInterval);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -43,8 +43,11 @@ public sealed class ExperimentStateCheckpointWorker : BackgroundService
                     break;
                 }
 
-                var snapshot = _sessionQueryService.GetCurrentSnapshot();
-                await _stateStoreAdapter.SaveSnapshotAsync(snapshot, stoppingToken);
+                var exportDocument = _sessionQueryService.GetCurrentActiveReplayExport();
+                if (exportDocument is not null)
+                {
+                    await _stateStoreAdapter.SaveActiveReplayAsync(exportDocument, stoppingToken);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -55,5 +58,22 @@ public sealed class ExperimentStateCheckpointWorker : BackgroundService
                 // Best-effort checkpointing should never crash the process.
             }
         }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var exportDocument = _sessionQueryService.GetCurrentActiveReplayExport();
+            if (exportDocument is not null)
+            {
+                await _stateStoreAdapter.SaveActiveReplayAsync(exportDocument, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        await base.StopAsync(cancellationToken);
     }
 }

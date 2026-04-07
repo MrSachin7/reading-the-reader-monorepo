@@ -13,7 +13,7 @@ The architecture is organized into:
 - `core.Domain`: core entities (`GazeData`, `ExperimentSession`, `EyeTrackerDevice`).
 - `infrastructure.TobiiEyetracker`: Tobii SDK adapter and gaze event source.
 - `infrastructure.RealtimeMessenger`: WebSocket connection registry and broadcast transport.
-- `infrastructure.Realtime.Persistence`: optional periodic snapshot checkpointing.
+- `infrastructure.Realtime.Persistence`: optional live replay file persistence and final replay export storage.
 
 ## High-Level Component Diagram
 ```mermaid
@@ -37,7 +37,7 @@ flowchart LR
     WSMSG --> FE
 
     SESS --> SNAP[IExperimentStateStore]
-    SNAP --> FILE[(File/InMemory Snapshot)]
+    SNAP --> FILE[(File/InMemory Live Replay)]
 ```
 
 ## Request and Data Flow
@@ -150,14 +150,24 @@ Common outbound `type` values include:
 - `gazeSample`
 - `error`
 
-## Persistence and Recovery Snapshot
-Realtime persistence module periodically checkpoints `ExperimentSessionSnapshot`:
+## Persistence and Live Replay File
+Realtime persistence now keeps one active replay-ready JSON file for the running session.
 
-- Provider is configurable: `InMemory` (default) or `File`.
-- Interval is configurable via `RealtimePersistence.CheckpointIntervalMilliseconds` (minimum enforced: `250ms`).
-- File mode writes JSON snapshots to configured `SnapshotFilePath`.
+- Provider is configurable: `File` (default) or `InMemory`.
+- Save cadence is configurable via `RealtimePersistence.ActiveReplaySaveIntervalMilliseconds`.
+- File mode writes the current partial replay export to a per-session folder under `RealtimePersistence.ActiveReplayDirectoryPath`.
+- The live file uses the same `rtr.experiment-export` schema that the replay page imports.
+- The default live-save cadence is `10000ms` to avoid synchronous UI-impacting writes on every reading event.
 
-This is best-effort persistence for state observability/recovery support, not a full historical gaze archive.
+The default layout is:
+
+- `data/live-experiments/<sessionId>/experiment-session-live.json`
+- `data/latest/experiment-session-export.json`
+- `data/saved-exports/<saved-export-files>`
+
+During the experiment, the backend continuously rewrites that file so the current run is durable even before `Finish experiment` is clicked. On normal finish, the backend flushes the live replay JSON, uses it to produce the final JSON/CSV export outputs, saves the latest completed export, and clears the active live file.
+
+If the backend stops unexpectedly, startup does not restore the unfinished run into the current session. The frontend returns to its normal idle state, while the unfinished replay-ready JSON remains on disk for manual replay use.
 
 ## Key Practical Notes
 - WebSocket is required for realtime gaze ingestion on frontend.

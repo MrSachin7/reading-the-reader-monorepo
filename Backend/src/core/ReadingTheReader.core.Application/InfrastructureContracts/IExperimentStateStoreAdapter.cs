@@ -1,11 +1,12 @@
-using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
-using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 
 namespace ReadingTheReader.core.Application.InfrastructureContracts;
 
 public interface IExperimentStateStoreAdapter
 {
-    ValueTask SaveSnapshotAsync(ExperimentSessionSnapshot snapshot, CancellationToken ct = default);
+    ValueTask SaveActiveReplayAsync(ExperimentReplayExport exportDocument, CancellationToken ct = default);
 
-    ValueTask<ExperimentSessionSnapshot?> LoadLatestSnapshotAsync(CancellationToken ct = default);
+    ValueTask<ExperimentReplayExport?> LoadActiveReplayAsync(CancellationToken ct = default);
+
+    ValueTask ClearActiveReplayAsync(CancellationToken ct = default);
 }

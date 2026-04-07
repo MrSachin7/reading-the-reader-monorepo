@@ -21,7 +21,8 @@ public static class RealtimePersistenceModuleInstaller
 
         if (useFileProvider)
         {
-            services.AddSingleton<IExperimentStateStoreAdapter>(_ => new FileSnapshotExperimentStateStoreAdapter(options.SnapshotFilePath));
+            services.AddSingleton<IExperimentStateStoreAdapter>(_ => new FileSnapshotExperimentStateStoreAdapter(
+                options.ActiveReplayDirectoryPath));
             services.AddSingleton<IExperimentReplayExportStoreAdapter>(serviceProvider =>
                 new FileExperimentReplayExportStoreAdapter(
                     options.ReplayExportFilePath,

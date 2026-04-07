@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisionin
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;
 
