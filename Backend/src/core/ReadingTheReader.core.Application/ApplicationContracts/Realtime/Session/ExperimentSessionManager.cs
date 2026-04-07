@@ -67,8 +67,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _readingInterventionRuntime = readingInterventionRuntime;
         _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
-
-        RestoreLatestSnapshot();
     }
 
     private sealed record InterventionApplicationOutcome(
@@ -84,7 +82,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var participantCopy = participant.Copy();
             Volatile.Write(ref _session, current with { Participant = participantCopy });
 
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -101,7 +99,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var eyeTrackerCopy = eyeTrackerDevice.Copy();
             Volatile.Write(ref _session, current with { EyeTrackerDevice = eyeTrackerCopy });
 
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -115,7 +113,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         try
         {
             _calibrationSnapshot = calibrationSnapshot;
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -174,7 +172,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             nextState = _liveReadingSession.Copy();
             RecordReadingSessionState("reading-session-configured", updatedAtUnixMs, nextState);
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -204,6 +202,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             nextState = _liveReadingSession.Copy();
             RecordParticipantViewportEvent(updatedAtUnixMs, nextState.ParticipantViewport);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -241,6 +240,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             viewport = _liveReadingSession.ParticipantViewport.Copy();
             RecordParticipantViewportEvent(updatedAtUnixMs, viewport);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -275,6 +275,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             focus = _liveReadingSession.Focus.Copy();
             RecordReadingFocusEvent(updatedAtUnixMs, focus);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -303,6 +304,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     _liveReadingSession.RecentContextPreservationEvents,
                     contextPreservation)
             };
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -332,7 +334,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 AttentionSummary = summary
             };
             RecordReadingAttentionEvent(updatedAtUnixMs, summary);
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -363,7 +365,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             {
                 if (supersededProposal is not null)
                 {
-                    await SaveCurrentSnapshotAsync(ct);
+                    await SaveCurrentCheckpointAsync(ct);
                 }
                 return null;
             }
@@ -371,7 +373,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             interventionEvent = outcome.Execution?.Event.Copy();
             nextState = _liveReadingSession.Copy();
             decisionUpdate = supersededProposal is null ? null : BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -428,7 +430,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
 
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -475,7 +477,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             interventionEvent = outcome.Execution?.Event.Copy();
             nextState = outcome.DidUpdateReadingSession ? _liveReadingSession.Copy() : null;
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -524,7 +526,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             RecordDecisionProposalEvent(updatedAtUnixMs, rejectedProposal);
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -550,7 +552,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             };
 
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -593,7 +595,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
 
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -674,7 +676,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
 
             update = BuildDecisionRealtimeUpdate();
-            await SaveCurrentSnapshotAsync(ct);
+            await SaveCurrentCheckpointAsync(ct);
         }
         finally
         {
@@ -753,7 +755,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             var snapshot = GetCurrentSnapshot();
             SetInitialSnapshot(snapshot);
-            await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
+            await SaveCurrentActiveReplayAsync(ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStarted, snapshot, ct);
             return true;
         }
@@ -800,7 +802,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             ResetReplayHistory();
 
             var snapshot = GetCurrentSnapshot();
-            await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
+            await _experimentStateStoreAdapter.ClearActiveReplayAsync(ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentState, snapshot, ct);
             return snapshot;
         }
@@ -827,7 +829,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         var latest = await _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);
         if (latest is null)
         {
-            throw new InvalidOperationException("No completed experiment export is available yet.");
+            throw new InvalidOperationException("No experiment export is available yet.");
         }
 
         var format = ExperimentReplayExportFormats.Normalize(command.Format);
@@ -875,9 +877,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             await EnsureGazeStreamingStateAsync(ct);
 
             var snapshot = GetCurrentSnapshot();
-            await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
             var exportDocument = BuildReplayExport(snapshot, source, stoppedAtUnixMs);
+            await _experimentStateStoreAdapter.SaveActiveReplayAsync(exportDocument, ct);
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
+            await _experimentStateStoreAdapter.ClearActiveReplayAsync(ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStopped, snapshot, ct);
             return snapshot;
         }
@@ -924,6 +927,17 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
             _decisionState.Copy());
+    }
+
+    public ExperimentReplayExport? GetCurrentActiveReplayExport()
+    {
+        var snapshot = GetCurrentSnapshot();
+        if (!snapshot.IsActive || snapshot.ReadingSession?.Content is null)
+        {
+            return null;
+        }
+
+        return BuildReplayExport(snapshot, "live", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
     public IReadOnlyList<ReadingInterventionModuleDescriptor> GetInterventionModules()
@@ -1020,6 +1034,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 focus = _liveReadingSession.Focus.Copy();
                 RecordParticipantViewportEvent(updatedAtUnixMs, viewport);
                 RecordReadingFocusEvent(updatedAtUnixMs, focus);
+                await SaveCurrentCheckpointAsync(ct);
             }
         }
         finally
@@ -1041,7 +1056,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
     {
         var session = Volatile.Read(ref _session);
-        var shouldStream = !_gazeSubscribers.IsEmpty && Volatile.Read(ref _isGazeStreamingSuppressed) == 0;
+        var shouldStream =
+            session.IsActive &&
+            !_gazeSubscribers.IsEmpty &&
+            Volatile.Read(ref _isGazeStreamingSuppressed) == 0;
 
         if (shouldStream)
         {
@@ -1098,37 +1116,20 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
     }
 
-    private async Task SaveCurrentSnapshotAsync(CancellationToken ct)
+    private async Task SaveCurrentActiveReplayAsync(CancellationToken ct)
     {
-        await _experimentStateStoreAdapter.SaveSnapshotAsync(GetCurrentSnapshot(), ct);
-    }
-
-    private void RestoreLatestSnapshot()
-    {
-        var snapshot = _experimentStateStoreAdapter.LoadLatestSnapshotAsync().AsTask().GetAwaiter().GetResult();
-        if (snapshot is null)
+        var exportDocument = GetCurrentActiveReplayExport();
+        if (exportDocument is null)
         {
             return;
         }
 
-        Volatile.Write(ref _session, new ExperimentSession(
-            snapshot.SessionId,
-            snapshot.IsActive,
-            snapshot.StartedAtUnixMs,
-            snapshot.StoppedAtUnixMs,
-            snapshot.Participant?.Copy(),
-            snapshot.EyeTrackerDevice?.Copy()));
+        await _experimentStateStoreAdapter.SaveActiveReplayAsync(exportDocument, ct);
+    }
 
-        _calibrationSnapshot = snapshot.Calibration ?? CalibrationSessionSnapshots.CreateIdle();
-        Interlocked.Exchange(ref _receivedGazeSamples, snapshot.ReceivedGazeSamples);
-        Volatile.Write(ref _latestGazeSample, snapshot.LatestGazeSample?.Copy());
-        _liveReadingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
-        _lastLayoutInterventionAppliedAtUnixMs =
-            _liveReadingSession.LatestLayoutGuardrail is { Status: "applied" }
-                ? _liveReadingSession.LatestLayoutGuardrail.EvaluatedAtUnixMs
-                : 0;
-        _decisionConfiguration = snapshot.DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy();
-        _decisionState = snapshot.DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy();
+    private Task SaveCurrentCheckpointAsync(CancellationToken ct)
+    {
+        return Task.CompletedTask;
     }
 
     private void ResetReplayHistory()
@@ -1159,12 +1160,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _lifecycleEvents.Add(new ExperimentLifecycleEventRecord(
+            var record = new ExperimentLifecycleEventRecord(
                 NextSequenceNumber(),
                 eventType,
                 source,
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs)));
+                CalculateElapsedSinceStart(occurredAtUnixMs));
+            _lifecycleEvents.Add(record);
         }
     }
 
@@ -1172,7 +1174,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _gazeSamples.Add(new RawGazeSampleRecord(
+            var record = new RawGazeSampleRecord(
                 NextSequenceNumber(),
                 capturedAtUnixMs,
                 CalculateElapsedSinceStart(capturedAtUnixMs),
@@ -1209,7 +1211,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     gazeData.RightGazeOriginValidity,
                     gazeData.RightGazeOriginInTrackBoxX,
                     gazeData.RightGazeOriginInTrackBoxY,
-                    gazeData.RightGazeOriginInTrackBoxZ)));
+                    gazeData.RightGazeOriginInTrackBoxZ));
+            _gazeSamples.Add(record);
         }
     }
 
@@ -1222,12 +1225,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         lock (_historyGate)
         {
-            _readingSessionStates.Add(new ReadingSessionStateRecord(
+            var record = new ReadingSessionStateRecord(
                 NextSequenceNumber(),
                 reason,
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                session.Copy()));
+                session.Copy());
+            _readingSessionStates.Add(record);
         }
     }
 
@@ -1235,11 +1239,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _participantViewportEvents.Add(new ParticipantViewportEventRecord(
+            var record = new ParticipantViewportEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                viewport.Copy()));
+                viewport.Copy());
+            _participantViewportEvents.Add(record);
         }
     }
 
@@ -1247,11 +1252,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _readingFocusEvents.Add(new ReadingFocusEventRecord(
+            var record = new ReadingFocusEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                focus.Copy()));
+                focus.Copy());
+            _readingFocusEvents.Add(record);
         }
     }
 
@@ -1259,11 +1265,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _attentionEvents.Add(new ReadingAttentionEventRecord(
+            var record = new ReadingAttentionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                summary.Copy()));
+                summary.Copy());
+            _attentionEvents.Add(record);
         }
     }
 
@@ -1271,11 +1278,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _decisionProposalEvents.Add(new DecisionProposalEventRecord(
+            var record = new DecisionProposalEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                proposal.Copy()));
+                proposal.Copy());
+            _decisionProposalEvents.Add(record);
         }
     }
 
@@ -1283,11 +1291,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _interventionEvents.Add(new InterventionEventRecord(
+            var record = new InterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                intervention.Copy()));
+                intervention.Copy());
+            _interventionEvents.Add(record);
         }
     }
 
@@ -1428,6 +1437,45 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(markdown));
         return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    private static GazeData? ToGazeData(RawGazeSampleRecord gazeSample)
+    {
+        return new GazeData
+        {
+            DeviceTimeStamp = gazeSample.DeviceTimeStampUs,
+            SystemTimeStamp = gazeSample.SystemTimeStampUs,
+            LeftEyeX = gazeSample.Left?.GazePoint2D.X ?? 0,
+            LeftEyeY = gazeSample.Left?.GazePoint2D.Y ?? 0,
+            LeftEyeValidity = gazeSample.Left?.GazePoint2D.Validity ?? "Invalid",
+            LeftEyePositionInUserX = gazeSample.Left?.GazePoint3D?.X,
+            LeftEyePositionInUserY = gazeSample.Left?.GazePoint3D?.Y,
+            LeftEyePositionInUserZ = gazeSample.Left?.GazePoint3D?.Z,
+            LeftPupilDiameterMm = gazeSample.Left?.Pupil?.DiameterMm,
+            LeftPupilValidity = gazeSample.Left?.Pupil?.Validity ?? "Invalid",
+            LeftGazeOriginInUserX = gazeSample.Left?.GazeOrigin3D?.X,
+            LeftGazeOriginInUserY = gazeSample.Left?.GazeOrigin3D?.Y,
+            LeftGazeOriginInUserZ = gazeSample.Left?.GazeOrigin3D?.Z,
+            LeftGazeOriginValidity = gazeSample.Left?.GazeOrigin3D?.Validity ?? "Invalid",
+            LeftGazeOriginInTrackBoxX = gazeSample.Left?.GazeOriginTrackBox?.X,
+            LeftGazeOriginInTrackBoxY = gazeSample.Left?.GazeOriginTrackBox?.Y,
+            LeftGazeOriginInTrackBoxZ = gazeSample.Left?.GazeOriginTrackBox?.Z,
+            RightEyeX = gazeSample.Right?.GazePoint2D.X ?? 0,
+            RightEyeY = gazeSample.Right?.GazePoint2D.Y ?? 0,
+            RightEyeValidity = gazeSample.Right?.GazePoint2D.Validity ?? "Invalid",
+            RightEyePositionInUserX = gazeSample.Right?.GazePoint3D?.X,
+            RightEyePositionInUserY = gazeSample.Right?.GazePoint3D?.Y,
+            RightEyePositionInUserZ = gazeSample.Right?.GazePoint3D?.Z,
+            RightPupilDiameterMm = gazeSample.Right?.Pupil?.DiameterMm,
+            RightPupilValidity = gazeSample.Right?.Pupil?.Validity ?? "Invalid",
+            RightGazeOriginInUserX = gazeSample.Right?.GazeOrigin3D?.X,
+            RightGazeOriginInUserY = gazeSample.Right?.GazeOrigin3D?.Y,
+            RightGazeOriginInUserZ = gazeSample.Right?.GazeOrigin3D?.Z,
+            RightGazeOriginValidity = gazeSample.Right?.GazeOrigin3D?.Validity ?? "Invalid",
+            RightGazeOriginInTrackBoxX = gazeSample.Right?.GazeOriginTrackBox?.X,
+            RightGazeOriginInTrackBoxY = gazeSample.Right?.GazeOriginTrackBox?.Y,
+            RightGazeOriginInTrackBoxZ = gazeSample.Right?.GazeOriginTrackBox?.Z
+        };
     }
 
     private long NextSequenceNumber()

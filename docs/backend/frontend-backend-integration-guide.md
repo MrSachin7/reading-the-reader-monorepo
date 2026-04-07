@@ -165,6 +165,20 @@ WebSocket option:
 
 You should receive `experimentStopped` with final snapshot stats.
 
+## Live Replay File
+- Active sessions are continuously persisted as one replay-ready JSON file while the experiment is running.
+- The file uses the same replay schema that the replay page imports, so an unfinished run can still be opened manually in replay if the backend stops unexpectedly.
+- File mode stores each unfinished run in its own backend folder, for example `data/live-experiments/<sessionId>/experiment-session-live.json`.
+- The default live-save interval is 10 seconds; finish/reset/shutdown still force a flush immediately.
+- The backend does not restore interrupted runs into the live UI on startup. After restart, the frontend should show the normal idle or no-active-session state.
+- Final JSON/CSV exports are still produced only when the researcher finishes the experiment normally.
+
+Current default storage layout:
+
+- `data/live-experiments/<sessionId>/experiment-session-live.json` for unfinished live runs
+- `data/latest/experiment-session-export.json` for the latest finished export
+- `data/saved-exports/` for named finished exports saved from the UI
+
 ## Message Reference
 ### Client -> Server (`/ws`)
 ```mermaid
