@@ -15,6 +15,7 @@ import type {
   LiveReadingSessionSnapshot,
 } from "@/lib/experiment-session"
 import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
+import { cn } from "@/lib/utils"
 import type { RemoteTokenAttentionStats } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type {
   ActiveLiveExperimentSession,
@@ -22,17 +23,36 @@ import type {
 } from "@/modules/pages/researcher/current-live/types"
 import { formatAbsoluteTime, formatDurationMs, formatNumeric } from "@/modules/pages/researcher/current-live/utils"
 
-function MetadataRow({
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+      {children}
+    </p>
+  )
+}
+
+function MetricTile({
   label,
   value,
+  mono = false,
+  className,
 }: {
   label: string
   value: ReactNode
+  mono?: boolean
+  className?: string
 }) {
   return (
-    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-4 px-4 py-3">
-      <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-sm leading-5 font-medium text-foreground">{value}</dd>
+    <div className={className}>
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-1 min-w-0 truncate text-sm font-medium text-foreground",
+          mono && "font-mono tabular-nums"
+        )}
+      >
+        {value}
+      </p>
     </div>
   )
 }
@@ -88,110 +108,123 @@ export function LiveMetadataColumn({
                 className="w-full items-stretch [&>div:first-child]:w-full [&>div:first-child]:flex-col [&>div:first-child]:items-stretch [&_button]:w-full"
               />
 
-              <div className="overflow-hidden rounded-[1.2rem] border bg-background/80">
-                <dl className="divide-y">
-                  <MetadataRow label="Participant" value={session.participant?.name ?? "Unknown"} />
-                  <MetadataRow label="Age" value={session.participant?.age ?? "-"} />
-                  <MetadataRow label="Sex" value={session.participant?.sex ?? "-"} />
-                  <MetadataRow
-                    label="Eye condition"
-                    value={session.participant?.existingEyeCondition ?? "-"}
+              {/* ── Participant ── */}
+              <div className="rounded-xl border bg-background/80 px-4 py-3">
+                <p className="text-sm font-semibold">{session.participant?.name ?? "Unknown"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[
+                    session.participant?.age,
+                    session.participant?.sex,
+                    session.participant?.existingEyeCondition,
+                    session.participant?.readingProficiency,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "No participant details"}
+                </p>
+              </div>
+
+              {/* ── Session config ── */}
+              <div className="space-y-1.5">
+                <SectionLabel>Session</SectionLabel>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border bg-background/80 px-4 py-3">
+                  <MetricTile
+                    label="Document"
+                    value={readingSession.content?.title ?? "-"}
+                    className="col-span-2"
                   />
-                  <MetadataRow
-                    label="Proficiency"
-                    value={session.participant?.readingProficiency ?? "-"}
+                  <MetricTile label="Condition" value={decisionConfiguration.conditionLabel} />
+                  <MetricTile label="Provider" value={decisionConfiguration.providerId} />
+                  <MetricTile label="Execution" value={decisionConfiguration.executionMode} />
+                  <MetricTile label="Eyetracker" value={session.eyeTrackerDevice?.name ?? "-"} />
+                  <MetricTile
+                    label="Mirror"
+                    value={followParticipant ? "Following" : "Manual"}
                   />
-                  <MetadataRow label="Eyetracker" value={session.eyeTrackerDevice?.name ?? "-"} />
-                  <MetadataRow label="Document" value={readingSession.content?.title ?? "-"} />
-                  <MetadataRow label="Condition" value={decisionConfiguration.conditionLabel} />
-                  <MetadataRow label="Provider" value={decisionConfiguration.providerId} />
-                  <MetadataRow label="Execution" value={decisionConfiguration.executionMode} />
-                  <MetadataRow
+                  <MetricTile
+                    label="Presentation"
+                    value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
+                  />
+                </div>
+              </div>
+
+              {/* ── Live reading state ── */}
+              <div className="space-y-1.5">
+                <SectionLabel>Live</SectionLabel>
+                <div className="grid grid-cols-3 gap-x-4 gap-y-3 rounded-xl border bg-background/80 px-4 py-3">
+                  <MetricTile
                     label="Focus"
                     value={
                       readingSession.focus.isInsideReadingArea
-                        ? activeWord ?? "Inside area"
-                        : "Outside area"
+                        ? activeWord ?? "In area"
+                        : "Outside"
                     }
+                    className="col-span-2"
                   />
-                  <MetadataRow
+                  <MetricTile
+                    label="Samples"
+                    value={session.receivedGazeSamples.toLocaleString()}
+                    mono
+                  />
+                  <MetricTile
                     label="Coordinates"
                     value={
                       readingSession.focus.isInsideReadingArea
                         ? `${formatNumeric(readingSession.focus.normalizedContentX, 3)}, ${formatNumeric(readingSession.focus.normalizedContentY, 3)}`
-                        : "-"
+                        : "—"
                     }
+                    mono
+                    className="col-span-2"
                   />
-                  <MetadataRow
+                  <MetricTile
                     label="Viewport"
-                    value={`${Math.round(readingSession.participantViewport.viewportWidthPx)} x ${Math.round(readingSession.participantViewport.viewportHeightPx)}`}
+                    value={`${Math.round(readingSession.participantViewport.viewportWidthPx)}×${Math.round(readingSession.participantViewport.viewportHeightPx)}`}
+                    mono
                   />
-                  <MetadataRow
-                    label="Mirror mode"
-                    value={followParticipant ? "Following participant" : "Free researcher scroll"}
-                  />
-                  <MetadataRow
-                    label="Presentation"
-                    value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
-                  />
-                  <MetadataRow label="Document LIX" value={formatNumeric(documentLix, 1)} />
-                  <MetadataRow label="Focused block" value={formatNumeric(activeBlockLix, 1)} />
-                  <MetadataRow label="Samples" value={session.receivedGazeSamples.toLocaleString()} />
-                </dl>
+                  <MetricTile label="Doc LIX" value={formatNumeric(documentLix, 1)} mono />
+                  <MetricTile label="Block LIX" value={formatNumeric(activeBlockLix, 1)} mono />
+                </div>
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Runtime evidence
-                </p>
-                <div className="mt-3 space-y-3">
-                  <div className="rounded-[1rem] border bg-muted/20 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <Badge variant="outline">{mirrorTrustState.label}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {liveMonitoring.hasParticipantViewportData ? "Viewport measured" : "Viewport not exact"}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-6">{mirrorTrustState.detail}</p>
+              {/* ── Signals ── */}
+              <div className="space-y-1.5">
+                <SectionLabel>Signals</SectionLabel>
+                <div className="space-y-2 rounded-xl border bg-background/80 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="outline">{mirrorTrustState.label}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {liveMonitoring.hasParticipantViewportData
+                        ? "Viewport measured"
+                        : "Viewport pending"}
+                    </span>
                   </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        Viewport signal
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-foreground">
-                        {liveMonitoring.hasParticipantViewConnection
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {mirrorTrustState.detail}
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t pt-2">
+                    <MetricTile
+                      label="Viewport"
+                      value={
+                        liveMonitoring.hasParticipantViewConnection
                           ? liveMonitoring.hasParticipantViewportData
-                            ? "Connected and measured"
-                            : "Connected, waiting for exact viewport"
-                          : "Participant view offline"}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Last update {formatAbsoluteTime(liveMonitoring.participantViewportUpdatedAtUnixMs)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        Focus signal
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-foreground">
-                        {liveMonitoring.hasReadingFocusSignal ? "Live focus updates received" : "No live focus signal yet"}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Last update {formatAbsoluteTime(liveMonitoring.focusUpdatedAtUnixMs)}
-                      </p>
-                    </div>
+                            ? "Measured"
+                            : "Waiting"
+                          : "Offline"
+                      }
+                    />
+                    <MetricTile
+                      label="Focus"
+                      value={
+                        liveMonitoring.hasReadingFocusSignal ? "Live" : "Waiting"
+                      }
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+              {/* ── Context preservation ── */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Context preservation
-                  </p>
+                  <SectionLabel>Context preservation</SectionLabel>
                   <Badge
                     variant={
                       readingSession.latestContextPreservation?.status === "failed"
@@ -204,66 +237,47 @@ export function LiveMetadataColumn({
                 </div>
 
                 {readingSession.latestContextPreservation ? (
-                  <div className="mt-3 space-y-3">
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <p className="text-sm font-medium text-foreground">
-                        {readingSession.latestContextPreservation.status === "preserved"
-                          ? "preserved"
-                          : readingSession.latestContextPreservation.status === "degraded"
-                            ? "degraded"
-                            : "failed"}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        anchor source {readingSession.latestContextPreservation.anchorSource}
-                        {readingSession.latestContextPreservation.reason
-                          ? ` • ${readingSession.latestContextPreservation.reason}`
-                          : ""}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                          anchorErrorPx
-                        </p>
-                        <p className="mt-2 text-sm font-medium text-foreground">
-                          {formatNumeric(readingSession.latestContextPreservation.anchorErrorPx, 1)}
-                        </p>
-                      </div>
-
-                      <div className="rounded-[1rem] border bg-muted/15 px-4 py-3">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                          viewportDeltaPx
-                        </p>
-                        <p className="mt-2 text-sm font-medium text-foreground">
-                          {formatNumeric(readingSession.latestContextPreservation.viewportDeltaPx, 1)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1rem] border bg-muted/15 px-4 py-3 text-xs leading-5 text-muted-foreground">
-                      measured {formatAbsoluteTime(readingSession.latestContextPreservation.measuredAtUnixMs)}
-                      {readingSession.latestContextPreservation.anchorTokenId
-                        ? ` • token ${readingSession.latestContextPreservation.anchorTokenId}`
+                  <div className="space-y-2 rounded-xl border bg-background/80 px-4 py-3">
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      {readingSession.latestContextPreservation.anchorSource}
+                      {readingSession.latestContextPreservation.reason
+                        ? ` · ${readingSession.latestContextPreservation.reason}`
                         : ""}
-                      {readingSession.latestContextPreservation.anchorBlockId
-                        ? ` • block ${readingSession.latestContextPreservation.anchorBlockId}`
-                        : ""}
+                    </p>
+                    <div className="grid grid-cols-3 gap-x-4 border-t pt-2">
+                      <MetricTile
+                        label="Anchor err"
+                        value={`${formatNumeric(readingSession.latestContextPreservation.anchorErrorPx, 1)} px`}
+                        mono
+                      />
+                      <MetricTile
+                        label="VP delta"
+                        value={`${formatNumeric(readingSession.latestContextPreservation.viewportDeltaPx, 1)} px`}
+                        mono
+                      />
+                      <MetricTile
+                        label="Measured"
+                        value={formatAbsoluteTime(
+                          readingSession.latestContextPreservation.measuredAtUnixMs
+                        )}
+                        mono
+                      />
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                    Waiting for the next layout-changing intervention to produce a measured continuity result.
-                  </div>
+                  <p className="rounded-xl border border-dashed bg-background/60 px-4 py-3 text-xs text-muted-foreground">
+                    Waiting for layout-changing intervention.
+                  </p>
                 )}
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80">
+              {/* ── Continuity history ── */}
+              <div className="rounded-xl border bg-background/80">
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Continuity history
-                  </p>
-                  <Badge variant="outline">{readingSession.recentContextPreservationEvents.length}</Badge>
+                  <SectionLabel>Continuity history</SectionLabel>
+                  <Badge variant="outline">
+                    {readingSession.recentContextPreservationEvents.length}
+                  </Badge>
                 </div>
 
                 {readingSession.recentContextPreservationEvents.length > 0 ? (
@@ -271,184 +285,205 @@ export function LiveMetadataColumn({
                     {readingSession.recentContextPreservationEvents.map((event) => (
                       <div
                         key={`${event.measuredAtUnixMs}:${event.anchorSource}:${event.anchorTokenId ?? event.anchorBlockId ?? "none"}`}
-                        className="px-4 py-3 text-sm"
+                        className="px-4 py-2.5"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Badge
-                              variant={event.status === "failed" ? "destructive" : "outline"}
+                              variant={
+                                event.status === "failed" ? "destructive" : "outline"
+                              }
                             >
                               {event.status}
                             </Badge>
                             <Badge variant="secondary">{event.anchorSource}</Badge>
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs tabular-nums text-muted-foreground">
                             {formatAbsoluteTime(event.measuredAtUnixMs)}
                           </span>
                         </div>
-                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                          error {formatNumeric(event.anchorErrorPx, 1)} px • viewport {formatNumeric(event.viewportDeltaPx, 1)} px
-                          {event.reason ? ` • ${event.reason}` : ""}
+                        <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
+                          err {formatNumeric(event.anchorErrorPx, 1)} px · vp{" "}
+                          {formatNumeric(event.viewportDeltaPx, 1)} px
+                          {event.reason ? ` · ${event.reason}` : ""}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 pb-4 text-sm text-muted-foreground">
+                  <p className="px-4 pb-3 text-xs text-muted-foreground">
                     No continuity samples yet.
                   </p>
                 )}
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Decision state</p>
-                <div className="mt-3 rounded-[1rem] border bg-muted/20 p-4">
+              {/* ── Decision state ── */}
+              <div className="space-y-1.5">
+                <SectionLabel>Decision</SectionLabel>
+                <div className="rounded-xl border bg-background/80 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <Badge variant="outline">
-                      {decisionState.automationPaused ? "Automation paused" : "Automation active"}
+                      {decisionState.automationPaused ? "Paused" : "Active"}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {decisionConfiguration.providerId} · {decisionConfiguration.executionMode}
                     </span>
                   </div>
-                  <p className="mt-3 text-sm leading-6">
-                    {decisionState.activeProposal?.rationale ?? "No active proposal."}
-                  </p>
+                  {decisionState.activeProposal ? (
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      {decisionState.activeProposal.rationale}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Latest intervention</p>
-                <div className="mt-3">
-                  {readingSession.latestIntervention ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{readingSession.latestIntervention.source}</Badge>
-                          <Badge variant="secondary">
-                            {getModuleDisplayName(moduleLookup, readingSession.latestIntervention.moduleId)}
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(readingSession.latestIntervention.appliedAtUnixMs)}
-                        </span>
+              {/* ── Latest intervention ── */}
+              {readingSession.latestIntervention ? (
+                <div className="space-y-1.5">
+                  <SectionLabel>Latest intervention</SectionLabel>
+                  <div className="rounded-xl border bg-background/80 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline">
+                          {readingSession.latestIntervention.source}
+                        </Badge>
+                        <Badge variant="secondary">
+                          {getModuleDisplayName(
+                            moduleLookup,
+                            readingSession.latestIntervention.moduleId
+                          )}
+                        </Badge>
                       </div>
-                      <p className="mt-3 text-sm leading-6">{readingSession.latestIntervention.reason}</p>
-                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                        {formatInterventionParameters(moduleLookup, readingSession.latestIntervention)}
-                      </p>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatAbsoluteTime(
+                          readingSession.latestIntervention.appliedAtUnixMs
+                        )}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No intervention yet.
-                    </div>
-                  )}
+                    <p className="mt-2 text-xs leading-5 text-foreground">
+                      {readingSession.latestIntervention.reason}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatInterventionParameters(
+                        moduleLookup,
+                        readingSession.latestIntervention
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div className="rounded-[1.2rem] border bg-background/80">
+              {/* ── Strongest fixations ── */}
+              <div className="rounded-xl border bg-background/80">
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Strongest fixations
-                  </p>
+                  <SectionLabel>Strongest fixations</SectionLabel>
                   <Badge variant="outline">{topAttentionTokens.length}</Badge>
                 </div>
                 {topAttentionTokens.length > 0 ? (
                   <div className="divide-y">
                     {topAttentionTokens.map((token) => (
-                      <div key={token.tokenId} className="px-4 py-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-medium">{token.tokenText}</span>
-                          <span className="text-xs text-muted-foreground">
-                            max {formatDurationMs(token.maxFixationMs)}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          avg {formatDurationMs(token.fixationCount > 0 ? token.fixationMs / token.fixationCount : null)} • total {formatDurationMs(token.fixationMs)} • {token.fixationCount} fixations • {token.skimCount} skims
-                        </p>
+                      <div
+                        key={token.tokenId}
+                        className="flex items-baseline justify-between gap-3 px-4 py-2"
+                      >
+                        <span className="text-sm font-medium">{token.tokenText}</span>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {formatDurationMs(token.maxFixationMs)} max · {token.fixationCount}×
+                        </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 pb-4 text-sm text-muted-foreground">
-                    Waiting for stable reading attention data.
+                  <p className="px-4 pb-3 text-xs text-muted-foreground">
+                    Waiting for attention data.
                   </p>
                 )}
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80">
+              {/* ── Proposal history ── */}
+              <div className="rounded-xl border bg-background/80">
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Proposal history
-                  </p>
-                  <Badge variant="outline">{decisionState.recentProposalHistory.length}</Badge>
+                  <SectionLabel>Proposal history</SectionLabel>
+                  <Badge variant="outline">
+                    {decisionState.recentProposalHistory.length}
+                  </Badge>
                 </div>
 
                 {decisionState.recentProposalHistory.length > 0 ? (
                   <div className="divide-y">
                     {decisionState.recentProposalHistory.map((proposal) => (
-                      <div key={proposal.proposalId} className="px-4 py-3 text-sm">
+                      <div key={proposal.proposalId} className="px-4 py-2.5">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Badge variant="outline">{proposal.status}</Badge>
                             <Badge variant="secondary">
-                              {getModuleDisplayName(moduleLookup, proposal.proposedIntervention.moduleId)}
+                              {getModuleDisplayName(
+                                moduleLookup,
+                                proposal.proposedIntervention.moduleId
+                              )}
                             </Badge>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {formatAbsoluteTime(proposal.resolvedAtUnixMs ?? proposal.proposedAtUnixMs)}
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {formatAbsoluteTime(
+                              proposal.resolvedAtUnixMs ?? proposal.proposedAtUnixMs
+                            )}
                           </span>
                         </div>
-                        <p className="mt-2 font-medium leading-5">{proposal.rationale}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {proposal.conditionLabel} · {proposal.providerId} · {proposal.executionMode}
+                        <p className="mt-1.5 text-xs font-medium leading-5">
+                          {proposal.rationale}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {formatProposalParameters(moduleLookup, proposal.proposedIntervention)}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatProposalParameters(
+                            moduleLookup,
+                            proposal.proposedIntervention
+                          )}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 pb-4 text-sm text-muted-foreground">
-                    No reviewed or superseded proposals yet.
+                  <p className="px-4 pb-3 text-xs text-muted-foreground">
+                    No proposals yet.
                   </p>
                 )}
               </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80">
+              {/* ── Applied interventions ── */}
+              <div className="rounded-xl border bg-background/80">
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Applied interventions
-                  </p>
-                  <Badge variant="outline">{readingSession.recentInterventions.length}</Badge>
+                  <SectionLabel>Applied interventions</SectionLabel>
+                  <Badge variant="outline">
+                    {readingSession.recentInterventions.length}
+                  </Badge>
                 </div>
 
                 {readingSession.recentInterventions.length > 0 ? (
                   <div className="divide-y">
                     {readingSession.recentInterventions.map((event) => (
-                      <div key={event.id} className="px-4 py-3 text-sm">
+                      <div key={event.id} className="px-4 py-2.5">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Badge variant="outline">{event.source}</Badge>
                             <Badge variant="secondary">
                               {getModuleDisplayName(moduleLookup, event.moduleId)}
                             </Badge>
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs tabular-nums text-muted-foreground">
                             {formatAbsoluteTime(event.appliedAtUnixMs)}
                           </span>
                         </div>
-                        <p className="mt-2 font-medium leading-5">{event.reason}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1.5 text-xs font-medium leading-5">
+                          {event.reason}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {formatInterventionParameters(moduleLookup, event)}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 pb-4 text-sm text-muted-foreground">
-                    No interventions have been issued in this session yet.
+                  <p className="px-4 pb-3 text-xs text-muted-foreground">
+                    No interventions yet.
                   </p>
                 )}
               </div>
