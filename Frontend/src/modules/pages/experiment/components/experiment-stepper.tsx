@@ -4,7 +4,6 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
 import { BookOpen, Crosshair, FileText, Plus, ScanEye } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
@@ -13,6 +12,12 @@ import * as z from "zod"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useFontTheme } from "@/hooks/use-font-theme"
 import { usePaletteTheme } from "@/hooks/use-palette-theme"
+import {
+  EMPTY_DECISION_CONFIGURATION,
+  EMPTY_EXTERNAL_PROVIDER_STATUS,
+  type DecisionConfiguration,
+  type ExternalProviderStatusSnapshot,
+} from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
 import {
@@ -208,7 +213,9 @@ const DECISION_CONDITION_OPTIONS = [
   { label: "External autonomous", providerId: "external", executionMode: "autonomous" },
 ] as const
 
-function resolveConditionLabel(
+type DecisionConditionOption = (typeof DECISION_CONDITION_OPTIONS)[number]
+
+function resolveConditionOption(
   providerId?: string | null,
   executionMode?: string | null
 ) {
@@ -217,7 +224,32 @@ function resolveConditionLabel(
       (option) =>
         option.providerId === providerId &&
         option.executionMode === executionMode
-    )?.label ?? "Manual only"
+    ) ?? DECISION_CONDITION_OPTIONS[0]
+  )
+}
+
+function isExternalConditionAvailable(
+  option: DecisionConditionOption,
+  externalProviderStatus: ExternalProviderStatusSnapshot
+) {
+  if (option.providerId !== "external") {
+    return true
+  }
+
+  if (!externalProviderStatus.isConnected) {
+    return false
+  }
+
+  return option.executionMode === "autonomous"
+    ? externalProviderStatus.supportsAutonomousExecution
+    : externalProviderStatus.supportsAdvisoryExecution
+}
+
+function getAvailableDecisionConditionOptions(
+  externalProviderStatus: ExternalProviderStatusSnapshot
+) {
+  return DECISION_CONDITION_OPTIONS.filter((option) =>
+    isExternalConditionAvailable(option, externalProviderStatus)
   )
 }
 
@@ -492,13 +524,15 @@ function ParticipantInformationForm({
 
 type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
-  currentConditionLabel?: string
+  currentDecisionConfiguration?: DecisionConfiguration
+  externalProviderStatus?: ExternalProviderStatusSnapshot
   automationPaused?: boolean
 }
 
 function SessionContentStep({
   onCompletionChange,
-  currentConditionLabel = "Manual only",
+  currentDecisionConfiguration = EMPTY_DECISION_CONFIGURATION,
+  externalProviderStatus = EMPTY_EXTERNAL_PROVIDER_STATUS,
   automationPaused = false,
 }: SessionContentStepProps) {
   const router = useRouter()
@@ -513,7 +547,12 @@ function SessionContentStep({
   const { experimentSetupId, resetReadingSettings } = useReadingSettings()
 
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
-  const [selectedConditionLabel, setSelectedConditionLabel] = React.useState(currentConditionLabel)
+  const [selectedDecisionCondition, setSelectedDecisionCondition] = React.useState<
+    Pick<DecisionConfiguration, "providerId" | "executionMode">
+  >({
+    providerId: currentDecisionConfiguration.providerId,
+    executionMode: currentDecisionConfiguration.executionMode,
+  })
   const hasSelectedMaterial = readingSession.title.trim().length > 0
   const selectedSavedSetup = React.useMemo(
     () => materialSetups.find((setup) => setup.id === experimentSetupId) ?? null,
@@ -536,14 +575,44 @@ function SessionContentStep({
     : readingSession.source === "preset"
       ? "Live-adjustable"
       : "Local draft"
+  const availableDecisionOptions = React.useMemo(
+    () => getAvailableDecisionConditionOptions(externalProviderStatus),
+    [externalProviderStatus]
+  )
+  const selectedConditionOption = React.useMemo(
+    () =>
+      resolveConditionOption(
+        selectedDecisionCondition.providerId,
+        selectedDecisionCondition.executionMode
+      ),
+    [selectedDecisionCondition.executionMode, selectedDecisionCondition.providerId]
+  )
+  const selectedConditionLabel = selectedConditionOption.label
+  const isSelectedConditionUnavailable =
+    selectedConditionOption.providerId === "external" &&
+    !isExternalConditionAvailable(selectedConditionOption, externalProviderStatus)
+  const visibleDecisionOptions = React.useMemo(() => {
+    if (!isSelectedConditionUnavailable) {
+      return availableDecisionOptions
+    }
+
+    return [...availableDecisionOptions, selectedConditionOption]
+  }, [availableDecisionOptions, isSelectedConditionUnavailable, selectedConditionOption])
+  const connectedExternalModes = [
+    externalProviderStatus.supportsAdvisoryExecution ? "advisory" : null,
+    externalProviderStatus.supportsAutonomousExecution ? "autonomous" : null,
+  ].filter(Boolean) as string[]
 
   React.useEffect(() => {
     onCompletionChange?.(hasSelectedMaterial)
   }, [hasSelectedMaterial, onCompletionChange])
 
   React.useEffect(() => {
-    setSelectedConditionLabel(currentConditionLabel)
-  }, [currentConditionLabel])
+    setSelectedDecisionCondition({
+      providerId: currentDecisionConfiguration.providerId,
+      executionMode: currentDecisionConfiguration.executionMode,
+    })
+  }, [currentDecisionConfiguration.executionMode, currentDecisionConfiguration.providerId])
 
   return (
     <div className="space-y-6">
@@ -659,45 +728,127 @@ function SessionContentStep({
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {DECISION_CONDITION_OPTIONS.map((option) => (
-                <button
-                  key={option.label}
-                  type="button"
-                  disabled={isSavingDecisionConfiguration}
-                  onClick={async () => {
-                    setSelectionError(null)
-
-                    try {
-                      await updateDecisionConfiguration({
-                        conditionLabel: option.label,
-                        providerId: option.providerId,
-                        executionMode: option.executionMode,
-                        automationPaused,
-                      }).unwrap()
-                      setSelectedConditionLabel(option.label)
-                    } catch (error) {
-                      setSelectionError(
-                        getErrorMessage(error, "Could not update the experiment condition.")
-                      )
-                    }
-                  }}
+            <div
+              className={cn(
+                "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
+                externalProviderStatus.isConnected &&
+                  "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
+                !externalProviderStatus.isConnected &&
+                  isSelectedConditionUnavailable &&
+                  "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
+                !externalProviderStatus.isConnected &&
+                  !isSelectedConditionUnavailable &&
+                  "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]"
+              )}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
+                    External Decision-Maker Status
+                  </p>
+                  <h3 className="text-lg font-semibold tracking-tight">
+                    {externalProviderStatus.isConnected
+                      ? "External decision-maker connected"
+                      : isSelectedConditionUnavailable
+                        ? "External condition currently unavailable"
+                        : "No external decision-maker connected"}
+                  </h3>
+                </div>
+                <Badge
                   className={cn(
-                    "w-full rounded-2xl border p-5 text-left transition-colors",
-                    "bg-card hover:border-primary/40 hover:bg-accent/30",
-                    selectedConditionLabel === option.label && "border-primary bg-accent/50"
+                    "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
+                    externalProviderStatus.isConnected &&
+                      "border-emerald-600/30 bg-emerald-600 text-white",
+                    !externalProviderStatus.isConnected &&
+                      isSelectedConditionUnavailable &&
+                      "border-rose-600/30 bg-rose-600 text-white",
+                    !externalProviderStatus.isConnected &&
+                      !isSelectedConditionUnavailable &&
+                      "border-amber-600/30 bg-amber-500 text-amber-950"
                   )}
                 >
+                  {externalProviderStatus.isConnected
+                    ? "Connected"
+                    : isSelectedConditionUnavailable
+                      ? "Unavailable"
+                      : "Offline"}
+                </Badge>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-foreground/85">
+                {externalProviderStatus.isConnected
+                  ? `${externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "External provider"} is available. ${connectedExternalModes.length > 0 ? `External ${connectedExternalModes.join(" and ")} conditions can be selected.` : "It does not currently advertise any execution capabilities."}`
+                  : isSelectedConditionUnavailable
+                    ? "The current experiment condition stays selected, but no external provider is connected right now. Reconnect the provider or switch to a manual or rule-based condition before relying on automation."
+                    : "External conditions are hidden until a decision-maker service connects to the backend."}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {visibleDecisionOptions.map((option) => {
+                const isSelected =
+                  selectedDecisionCondition.providerId === option.providerId &&
+                  selectedDecisionCondition.executionMode === option.executionMode
+                const isUnavailable =
+                  option.providerId === "external" &&
+                  !isExternalConditionAvailable(option, externalProviderStatus)
+
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    disabled={isSavingDecisionConfiguration || isUnavailable}
+                    onClick={async () => {
+                      if (isUnavailable) {
+                        return
+                      }
+
+                      setSelectionError(null)
+
+                      try {
+                        await updateDecisionConfiguration({
+                          conditionLabel: option.label,
+                          providerId: option.providerId,
+                          executionMode: option.executionMode,
+                          automationPaused,
+                        }).unwrap()
+                        setSelectedDecisionCondition({
+                          providerId: option.providerId,
+                          executionMode: option.executionMode,
+                        })
+                      } catch (error) {
+                        setSelectionError(
+                          getErrorMessage(error, "Could not update the experiment condition.")
+                        )
+                      }
+                    }}
+                    className={cn(
+                      "w-full rounded-2xl border p-5 text-left transition-colors",
+                      "bg-card hover:border-primary/40 hover:bg-accent/30",
+                      isSelected && "border-primary bg-accent/50",
+                      isUnavailable &&
+                        "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+                    )}
+                  >
                   <div className="space-y-3">
                     <div>
-                      <p className="text-base font-semibold">{option.label}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-semibold">{option.label}</p>
+                        {isUnavailable ? <Badge variant="outline">Unavailable</Badge> : null}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {option.providerId} · {option.executionMode}
                       </p>
+                      {isUnavailable ? (
+                        <p className="mt-2 text-xs text-amber-700">
+                          The external provider is offline, so this condition cannot be chosen right now.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -731,6 +882,7 @@ export function ExperimentStepper() {
   const { presentation, experimentSetupId } = useReadingSettings()
   const { data: experimentSession } = useGetExperimentSessionQuery(undefined, {
     refetchOnMountOrArgChange: true,
+    pollingInterval: 3_000,
   })
   const [upsertReadingSession, { isLoading: isSavingReadingSession }] =
     useUpsertReadingSessionMutation()
@@ -976,10 +1128,12 @@ export function ExperimentStepper() {
         ) : (
           <SessionContentStep
             onCompletionChange={handleStepThreeCompletionChange}
-            currentConditionLabel={resolveConditionLabel(
-              experimentSession?.decisionConfiguration?.providerId,
-              experimentSession?.decisionConfiguration?.executionMode
-            )}
+            currentDecisionConfiguration={
+              experimentSession?.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION
+            }
+            externalProviderStatus={
+              experimentSession?.externalProviderStatus ?? EMPTY_EXTERNAL_PROVIDER_STATUS
+            }
             automationPaused={experimentSession?.decisionState?.automationPaused ?? false}
           />
         )}

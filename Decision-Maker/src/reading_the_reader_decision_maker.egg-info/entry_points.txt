@@ -1,0 +1,2 @@
+[console_scripts]
+decision-maker = decision_maker.__main__:main

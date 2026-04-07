@@ -1,5 +1,9 @@
 # Frontend Integration Guide
 
+This guide is for browser and frontend clients that connect to `/ws`.
+
+External decision providers should not use this contract. Provider clients will use the dedicated provider protocol documented in [provider-websocket-protocol.md](./provider-websocket-protocol.md).
+
 ## Goal
 Connect a frontend client to the backend to:
 

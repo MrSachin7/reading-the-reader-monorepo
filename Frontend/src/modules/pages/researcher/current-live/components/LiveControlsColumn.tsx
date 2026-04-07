@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import { ModeToggle } from "@/components/theme/mode-toggle"
 import { PaletteToggle } from "@/components/theme/palette-toggle"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -22,7 +23,9 @@ import { Switch } from "@/components/ui/switch"
 import type { InterventionModuleDescriptor, InterventionParameterValues } from "@/lib/intervention-modules"
 import type {
   DecisionConfiguration,
+  DecisionProposalSnapshot,
   DecisionState,
+  ExternalProviderStatusSnapshot,
   ExperimentLiveMonitoringSnapshot,
   LayoutInterventionGuardrailSnapshot,
 } from "@/lib/experiment-session"
@@ -76,23 +79,16 @@ function ControlRow({
 function MetricItem({
   label,
   value,
-  mono = false,
   className,
 }: {
   label: string
   value: ReactNode
-  mono?: boolean
   className?: string
 }) {
   return (
     <div className={cn("min-w-0", className)}>
       <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <div
-        className={cn(
-          "mt-2 min-w-0 text-sm leading-5 font-semibold text-foreground",
-          mono ? "font-mono tabular-nums" : "truncate"
-        )}
-      >
+      <div className="mt-2 min-w-0 text-sm leading-5 font-semibold break-words text-foreground">
         {value}
       </div>
     </div>
@@ -164,7 +160,7 @@ function FollowParticipantRow({
 function LatencyValue({ latencyMs }: { latencyMs: number | null }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="font-mono tabular-nums">{latencyMs === null ? "—" : `${latencyMs} ms`}</span>
+      <span className="min-w-0 break-words">{latencyMs === null ? "-" : `${latencyMs} ms`}</span>
       <LatencySignal latencyMs={latencyMs} />
     </div>
   )
@@ -212,6 +208,7 @@ type LiveControlsColumnProps = {
   layoutGuardrail: LayoutInterventionGuardrailSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
+  externalProviderStatus: ExternalProviderStatusSnapshot
   activeWord: string | null
   participantName: string | null
   sampleRateHz: number
@@ -250,6 +247,7 @@ export function LiveControlsColumn({
   layoutGuardrail,
   decisionConfiguration,
   decisionState,
+  externalProviderStatus,
   activeWord,
   participantName,
   sampleRateHz,
@@ -284,6 +282,17 @@ export function LiveControlsColumn({
     hasParticipantViewConnection: liveMonitoring.hasParticipantViewConnection,
     hasParticipantViewportData: liveMonitoring.hasParticipantViewportData,
   })
+  const isExternalDecisionMode = decisionConfiguration.providerId === "external"
+  const isExternalDecisionUnavailable =
+    isExternalDecisionMode && !externalProviderStatus.isConnected
+  const activeProposalChangeSummary = decisionState.activeProposal
+    ? summarizeProposalChanges(
+        decisionState.activeProposal,
+        presentation,
+        appearance,
+        interventionModules
+      )
+    : []
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -694,13 +703,19 @@ export function LiveControlsColumn({
           </div>
         ) : (
           <p className="mt-4 rounded-[1rem] border border-dashed bg-muted/10 px-3 py-3 text-xs leading-5 text-muted-foreground">
-            No editable parameters.
+            This module is registered without researcher-editable parameters.
           </p>
         )}
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {module.parameters.length > 1
+              ? "Apply all parameter values together."
+              : "Metadata-driven manual intervention."}
+          </p>
           <Button
             size="sm"
+            variant="outline"
             disabled={!canApply}
             onClick={() => commitModule(module, draftParameters)}
           >
@@ -735,78 +750,135 @@ export function LiveControlsColumn({
                     {liveHealth.label}
                   </span>
                 </div>
-                <p className="mt-1.5 line-clamp-2 min-h-[2.5rem] text-xs leading-5 text-muted-foreground">
+                <p className="mt-2 text-sm text-foreground">{mirrorTrustState.headline}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {liveHealth.detail}
                 </p>
               </div>
 
-              <div
-                className={cn(
-                  "rounded-[1.1rem] border bg-background/80 px-4 py-3 transition-opacity duration-200",
-                  !layoutGuardrail && "opacity-35"
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Layout guardrail</p>
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
-                      layoutGuardrail?.status === "suppressed"
-                        ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-                        : layoutGuardrail
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-                          : "border-border bg-muted/20 text-muted-foreground"
-                    )}
-                  >
-                    {layoutGuardrail?.status === "suppressed"
-                      ? "Holding"
-                      : layoutGuardrail
-                        ? "Applied"
-                        : "Clear"}
-                  </span>
+              {layoutGuardrail ? (
+                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">Layout guardrail</p>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
+                        layoutGuardrail.status === "suppressed"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                      )}
+                    >
+                      {layoutGuardrail.status === "suppressed" ? "Holding changes" : "Layout applied"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-foreground">
+                    {layoutGuardrail.reason
+                      ? `Latest reason: ${layoutGuardrail.reason}`
+                      : "The latest layout-affecting change was accepted."}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {layoutGuardrail.affectedProperties.length > 0
+                      ? `Fields: ${layoutGuardrail.affectedProperties.join(", ")}`
+                      : "No layout fields recorded."}
+                    {layoutGuardrail.cooldownUntilUnixMs
+                      ? ` • cooldown until ${new Date(layoutGuardrail.cooldownUntilUnixMs).toLocaleTimeString()}`
+                      : ""}
+                  </p>
                 </div>
-                <p className="mt-1.5 min-h-[1.25rem] truncate text-xs leading-5 text-muted-foreground">
-                  {layoutGuardrail?.reason ??
-                    (layoutGuardrail?.affectedProperties.length
-                      ? layoutGuardrail.affectedProperties.join(", ")
-                      : "")}
-                  {layoutGuardrail?.cooldownUntilUnixMs
-                    ? ` · until ${new Date(layoutGuardrail.cooldownUntilUnixMs).toLocaleTimeString()}`
-                    : ""}
+              ) : null}
+
+              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {decisionConfiguration.providerId} · {decisionConfiguration.executionMode}
+                  {decisionState.automationPaused ? " · paused" : ""}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between gap-3 rounded-[1.1rem] border bg-background/80 px-4 py-3">
-                <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>
-                <span
-                  className={cn(
-                    "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
-                    decisionState.automationPaused
-                      ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-                  )}
-                >
-                  {decisionState.automationPaused ? "Paused" : "Active"}
-                </span>
+              <div className="rounded-[1.2rem] border bg-background/80 px-4 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Decision mode</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {decisionConfiguration.conditionLabel}
+                    </p>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
+                      decisionConfiguration.executionMode === "autonomous"
+                        ? "border-rose-600/30 bg-rose-600 text-white"
+                        : "border-sky-600/30 bg-sky-600 text-white"
+                    )}
+                  >
+                    {formatExecutionModeLabel(decisionConfiguration.executionMode)}
+                  </Badge>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {(["advisory", "autonomous"] as const).map((mode) => {
+                    const isActive = decisionConfiguration.executionMode === mode
+                    return (
+                      <div
+                        key={mode}
+                        className={cn(
+                          "rounded-xl border px-3 py-3",
+                          isActive && mode === "advisory" && "border-sky-500/60 bg-sky-500/10",
+                          isActive && mode === "autonomous" && "border-rose-500/60 bg-rose-500/10",
+                          !isActive && "border-border/70 bg-muted/20 opacity-70"
+                        )}
+                      >
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          {mode}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold">
+                          {isActive ? "Currently running" : "Inactive"}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {mode === "advisory"
+                            ? "Requires researcher approval before applying a proposal."
+                            : "Allows validated decisions to apply automatically."}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
-              <div className="flex gap-2">
+              {isExternalDecisionMode ? (
+                <div
+                  className={cn(
+                    "rounded-[1.1rem] border px-4 py-3",
+                    isExternalDecisionUnavailable
+                      ? "border-amber-500/30 bg-amber-500/10"
+                      : "border-emerald-500/30 bg-emerald-500/10"
+                  )}
+                >
+                  <p className="text-sm font-medium">
+                    {isExternalDecisionUnavailable ? "External provider unavailable" : "External provider connected"}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {isExternalDecisionUnavailable
+                      ? "The external condition stays selected, but no decision-maker service is connected. External execution is blocked until it reconnects."
+                      : `${externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "External provider"} is connected for this condition.`}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  size="sm"
-                  variant={decisionState.automationPaused ? "default" : "secondary"}
-                  className="flex-1"
+                  variant="outline"
                   onClick={() =>
                     decisionState.automationPaused
                       ? onResumeAutomation()
                       : onPauseAutomation()
                   }
                 >
-                  {decisionState.automationPaused ? "Resume" : "Pause"}
+                  {decisionState.automationPaused ? "Resume automation" : "Pause automation"}
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="flex-1"
+                  disabled={isExternalDecisionUnavailable}
                   onClick={() =>
                     onExecutionModeChange(
                       decisionConfiguration.executionMode === "autonomous"
@@ -815,44 +887,63 @@ export function LiveControlsColumn({
                     )
                   }
                 >
-                  {decisionConfiguration.executionMode === "autonomous" ? "→ Advisory" : "→ Autonomous"}
+                  Switch to {decisionConfiguration.executionMode === "autonomous" ? "Advisory" : "Autonomous"}
                 </Button>
               </div>
 
-              <div
-                className={cn(
-                  "rounded-[1.1rem] border px-4 py-3 transition-opacity duration-200",
-                  decisionState.activeProposal
-                    ? "bg-background/80"
-                    : "border-dashed bg-background/40 opacity-40"
-                )}
-              >
-                <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-blue-700">
-                  Proposal
-                </span>
-                <p className="mt-2 min-h-[2.5rem] text-xs leading-5 text-muted-foreground">
-                  {decisionState.activeProposal?.rationale ?? "No pending proposal."}
-                </p>
-                {decisionState.activeProposal ? (
-                  <div className="mt-3 flex gap-2">
+              {decisionState.activeProposal ? (
+                <div className="rounded-[1.2rem] border-2 border-primary/35 bg-primary/5 px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Active proposal</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Pending researcher decision
+                      </p>
+                    </div>
+                    <Badge className="border-emerald-600/30 bg-emerald-600 text-white">
+                      Awaiting action
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-foreground">
+                    {decisionState.activeProposal.rationale}
+                  </p>
+
+                  {activeProposalChangeSummary.length > 0 ? (
+                    <div className="mt-4 rounded-xl border bg-background/80 px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Proposed change
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        {activeProposalChangeSummary.map((change) => (
+                          <p key={change} className="text-sm font-medium text-foreground">
+                            {change}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
                     <Button
-                      size="sm"
-                      className="flex-1"
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
                       onClick={() => onApproveProposal(decisionState.activeProposal!.proposalId)}
                     >
-                      Approve
+                      Accept and apply
                     </Button>
                     <Button
-                      size="sm"
+                      className="border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/15 hover:text-rose-800"
                       variant="outline"
-                      className="flex-1 text-destructive hover:text-destructive"
                       onClick={() => onRejectProposal(decisionState.activeProposal!.proposalId)}
                     >
-                      Reject
+                      Reject proposal
                     </Button>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : (
+                <div className="rounded-[1.1rem] border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                  No active proposal. Manual intervention remains available below.
+                </div>
+              )}
 
               <FollowParticipantRow
                 checked={followParticipant}
@@ -862,13 +953,13 @@ export function LiveControlsColumn({
               <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <MetricItem
                   label="Current word"
-                  value={activeWord ?? "—"}
+                  value={activeWord ?? "No fixation"}
                   className="col-span-2"
                 />
-                <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} mono />
-                <MetricItem label="Validity" value={formatPercent(validityRate)} mono />
-                <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} mono />
-                <MetricItem label="Participant" value={participantName ?? "—"} />
+                <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} />
+                <MetricItem label="Validity" value={formatPercent(validityRate)} />
+                <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
+                <MetricItem label="Participant" value={participantName ?? "Not registered"} />
                 <MetricItem label="Mirror" value={mirrorTrustState.label} />
                 <MetricItem
                   label="Viewport"
@@ -882,19 +973,18 @@ export function LiveControlsColumn({
                 />
                 <MetricItem label="Heat map" value={readingDynamicsEnabled ? "Live" : "Off"} />
                 <MetricItem
-                  label="Dwell"
-                  value={readingDynamicsEnabled ? formatDurationMs(currentFixationDurationMs) : "—"}
-                  mono
+                  label="Current dwell"
+                  value={
+                    readingDynamicsEnabled ? formatDurationMs(currentFixationDurationMs) : "Off"
+                  }
                 />
                 <MetricItem
                   label="Fixated"
-                  value={readingDynamicsEnabled ? fixatedTokenCount : "—"}
-                  mono
+                  value={readingDynamicsEnabled ? fixatedTokenCount : "-"}
                 />
                 <MetricItem
                   label="Skimmed"
-                  value={readingDynamicsEnabled ? skimmedTokenCount : "—"}
-                  mono
+                  value={readingDynamicsEnabled ? skimmedTokenCount : "-"}
                 />
               </div>
             </div>
@@ -920,29 +1010,27 @@ export function LiveControlsColumn({
           </CardContent>
         </Card>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => setIsReaderControlsOpen(true)}
-          >
-            View controls
-          </Button>
-          <KbdGroup className="shrink-0 text-muted-foreground">
-            <Kbd>V</Kbd>
-          </KbdGroup>
-        </div>
+        <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <SectionLabel>ReaderShell controls</SectionLabel>
+                <p className="mt-2 text-sm font-medium">Press V to open</p>
+              </div>
+              <KbdGroup className="text-muted-foreground">
+                <Kbd>V</Kbd>
+                <span className="text-[10px] uppercase tracking-[0.18em]">open</span>
+                <Kbd>Esc</Kbd>
+                <span className="text-[10px] uppercase tracking-[0.18em]">hide</span>
+              </KbdGroup>
+            </div>
+          </CardContent>
+        </Card>
 
         <SheetContent side="left" className="w-[22rem] sm:max-w-[22rem]">
           <SheetHeader className="border-b">
-            <SheetTitle>View controls</SheetTitle>
-            <SheetDescription>
-              <KbdGroup className="text-muted-foreground">
-                <Kbd>Esc</Kbd>
-                <span className="text-[10px] uppercase tracking-[0.18em]">close</span>
-              </KbdGroup>
-            </SheetDescription>
+            <SheetTitle>Reader view controls</SheetTitle>
+            <SheetDescription>Press Esc to close.</SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -1019,6 +1107,99 @@ export function LiveControlsColumn({
       </div>
     </Sheet>
   )
+}
+
+function formatExecutionModeLabel(executionMode: string) {
+  return executionMode === "autonomous" ? "Autonomous" : "Advisory"
+}
+
+function formatProviderLabel(providerId: string) {
+  switch (providerId) {
+    case "external":
+      return "External provider"
+    case "rule-based":
+      return "Rule-based provider"
+    case "manual":
+      return "Manual mode"
+    default:
+      return providerId
+  }
+}
+
+function summarizeProposalChanges(
+  proposal: DecisionProposalSnapshot,
+  presentation: ReadingPresentationSettings,
+  appearance: ReaderAppearanceSettings,
+  interventionModules: InterventionModuleDescriptor[]
+) {
+  const changes: string[] = []
+  const proposed = proposal.proposedIntervention
+  const proposedPresentation = proposed.presentation
+  const proposedAppearance = proposed.appearance
+
+  pushNumericChange(changes, "Font size", presentation.fontSizePx, proposedPresentation.fontSizePx, "px")
+  pushNumericChange(changes, "Line width", presentation.lineWidthPx, proposedPresentation.lineWidthPx, "px")
+  pushNumericChange(changes, "Line height", presentation.lineHeight, proposedPresentation.lineHeight, "")
+  pushNumericChange(changes, "Letter spacing", presentation.letterSpacingEm, proposedPresentation.letterSpacingEm, "em")
+
+  if (proposedPresentation.fontFamily && proposedPresentation.fontFamily !== presentation.fontFamily) {
+    changes.push(`Font family: ${presentation.fontFamily} -> ${proposedPresentation.fontFamily}`)
+  }
+
+  if (
+    typeof proposedPresentation.editableByResearcher === "boolean" &&
+    proposedPresentation.editableByResearcher !== presentation.editableByExperimenter
+  ) {
+    changes.push(
+      `Participant presentation controls: ${presentation.editableByExperimenter ? "enabled" : "locked"} -> ${proposedPresentation.editableByResearcher ? "enabled" : "locked"}`
+    )
+  }
+
+  if (proposedAppearance.themeMode && proposedAppearance.themeMode !== appearance.themeMode) {
+    changes.push(`Theme mode: ${appearance.themeMode} -> ${proposedAppearance.themeMode}`)
+  }
+
+  if (proposedAppearance.palette && proposedAppearance.palette !== appearance.palette) {
+    changes.push(`Palette: ${appearance.palette} -> ${proposedAppearance.palette}`)
+  }
+
+  if (proposedAppearance.appFont && proposedAppearance.appFont !== appearance.appFont) {
+    changes.push(`App font: ${appearance.appFont} -> ${proposedAppearance.appFont}`)
+  }
+
+  if (changes.length > 0) {
+    return changes
+  }
+
+  if (proposed.moduleId) {
+    const moduleDescriptor = interventionModules.find((candidate) => candidate.moduleId === proposed.moduleId)
+    if (moduleDescriptor) {
+      return [`${moduleDescriptor.displayName}: ${proposed.reason}`]
+    }
+  }
+
+  return [proposed.reason]
+}
+
+function pushNumericChange(
+  changes: string[],
+  label: string,
+  currentValue: number,
+  proposedValue: number | null,
+  unit: string
+) {
+  if (proposedValue === null || proposedValue === currentValue) {
+    return
+  }
+
+  changes.push(
+    `${label}: ${formatNumericValue(currentValue, unit)} -> ${formatNumericValue(proposedValue, unit)}`
+  )
+}
+
+function formatNumericValue(value: number, unit: string) {
+  const formatted = Number.isInteger(value) ? `${value}` : value.toFixed(2)
+  return unit ? `${formatted} ${unit}` : formatted
 }
 
 function getOptionLabel(

@@ -2,6 +2,7 @@ using FastEndpoints;
 using FastEndpoints.Swagger;
 using ReadingTheReader.core.Application;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.Realtime.Persistence;
 using ReadingTheReader.TobiiEyetracker;
 using ReadingTheReader.WebApi;
@@ -11,10 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 const string LocalhostCorsPolicy = "LocalhostCorsPolicy";
 var calibrationOptions = builder.Configuration.GetSection(CalibrationOptions.SectionName).Get<CalibrationOptions>()
     ?? new CalibrationOptions();
+var externalProviderOptions = builder.Configuration.GetSection(ExternalProviderOptions.SectionName).Get<ExternalProviderOptions>()
+    ?? new ExternalProviderOptions();
 
 // Modules installation
 builder.Services.InstallTobiiEyeTrackerModule();
-builder.Services.InstallApplicationModule(calibrationOptions);
+builder.Services.InstallApplicationModule(calibrationOptions, externalProviderOptions);
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();

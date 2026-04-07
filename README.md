@@ -6,6 +6,7 @@ This workspace now contains the full Reading The Reader application as a single 
 
 - `Backend/` - .NET backend solution, source code, tests, and backend-specific repo files
 - `Frontend/` - Next.js frontend app and frontend-specific repo files
+- `Decision-Maker/` - Python mock external decision-provider service
 - `docs/` - shared project documentation moved to the root of the monorepo
 - `.github/` - root-level GitHub Actions workflows
 - `.codex/` - root-level Codex config for the monorepo
@@ -26,6 +27,16 @@ dotnet test reading-the-reader-backend.sln
 cd Frontend
 bun install
 bun dev
+```
+
+### Decision-Maker
+
+```bash
+cd Decision-Maker
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+python -m decision_maker
 ```
 
 ## Documentation

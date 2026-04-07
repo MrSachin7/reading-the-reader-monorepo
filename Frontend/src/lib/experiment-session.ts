@@ -76,6 +76,17 @@ export type ExperimentLiveMonitoringSnapshot = {
   focusUpdatedAtUnixMs: number | null
 }
 
+export type ExternalProviderStatusSnapshot = {
+  isConnected: boolean
+  status: string
+  providerId: string | null
+  displayName: string | null
+  supportsAdvisoryExecution: boolean
+  supportsAutonomousExecution: boolean
+  supportedInterventionModuleIds: string[]
+  lastHeartbeatAtUnixMs: number | null
+}
+
 export type ExperimentParticipantSnapshot = {
   name: string
   age: number
@@ -246,6 +257,7 @@ export type ExperimentSessionSnapshot = {
   latestGazeSample: unknown
   connectedClients: number
   liveMonitoring: ExperimentLiveMonitoringSnapshot
+  externalProviderStatus: ExternalProviderStatusSnapshot
   readingSession: LiveReadingSessionSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
@@ -261,6 +273,17 @@ export const EMPTY_LIVE_MONITORING: ExperimentLiveMonitoringSnapshot = {
   participantViewportUpdatedAtUnixMs: null,
   hasReadingFocusSignal: false,
   focusUpdatedAtUnixMs: null,
+}
+
+export const EMPTY_EXTERNAL_PROVIDER_STATUS: ExternalProviderStatusSnapshot = {
+  isConnected: false,
+  status: "disconnected",
+  providerId: null,
+  displayName: null,
+  supportsAdvisoryExecution: false,
+  supportsAutonomousExecution: false,
+  supportedInterventionModuleIds: [],
+  lastHeartbeatAtUnixMs: null,
 }
 
 export type DecisionRealtimeUpdate = {

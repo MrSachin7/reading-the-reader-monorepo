@@ -13,6 +13,7 @@ public sealed class DecisionContextFactory : IDecisionContextFactory
         var readingSession = snapshot.ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty;
 
         return new DecisionContextSnapshot(
+            snapshot.SessionId,
             configuration.ConditionLabel,
             configuration.ProviderId,
             configuration.ExecutionMode,
