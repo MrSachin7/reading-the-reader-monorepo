@@ -2,6 +2,7 @@ import type { CalibrationSessionSnapshot } from "@/lib/calibration"
 import {
   EMPTY_DECISION_CONFIGURATION,
   EMPTY_DECISION_STATE,
+  EMPTY_EXTERNAL_PROVIDER_STATUS,
   EMPTY_LIVE_MONITORING,
   EMPTY_READING_SESSION,
   type DecisionRealtimeUpdate,
@@ -465,6 +466,8 @@ function handleMessage(raw: MessageEvent<string>) {
           message.payload.setup.isReadyForSessionStart,
           latestReadingSession
         ),
+        externalProviderStatus:
+          message.payload.externalProviderStatus ?? EMPTY_EXTERNAL_PROVIDER_STATUS,
         readingSession: latestReadingSession,
         decisionConfiguration: message.payload.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION,
         decisionState: message.payload.decisionState ?? EMPTY_DECISION_STATE,

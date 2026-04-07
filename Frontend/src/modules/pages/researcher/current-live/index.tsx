@@ -375,6 +375,7 @@ function ResearcherCurrentLiveBody({
           layoutGuardrail={readingSession.latestLayoutGuardrail}
           decisionConfiguration={session.decisionConfiguration}
           decisionState={session.decisionState}
+          externalProviderStatus={session.externalProviderStatus}
           activeWord={activeWord}
           participantName={session.participant?.name ?? null}
           sampleRateHz={sampleRateHz}

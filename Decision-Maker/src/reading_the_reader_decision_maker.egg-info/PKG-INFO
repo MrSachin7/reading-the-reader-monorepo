@@ -1,0 +1,98 @@
+Metadata-Version: 2.4
+Name: reading-the-reader-decision-maker
+Version: 0.1.0
+Summary: Mock external decision provider for the Reading The Reader thesis platform.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: websockets<16,>=12
+
+# Decision-Maker
+
+This service is a mock external decision provider for the Reading The Reader thesis platform.
+
+It connects to the backend provider websocket at `/ws/provider`, consumes the provider-facing realtime stream, and sends mock intervention proposals back to the backend. It does not implement any real AI. Instead, it imitates an external decision engine while preserving the public integration boundary for future teams.
+
+## What It Does
+
+- registers itself with the backend using `providerHello`
+- sends regular `providerHeartbeat` messages
+- listens for:
+  - `providerSessionSnapshot`
+  - `providerDecisionContext`
+  - `providerGazeSample`
+  - `providerReadingFocusChanged`
+  - `providerViewportChanged`
+  - `providerAttentionSummaryChanged`
+  - `providerInterventionEvent`
+  - `providerDecisionModeChanged`
+- applies a simple mock rule:
+  - if the reader is inside the reading area
+  - and `currentTokenDurationMs >= 1200`
+  - and the current font size can still increase
+  - and the mock provider has not suggested the same change too recently
+  - then it sends either:
+    - `providerSubmitProposal` in advisory mode
+    - `providerRequestAutonomousApply` in autonomous mode
+
+The mock intervention is a small font-size increase.
+
+## Setup
+
+1. Install Python 3.11 or newer.
+2. Create a virtual environment inside `Decision-Maker/`.
+3. Install the package:
+
+```bash
+cd Decision-Maker
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+```
+
+## Configuration
+
+Copy `.env.example` into your preferred local environment setup or export the variables directly in your shell.
+
+Important values:
+
+- `DECISION_MAKER_WS_URL`
+  - default: `ws://localhost:5190/ws/provider`
+- `DECISION_MAKER_SHARED_SECRET`
+  - must match `Backend/src/ReadingTheReader.WebApi/appsettings.json`
+- `DECISION_MAKER_PROVIDER_ID`
+  - default: `mock-python`
+
+## Running
+
+```bash
+cd Decision-Maker
+.venv\Scripts\activate
+python -m decision_maker
+```
+
+Or start it directly from PowerShell with the launcher script:
+
+```powershell
+C:\Users\s243872\Desktop\reading-the-reader-monorepo\Decision-Maker\scripts\startService.ps1
+```
+
+The script will:
+
+- create `Decision-Maker/.venv` if it does not exist yet
+- install the local package into that virtual environment
+- start the mock decision-maker service
+
+## Using It With The App
+
+1. Start the backend.
+2. Start this service.
+3. In the researcher app, select the external provider.
+4. Choose either advisory or autonomous execution mode.
+5. Start a session and generate reading activity.
+
+The backend remains authoritative. This service only proposes or requests interventions through the public provider contract.
+
+## Notes
+
+- This is intentionally a mock and thesis-supporting integration seam, not a production AI service.
+- The current implementation keeps lightweight local state from the websocket stream so later teams can replace the heuristic engine without changing the transport contract.

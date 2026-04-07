@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/decision_maker/__init__.py
+src/decision_maker/__main__.py
+src/decision_maker/client.py
+src/decision_maker/config.py
+src/decision_maker/mock_ai.py
+src/reading_the_reader_decision_maker.egg-info/PKG-INFO
+src/reading_the_reader_decision_maker.egg-info/SOURCES.txt
+src/reading_the_reader_decision_maker.egg-info/dependency_links.txt
+src/reading_the_reader_decision_maker.egg-info/entry_points.txt
+src/reading_the_reader_decision_maker.egg-info/requires.txt
+src/reading_the_reader_decision_maker.egg-info/top_level.txt
