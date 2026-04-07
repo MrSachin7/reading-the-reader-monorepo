@@ -4,6 +4,7 @@ using System.Text;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
@@ -24,6 +25,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
     private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
+    private readonly IExternalProviderGateway _externalProviderGateway;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
     private readonly ConcurrentDictionary<string, byte> _participantViewConnections = new();
@@ -58,7 +60,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
         IReadingInterventionRuntime readingInterventionRuntime,
         IReadingInterventionModuleRegistry interventionModuleRegistry,
-        IDecisionStrategyCoordinator decisionStrategyCoordinator)
+        IDecisionStrategyCoordinator decisionStrategyCoordinator,
+        IExternalProviderGateway externalProviderGateway)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
@@ -67,6 +70,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _readingInterventionRuntime = readingInterventionRuntime;
         _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
+        _externalProviderGateway = externalProviderGateway;
 
         RestoreLatestSnapshot();
     }
@@ -182,6 +186,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
+        }
     }
 
     public async ValueTask<LiveReadingSessionSnapshot> RegisterParticipantViewAsync(string connectionId, CancellationToken ct = default)
@@ -248,6 +256,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ParticipantViewportChanged, viewport, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishViewportChangedAsync(GetCurrentSessionId(), viewport, ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return viewport;
     }
@@ -282,6 +294,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingFocusChanged, focus, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishReadingFocusChangedAsync(GetCurrentSessionId(), focus, ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return focus;
     }
@@ -340,6 +356,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishAttentionSummaryChangedAsync(GetCurrentSessionId(), summary, ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return summary;
     }
@@ -381,6 +401,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         if (decisionUpdate is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, decisionUpdate, ct);
+            if (ShouldPublishToExternalProvider())
+            {
+                await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), decisionUpdate, ct);
+            }
         }
 
         if (nextState is not null)
@@ -389,6 +413,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             if (interventionEvent is not null)
             {
                 await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
             }
         }
 
@@ -436,6 +464,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+            await _externalProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return update;
     }
@@ -483,12 +516,20 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+        }
         if (nextState is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
             if (interventionEvent is not null)
             {
                 await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
             }
         }
 
@@ -532,6 +573,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+        }
         return update;
     }
 
@@ -558,6 +603,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+        }
         if (!automationPaused)
         {
             await EvaluateDecisionStrategiesAsync(ct);
@@ -601,6 +650,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return update;
     }
@@ -684,6 +737,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         if (update is not null)
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+            if (ShouldPublishToExternalProvider())
+            {
+                await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+            }
         }
 
         if (nextState is not null)
@@ -692,10 +749,40 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             if (interventionEvent is not null)
             {
                 await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
             }
         }
 
         return update ?? BuildDecisionRealtimeUpdate();
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> SubmitExternalDecisionProposalAsync(
+        ExternalDecisionProposalCommand command,
+        CancellationToken ct = default)
+    {
+        return await ApplyExternalDecisionProposalAsync(command, applyAutonomously: false, ct);
+    }
+
+    public async ValueTask<DecisionRealtimeUpdateSnapshot> RequestExternalAutonomousApplyAsync(
+        ExternalDecisionAutonomousApplyCommand command,
+        CancellationToken ct = default)
+    {
+        return await ApplyExternalDecisionProposalAsync(
+            new ExternalDecisionProposalCommand(
+                command.ProviderId,
+                command.SessionId,
+                command.CorrelationId,
+                Guid.NewGuid().ToString("D"),
+                command.ExecutionMode,
+                command.Rationale,
+                command.SignalSummary,
+                command.ProviderObservedAtUnixMs,
+                command.RequestedIntervention),
+            applyAutonomously: true,
+            ct);
     }
 
     public async ValueTask PauseGazeStreamingAsync(CancellationToken ct = default)
@@ -755,6 +842,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             SetInitialSnapshot(snapshot);
             await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStarted, snapshot, ct);
+            if (ShouldPublishToExternalProvider())
+            {
+                await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
+                await _externalProviderGateway.PublishDecisionUpdateAsync(snapshot.SessionId, BuildDecisionRealtimeUpdate(), ct);
+            }
             return true;
         }
         finally
@@ -802,6 +894,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var snapshot = GetCurrentSnapshot();
             await _experimentStateStoreAdapter.SaveSnapshotAsync(snapshot, ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentState, snapshot, ct);
+            if (ShouldPublishToExternalProvider())
+            {
+                await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
+            }
             return snapshot;
         }
         finally
@@ -879,6 +975,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var exportDocument = BuildReplayExport(snapshot, source, stoppedAtUnixMs);
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStopped, snapshot, ct);
+            if (ShouldPublishToExternalProvider())
+            {
+                await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
+                await _externalProviderGateway.PublishDecisionUpdateAsync(snapshot.SessionId, BuildDecisionRealtimeUpdate(), ct);
+            }
             return snapshot;
         }
         finally
@@ -933,14 +1034,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
     {
-        if (_gazeSubscribers.IsEmpty)
+        var shouldPublishToProvider = ShouldPublishToExternalProvider();
+        if (_gazeSubscribers.IsEmpty && !shouldPublishToProvider)
         {
             return;
         }
 
         UpdateGazeSample(gazeData);
         var subscribers = _gazeSubscribers.Keys.ToArray();
-        var sendTask = BroadcastGazeSampleAsync(subscribers, gazeData);
+        var sendTask = BroadcastGazeSampleAsync(subscribers, shouldPublishToProvider, gazeData);
         if (!sendTask.IsCompletedSuccessfully)
         {
             _ = IgnoreFailuresAsync(sendTask.AsTask());
@@ -1036,12 +1138,27 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         {
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingFocusChanged, focus, ct);
         }
+
+        if (ShouldPublishToExternalProvider())
+        {
+            var sessionId = GetCurrentSessionId();
+            if (viewport is not null)
+            {
+                await _externalProviderGateway.PublishViewportChangedAsync(sessionId, viewport, ct);
+            }
+
+            if (focus is not null)
+            {
+                await _externalProviderGateway.PublishReadingFocusChangedAsync(sessionId, focus, ct);
+            }
+        }
     }
 
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
     {
         var session = Volatile.Read(ref _session);
-        var shouldStream = !_gazeSubscribers.IsEmpty && Volatile.Read(ref _isGazeStreamingSuppressed) == 0;
+        var shouldStream = (_gazeSubscribers.IsEmpty ? ShouldPublishToExternalProvider() : true) &&
+                           Volatile.Read(ref _isGazeStreamingSuppressed) == 0;
 
         if (shouldStream)
         {
@@ -1078,12 +1195,185 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             $"Gaze streaming stopped. SessionId={session.Id}, Subscribers={_gazeSubscribers.Count}, SessionActive={session.IsActive}, Suppressed={Volatile.Read(ref _isGazeStreamingSuppressed) == 1}");
     }
 
-    private async ValueTask BroadcastGazeSampleAsync(string[] subscribers, GazeData gazeData)
+    private async ValueTask BroadcastGazeSampleAsync(string[] subscribers, bool shouldPublishToProvider, GazeData gazeData)
     {
         foreach (var connectionId in subscribers)
         {
             await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.GazeSample, gazeData);
         }
+
+        if (shouldPublishToProvider)
+        {
+            await _externalProviderGateway.PublishGazeSampleAsync(GetCurrentSessionId(), gazeData, CancellationToken.None);
+        }
+    }
+
+    private async ValueTask<DecisionRealtimeUpdateSnapshot> ApplyExternalDecisionProposalAsync(
+        ExternalDecisionProposalCommand command,
+        bool applyAutonomously,
+        CancellationToken ct)
+    {
+        DecisionRealtimeUpdateSnapshot update;
+        InterventionEventSnapshot? interventionEvent = null;
+        LiveReadingSessionSnapshot? nextState = null;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            ValidateExternalDecisionCommand(command, applyAutonomously);
+
+            var proposal = BuildExternalProposal(command);
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            SupersedeActiveProposal(updatedAtUnixMs, "system");
+
+            if (applyAutonomously)
+            {
+                var outcome = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
+                var autoAppliedProposal = proposal.WithResolution(
+                    DecisionProposalStatus.AutoApplied,
+                    updatedAtUnixMs,
+                    command.ProviderId,
+                    outcome.Execution?.Event.Id);
+
+                _decisionState = new DecisionRuntimeStateSnapshot(
+                    _decisionState.AutomationPaused,
+                    null,
+                    BuildRecentProposalHistory(_decisionState.RecentProposalHistory, autoAppliedProposal));
+
+                RecordDecisionProposalEvent(updatedAtUnixMs, autoAppliedProposal);
+                interventionEvent = outcome.Execution?.Event.Copy();
+                nextState = outcome.DidUpdateReadingSession ? _liveReadingSession.Copy() : null;
+            }
+            else
+            {
+                _decisionState = new DecisionRuntimeStateSnapshot(
+                    _decisionState.AutomationPaused,
+                    proposal.Copy(),
+                    _decisionState.RecentProposalHistory is null
+                        ? []
+                        : [.. _decisionState.RecentProposalHistory.Select(item => item.Copy())]);
+                RecordDecisionProposalEvent(updatedAtUnixMs, proposal);
+            }
+
+            update = BuildDecisionRealtimeUpdate();
+            await SaveCurrentSnapshotAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.DecisionProposalChanged, update, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), update, ct);
+        }
+
+        if (nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
+            }
+        }
+
+        return update;
+    }
+
+    private void ValidateExternalDecisionCommand(ExternalDecisionProposalCommand command, bool applyAutonomously)
+    {
+        if (!string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("External decision provider is not active for the current session.");
+        }
+
+        if (_decisionState.AutomationPaused)
+        {
+            throw new InvalidOperationException("Decision automation is paused.");
+        }
+
+        var currentSession = Volatile.Read(ref _session);
+        if (!currentSession.IsActive || currentSession.Id is null)
+        {
+            throw new InvalidOperationException("No active experiment session is available.");
+        }
+
+        if (!Guid.TryParse(command.SessionId, out var sessionId) || sessionId != currentSession.Id.Value)
+        {
+            throw new InvalidOperationException("Provider session id does not match the active experiment session.");
+        }
+
+        var expectedMode = applyAutonomously
+            ? DecisionExecutionModes.Autonomous
+            : DecisionExecutionModes.Advisory;
+        if (!string.Equals(_decisionConfiguration.ExecutionMode, expectedMode, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Current decision execution mode must be '{expectedMode}' for this provider command.");
+        }
+
+        if (!string.Equals(command.ExecutionMode, expectedMode, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Provider execution mode does not match the active backend execution mode.");
+        }
+
+        IReadingInterventionModule? module = null;
+        if (!string.IsNullOrWhiteSpace(command.ProposedIntervention.ModuleId) &&
+            !_interventionModuleRegistry.TryResolve(command.ProposedIntervention.ModuleId, out module))
+        {
+            throw new InvalidOperationException($"Unknown intervention module '{command.ProposedIntervention.ModuleId}'.");
+        }
+
+        if (module is not null)
+        {
+            var validation = module.Validate(new ReadingInterventionRequest(
+                module.Descriptor.ModuleId,
+                command.ProposedIntervention.Parameters ?? new Dictionary<string, string?>(StringComparer.Ordinal)));
+            if (!validation.IsValid)
+            {
+                throw new InvalidOperationException(validation.ErrorMessage ?? "Provider intervention payload is invalid.");
+            }
+        }
+    }
+
+    private DecisionProposalSnapshot BuildExternalProposal(ExternalDecisionProposalCommand command)
+    {
+        var proposalId = Guid.TryParse(command.ProposalId, out var parsedProposalId)
+            ? parsedProposalId
+            : Guid.NewGuid();
+        var observedAtUnixMs = Math.Max(command.ProviderObservedAtUnixMs, 0);
+
+        return new DecisionProposalSnapshot(
+            proposalId,
+            _decisionConfiguration.ConditionLabel,
+            command.ProviderId.Trim(),
+            _decisionConfiguration.ExecutionMode,
+            DecisionProposalStatus.Pending,
+            new DecisionSignalSnapshot(
+                "external-provider",
+                command.SignalSummary.Trim(),
+                observedAtUnixMs,
+                null),
+            command.Rationale.Trim(),
+            observedAtUnixMs,
+            null,
+            null,
+            null,
+            command.ProposedIntervention.Copy());
+    }
+
+    private Guid? GetCurrentSessionId()
+    {
+        return Volatile.Read(ref _session).Id;
+    }
+
+    private bool ShouldPublishToExternalProvider()
+    {
+        return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal);
     }
 
     private static async Task IgnoreFailuresAsync(Task task)

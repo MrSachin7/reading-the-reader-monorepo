@@ -3,6 +3,7 @@ using ReadingTheReader.core.Domain.Reading;
 namespace ReadingTheReader.core.Domain.Decisioning;
 
 public sealed record DecisionContextSnapshot(
+    Guid? SessionId,
     string ConditionLabel,
     string ProviderId,
     string ExecutionMode,
@@ -20,6 +21,7 @@ public sealed record DecisionContextSnapshot(
     public DecisionContextSnapshot Copy()
     {
         return new DecisionContextSnapshot(
+            SessionId,
             ConditionLabel,
             ProviderId,
             ExecutionMode,

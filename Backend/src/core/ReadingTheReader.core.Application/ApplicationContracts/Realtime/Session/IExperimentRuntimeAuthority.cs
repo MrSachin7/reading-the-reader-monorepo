@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain;
@@ -39,6 +40,14 @@ public interface IExperimentRuntimeAuthority
         CancellationToken ct = default);
 
     ValueTask<DecisionRealtimeUpdateSnapshot> EvaluateDecisionStrategiesAsync(CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> SubmitExternalDecisionProposalAsync(
+        ExternalDecisionProposalCommand command,
+        CancellationToken ct = default);
+
+    ValueTask<DecisionRealtimeUpdateSnapshot> RequestExternalAutonomousApplyAsync(
+        ExternalDecisionAutonomousApplyCommand command,
+        CancellationToken ct = default);
 
     ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(
         SaveExperimentReplayExportCommand command,

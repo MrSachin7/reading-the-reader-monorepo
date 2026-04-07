@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
@@ -21,11 +22,19 @@ public sealed class RealtimeTestDoubles
         var replayExportStore = new FakeExperimentReplayExportStoreAdapter();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
+        var externalProviderOptions = new ExternalProviderOptions
+        {
+            SharedSecret = "test-provider-secret",
+            HeartbeatTimeoutMilliseconds = 12_000
+        };
+        var providerRegistry = new ProviderConnectionRegistry(externalProviderOptions);
+        var externalProviderTransport = new FakeExternalProviderTransportAdapter();
+        var externalProviderGateway = new ExternalProviderGateway(providerRegistry, externalProviderTransport);
         var decisionContextFactory = new DecisionContextFactory();
         var strategyRegistry = new DecisionStrategyRegistry(
             [
                 new RuleBasedDecisionStrategy(),
-                new ExternalDecisionStrategyStub()
+                new ExternalDecisionStrategy(externalProviderGateway)
             ]);
         var strategyCoordinator = new DecisionStrategyCoordinator(strategyRegistry, decisionContextFactory);
 
@@ -36,35 +45,56 @@ public sealed class RealtimeTestDoubles
             replayExportStore,
             interventionRuntime,
             interventionModuleRegistry,
-            strategyCoordinator);
+            strategyCoordinator,
+            externalProviderGateway);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
             sessionManager,
             readerObservationService,
             broadcaster);
+        var providerIngress = new ProviderIngressService(
+            providerRegistry,
+            sessionManager,
+            externalProviderOptions);
 
         return new RuntimeHarness(
             sessionManager,
             ingress,
+            providerIngress,
             eyeTrackerAdapter,
             broadcaster,
             stateStore,
             replayExportStore,
-            interventionRuntime);
+            interventionRuntime,
+            providerRegistry,
+            externalProviderTransport,
+            externalProviderOptions);
     }
 
     public sealed record RuntimeHarness(
         ExperimentSessionManager SessionManager,
         ExperimentCommandIngress Ingress,
+        ProviderIngressService ProviderIngress,
         FakeEyeTrackerAdapter EyeTrackerAdapter,
         FakeClientBroadcasterAdapter Broadcaster,
         FakeExperimentStateStoreAdapter StateStore,
         FakeExperimentReplayExportStoreAdapter ReplayExportStore,
-        FakeReadingInterventionRuntime InterventionRuntime);
+        FakeReadingInterventionRuntime InterventionRuntime,
+        ProviderConnectionRegistry ProviderRegistry,
+        FakeExternalProviderTransportAdapter ExternalProviderTransport,
+        ExternalProviderOptions ExternalProviderOptions);
 
     public sealed record BroadcastMessage(string MessageType, object? Payload);
 
     public sealed record DirectMessage(string ConnectionId, string MessageType, object? Payload);
+
+    public sealed record ProviderTransportMessage(
+        string ConnectionId,
+        string MessageType,
+        object? Payload,
+        string? ProviderId,
+        string? SessionId,
+        string? CorrelationId);
 
     public sealed class FakeClientBroadcasterAdapter : IClientBroadcasterAdapter
     {
@@ -86,6 +116,32 @@ public sealed class RealtimeTestDoubles
         public ValueTask SendToClientAsync<T>(string connectionId, string messageType, T payload, CancellationToken ct = default)
         {
             _directMessages.Enqueue(new DirectMessage(connectionId, messageType, payload));
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    public sealed class FakeExternalProviderTransportAdapter : IExternalProviderTransportAdapter
+    {
+        private readonly ConcurrentQueue<ProviderTransportMessage> _messages = new();
+
+        public IReadOnlyCollection<ProviderTransportMessage> Messages => _messages.ToArray();
+
+        public ValueTask SendToProviderAsync<TPayload>(
+            string connectionId,
+            string messageType,
+            TPayload payload,
+            string? providerId = null,
+            string? sessionId = null,
+            string? correlationId = null,
+            CancellationToken ct = default)
+        {
+            _messages.Enqueue(new ProviderTransportMessage(
+                connectionId,
+                messageType,
+                payload,
+                providerId,
+                sessionId,
+                correlationId));
             return ValueTask.CompletedTask;
         }
     }
