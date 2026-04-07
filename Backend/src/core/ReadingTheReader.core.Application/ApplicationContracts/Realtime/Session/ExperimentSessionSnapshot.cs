@@ -175,6 +175,40 @@ public sealed record ExperimentLiveMonitoringSnapshot(
     }
 }
 
+public sealed record ExternalProviderStatusSnapshot(
+    bool IsConnected,
+    string Status,
+    string? ProviderId,
+    string? DisplayName,
+    bool SupportsAdvisoryExecution,
+    bool SupportsAutonomousExecution,
+    IReadOnlyList<string> SupportedInterventionModuleIds,
+    long? LastHeartbeatAtUnixMs)
+{
+    public static ExternalProviderStatusSnapshot Disconnected { get; } = new(
+        false,
+        "disconnected",
+        null,
+        null,
+        false,
+        false,
+        [],
+        null);
+
+    public ExternalProviderStatusSnapshot Copy()
+    {
+        return new ExternalProviderStatusSnapshot(
+            IsConnected,
+            Status,
+            ProviderId,
+            DisplayName,
+            SupportsAdvisoryExecution,
+            SupportsAutonomousExecution,
+            SupportedInterventionModuleIds is null ? [] : [.. SupportedInterventionModuleIds],
+            LastHeartbeatAtUnixMs);
+    }
+}
+
 public sealed record ExperimentSessionSnapshot(
     Guid? SessionId,
     bool IsActive,
@@ -188,6 +222,7 @@ public sealed record ExperimentSessionSnapshot(
     GazeData? LatestGazeSample,
     int ConnectedClients,
     ExperimentLiveMonitoringSnapshot LiveMonitoring,
+    ExternalProviderStatusSnapshot ExternalProviderStatus,
     LiveReadingSessionSnapshot? ReadingSession,
     DecisionConfigurationSnapshot DecisionConfiguration,
     DecisionRuntimeStateSnapshot DecisionState
@@ -217,6 +252,7 @@ public sealed record ExperimentSessionSnapshot(
             LatestGazeSample?.Copy(),
             ConnectedClients,
             LiveMonitoring?.Copy() ?? ExperimentLiveMonitoringSnapshot.Empty.Copy(),
+            ExternalProviderStatus?.Copy() ?? ExternalProviderStatusSnapshot.Disconnected.Copy(),
             ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty,
             DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy(),
             DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy());

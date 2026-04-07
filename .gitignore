@@ -15,3 +15,8 @@ Frontend/.next/
 Frontend/coverage/
 Frontend/out/
 Frontend/build/
+
+# Decision-Maker caches and local environments
+Decision-Maker/.venv/
+Decision-Maker/**/__pycache__/
+Decision-Maker/**/*.pyc
