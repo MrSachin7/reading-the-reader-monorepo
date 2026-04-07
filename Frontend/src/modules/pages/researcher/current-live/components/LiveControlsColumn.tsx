@@ -76,16 +76,23 @@ function ControlRow({
 function MetricItem({
   label,
   value,
+  mono = false,
   className,
 }: {
   label: string
   value: ReactNode
+  mono?: boolean
   className?: string
 }) {
   return (
     <div className={cn("min-w-0", className)}>
       <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <div className="mt-2 min-w-0 text-sm leading-5 font-semibold break-words text-foreground">
+      <div
+        className={cn(
+          "mt-2 min-w-0 text-sm leading-5 font-semibold text-foreground",
+          mono ? "font-mono tabular-nums" : "truncate"
+        )}
+      >
         {value}
       </div>
     </div>
@@ -157,7 +164,7 @@ function FollowParticipantRow({
 function LatencyValue({ latencyMs }: { latencyMs: number | null }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="min-w-0 break-words">{latencyMs === null ? "-" : `${latencyMs} ms`}</span>
+      <span className="font-mono tabular-nums">{latencyMs === null ? "—" : `${latencyMs} ms`}</span>
       <LatencySignal latencyMs={latencyMs} />
     </div>
   )
@@ -728,39 +735,46 @@ export function LiveControlsColumn({
                     {liveHealth.label}
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+                <p className="mt-1.5 line-clamp-2 min-h-[2.5rem] text-xs leading-5 text-muted-foreground">
                   {liveHealth.detail}
                 </p>
               </div>
 
-              {layoutGuardrail ? (
-                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium">Layout guardrail</p>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
-                        layoutGuardrail.status === "suppressed"
-                          ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-                      )}
-                    >
-                      {layoutGuardrail.status === "suppressed" ? "Holding changes" : "Layout applied"}
-                    </span>
-                  </div>
-                  {layoutGuardrail.reason ? (
-                    <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{layoutGuardrail.reason}</p>
-                  ) : null}
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {layoutGuardrail.affectedProperties.length > 0
-                      ? layoutGuardrail.affectedProperties.join(", ")
-                      : null}
-                    {layoutGuardrail.cooldownUntilUnixMs
-                      ? ` • until ${new Date(layoutGuardrail.cooldownUntilUnixMs).toLocaleTimeString()}`
-                      : ""}
-                  </p>
+              <div
+                className={cn(
+                  "rounded-[1.1rem] border bg-background/80 px-4 py-3 transition-opacity duration-200",
+                  !layoutGuardrail && "opacity-35"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">Layout guardrail</p>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
+                      layoutGuardrail?.status === "suppressed"
+                        ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                        : layoutGuardrail
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                          : "border-border bg-muted/20 text-muted-foreground"
+                    )}
+                  >
+                    {layoutGuardrail?.status === "suppressed"
+                      ? "Holding"
+                      : layoutGuardrail
+                        ? "Applied"
+                        : "Clear"}
+                  </span>
                 </div>
-              ) : null}
+                <p className="mt-1.5 min-h-[1.25rem] truncate text-xs leading-5 text-muted-foreground">
+                  {layoutGuardrail?.reason ??
+                    (layoutGuardrail?.affectedProperties.length
+                      ? layoutGuardrail.affectedProperties.join(", ")
+                      : "")}
+                  {layoutGuardrail?.cooldownUntilUnixMs
+                    ? ` · until ${new Date(layoutGuardrail.cooldownUntilUnixMs).toLocaleTimeString()}`
+                    : ""}
+                </p>
+              </div>
 
               <div className="flex items-center justify-between gap-3 rounded-[1.1rem] border bg-background/80 px-4 py-3">
                 <p className="text-sm font-medium">{decisionConfiguration.conditionLabel}</p>
@@ -805,14 +819,21 @@ export function LiveControlsColumn({
                 </Button>
               </div>
 
-              {decisionState.activeProposal ? (
-                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
-                  <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-blue-700">
-                    Proposal
-                  </span>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    {decisionState.activeProposal.rationale}
-                  </p>
+              <div
+                className={cn(
+                  "rounded-[1.1rem] border px-4 py-3 transition-opacity duration-200",
+                  decisionState.activeProposal
+                    ? "bg-background/80"
+                    : "border-dashed bg-background/40 opacity-40"
+                )}
+              >
+                <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-blue-700">
+                  Proposal
+                </span>
+                <p className="mt-2 min-h-[2.5rem] text-xs leading-5 text-muted-foreground">
+                  {decisionState.activeProposal?.rationale ?? "No pending proposal."}
+                </p>
+                {decisionState.activeProposal ? (
                   <div className="mt-3 flex gap-2">
                     <Button
                       size="sm"
@@ -830,8 +851,8 @@ export function LiveControlsColumn({
                       Reject
                     </Button>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
 
               <FollowParticipantRow
                 checked={followParticipant}
@@ -841,13 +862,13 @@ export function LiveControlsColumn({
               <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <MetricItem
                   label="Current word"
-                  value={activeWord ?? "No fixation"}
+                  value={activeWord ?? "—"}
                   className="col-span-2"
                 />
-                <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} />
-                <MetricItem label="Validity" value={formatPercent(validityRate)} />
-                <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} />
-                <MetricItem label="Participant" value={participantName ?? "Not registered"} />
+                <MetricItem label="Sample rate" value={`${sampleRateHz} Hz`} mono />
+                <MetricItem label="Validity" value={formatPercent(validityRate)} mono />
+                <MetricItem label="Latency" value={<LatencyValue latencyMs={latencyMs} />} mono />
+                <MetricItem label="Participant" value={participantName ?? "—"} />
                 <MetricItem label="Mirror" value={mirrorTrustState.label} />
                 <MetricItem
                   label="Viewport"
@@ -861,18 +882,19 @@ export function LiveControlsColumn({
                 />
                 <MetricItem label="Heat map" value={readingDynamicsEnabled ? "Live" : "Off"} />
                 <MetricItem
-                  label="Current dwell"
-                  value={
-                    readingDynamicsEnabled ? formatDurationMs(currentFixationDurationMs) : "Off"
-                  }
+                  label="Dwell"
+                  value={readingDynamicsEnabled ? formatDurationMs(currentFixationDurationMs) : "—"}
+                  mono
                 />
                 <MetricItem
                   label="Fixated"
-                  value={readingDynamicsEnabled ? fixatedTokenCount : "-"}
+                  value={readingDynamicsEnabled ? fixatedTokenCount : "—"}
+                  mono
                 />
                 <MetricItem
                   label="Skimmed"
-                  value={readingDynamicsEnabled ? skimmedTokenCount : "-"}
+                  value={readingDynamicsEnabled ? skimmedTokenCount : "—"}
+                  mono
                 />
               </div>
             </div>
