@@ -14,12 +14,16 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 
 public sealed class RealtimeTestDoubles
 {
-    public static RuntimeHarness CreateHarness()
+    public static RuntimeHarness CreateHarness(
+        FakeEyeTrackerAdapter? eyeTrackerAdapter = null,
+        FakeClientBroadcasterAdapter? broadcaster = null,
+        FakeExperimentStateStoreAdapter? stateStore = null,
+        FakeExperimentReplayExportStoreAdapter? replayExportStore = null)
     {
-        var eyeTrackerAdapter = new FakeEyeTrackerAdapter();
-        var broadcaster = new FakeClientBroadcasterAdapter();
-        var stateStore = new FakeExperimentStateStoreAdapter();
-        var replayExportStore = new FakeExperimentReplayExportStoreAdapter();
+        eyeTrackerAdapter ??= new FakeEyeTrackerAdapter();
+        broadcaster ??= new FakeClientBroadcasterAdapter();
+        stateStore ??= new FakeExperimentStateStoreAdapter();
+        replayExportStore ??= new FakeExperimentReplayExportStoreAdapter();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
         var externalProviderOptions = new ExternalProviderOptions
@@ -151,19 +155,73 @@ public sealed class RealtimeTestDoubles
 
     public sealed class FakeExperimentStateStoreAdapter : IExperimentStateStoreAdapter
     {
-        private readonly List<ExperimentSessionSnapshot> _savedSnapshots = [];
+        private readonly List<ExperimentReplayExport> _savedActiveReplays = [];
+        private ExperimentReplayExport? _latestActiveReplay;
 
-        public IReadOnlyList<ExperimentSessionSnapshot> SavedSnapshots => _savedSnapshots;
+        public IReadOnlyList<ExperimentSessionSnapshot> SavedSnapshots => _savedActiveReplays
+            .Select(item => new ExperimentSessionSnapshot(
+                item.Experiment.SessionId,
+                item.Experiment.EndedAtUnixMs is null,
+                item.Experiment.StartedAtUnixMs,
+                item.Experiment.EndedAtUnixMs,
+                item.Experiment.Participant is null
+                    ? null
+                    : new Participant
+                    {
+                        Name = item.Experiment.Participant.Name,
+                        Age = item.Experiment.Participant.Age ?? 0,
+                        Sex = item.Experiment.Participant.Sex ?? string.Empty,
+                        ExistingEyeCondition = item.Experiment.Participant.ExistingEyeCondition ?? string.Empty,
+                        ReadingProficiency = item.Experiment.Participant.ReadingProficiency ?? string.Empty
+                    },
+                item.Experiment.Device is null
+                    ? null
+                    : new EyeTrackerDevice
+                    {
+                        Name = item.Experiment.Device.Name ?? string.Empty,
+                        Model = item.Experiment.Device.Model ?? string.Empty,
+                        SerialNumber = item.Experiment.Device.SerialNumber ?? string.Empty,
+                        HasSavedLicence = item.Experiment.Device.HasSavedLicence ?? false
+                    },
+                CalibrationSessionSnapshots.CreateIdle(),
+                new ExperimentSetupSnapshot(
+                    false,
+                    0,
+                    null,
+                    new EyeTrackerSetupReadinessSnapshot(false, false, false, false, false, null, null, null),
+                    new ParticipantSetupReadinessSnapshot(false, false, null, null),
+                    new CalibrationSetupReadinessSnapshot(false, false, false, false, "idle", "idle", null, null, null, 0, null),
+                    new ReadingMaterialSetupReadinessSnapshot(false, false, null, null, null, false, null, false, false, null)),
+                item.Sensing.GazeSamples.Count,
+                null,
+                0,
+                ExperimentLiveMonitoringSnapshot.Empty,
+                ExternalProviderStatusSnapshot.Disconnected,
+                null,
+                item.Experiment.Condition.Copy(),
+                DecisionRuntimeStateSnapshot.Empty))
+            .ToArray();
 
-        public ValueTask SaveSnapshotAsync(ExperimentSessionSnapshot snapshot, CancellationToken ct = default)
+        public IReadOnlyList<ExperimentReplayExport> SavedActiveReplays => _savedActiveReplays;
+
+        public ExperimentReplayExport? LatestActiveReplay => _latestActiveReplay?.Copy();
+
+        public ValueTask SaveActiveReplayAsync(ExperimentReplayExport exportDocument, CancellationToken ct = default)
         {
-            _savedSnapshots.Add(snapshot.Copy());
+            _savedActiveReplays.Add(exportDocument.Copy());
+            _latestActiveReplay = exportDocument.Copy();
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<ExperimentSessionSnapshot?> LoadLatestSnapshotAsync(CancellationToken ct = default)
+        public ValueTask<ExperimentReplayExport?> LoadActiveReplayAsync(CancellationToken ct = default)
         {
-            return ValueTask.FromResult<ExperimentSessionSnapshot?>(_savedSnapshots.LastOrDefault()?.Copy());
+            return ValueTask.FromResult(LatestActiveReplay);
+        }
+
+        public ValueTask ClearActiveReplayAsync(CancellationToken ct = default)
+        {
+            _latestActiveReplay = null;
+            return ValueTask.CompletedTask;
         }
     }
 
