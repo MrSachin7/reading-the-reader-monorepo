@@ -1,12 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Check, Eye, FilePlus2, LoaderCircle, Lock, Plus, Save, SlidersHorizontal } from "lucide-react"
+import { Check, LoaderCircle, Plus, Save } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -87,10 +86,6 @@ function formatDate(unixMs: number) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(unixMs))
-}
-
-function describeControlState(editableByExperimenter: boolean) {
-  return editableByExperimenter ? "Live-adjustable baseline" : "Locked baseline"
 }
 
 function normalizeReadingMaterialSetup(
@@ -278,10 +273,7 @@ export default function ReadingMaterialSetupPage() {
 
     try {
       const response = selectedSetupId
-        ? await updateReadingMaterialSetup({
-            id: selectedSetupId,
-            body: draft,
-          }).unwrap()
+        ? await updateReadingMaterialSetup({ id: selectedSetupId, body: draft }).unwrap()
         : await createReadingMaterialSetup(draft).unwrap()
 
       const savedSetup = normalizeReadingMaterialSetup(response, draft)
@@ -304,119 +296,117 @@ export default function ReadingMaterialSetupPage() {
     }
   }, [applySetup, createReadingMaterialSetup, draft, refetch, selectedSetupId, updateReadingMaterialSetup])
 
+  const canSave =
+    !isSaving &&
+    draft.name.trim().length > 0 &&
+    draft.title.trim().length > 0 &&
+    draft.markdown.trim().length > 0
+
   return (
-    <section className="space-y-6">
-      <div className="rounded-3xl border bg-card shadow-sm">
-        <div className="px-6 py-6 md:px-8">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Reading material setup</Badge>
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                Create a reading material setup before the reading session starts.
-              </h1>
-              <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-                Save text, questions, and presentation settings together as one setup.
-              </p>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* ── Page header ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Reading material setup</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure a reading text and presentation baseline for experiments.
+          </p>
         </div>
+        <Button onClick={() => void handleSave()} disabled={!canSave} className="shrink-0">
+          {isSaving ? (
+            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          {selectedSetupId ? "Update" : "Save setup"}
+        </Button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.95fr)]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div className="space-y-1.5">
-                <CardTitle className="text-xl">Saved reading material setups</CardTitle>
-                <CardDescription>Reusable controlled baselines for the experiment setup step.</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleStartNew}>
-                <Plus className="mr-2 h-4 w-4" />
+      {/* ── Error banners ── */}
+      {saveError ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {saveError}
+        </div>
+      ) : null}
+      {selectionError ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {selectionError}
+        </div>
+      ) : null}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(400px,0.9fr)]">
+        {/* ── Left column: form ── */}
+        <div className="space-y-4">
+
+          {/* Saved setups */}
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
+              <p className="text-sm font-medium">Saved setups</p>
+              <Button variant="ghost" size="sm" className="-mr-2" onClick={handleStartNew}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 New
               </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {selectionError ? (
-                <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-                  {selectionError}
-                </div>
-              ) : null}
+            </div>
 
-              {isLoadingSetups ? (
-                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                  Loading reading material setups...
-                </div>
-              ) : savedSetups.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                  No saved setups yet.
-                </div>
-              ) : (
-                savedSetups.map((setup) => (
+            {isLoadingSetups ? (
+              <p className="px-5 py-4 text-sm text-muted-foreground">Loading…</p>
+            ) : savedSetups.length === 0 ? (
+              <p className="px-5 py-4 text-sm text-muted-foreground">
+                No saved setups yet. Fill in the form below and save.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {savedSetups.map((setup) => (
                   <button
                     key={setup.id}
                     type="button"
                     onClick={() => void handleLoadSavedSetup(setup.id)}
                     disabled={isLoadingSelectedSetup}
-                    className={`w-full rounded-xl border p-4 text-left transition-all ${
+                    className={`w-full px-5 py-3.5 text-left transition-colors ${
                       selectedSetupId === setup.id
-                        ? "border-primary bg-accent/50"
-                        : "bg-card hover:border-primary/40 hover:bg-accent/30"
+                        ? "bg-accent/60"
+                        : "hover:bg-accent/30"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold">{setup.name}</p>
-                        <p className="text-xs text-muted-foreground">{setup.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {describeControlState(setup.editableByExperimenter)}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{setup.name}</p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {setup.title} · {formatDate(setup.updatedAtUnixMs)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Saved {formatDate(setup.updatedAtUnixMs)}</p>
                       </div>
-                      {selectedSetupId === setup.id ? <Check className="h-4 w-4 text-primary" /> : null}
+                      {selectedSetupId === setup.id ? (
+                        <Check className="h-4 w-4 shrink-0 text-primary" />
+                      ) : null}
                     </div>
                   </button>
-                ))
-              )}
-            </CardContent>
+                ))}
+              </div>
+            )}
           </Card>
 
+          {/* Content */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Reading text</CardTitle>
-              <CardDescription>
-                Edit a local draft here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <div className="border-b px-5 py-4">
+              <p className="text-sm font-medium">Content</p>
+            </div>
+            <div className="space-y-5 px-5 py-5">
+              {/* Source toggle */}
+              <div className="flex gap-1 rounded-lg border bg-muted/30 p-1">
                 <button
                   type="button"
                   onClick={() => {
-                    const nextDraft = {
-                      ...draft,
-                      title: defaultDraft.title,
-                      markdown: defaultDraft.markdown,
-                    }
+                    const nextDraft = { ...draft, title: defaultDraft.title, markdown: defaultDraft.markdown }
                     applyLocalDraft(nextDraft, "preset")
                   }}
-                  className={`w-full rounded-2xl border p-5 text-left transition-colors ${
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
                     isBuiltInSelected
-                      ? "border-primary bg-accent/50"
-                      : "bg-card hover:border-primary/40 hover:bg-accent/30"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <BookOpen className="h-4 w-4" />
-                      Built-in text
-                    </div>
-                    <h3 className="text-lg font-semibold">{defaultDraft.title}</h3>
-                    <p className="text-sm text-muted-foreground">{presetExcerpt}...</p>
-                  </div>
+                  Built-in
                 </button>
-
                 <button
                   type="button"
                   onClick={() => {
@@ -427,298 +417,246 @@ export default function ReadingMaterialSetupPage() {
                           ? draft.title
                           : "Untitled text",
                       markdown:
-                        draft.markdown === defaultDraft.markdown
-                          ? ""
-                          : draft.markdown,
+                        draft.markdown === defaultDraft.markdown ? "" : draft.markdown,
                     }
                     applyLocalDraft(nextDraft, "custom")
                   }}
-                  className={`w-full rounded-2xl border p-5 text-left transition-colors ${
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
                     isCustomSelected
-                      ? "border-primary bg-accent/50"
-                      : "bg-card hover:border-primary/40 hover:bg-accent/30"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <FilePlus2 className="h-4 w-4" />
-                      Custom markdown
-                    </div>
-                    <h3 className="text-lg font-semibold">Paste a temporary text</h3>
-                    <p className="text-sm text-muted-foreground">The editor below is the preview source.</p>
-                  </div>
+                  Custom
                 </button>
               </div>
 
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="reading-material-name">Setup name</FieldLabel>
-                  <Input
-                    id="reading-material-name"
-                    value={draft.name}
-                    onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Enter reading material setup name"
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="reading-material-title">Text title</FieldLabel>
-                  <Input
-                    id="reading-material-title"
-                    value={draft.title}
-                    onChange={(event) => {
-                      const nextDraft = { ...draft, title: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
-                    }}
-                    placeholder="Enter a title for this reading text"
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="reading-material-text">Markdown text</FieldLabel>
-                  <Textarea
-                    id="reading-material-text"
-                    value={draft.markdown}
-                    onChange={(event) => {
-                      const nextDraft = { ...draft, markdown: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
-                    }}
-                    className="min-h-56 resize-y"
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="reading-material-questions">Researcher questions</FieldLabel>
-                  <Textarea
-                    id="reading-material-questions"
-                    value={draft.researcherQuestions}
-                    onChange={(event) => {
-                      const nextDraft = { ...draft, researcherQuestions: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
-                    }}
-                    className="min-h-32 resize-y"
-                  />
-                </Field>
-              </FieldGroup>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="border-b">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-xl">Presentation settings</CardTitle>
-              </div>
-              <CardDescription>Applied together with the text.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              {saveError ? (
-                <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-                  {saveError}
+              {/* Built-in preview excerpt */}
+              {isBuiltInSelected ? (
+                <div className="rounded-lg border bg-muted/20 px-4 py-3">
+                  <p className="text-sm font-medium">{defaultDraft.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {presetExcerpt}…
+                  </p>
                 </div>
               ) : null}
 
               <FieldGroup>
                 <Field>
-                  <FieldLabel htmlFor="material-font-family">Font family</FieldLabel>
-                  <Select
-                    value={draft.fontFamily}
-                    onValueChange={(value) => {
-                      const nextDraft = { ...draft, fontFamily: value as FontTheme }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
-                    }}
-                  >
-                    <SelectTrigger id="material-font-family" className="w-full">
-                      <SelectValue placeholder="Choose a font" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FONTS.map((font) => (
-                        <SelectItem key={font} value={font}>
-                          {FONT_LABELS[font]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FieldLabel htmlFor="setup-name">Setup name</FieldLabel>
+                  <Input
+                    id="setup-name"
+                    value={draft.name}
+                    onChange={(e) => setDraft((c) => ({ ...c, name: e.target.value }))}
+                    placeholder="e.g. Baseline condition A"
+                  />
                 </Field>
 
                 <Field>
-                  <div className="flex items-center justify-between gap-4">
+                  <FieldLabel htmlFor="text-title">Text title</FieldLabel>
+                  <Input
+                    id="text-title"
+                    value={draft.title}
+                    onChange={(e) => {
+                      const nextDraft = { ...draft, title: e.target.value }
+                      applyLocalDraft(nextDraft, "custom")
+                    }}
+                    placeholder="Title shown to participant"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="markdown-text">Markdown text</FieldLabel>
+                  <Textarea
+                    id="markdown-text"
+                    value={draft.markdown}
+                    onChange={(e) => {
+                      const nextDraft = { ...draft, markdown: e.target.value }
+                      applyLocalDraft(nextDraft, "custom")
+                    }}
+                    className="min-h-48 resize-y font-mono text-xs"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="researcher-questions">Researcher questions</FieldLabel>
+                  <FieldDescription>
+                    Optional comprehension or discussion questions for post-session review.
+                  </FieldDescription>
+                  <Textarea
+                    id="researcher-questions"
+                    value={draft.researcherQuestions}
+                    onChange={(e) => {
+                      const nextDraft = { ...draft, researcherQuestions: e.target.value }
+                      applyLocalDraft(nextDraft, "custom")
+                    }}
+                    className="min-h-24 resize-y"
+                    placeholder="Optional…"
+                  />
+                </Field>
+              </FieldGroup>
+            </div>
+          </Card>
+
+          {/* Typography */}
+          <Card>
+            <div className="border-b px-5 py-4">
+              <p className="text-sm font-medium">Typography</p>
+            </div>
+            <div className="space-y-5 px-5 py-5">
+              <Field>
+                <FieldLabel htmlFor="font-family">Font family</FieldLabel>
+                <Select
+                  value={draft.fontFamily}
+                  onValueChange={(value) => {
+                    const nextDraft = { ...draft, fontFamily: value as FontTheme }
+                    applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                  }}
+                >
+                  <SelectTrigger id="font-family" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONTS.map((font) => (
+                      <SelectItem key={font} value={font}>
+                        {FONT_LABELS[font]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <div className="grid grid-cols-2 gap-5">
+                <Field>
+                  <div className="flex items-center justify-between gap-2">
                     <FieldLabel>Font size</FieldLabel>
-                    <span className="text-sm text-muted-foreground">{draft.fontSizePx}px</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {draft.fontSizePx}px
+                    </span>
                   </div>
                   <Slider
                     min={14}
                     max={28}
                     step={1}
                     value={[draft.fontSizePx]}
-                    onValueChange={(value) => {
-                      const nextDraft = { ...draft, fontSizePx: value[0] ?? draft.fontSizePx }
+                    onValueChange={(v) => {
+                      const nextDraft = { ...draft, fontSizePx: v[0] ?? draft.fontSizePx }
                       applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
                     }}
                   />
                 </Field>
 
                 <Field>
-                  <div className="flex items-center justify-between gap-4">
-                    <FieldLabel>Line width</FieldLabel>
-                    <span className="text-sm text-muted-foreground">{draft.lineWidthPx}px</span>
-                  </div>
-                  <Slider
-                    min={520}
-                    max={920}
-                    step={20}
-                    value={[draft.lineWidthPx]}
-                    onValueChange={(value) => {
-                      const nextDraft = { ...draft, lineWidthPx: value[0] ?? draft.lineWidthPx }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
-                    }}
-                  />
-                </Field>
-
-                <Field>
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center justify-between gap-2">
                     <FieldLabel>Line height</FieldLabel>
-                    <span className="text-sm text-muted-foreground">{draft.lineHeight.toFixed(2)}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {draft.lineHeight.toFixed(2)}
+                    </span>
                   </div>
                   <Slider
                     min={1.2}
                     max={2.2}
                     step={0.05}
                     value={[draft.lineHeight]}
-                    onValueChange={(value) => {
-                      const nextDraft = { ...draft, lineHeight: value[0] ?? draft.lineHeight }
+                    onValueChange={(v) => {
+                      const nextDraft = { ...draft, lineHeight: v[0] ?? draft.lineHeight }
                       applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
                     }}
                   />
                 </Field>
-
-                <Field>
-                  <div className="flex items-center justify-between gap-4">
-                    <FieldLabel>Letter spacing</FieldLabel>
-                    <span className="text-sm text-muted-foreground">
-                      {draft.letterSpacingEm.toFixed(2)}em
-                    </span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={0.12}
-                    step={0.01}
-                    value={[draft.letterSpacingEm]}
-                    onValueChange={(value) => {
-                      const nextDraft = {
-                        ...draft,
-                        letterSpacingEm: value[0] ?? draft.letterSpacingEm,
-                      }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
-                    }}
-                  />
-                </Field>
-
-                <Field>
-                  <div className="flex items-start justify-between gap-4 rounded-xl border bg-muted/20 p-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {draft.editableByExperimenter ? (
-                          <Eye className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <FieldLabel className="text-sm">Allow live researcher adjustments</FieldLabel>
-                      </div>
-                      <FieldDescription>
-                        If enabled, the researcher may still tune typography during the live session.
-                        If disabled, this becomes a locked participant baseline.
-                      </FieldDescription>
-                    </div>
-                    <Switch
-                      checked={draft.editableByExperimenter}
-                      onCheckedChange={(checked) => {
-                        const nextDraft = { ...draft, editableByExperimenter: checked }
-                        applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
-                      }}
-                    />
-                  </div>
-                </Field>
-              </FieldGroup>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Save reusable baseline</CardTitle>
-              <CardDescription>
-                Save the text and presentation condition as one reusable reading baseline. You will still
-                choose and save it into the active experiment session separately.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-2xl border bg-muted/30 p-4">
-                <p className="text-sm font-medium">Current baseline draft</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Text: {draft.title.trim().length > 0 ? draft.title : "Untitled"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Questions: {draft.researcherQuestions.trim().length > 0 ? "Added" : "None"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Font: {FONT_LABELS[draft.fontFamily]} {draft.fontSizePx}px
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Control: {describeControlState(draft.editableByExperimenter)}
-                </p>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  This page edits local preview state and reusable saved setups. The participant route
-                  follows the authoritative session baseline only after you save one in the experiment setup flow.
-                </p>
               </div>
 
-              <Button
-                onClick={() => void handleSave()}
-                className="w-full"
-                disabled={
-                  isSaving ||
-                  draft.name.trim().length === 0 ||
-                  draft.title.trim().length === 0 ||
-                  draft.markdown.trim().length === 0
-                }
-              >
-                {isSaving ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {selectedSetupId ? "Update reading material setup" : "Save reading material setup"}
-              </Button>
-            </CardContent>
+              <Field>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel>Line width</FieldLabel>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {draft.lineWidthPx}px
+                  </span>
+                </div>
+                <Slider
+                  min={520}
+                  max={920}
+                  step={20}
+                  value={[draft.lineWidthPx]}
+                  onValueChange={(v) => {
+                    const nextDraft = { ...draft, lineWidthPx: v[0] ?? draft.lineWidthPx }
+                    applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                  }}
+                />
+              </Field>
+
+              <Field>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel>Letter spacing</FieldLabel>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {draft.letterSpacingEm.toFixed(2)}em
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={0.12}
+                  step={0.01}
+                  value={[draft.letterSpacingEm]}
+                  onValueChange={(v) => {
+                    const nextDraft = { ...draft, letterSpacingEm: v[0] ?? draft.letterSpacingEm }
+                    applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                  }}
+                />
+              </Field>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl border bg-muted/20 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Allow live researcher adjustments</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {draft.editableByExperimenter
+                      ? "Typography may be tuned during the live session."
+                      : "Locked baseline — no typography changes during session."}
+                  </p>
+                </div>
+                <Switch
+                  checked={draft.editableByExperimenter}
+                  onCheckedChange={(checked) => {
+                    const nextDraft = { ...draft, editableByExperimenter: checked }
+                    applyLocalDraft(nextDraft, deriveDraftSource(nextDraft))
+                  }}
+                />
+              </div>
+            </div>
           </Card>
         </div>
 
+        {/* ── Right column: live preview ── */}
         <div className="xl:sticky xl:top-8 xl:self-start">
           <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-xl">Live preview</CardTitle>
-              <CardDescription>Uses the main markdown text.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-2xl border bg-background">
-                <div className="border-b px-4 py-3 text-sm text-muted-foreground">
-                  Participant reading preview
-                </div>
-                <div className="max-h-[70vh] overflow-y-auto px-4 py-6 md:px-8">
-                  <div
-                    className="mx-auto w-full"
-                    style={{
-                      maxWidth: `${draft.lineWidthPx}px`,
-                      fontSize: `${draft.fontSizePx}px`,
-                      lineHeight: draft.lineHeight,
-                      letterSpacing: `${draft.letterSpacingEm}em`,
-                      fontFamily: FONT_FAMILY_STYLES[draft.fontFamily],
-                    }}
-                  >
-                    <MarkdownReader blocks={previewBlocks} />
-                  </div>
+            <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
+              <p className="text-sm font-medium">Preview</p>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {FONT_LABELS[draft.fontFamily]} · {draft.fontSizePx}px · {draft.lineWidthPx}px
+              </span>
+            </div>
+            {draft.markdown.trim().length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                Enter markdown text to see a preview.
+              </p>
+            ) : (
+              <div className="max-h-[70vh] overflow-y-auto px-4 py-6 md:px-8">
+                <div
+                  className="mx-auto w-full"
+                  style={{
+                    maxWidth: `${draft.lineWidthPx}px`,
+                    fontSize: `${draft.fontSizePx}px`,
+                    lineHeight: draft.lineHeight,
+                    letterSpacing: `${draft.letterSpacingEm}em`,
+                    fontFamily: FONT_FAMILY_STYLES[draft.fontFamily],
+                  }}
+                >
+                  <MarkdownReader blocks={previewBlocks} />
                 </div>
               </div>
-            </CardContent>
+            )}
           </Card>
         </div>
       </div>
-    </section>
+    </div>
   )
 }
