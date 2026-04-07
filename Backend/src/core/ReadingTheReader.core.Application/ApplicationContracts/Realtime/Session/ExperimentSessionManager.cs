@@ -26,6 +26,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
     private readonly IExternalProviderGateway _externalProviderGateway;
+    private readonly IProviderConnectionRegistry _providerConnectionRegistry;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
     private readonly ConcurrentDictionary<string, byte> _participantViewConnections = new();
@@ -61,7 +62,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         IReadingInterventionRuntime readingInterventionRuntime,
         IReadingInterventionModuleRegistry interventionModuleRegistry,
         IDecisionStrategyCoordinator decisionStrategyCoordinator,
-        IExternalProviderGateway externalProviderGateway)
+        IExternalProviderGateway externalProviderGateway,
+        IProviderConnectionRegistry providerConnectionRegistry)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
@@ -71,6 +73,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
         _externalProviderGateway = externalProviderGateway;
+        _providerConnectionRegistry = providerConnectionRegistry;
 
         RestoreLatestSnapshot();
     }
@@ -1008,6 +1011,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _liveReadingSession,
             Volatile.Read(ref _isHardwareTracking) == 1,
             _gazeSubscribers.Count);
+        var externalProviderStatus = BuildExternalProviderStatusSnapshot(_providerConnectionRegistry);
 
         return new ExperimentSessionSnapshot(
             session.Id,
@@ -1022,6 +1026,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             latest?.Copy(),
             _clientBroadcasterAdapter.ConnectedClients,
             liveMonitoring,
+            externalProviderStatus,
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
             _decisionState.Copy());
@@ -1373,7 +1378,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
     private bool ShouldPublishToExternalProvider()
     {
-        return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal);
+        return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal) &&
+               _providerConnectionRegistry.TryGetActiveProvider(out var provider) &&
+               provider is not null;
     }
 
     private static async Task IgnoreFailuresAsync(Task task)
@@ -1860,6 +1867,31 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             participantViewport.UpdatedAtUnixMs > 0 ? participantViewport.UpdatedAtUnixMs : null,
             hasReadingFocusSignal,
             focus.UpdatedAtUnixMs > 0 ? focus.UpdatedAtUnixMs : null);
+    }
+
+    private static ExternalProviderStatusSnapshot BuildExternalProviderStatusSnapshot(
+        IProviderConnectionRegistry providerConnectionRegistry)
+    {
+        if (!providerConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        {
+            return ExternalProviderStatusSnapshot.Disconnected.Copy();
+        }
+
+        return new ExternalProviderStatusSnapshot(
+            true,
+            string.IsNullOrWhiteSpace(provider.Status) ? ProviderConnectionStatuses.Active : provider.Status,
+            NormalizeNullableText(provider.ProviderId),
+            NormalizeNullableText(provider.DisplayName),
+            provider.Capabilities.SupportsAdvisoryExecution,
+            provider.Capabilities.SupportsAutonomousExecution,
+            provider.Capabilities.SupportedInterventionModuleIds is null
+                ? []
+                : provider.Capabilities.SupportedInterventionModuleIds
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id.Trim())
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray(),
+            provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
     }
 
     private static void EnsureSetupIsReadyForStart(

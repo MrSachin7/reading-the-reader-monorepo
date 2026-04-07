@@ -46,7 +46,8 @@ public sealed class RealtimeTestDoubles
             interventionRuntime,
             interventionModuleRegistry,
             strategyCoordinator,
-            externalProviderGateway);
+            externalProviderGateway,
+            providerRegistry);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
             sessionManager,
@@ -55,6 +56,8 @@ public sealed class RealtimeTestDoubles
         var providerIngress = new ProviderIngressService(
             providerRegistry,
             sessionManager,
+            sessionManager,
+            broadcaster,
             externalProviderOptions);
 
         return new RuntimeHarness(

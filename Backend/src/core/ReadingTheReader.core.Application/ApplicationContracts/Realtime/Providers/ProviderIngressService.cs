@@ -1,6 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
@@ -28,15 +29,21 @@ public sealed class ProviderIngressService : IProviderIngressService
 {
     private readonly IProviderConnectionRegistry _providerConnectionRegistry;
     private readonly IExperimentRuntimeAuthority _experimentRuntimeAuthority;
+    private readonly IExperimentSessionQueryService _experimentSessionQueryService;
+    private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
     private readonly ExternalProviderOptions _options;
 
     public ProviderIngressService(
         IProviderConnectionRegistry providerConnectionRegistry,
         IExperimentRuntimeAuthority experimentRuntimeAuthority,
+        IExperimentSessionQueryService experimentSessionQueryService,
+        IClientBroadcasterAdapter clientBroadcasterAdapter,
         ExternalProviderOptions options)
     {
         _providerConnectionRegistry = providerConnectionRegistry;
         _experimentRuntimeAuthority = experimentRuntimeAuthority;
+        _experimentSessionQueryService = experimentSessionQueryService;
+        _clientBroadcasterAdapter = clientBroadcasterAdapter;
         _options = options;
     }
 
@@ -44,12 +51,12 @@ public sealed class ProviderIngressService : IProviderIngressService
     {
         return command switch
         {
-            ProviderHelloRealtimeCommand hello => HandleHello(hello),
+            ProviderHelloRealtimeCommand hello => await HandleHelloAsync(hello, ct),
             ProviderHeartbeatRealtimeCommand heartbeat => HandleHeartbeat(heartbeat),
             ProviderSubmitProposalRealtimeCommand proposal => await HandleProposalAsync(proposal, ct),
             ProviderRequestAutonomousApplyRealtimeCommand autonomousApply => await HandleAutonomousApplyAsync(autonomousApply, ct),
             ProviderErrorReportedRealtimeCommand error => HandleProviderError(error),
-            ProviderDisconnectRealtimeCommand disconnect => HandleDisconnect(disconnect),
+            ProviderDisconnectRealtimeCommand disconnect => await HandleDisconnectAsync(disconnect, ct),
             InvalidProviderRealtimeCommand invalid => ErrorAndClose(
                 null,
                 null,
@@ -71,7 +78,9 @@ public sealed class ProviderIngressService : IProviderIngressService
         };
     }
 
-    private ProviderIngressHandlingResult HandleHello(ProviderHelloRealtimeCommand command)
+    private async Task<ProviderIngressHandlingResult> HandleHelloAsync(
+        ProviderHelloRealtimeCommand command,
+        CancellationToken ct)
     {
         var result = _providerConnectionRegistry.Register(command.ConnectionId, command.Payload);
         if (!result.Succeeded || result.Provider is null)
@@ -83,6 +92,8 @@ public sealed class ProviderIngressService : IProviderIngressService
                 result.ErrorCode ?? "provider-registration-failed",
                 result.ErrorMessage ?? "Provider registration failed.");
         }
+
+        await BroadcastExperimentStateAsync(ct);
 
         return new ProviderIngressHandlingResult(
             false,
@@ -205,10 +216,19 @@ public sealed class ProviderIngressService : IProviderIngressService
         }
     }
 
-    private ProviderIngressHandlingResult HandleDisconnect(ProviderDisconnectRealtimeCommand command)
+    private async Task<ProviderIngressHandlingResult> HandleDisconnectAsync(
+        ProviderDisconnectRealtimeCommand command,
+        CancellationToken ct)
     {
         _providerConnectionRegistry.Disconnect(command.ConnectionId);
+        await BroadcastExperimentStateAsync(ct);
         return ProviderIngressHandlingResult.NoOp;
+    }
+
+    private Task BroadcastExperimentStateAsync(CancellationToken ct)
+    {
+        var snapshot = _experimentSessionQueryService.GetCurrentSnapshot();
+        return _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentState, snapshot, ct).AsTask();
     }
 
     private (ProviderConnectionRecord? Provider, ProviderIngressHandlingResult? Error) ValidateConnectedProvider(

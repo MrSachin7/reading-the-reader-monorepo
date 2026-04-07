@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import { ModeToggle } from "@/components/theme/mode-toggle"
 import { PaletteToggle } from "@/components/theme/palette-toggle"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -22,7 +23,9 @@ import { Switch } from "@/components/ui/switch"
 import type { InterventionModuleDescriptor, InterventionParameterValues } from "@/lib/intervention-modules"
 import type {
   DecisionConfiguration,
+  DecisionProposalSnapshot,
   DecisionState,
+  ExternalProviderStatusSnapshot,
   ExperimentLiveMonitoringSnapshot,
   LayoutInterventionGuardrailSnapshot,
 } from "@/lib/experiment-session"
@@ -205,6 +208,7 @@ type LiveControlsColumnProps = {
   layoutGuardrail: LayoutInterventionGuardrailSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
+  externalProviderStatus: ExternalProviderStatusSnapshot
   activeWord: string | null
   participantName: string | null
   sampleRateHz: number
@@ -243,6 +247,7 @@ export function LiveControlsColumn({
   layoutGuardrail,
   decisionConfiguration,
   decisionState,
+  externalProviderStatus,
   activeWord,
   participantName,
   sampleRateHz,
@@ -277,6 +282,17 @@ export function LiveControlsColumn({
     hasParticipantViewConnection: liveMonitoring.hasParticipantViewConnection,
     hasParticipantViewportData: liveMonitoring.hasParticipantViewportData,
   })
+  const isExternalDecisionMode = decisionConfiguration.providerId === "external"
+  const isExternalDecisionUnavailable =
+    isExternalDecisionMode && !externalProviderStatus.isConnected
+  const activeProposalChangeSummary = decisionState.activeProposal
+    ? summarizeProposalChanges(
+        decisionState.activeProposal,
+        presentation,
+        appearance,
+        interventionModules
+      )
+    : []
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -779,6 +795,76 @@ export function LiveControlsColumn({
                 </p>
               </div>
 
+              <div className="rounded-[1.2rem] border bg-background/80 px-4 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Decision mode</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {decisionConfiguration.conditionLabel}
+                    </p>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
+                      decisionConfiguration.executionMode === "autonomous"
+                        ? "border-rose-600/30 bg-rose-600 text-white"
+                        : "border-sky-600/30 bg-sky-600 text-white"
+                    )}
+                  >
+                    {formatExecutionModeLabel(decisionConfiguration.executionMode)}
+                  </Badge>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {(["advisory", "autonomous"] as const).map((mode) => {
+                    const isActive = decisionConfiguration.executionMode === mode
+                    return (
+                      <div
+                        key={mode}
+                        className={cn(
+                          "rounded-xl border px-3 py-3",
+                          isActive && mode === "advisory" && "border-sky-500/60 bg-sky-500/10",
+                          isActive && mode === "autonomous" && "border-rose-500/60 bg-rose-500/10",
+                          !isActive && "border-border/70 bg-muted/20 opacity-70"
+                        )}
+                      >
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          {mode}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold">
+                          {isActive ? "Currently running" : "Inactive"}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {mode === "advisory"
+                            ? "Requires researcher approval before applying a proposal."
+                            : "Allows validated decisions to apply automatically."}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {isExternalDecisionMode ? (
+                <div
+                  className={cn(
+                    "rounded-[1.1rem] border px-4 py-3",
+                    isExternalDecisionUnavailable
+                      ? "border-amber-500/30 bg-amber-500/10"
+                      : "border-emerald-500/30 bg-emerald-500/10"
+                  )}
+                >
+                  <p className="text-sm font-medium">
+                    {isExternalDecisionUnavailable ? "External provider unavailable" : "External provider connected"}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {isExternalDecisionUnavailable
+                      ? "The external condition stays selected, but no decision-maker service is connected. External execution is blocked until it reconnects."
+                      : `${externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "External provider"} is connected for this condition.`}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
@@ -792,6 +878,7 @@ export function LiveControlsColumn({
                 </Button>
                 <Button
                   variant="outline"
+                  disabled={isExternalDecisionUnavailable}
                   onClick={() =>
                     onExecutionModeChange(
                       decisionConfiguration.executionMode === "autonomous"
@@ -800,21 +887,51 @@ export function LiveControlsColumn({
                     )
                   }
                 >
-                  {decisionConfiguration.executionMode === "autonomous" ? "Advisory" : "Autonomous"}
+                  Switch to {decisionConfiguration.executionMode === "autonomous" ? "Advisory" : "Autonomous"}
                 </Button>
               </div>
 
               {decisionState.activeProposal ? (
-                <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
-                  <p className="text-sm font-medium">Active proposal</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                <div className="rounded-[1.2rem] border-2 border-primary/35 bg-primary/5 px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Active proposal</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Pending researcher decision
+                      </p>
+                    </div>
+                    <Badge className="border-emerald-600/30 bg-emerald-600 text-white">
+                      Awaiting action
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-foreground">
                     {decisionState.activeProposal.rationale}
                   </p>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Button onClick={() => onApproveProposal(decisionState.activeProposal!.proposalId)}>
-                      Approve proposal
+
+                  {activeProposalChangeSummary.length > 0 ? (
+                    <div className="mt-4 rounded-xl border bg-background/80 px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Proposed change
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        {activeProposalChangeSummary.map((change) => (
+                          <p key={change} className="text-sm font-medium text-foreground">
+                            {change}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <Button
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      onClick={() => onApproveProposal(decisionState.activeProposal!.proposalId)}
+                    >
+                      Accept and apply
                     </Button>
                     <Button
+                      className="border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/15 hover:text-rose-800"
                       variant="outline"
                       onClick={() => onRejectProposal(decisionState.activeProposal!.proposalId)}
                     >
@@ -990,6 +1107,99 @@ export function LiveControlsColumn({
       </div>
     </Sheet>
   )
+}
+
+function formatExecutionModeLabel(executionMode: string) {
+  return executionMode === "autonomous" ? "Autonomous" : "Advisory"
+}
+
+function formatProviderLabel(providerId: string) {
+  switch (providerId) {
+    case "external":
+      return "External provider"
+    case "rule-based":
+      return "Rule-based provider"
+    case "manual":
+      return "Manual mode"
+    default:
+      return providerId
+  }
+}
+
+function summarizeProposalChanges(
+  proposal: DecisionProposalSnapshot,
+  presentation: ReadingPresentationSettings,
+  appearance: ReaderAppearanceSettings,
+  interventionModules: InterventionModuleDescriptor[]
+) {
+  const changes: string[] = []
+  const proposed = proposal.proposedIntervention
+  const proposedPresentation = proposed.presentation
+  const proposedAppearance = proposed.appearance
+
+  pushNumericChange(changes, "Font size", presentation.fontSizePx, proposedPresentation.fontSizePx, "px")
+  pushNumericChange(changes, "Line width", presentation.lineWidthPx, proposedPresentation.lineWidthPx, "px")
+  pushNumericChange(changes, "Line height", presentation.lineHeight, proposedPresentation.lineHeight, "")
+  pushNumericChange(changes, "Letter spacing", presentation.letterSpacingEm, proposedPresentation.letterSpacingEm, "em")
+
+  if (proposedPresentation.fontFamily && proposedPresentation.fontFamily !== presentation.fontFamily) {
+    changes.push(`Font family: ${presentation.fontFamily} -> ${proposedPresentation.fontFamily}`)
+  }
+
+  if (
+    typeof proposedPresentation.editableByResearcher === "boolean" &&
+    proposedPresentation.editableByResearcher !== presentation.editableByExperimenter
+  ) {
+    changes.push(
+      `Participant presentation controls: ${presentation.editableByExperimenter ? "enabled" : "locked"} -> ${proposedPresentation.editableByResearcher ? "enabled" : "locked"}`
+    )
+  }
+
+  if (proposedAppearance.themeMode && proposedAppearance.themeMode !== appearance.themeMode) {
+    changes.push(`Theme mode: ${appearance.themeMode} -> ${proposedAppearance.themeMode}`)
+  }
+
+  if (proposedAppearance.palette && proposedAppearance.palette !== appearance.palette) {
+    changes.push(`Palette: ${appearance.palette} -> ${proposedAppearance.palette}`)
+  }
+
+  if (proposedAppearance.appFont && proposedAppearance.appFont !== appearance.appFont) {
+    changes.push(`App font: ${appearance.appFont} -> ${proposedAppearance.appFont}`)
+  }
+
+  if (changes.length > 0) {
+    return changes
+  }
+
+  if (proposed.moduleId) {
+    const moduleDescriptor = interventionModules.find((candidate) => candidate.moduleId === proposed.moduleId)
+    if (moduleDescriptor) {
+      return [`${moduleDescriptor.displayName}: ${proposed.reason}`]
+    }
+  }
+
+  return [proposed.reason]
+}
+
+function pushNumericChange(
+  changes: string[],
+  label: string,
+  currentValue: number,
+  proposedValue: number | null,
+  unit: string
+) {
+  if (proposedValue === null || proposedValue === currentValue) {
+    return
+  }
+
+  changes.push(
+    `${label}: ${formatNumericValue(currentValue, unit)} -> ${formatNumericValue(proposedValue, unit)}`
+  )
+}
+
+function formatNumericValue(value: number, unit: string) {
+  const formatted = Number.isInteger(value) ? `${value}` : value.toFixed(2)
+  return unit ? `${formatted} ${unit}` : formatted
 }
 
 function getOptionLabel(

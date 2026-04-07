@@ -6,6 +6,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Provid
 public static class ProviderConnectionStatuses
 {
     public const string Active = "active";
+    public const string Disconnected = "disconnected";
 }
 
 public sealed record ProviderCapabilityDescriptor(

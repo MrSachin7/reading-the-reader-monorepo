@@ -1,5 +1,6 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using Xunit;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;
@@ -100,9 +101,13 @@ public sealed class ProviderConnectionRegistryTests
     [Fact]
     public async Task IngressService_HelloSuccess_ReturnsProviderWelcome()
     {
-        var registry = new ProviderConnectionRegistry(TestOptions);
         var harness = RealtimeTestDoubles.CreateHarness();
-        var ingress = new ProviderIngressService(registry, harness.SessionManager, TestOptions);
+        var ingress = new ProviderIngressService(
+            harness.ProviderRegistry,
+            harness.SessionManager,
+            harness.SessionManager,
+            harness.Broadcaster,
+            TestOptions);
 
         var result = await ingress.HandleAsync(new ProviderHelloRealtimeCommand("conn-1", CreateHelloPayload()));
 
@@ -113,14 +118,23 @@ public sealed class ProviderConnectionRegistryTests
         Assert.Equal("mock-python", payload.ProviderId);
         Assert.Equal(ProviderProtocolVersions.V1, payload.AcceptedProtocolVersion);
         Assert.Equal(TestOptions.HeartbeatTimeoutMilliseconds, payload.HeartbeatTimeoutMilliseconds);
+        var broadcast = Assert.Single(harness.Broadcaster.Broadcasts);
+        Assert.Equal(MessageTypes.ExperimentState, broadcast.MessageType);
+        var snapshot = Assert.IsType<ExperimentSessionSnapshot>(broadcast.Payload);
+        Assert.True(snapshot.ExternalProviderStatus.IsConnected);
+        Assert.Equal("mock-python", snapshot.ExternalProviderStatus.ProviderId);
     }
 
     [Fact]
     public async Task IngressService_UnsupportedCommand_ReturnsProviderErrorAndClosesConnection()
     {
-        var registry = new ProviderConnectionRegistry(TestOptions);
         var harness = RealtimeTestDoubles.CreateHarness();
-        var ingress = new ProviderIngressService(registry, harness.SessionManager, TestOptions);
+        var ingress = new ProviderIngressService(
+            harness.ProviderRegistry,
+            harness.SessionManager,
+            harness.SessionManager,
+            harness.Broadcaster,
+            TestOptions);
 
         var result = await ingress.HandleAsync(new UnsupportedProviderRealtimeCommand("conn-1", MessageTypes.Ping));
 
@@ -129,6 +143,28 @@ public sealed class ProviderConnectionRegistryTests
         Assert.Equal(ProviderMessageTypes.ProviderError, response.MessageType);
         var payload = Assert.IsType<ProviderErrorRealtimePayload>(response.Payload);
         Assert.Equal("unsupported-provider-command", payload.Code);
+    }
+
+    [Fact]
+    public async Task IngressService_Disconnect_BroadcastsDisconnectedExperimentState()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        var ingress = new ProviderIngressService(
+            harness.ProviderRegistry,
+            harness.SessionManager,
+            harness.SessionManager,
+            harness.Broadcaster,
+            TestOptions);
+
+        await ingress.HandleAsync(new ProviderHelloRealtimeCommand("conn-1", CreateHelloPayload()));
+        await ingress.HandleAsync(new ProviderDisconnectRealtimeCommand("conn-1"));
+
+        var broadcasts = harness.Broadcaster.Broadcasts.ToArray();
+        Assert.Equal(2, broadcasts.Length);
+        Assert.Equal(MessageTypes.ExperimentState, broadcasts[1].MessageType);
+        var snapshot = Assert.IsType<ExperimentSessionSnapshot>(broadcasts[1].Payload);
+        Assert.False(snapshot.ExternalProviderStatus.IsConnected);
+        Assert.Equal(ProviderConnectionStatuses.Disconnected, snapshot.ExternalProviderStatus.Status);
     }
 
     private static ProviderHelloRealtimePayload CreateHelloPayload(
