@@ -265,33 +265,10 @@ export function EyetrackerSetup({
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Active tracker</p>
-            <p className="mt-2 text-sm font-semibold">
-              {setup.selectedTrackerName ?? setup.selectedTrackerSerialNumber ?? "No tracker selected"}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Licence state</p>
-            <p className="mt-2 text-sm font-semibold">
-              {setup.hasAppliedLicence ? "Applied to selected tracker" : "Still required"}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Workflow status</p>
-            <p className="mt-2 text-sm font-semibold">{setup.isReady ? "Ready for start gate" : "Blocked"}</p>
-          </div>
-        </div>
-
         {setup.isReady ? (
           <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
             <Info />
             <AlertTitle>Eyetracker is ready</AlertTitle>
-            <AlertDescription>
-              The backend session snapshot confirms that the selected tracker is licensed and ready
-              for the experiment workflow.
-            </AlertDescription>
           </Alert>
         ) : setup.blockReason ? (
           <Alert>
