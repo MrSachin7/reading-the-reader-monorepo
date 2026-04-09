@@ -5,7 +5,7 @@ import { Callout, Cards } from 'nextra/components'
 Reading the Reader is a researcher-operated adaptive reading platform. It connects to Tobii eye trackers, runs controlled reading sessions, mirrors the participant view in real time, and applies context-aware micro-interventions while preserving an architecture that future teams can extend.
 
 <Callout type="info">
-  This standalone docs app is the hosted reference for architecture, backend integration, external AI integration, and thesis-facing project context.
+  This standalone docs app is the hosted copy of the full project documentation currently maintained under the repository `docs/` folder.
 </Callout>
 
 ## Monorepo Structure
@@ -25,29 +25,34 @@ flowchart LR
 - `Decision-Maker/`: Python mock external decision provider.
 - `DocsSite/`: standalone static documentation app hosted separately from the frontend.
 
-## Start Here
+## Imported Documentation
 
 <Cards>
   <Cards.Card title="Backend Architecture" href="/backend/architecture/">
-    High-level backend surfaces, components, and request flow.
+    Full backend architecture document, including transport surfaces, orchestration, and persistence.
+  </Cards.Card>
+  <Cards.Card title="Frontend Integration" href="/integration/frontend-client-guide/">
+    Full browser-facing REST and WebSocket integration guide for `/api` and `/ws`.
   </Cards.Card>
   <Cards.Card title="Provider Integration" href="/integration/provider-protocol/">
-    External AI provider protocol, messages, and flow.
+    Full external AI provider integration handoff for `/ws/provider`.
   </Cards.Card>
   <Cards.Card title="Black-Box Contract" href="/integration/black-box-contract/">
-    Interface contract for an external AI team treating the backend as a black box.
+    Full black-box contract with concrete request, payload, and sequence examples.
+  </Cards.Card>
+  <Cards.Card title="Calibration & Validation" href="/project/calibration-validation/">
+    Calibration and validation rationale, quality thresholds, and experimenter guidance.
   </Cards.Card>
   <Cards.Card title="Requirements" href="/project/requirements/">
-    Functional and architectural project requirements.
+    Full user stories, functional requirements, non-functional requirements, and actor descriptions.
   </Cards.Card>
   <Cards.Card title="Thesis Proposal" href="/project/thesis-proposal/">
-    Thesis framing, objectives, and research questions.
+    Full thesis framing, objectives, research questions, planned methods, and references.
   </Cards.Card>
 </Cards>
 
-## What This Site Covers
+## Docs Index
 
-- backend architecture and integration surfaces
-- external AI provider contracts and example payloads
-- project and thesis context
-- deployable, hosted documentation for collaborators outside the main app
+- `backend/` in the repo contains architecture and integration notes for the backend runtime.
+- `frontend/` in the repo contains calibration, requirements, and thesis-planning material.
+- The docs site keeps app-owned copies of those documents so they can be hosted independently on GitHub Pages.
