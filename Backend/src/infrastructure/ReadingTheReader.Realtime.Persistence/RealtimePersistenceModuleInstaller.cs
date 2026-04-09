@@ -28,6 +28,8 @@ public static class RealtimePersistenceModuleInstaller
                     options.ReplayExportFilePath,
                     options.SavedReplayExportsDirectoryPath,
                     serviceProvider.GetRequiredService<IExperimentReplayExportSerializer>()));
+            services.AddSingleton<IExperimentReplayRecoveryStoreAdapter>(_ =>
+                new FileExperimentReplayRecoveryStoreAdapter(options.ReplayRecoveryDirectoryPath));
             services.AddSingleton<IReadingMaterialSetupStoreAdapter>(_ => new FileReadingMaterialSetupStoreAdapter(readingMaterialSetupOptions.DirectoryPath));
         }
         else
@@ -35,11 +37,13 @@ public static class RealtimePersistenceModuleInstaller
             services.AddSingleton<IExperimentStateStoreAdapter, InMemoryExperimentStateStoreAdapter>();
             services.AddSingleton<IExperimentReplayExportStoreAdapter>(serviceProvider =>
                 new InMemoryExperimentReplayExportStoreAdapter(serviceProvider.GetRequiredService<IExperimentReplayExportSerializer>()));
+            services.AddSingleton<IExperimentReplayRecoveryStoreAdapter, InMemoryExperimentReplayRecoveryStoreAdapter>();
             services.AddSingleton<IReadingMaterialSetupStoreAdapter, InMemoryReadingMaterialSetupStoreAdapter>();
         }
 
         services.AddSingleton<IEyeTrackerLicenseStoreAdapter, FileEyeTrackerLicenseStoreAdapter>();
         services.AddHostedService<ExperimentStateCheckpointWorker>();
+        services.AddHostedService<ExperimentReplayRecoveryFlushWorker>();
 
         return services;
     }

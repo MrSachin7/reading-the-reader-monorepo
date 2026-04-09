@@ -40,6 +40,7 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton<IExperimentSessionManager>(sp => sp.GetRequiredService<ExperimentSessionManager>());
         collection.AddSingleton<IExperimentRuntimeAuthority>(sp => sp.GetRequiredService<ExperimentSessionManager>());
         collection.AddSingleton<IExperimentSessionQueryService>(sp => sp.GetRequiredService<ExperimentSessionManager>());
+        collection.AddSingleton<IExperimentReplayRecoveryBuffer>(sp => sp.GetRequiredService<ExperimentSessionManager>());
         collection.AddSingleton<IReaderObservationService, ReaderObservationService>();
         collection.AddSingleton<IExperimentCommandIngress, ExperimentCommandIngress>();
         collection.AddSingleton<IProviderConnectionRegistry, ProviderConnectionRegistry>();

@@ -60,7 +60,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var normalizedFormat = ExperimentReplayExportFormats.Normalize(format);
-        var exportFileName = BuildUniqueFileName(name, normalizedFormat);
+        var exportFileName = BuildUniqueFileName(name, normalizedFormat, exportDocument);
         var exportPath = Path.Combine(_savedDirectoryPath, exportFileName);
         await WriteContentAsync(exportPath, _serializer.Serialize(exportDocument, normalizedFormat), ct);
         var summary = ToSummary(exportFileName, normalizedFormat, exportDocument, now);
@@ -164,9 +164,15 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
             exportDocument.Manifest.ExportedAtUnixMs);
     }
 
-    private string BuildUniqueFileName(string name, string format)
+    private string BuildUniqueFileName(string name, string format, ExperimentReplayExport exportDocument)
     {
-        var slug = SanitizeFileNameSegment(name);
+        var participantName = exportDocument.Experiment.Participant?.Name ?? string.Empty;
+        var slug = SanitizeFileNameSegment(participantName);
+        if (string.Equals(slug, "experiment-file", StringComparison.Ordinal))
+        {
+            slug = SanitizeFileNameSegment(name);
+        }
+
         return $"{slug}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{ExperimentReplayExportFormats.GetFileExtension(format)}";
     }
 
@@ -177,7 +183,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         normalized = Regex.Replace(normalized, @"\s+", "-");
         normalized = Regex.Replace(normalized, "-{2,}", "-");
         normalized = normalized.Trim('-', '.');
-        return string.IsNullOrWhiteSpace(normalized) ? "experiment-replay-export" : normalized;
+        return string.IsNullOrWhiteSpace(normalized) ? "experiment-file" : normalized;
     }
 
     private async ValueTask<ExperimentReplayExport?> ReadExportAsync(string path, CancellationToken ct)

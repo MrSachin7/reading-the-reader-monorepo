@@ -266,20 +266,20 @@ export default function ReplayPage() {
 
   if (!replay) {
     return (
-      <ReplayUploadState
-        inputId={inputId}
-        isDragging={isDragging}
-        errorMessage={errorMessage}
-        isLoadingSavedExports={isLoadingSavedExports}
-        savedExports={savedExports}
-        loadingExportId={loadingExportId}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onInputChange={handleInputChange}
-        onSelectSavedExport={(id) => void handleLoadSavedExport(id)}
-      />
-    )
+        <ReplayUploadState
+          inputId={inputId}
+          isDragging={isDragging}
+          errorMessage={errorMessage}
+          isLoadingSavedExports={isLoadingSavedExports}
+          savedExports={savedExports}
+          loadingExportId={loadingExportId}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onInputChange={handleInputChange}
+          onSelectSavedExport={(id) => void handleLoadSavedExport(id)}
+        />
+      )
   }
 
   if (!readingSession || !content || !frame) {
