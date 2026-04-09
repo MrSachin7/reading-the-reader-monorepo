@@ -28,7 +28,23 @@
 
     <ItemGroup>
       <Folder Include="data\reading-material-setups\" />
-      <Folder Include="data\experiment-replay-exports\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\focus-00000001.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\focus-00000002.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\focus-00000003.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\gaze-00000001.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\gaze-00000002.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\gaze-00000003.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\lifecycle-00000001.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\lifecycle-00000003.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\viewport-00000001.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\viewport-00000002.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\chunks\viewport-00000003.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\completed-export.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\4eaef12e20c74621bddf23709be6b8b5\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\7e4c25fad7274ecbb5904cc9301fff19\session-meta.json" />
     </ItemGroup>
 
 </Project>

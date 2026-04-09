@@ -20,3 +20,6 @@ Frontend/build/
 Decision-Maker/.venv/
 Decision-Maker/**/__pycache__/
 Decision-Maker/**/*.pyc
+
+# Backend runtime data and local experiment outputs
+Backend/src/ReadingTheReader.WebApi/data/

@@ -1,6 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 using Xunit;
@@ -43,44 +44,8 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal("Calibration validation must pass before the session can start.", calibrationError.Message);
         Assert.Equal(calibrationError.Message, harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.Reason);
 
-        await harness.SessionManager.SetCalibrationStateAsync(new CalibrationSessionSnapshot(
-            Guid.NewGuid(),
-            "completed",
-            CalibrationPatterns.ScreenBasedNinePoint,
-            1_710_000_000_000,
-            1_710_000_001_000,
-            1_710_000_002_000,
-            [],
-            new CalibrationRunResult(
-                "applied",
-                true,
-                9,
-                [],
-                new CalibrationValidationResult(
-                    true,
-                    "good",
-                    0.5,
-                    0.2,
-                    9,
-                    [],
-                    []),
-                []),
-            new CalibrationValidationSnapshot(
-                "completed",
-                1_710_000_001_000,
-                1_710_000_001_500,
-                1_710_000_002_000,
-                [],
-                new CalibrationValidationResult(
-                    true,
-                    "good",
-                    0.5,
-                    0.2,
-                    9,
-                    [],
-                    []),
-                []),
-            []));
+        await harness.SessionManager.SetCalibrationStateAsync(
+            RealtimeTestDoubles.TestRuntimeSetup.CreateCompletedCalibrationSnapshot());
 
         var readingMaterialError = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
         Assert.Equal("Choose the reading material before starting the session.", readingMaterialError.Message);
@@ -120,6 +85,46 @@ public sealed class ExperimentSessionAuthorityTests
                        && message.Payload is ExperimentSessionSnapshot startedSnapshot
                        && startedSnapshot.IsActive
                        && startedSnapshot.SessionId == snapshot.SessionId);
+    }
+
+    [Fact]
+    public async Task RestoreLatestSnapshot_StartsWithCleanSetupAfterBackendRestart()
+    {
+        var sourceHarness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(sourceHarness);
+
+        var restoredHarness = RealtimeTestDoubles.CreateHarness(
+            latestSnapshot: sourceHarness.SessionManager.GetCurrentSnapshot());
+
+        var restoredSnapshot = restoredHarness.SessionManager.GetCurrentSnapshot();
+
+        Assert.Null(restoredSnapshot.SessionId);
+        Assert.False(restoredSnapshot.IsActive);
+        Assert.Null(restoredSnapshot.Participant);
+        Assert.Null(restoredSnapshot.EyeTrackerDevice);
+        Assert.False(restoredSnapshot.Setup.IsReadyForSessionStart);
+        Assert.Equal(0, restoredSnapshot.Setup.CurrentStepIndex);
+        Assert.False(restoredSnapshot.Setup.EyeTracker.IsReady);
+        Assert.False(restoredSnapshot.Setup.Participant.IsReady);
+        Assert.False(restoredSnapshot.Setup.Calibration.IsReady);
+        Assert.False(restoredSnapshot.Setup.ReadingMaterial.IsReady);
+        Assert.Null(restoredSnapshot.ReadingSession?.Content);
+        Assert.False(restoredSnapshot.LiveMonitoring.CanStartSession);
+    }
+
+    [Fact]
+    public async Task RestoreLatestSnapshot_DoesNotAllowRestartedBackendToSkipSetup()
+    {
+        var sourceHarness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(sourceHarness);
+
+        var restoredHarness = RealtimeTestDoubles.CreateHarness(
+            latestSnapshot: sourceHarness.SessionManager.GetCurrentSnapshot());
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => restoredHarness.SessionManager.StartSessionAsync());
+
+        Assert.Equal("Select and license an eye tracker before starting the session.", error.Message);
+        Assert.Equal(0, restoredHarness.SessionManager.GetCurrentSnapshot().Setup.CurrentStepIndex);
     }
 
     [Fact]
@@ -169,6 +174,46 @@ public sealed class ExperimentSessionAuthorityTests
                        && message.Payload is ExperimentSessionSnapshot stoppedSnapshot
                        && !stoppedSnapshot.IsActive
                        && stoppedSnapshot.SessionId == finalSnapshot.SessionId);
+    }
+
+    [Fact]
+    public async Task FlushPendingReplayChunksAsync_PersistsRecoveryDataThatCanBeManuallyRebuilt()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0.42, 320, 1440, 900, 2800, 920));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1"));
+        harness.SessionManager.UpdateGazeSample(new GazeData
+        {
+            DeviceTimeStamp = 123,
+            LeftEyeX = 10,
+            LeftEyeY = 20,
+            LeftEyeValidity = "Valid",
+            RightEyeX = 30,
+            RightEyeY = 40,
+            RightEyeValidity = "Valid"
+        });
+
+        await harness.SessionManager.FlushPendingReplayChunksAsync();
+
+        var sessionId = Assert.IsType<Guid>(harness.SessionManager.GetCurrentSnapshot().SessionId);
+        harness.ReplayRecoveryStore.MarkRecovered(sessionId);
+        var recoveredExport = await harness.ReplayRecoveryStore.BuildExportAsync(
+            sessionId,
+            ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+        Assert.NotNull(recoveredExport);
+        Assert.Equal(ExperimentReplayRecoveryStatuses.RecoveredIncomplete, recoveredExport!.Manifest.CompletionSource);
+        Assert.True(recoveredExport.Sensing.GazeSamples.Count >= 1);
+        Assert.True(recoveredExport.Derived.ViewportEvents.Count >= 1);
+        Assert.True(recoveredExport.Derived.FocusEvents.Count >= 1);
     }
 
     [Fact]
