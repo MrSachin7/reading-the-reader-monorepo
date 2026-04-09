@@ -40,6 +40,7 @@ import {
   useSaveParticipantMutation,
   useStartExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } from "@/redux"
 import type { RootState } from "@/redux"
@@ -61,6 +62,7 @@ import {
   getAuthoritativeWorkflowStepStates,
   type AuthoritativeWorkflowStepState,
 } from "./utils"
+import { experimentStepperTestingOverrides } from "./experiment-stepper-testing"
 
 export type ExperimentStep = {
   value: number
@@ -878,6 +880,12 @@ export function ExperimentStepper() {
   const { resolvedTheme } = useTheme()
   const { font } = useFontTheme()
   const { palette } = usePaletteTheme()
+  const {
+    forceEyeTrackerReady,
+    forceParticipantReady,
+    forceCalibrationReady,
+    forceReadingMaterialReady,
+  } = experimentStepperTestingOverrides
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
   const { presentation, experimentSetupId } = useReadingSettings()
   const { data: experimentSession } = useGetExperimentSessionQuery(undefined, {
@@ -888,6 +896,8 @@ export function ExperimentStepper() {
     useUpsertReadingSessionMutation()
   const [startExperimentSession, { isLoading: isStartingExperimentSession }] =
     useStartExperimentSessionMutation()
+  const [updateExperimentSetupTestingOverrides] =
+    useUpdateExperimentSetupTestingOverridesMutation()
   const [step, setStep] = React.useState(0)
   const [isStepSubmitting, setIsStepSubmitting] = React.useState(false)
   const [startError, setStartError] = React.useState<string | null>(null)
@@ -931,6 +941,25 @@ export function ExperimentStepper() {
     ((displayedWorkflowStepStates[step]?.isReady ?? false) || (stepCompletion[step] ?? false))
   const canStartReadingSession =
     workflowStepStates.slice(0, 3).every((state) => state.isReady) && hasLocalReadingSelection
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return
+    }
+
+    void updateExperimentSetupTestingOverrides({
+      forceEyeTrackerReady,
+      forceParticipantReady,
+      forceCalibrationReady,
+      forceReadingMaterialReady,
+    })
+  }, [
+    forceCalibrationReady,
+    forceEyeTrackerReady,
+    forceParticipantReady,
+    forceReadingMaterialReady,
+    updateExperimentSetupTestingOverrides,
+  ])
 
   const saveReadingSessionDraft = React.useCallback(async () => {
     setStartError(null)

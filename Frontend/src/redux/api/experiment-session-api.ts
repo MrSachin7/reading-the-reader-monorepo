@@ -37,6 +37,13 @@ export type UpdateDecisionConfigurationPayload = {
   automationPaused: boolean
 }
 
+export type UpdateExperimentSetupTestingOverridesPayload = {
+  forceEyeTrackerReady: boolean | null
+  forceParticipantReady: boolean | null
+  forceCalibrationReady: boolean | null
+  forceReadingMaterialReady: boolean | null
+}
+
 export const experimentSessionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getExperimentSession: builder.query<ExperimentSessionSnapshot, void>({
@@ -64,6 +71,30 @@ export const experimentSessionApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Experiment"],
+    }),
+    updateExperimentSetupTestingOverrides: builder.mutation<
+      ExperimentSessionSnapshot,
+      UpdateExperimentSetupTestingOverridesPayload
+    >({
+      query: (body) => ({
+        url: "/experiment-session/testing-overrides",
+        method: "PUT",
+        body,
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(
+            experimentSessionApi.util.upsertQueryData(
+              "getExperimentSession",
+              undefined,
+              data
+            )
+          )
+        } catch {
+          // Let the request surface through normal RTK Query error handling.
+        }
+      },
     }),
     startExperimentSession: builder.mutation<void, void>({
       query: () => ({
@@ -142,5 +173,6 @@ export const {
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } = experimentSessionApi

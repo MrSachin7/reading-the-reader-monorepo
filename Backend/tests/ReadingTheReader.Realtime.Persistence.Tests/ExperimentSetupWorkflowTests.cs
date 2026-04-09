@@ -242,6 +242,43 @@ public sealed class ExperimentSetupWorkflowTests
         Assert.True(snapshot.Setup.ReadingMaterial.IsReady);
     }
 
+    [Fact]
+    public void GetCurrentSnapshot_WhenEyeTrackerOverrideIsForcedTrue_ProjectsStepAsReady()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness(
+            experimentSetupTestingOptions: new ExperimentSetupTestingOptions
+            {
+                ForceEyeTrackerReady = true
+            });
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(snapshot.Setup.EyeTracker.IsReady);
+        Assert.Equal(1, snapshot.Setup.CurrentStepIndex);
+        Assert.NotNull(snapshot.Setup.CurrentBlocker);
+        Assert.Equal("participant", snapshot.Setup.CurrentBlocker!.StepKey);
+    }
+
+    [Fact]
+    public async Task GetCurrentSnapshot_WhenParticipantOverrideIsForcedFalse_KeepsParticipantAsTheAuthoritativeBlocker()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness(
+            experimentSetupTestingOptions: new ExperimentSetupTestingOptions
+            {
+                ForceParticipantReady = false
+            });
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.False(snapshot.Setup.IsReadyForSessionStart);
+        Assert.False(snapshot.Setup.Participant.IsReady);
+        Assert.Equal(1, snapshot.Setup.CurrentStepIndex);
+        Assert.NotNull(snapshot.Setup.CurrentBlocker);
+        Assert.Equal("participant", snapshot.Setup.CurrentBlocker!.StepKey);
+        Assert.Equal("Save the participant information before starting the session.", snapshot.Setup.CurrentBlocker.Reason);
+    }
+
     private static CalibrationSessionSnapshot CreateCalibrationSnapshot(bool passed, string quality)
     {
         return new CalibrationSessionSnapshot(

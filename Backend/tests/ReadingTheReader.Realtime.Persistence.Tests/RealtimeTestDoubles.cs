@@ -15,14 +15,16 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 public sealed class RealtimeTestDoubles
 {
     public static RuntimeHarness CreateHarness(
-        CalibrationOptions? calibrationOptions = null)
+        CalibrationOptions? calibrationOptions = null,
+        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null)
     {
         return CreateHarness(
             new FakeEyeTrackerAdapter(),
             new FakeClientBroadcasterAdapter(),
             new FakeExperimentStateStoreAdapter(),
             new FakeExperimentReplayExportStoreAdapter(),
-            calibrationOptions);
+            calibrationOptions,
+            experimentSetupTestingOptions);
     }
 
     public static RuntimeHarness CreateHarness(
@@ -30,10 +32,12 @@ public sealed class RealtimeTestDoubles
         FakeClientBroadcasterAdapter broadcaster,
         FakeExperimentStateStoreAdapter stateStore,
         FakeExperimentReplayExportStoreAdapter replayExportStore,
-        CalibrationOptions? calibrationOptions = null)
+        CalibrationOptions? calibrationOptions = null,
+        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null)
     {
         var replayRecoveryStore = new FakeExperimentReplayRecoveryStoreAdapter();
         calibrationOptions ??= new CalibrationOptions();
+        experimentSetupTestingOptions ??= new ExperimentSetupTestingOptions();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
         var externalProviderOptions = new ExternalProviderOptions
@@ -59,6 +63,7 @@ public sealed class RealtimeTestDoubles
             replayExportStore,
             replayRecoveryStore,
             calibrationOptions,
+            experimentSetupTestingOptions,
             interventionRuntime,
             interventionModuleRegistry,
             strategyCoordinator,

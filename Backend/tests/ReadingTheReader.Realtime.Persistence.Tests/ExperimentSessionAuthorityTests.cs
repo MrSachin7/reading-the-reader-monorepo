@@ -338,6 +338,27 @@ public sealed class ExperimentSessionAuthorityTests
     }
 
     [Fact]
+    public async Task StartSessionAsync_WhenAllTestingOverridesAreForcedTrue_BypassesBackendSetupChecks()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness(
+            experimentSetupTestingOptions: new ExperimentSetupTestingOptions
+            {
+                ForceEyeTrackerReady = true,
+                ForceParticipantReady = true,
+                ForceCalibrationReady = true,
+                ForceReadingMaterialReady = true
+            });
+
+        var started = await harness.SessionManager.StartSessionAsync();
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(started);
+        Assert.True(snapshot.IsActive);
+        Assert.True(snapshot.Setup.IsReadyForSessionStart);
+        Assert.Null(snapshot.Setup.CurrentBlocker);
+    }
+
+    [Fact]
     public async Task GetCurrentSnapshot_WhenParticipantViewConnects_ProjectsLiveMonitoringSemantics()
     {
         var harness = RealtimeTestDoubles.CreateHarness();
