@@ -66,7 +66,8 @@ function FullscreenGate({
 
 export function ReadingPage() {
   const liveSession = useLiveExperimentSession()
-  const liveGaze = useLiveGazeStream({ enabled: Boolean(liveSession?.eyeTrackerDevice) })
+  const hasActiveEyeTracker = Boolean(liveSession?.isActive && liveSession?.eyeTrackerDevice)
+  const liveGaze = useLiveGazeStream({ enabled: hasActiveEyeTracker })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
@@ -75,12 +76,16 @@ export function ReadingPage() {
   )
 
   useEffect(() => {
+    if (!liveSession?.isActive) {
+      return
+    }
+
     registerParticipantView()
 
     return () => {
       unregisterParticipantView()
     }
-  }, [])
+  }, [liveSession?.isActive])
 
   const handleViewportMetricsChange = useCallback((metrics: ReaderViewportMetrics) => {
     updateParticipantViewport(metrics)

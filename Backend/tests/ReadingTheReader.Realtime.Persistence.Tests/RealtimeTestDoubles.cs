@@ -15,20 +15,24 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 public sealed class RealtimeTestDoubles
 {
     public static RuntimeHarness CreateHarness(
-        CalibrationOptions? calibrationOptions = null,
-        ExperimentSessionSnapshot? latestSnapshot = null)
+        CalibrationOptions? calibrationOptions = null)
     {
-        var eyeTrackerAdapter = new FakeEyeTrackerAdapter();
-        var broadcaster = new FakeClientBroadcasterAdapter();
-        var stateStore = new FakeExperimentStateStoreAdapter();
-        if (latestSnapshot is not null)
-        {
-            stateStore.SeedSnapshot(latestSnapshot);
-        }
+        return CreateHarness(
+            new FakeEyeTrackerAdapter(),
+            new FakeClientBroadcasterAdapter(),
+            new FakeExperimentStateStoreAdapter(),
+            new FakeExperimentReplayExportStoreAdapter(),
+            calibrationOptions);
+    }
 
-        var replayExportStore = new FakeExperimentReplayExportStoreAdapter();
+    public static RuntimeHarness CreateHarness(
+        FakeEyeTrackerAdapter eyeTrackerAdapter,
+        FakeClientBroadcasterAdapter broadcaster,
+        FakeExperimentStateStoreAdapter stateStore,
+        FakeExperimentReplayExportStoreAdapter replayExportStore,
+        CalibrationOptions? calibrationOptions = null)
+    {
         var replayRecoveryStore = new FakeExperimentReplayRecoveryStoreAdapter();
-
         calibrationOptions ??= new CalibrationOptions();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
@@ -165,25 +169,29 @@ public sealed class RealtimeTestDoubles
 
     public sealed class FakeExperimentStateStoreAdapter : IExperimentStateStoreAdapter
     {
-        private readonly List<ExperimentSessionSnapshot> _savedSnapshots = [];
+        private readonly List<ExperimentReplayExport> _savedActiveReplays = [];
+        private ExperimentReplayExport? _latestActiveReplay;
 
-        public IReadOnlyList<ExperimentSessionSnapshot> SavedSnapshots => _savedSnapshots;
+        public IReadOnlyList<ExperimentReplayExport> SavedActiveReplays => _savedActiveReplays;
 
-        public void SeedSnapshot(ExperimentSessionSnapshot snapshot)
+        public ExperimentReplayExport? LatestActiveReplay => _latestActiveReplay?.Copy();
+
+        public ValueTask SaveActiveReplayAsync(ExperimentReplayExport exportDocument, CancellationToken ct = default)
         {
-            _savedSnapshots.Clear();
-            _savedSnapshots.Add(snapshot.Copy());
-        }
-
-        public ValueTask SaveSnapshotAsync(ExperimentSessionSnapshot snapshot, CancellationToken ct = default)
-        {
-            _savedSnapshots.Add(snapshot.Copy());
+            _savedActiveReplays.Add(exportDocument.Copy());
+            _latestActiveReplay = exportDocument.Copy();
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<ExperimentSessionSnapshot?> LoadLatestSnapshotAsync(CancellationToken ct = default)
+        public ValueTask<ExperimentReplayExport?> LoadActiveReplayAsync(CancellationToken ct = default)
         {
-            return ValueTask.FromResult<ExperimentSessionSnapshot?>(_savedSnapshots.LastOrDefault()?.Copy());
+            return ValueTask.FromResult(LatestActiveReplay);
+        }
+
+        public ValueTask ClearActiveReplayAsync(CancellationToken ct = default)
+        {
+            _latestActiveReplay = null;
+            return ValueTask.CompletedTask;
         }
     }
 

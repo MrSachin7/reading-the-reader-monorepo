@@ -77,8 +77,8 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(snapshot.Setup.Calibration.IsReady);
         Assert.True(snapshot.Setup.ReadingMaterial.IsReady);
         Assert.Contains(
-            harness.StateStore.SavedSnapshots,
-            saved => saved.IsActive && saved.SessionId == snapshot.SessionId);
+            harness.StateStore.SavedActiveReplays,
+            saved => saved.Experiment.EndedAtUnixMs is null && saved.Experiment.SessionId == snapshot.SessionId);
         Assert.Contains(
             harness.Broadcaster.Broadcasts,
             message => message.MessageType == MessageTypes.ExperimentStarted
@@ -92,9 +92,15 @@ public sealed class ExperimentSessionAuthorityTests
     {
         var sourceHarness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(sourceHarness);
+        await sourceHarness.SessionManager.StartSessionAsync();
+        await sourceHarness.StateStore.SaveActiveReplayAsync(
+            Assert.IsType<ExperimentReplayExport>(sourceHarness.SessionManager.GetCurrentActiveReplayExport()));
 
         var restoredHarness = RealtimeTestDoubles.CreateHarness(
-            latestSnapshot: sourceHarness.SessionManager.GetCurrentSnapshot());
+            sourceHarness.EyeTrackerAdapter,
+            sourceHarness.Broadcaster,
+            sourceHarness.StateStore,
+            sourceHarness.ReplayExportStore);
 
         var restoredSnapshot = restoredHarness.SessionManager.GetCurrentSnapshot();
 
@@ -117,9 +123,13 @@ public sealed class ExperimentSessionAuthorityTests
     {
         var sourceHarness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(sourceHarness);
+        await sourceHarness.StateStore.SaveActiveReplayAsync(ExperimentReplayExportTestFactory.CreateReplayExport());
 
         var restoredHarness = RealtimeTestDoubles.CreateHarness(
-            latestSnapshot: sourceHarness.SessionManager.GetCurrentSnapshot());
+            sourceHarness.EyeTrackerAdapter,
+            sourceHarness.Broadcaster,
+            sourceHarness.StateStore,
+            sourceHarness.ReplayExportStore);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => restoredHarness.SessionManager.StartSessionAsync());
 
@@ -166,14 +176,50 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewConnection);
         Assert.True(finalSnapshot.LiveMonitoring.HasParticipantViewportData);
         Assert.True(finalSnapshot.LiveMonitoring.HasReadingFocusSignal);
-        Assert.True(harness.StateStore.SavedSnapshots.Count >= 3);
-        Assert.Equal(finalSnapshot.SessionId, harness.StateStore.SavedSnapshots.Last().SessionId);
+        Assert.Null(harness.StateStore.LatestActiveReplay);
+        Assert.True(harness.StateStore.SavedActiveReplays.Count >= 1);
         Assert.Contains(
             harness.Broadcaster.Broadcasts,
             message => message.MessageType == MessageTypes.ExperimentStopped
                        && message.Payload is ExperimentSessionSnapshot stoppedSnapshot
                        && !stoppedSnapshot.IsActive
                        && stoppedSnapshot.SessionId == finalSnapshot.SessionId);
+    }
+
+    [Fact]
+    public async Task StartSessionAndLiveSignals_CreateReplayReadyLiveFileBeforeFinish()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0.42, 320, 1440, 900, 2800, 920));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1"));
+        harness.SessionManager.UpdateGazeSample(new GazeData
+        {
+            DeviceTimeStamp = 123,
+            LeftEyeX = 10,
+            LeftEyeY = 20,
+            LeftEyeValidity = "Valid",
+            RightEyeX = 30,
+            RightEyeY = 40,
+            RightEyeValidity = "Valid"
+        });
+
+        var activeReplay = Assert.IsType<ExperimentReplayExport>(harness.SessionManager.GetCurrentActiveReplayExport());
+        Assert.Equal(ExperimentReplayExportSchema.Name, activeReplay.Manifest.Schema);
+        Assert.Null(activeReplay.Experiment.EndedAtUnixMs);
+        Assert.Null(activeReplay.Experiment.DurationMs);
+        Assert.Contains(
+            activeReplay.Experiment.LifecycleEvents,
+            item => item.EventType == "session-started");
+        Assert.True(activeReplay.Sensing.GazeSamples.Count >= 1);
+        Assert.True(activeReplay.Derived.ViewportEvents.Count >= 1);
+        Assert.True(activeReplay.Derived.FocusEvents.Count >= 1);
     }
 
     [Fact]
@@ -214,6 +260,81 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(recoveredExport.Sensing.GazeSamples.Count >= 1);
         Assert.True(recoveredExport.Derived.ViewportEvents.Count >= 1);
         Assert.True(recoveredExport.Derived.FocusEvents.Count >= 1);
+    }
+
+    [Fact]
+    public async Task Constructor_WithUnfinishedLiveReplay_DoesNotRestoreCurrentSession()
+    {
+        var originalHarness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(originalHarness);
+        await originalHarness.SessionManager.StartSessionAsync();
+        await originalHarness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        originalHarness.SessionManager.UpdateGazeSample(new GazeData
+        {
+            DeviceTimeStamp = 123,
+            LeftEyeX = 10,
+            LeftEyeY = 20,
+            LeftEyeValidity = "Valid",
+            RightEyeX = 30,
+            RightEyeY = 40,
+            RightEyeValidity = "Valid"
+        });
+        await originalHarness.StateStore.SaveActiveReplayAsync(
+            Assert.IsType<ExperimentReplayExport>(originalHarness.SessionManager.GetCurrentActiveReplayExport()));
+
+        var recoveredHarness = RealtimeTestDoubles.CreateHarness(
+            originalHarness.EyeTrackerAdapter,
+            originalHarness.Broadcaster,
+            originalHarness.StateStore,
+            originalHarness.ReplayExportStore);
+
+        var snapshot = recoveredHarness.SessionManager.GetCurrentSnapshot();
+
+        Assert.False(snapshot.IsActive);
+        Assert.Null(snapshot.SessionId);
+        Assert.NotNull(recoveredHarness.StateStore.LatestActiveReplay);
+        Assert.Null(recoveredHarness.ReplayExportStore.LatestExport);
+    }
+
+    [Fact]
+    public async Task SubscribeGazeDataAsync_WhenBackendRestartsWithSavedLiveReplay_DoesNotRestartHardwareTracking()
+    {
+        var originalHarness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(originalHarness);
+        await originalHarness.SessionManager.StartSessionAsync();
+        await originalHarness.StateStore.SaveActiveReplayAsync(
+            Assert.IsType<ExperimentReplayExport>(originalHarness.SessionManager.GetCurrentActiveReplayExport()));
+
+        var recoveredHarness = RealtimeTestDoubles.CreateHarness(
+            originalHarness.EyeTrackerAdapter,
+            originalHarness.Broadcaster,
+            originalHarness.StateStore,
+            originalHarness.ReplayExportStore);
+
+        var startCallsBeforeSubscribe = recoveredHarness.EyeTrackerAdapter.StartCalls;
+
+        await recoveredHarness.SessionManager.SubscribeGazeDataAsync("researcher-1");
+
+        Assert.False(recoveredHarness.SessionManager.GetCurrentSnapshot().IsActive);
+        Assert.Equal(startCallsBeforeSubscribe, recoveredHarness.EyeTrackerAdapter.StartCalls);
+        Assert.DoesNotContain(
+            recoveredHarness.Broadcaster.DirectMessages,
+            message => message.ConnectionId == "researcher-1" && message.MessageType == MessageTypes.Error);
+    }
+
+    [Fact]
+    public async Task ResetSessionAsync_ClearsActiveLiveReplay()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.FinishSessionAsync(new FinishExperimentCommand("researcher-ui"));
+
+        var snapshot = await harness.SessionManager.ResetSessionAsync();
+
+        Assert.False(snapshot.IsActive);
+        Assert.Null(snapshot.SessionId);
+        Assert.Null(harness.StateStore.LatestActiveReplay);
     }
 
     [Fact]

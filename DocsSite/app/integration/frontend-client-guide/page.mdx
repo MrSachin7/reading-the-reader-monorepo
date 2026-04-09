@@ -2,7 +2,7 @@
 
 This guide is for browser and frontend clients that connect to `/ws`.
 
-External decision providers should not use this contract. Provider clients will use the dedicated provider protocol documented in [provider-websocket-protocol.md](./provider-websocket-protocol.md).
+External decision providers should not use this contract. Provider clients will use the dedicated provider protocol documented in [/integration/provider-protocol/](/integration/provider-protocol/).
 
 ## Goal
 Connect a frontend client to the backend to:
@@ -240,3 +240,4 @@ sequenceDiagram
   - Ensure at least one Tobii device is connected and discoverable.
 - State looks stale:
   - Send `getExperimentState` over WebSocket to fetch latest snapshot.
+

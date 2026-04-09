@@ -9,12 +9,27 @@ docs/.obsidian/
 **/[Oo]bj/
 **/TestResults/
 
+# Backend runtime data
+Backend/src/ReadingTheReader.WebApi/data/latest/
+Backend/src/ReadingTheReader.WebApi/data/live-experiments/
+Backend/src/ReadingTheReader.WebApi/data/saved-exports/
+Backend/src/ReadingTheReader.WebApi/data/experiment-replay-exports/
+Backend/src/ReadingTheReader.WebApi/data/experiment-session-export.json
+Backend/src/ReadingTheReader.WebApi/data/experiment-session-live.json
+Backend/src/ReadingTheReader.WebApi/data/experiment-session-journal.jsonl
+Backend/src/ReadingTheReader.WebApi/data/experiment-session-snapshot.json
+
 # Frontend caches that may now sit under root-owned paths
 Frontend/node_modules/
 Frontend/.next/
 Frontend/coverage/
 Frontend/out/
 Frontend/build/
+
+# Docs site caches and export output
+DocsSite/node_modules/
+DocsSite/.next/
+DocsSite/out/
 
 # Decision-Maker caches and local environments
 Decision-Maker/.venv/

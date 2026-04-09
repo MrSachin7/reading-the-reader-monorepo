@@ -7,6 +7,8 @@ public interface IExperimentSessionQueryService
 {
     ExperimentSessionSnapshot GetCurrentSnapshot();
 
+    ExperimentReplayExport? GetCurrentActiveReplayExport();
+
     IReadOnlyList<ReadingInterventionModuleDescriptor> GetInterventionModules();
 
     ValueTask<ExperimentReplayExport?> GetLatestReplayExportAsync(CancellationToken ct = default);

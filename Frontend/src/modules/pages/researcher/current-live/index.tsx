@@ -334,7 +334,6 @@ function ResearcherCurrentLiveBody({
     })
   }, [])
 
-  const participantViewport = readingSession.participantViewport
   const mirrorTrustState: LiveMirrorTrustState = getLiveMirrorTrustState({
     followParticipant,
     hasParticipantViewConnection: session.liveMonitoring.hasParticipantViewConnection,

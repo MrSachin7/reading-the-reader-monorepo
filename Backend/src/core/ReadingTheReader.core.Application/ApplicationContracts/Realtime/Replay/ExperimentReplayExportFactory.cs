@@ -20,19 +20,23 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<InterventionEventRecord> interventionEvents)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
-        var effectiveStoppedAtUnixMs = latestSnapshot.StoppedAtUnixMs ?? DetermineLastOccurredAtUnixMs(
-            latestSnapshot.StartedAtUnixMs,
-            lifecycleEvents,
-            gazeSamples,
-            participantViewportEvents,
-            readingFocusEvents,
-            attentionEvents,
-            decisionProposalEvents,
-            interventionEvents);
+        var isLiveExport = latestSnapshot.IsActive &&
+                           string.Equals(normalizedCompletionSource, "live", StringComparison.OrdinalIgnoreCase);
+        var effectiveStoppedAtUnixMs = isLiveExport
+            ? null
+            : latestSnapshot.StoppedAtUnixMs ?? DetermineLastOccurredAtUnixMs(
+                latestSnapshot.StartedAtUnixMs,
+                lifecycleEvents,
+                gazeSamples,
+                participantViewportEvents,
+                readingFocusEvents,
+                attentionEvents,
+                decisionProposalEvents,
+                interventionEvents);
 
         var finalSnapshot = latestSnapshot with
         {
-            IsActive = false,
+            IsActive = isLiveExport,
             StoppedAtUnixMs = effectiveStoppedAtUnixMs
         };
 

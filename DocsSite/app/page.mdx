@@ -1,0 +1,58 @@
+import { Callout, Cards } from 'nextra/components'
+
+# Reading the Reader Docs
+
+Reading the Reader is a researcher-operated adaptive reading platform. It connects to Tobii eye trackers, runs controlled reading sessions, mirrors the participant view in real time, and applies context-aware micro-interventions while preserving an architecture that future teams can extend.
+
+<Callout type="info">
+  This standalone docs app is the hosted copy of the full project documentation currently maintained under the repository `docs/` folder.
+</Callout>
+
+## Monorepo Structure
+
+```mermaid
+flowchart LR
+  Backend["Backend/.NET Web API"] --> Docs["DocsSite/"]
+  Frontend["Frontend/Next.js app"] --> Docs
+  Decision["Decision-Maker/Python mock provider"] --> Docs
+  Docs --> Pages["GitHub Pages"]
+```
+
+## Applications
+
+- `Backend/`: ASP.NET Core backend, realtime runtime, provider protocol, Tobii integration, persistence, and replay/export support.
+- `Frontend/`: researcher and participant-facing Next.js application.
+- `Decision-Maker/`: Python mock external decision provider.
+- `DocsSite/`: standalone static documentation app hosted separately from the frontend.
+
+## Imported Documentation
+
+<Cards>
+  <Cards.Card title="Backend Architecture" href="/backend/architecture/">
+    Full backend architecture document, including transport surfaces, orchestration, and persistence.
+  </Cards.Card>
+  <Cards.Card title="Frontend Integration" href="/integration/frontend-client-guide/">
+    Full browser-facing REST and WebSocket integration guide for `/api` and `/ws`.
+  </Cards.Card>
+  <Cards.Card title="Provider Integration" href="/integration/provider-protocol/">
+    Full external AI provider integration handoff for `/ws/provider`.
+  </Cards.Card>
+  <Cards.Card title="Black-Box Contract" href="/integration/black-box-contract/">
+    Full black-box contract with concrete request, payload, and sequence examples.
+  </Cards.Card>
+  <Cards.Card title="Calibration & Validation" href="/project/calibration-validation/">
+    Calibration and validation rationale, quality thresholds, and experimenter guidance.
+  </Cards.Card>
+  <Cards.Card title="Requirements" href="/project/requirements/">
+    Full user stories, functional requirements, non-functional requirements, and actor descriptions.
+  </Cards.Card>
+  <Cards.Card title="Thesis Proposal" href="/project/thesis-proposal/">
+    Full thesis framing, objectives, research questions, planned methods, and references.
+  </Cards.Card>
+</Cards>
+
+## Docs Index
+
+- `backend/` in the repo contains architecture and integration notes for the backend runtime.
+- `frontend/` in the repo contains calibration, requirements, and thesis-planning material.
+- The docs site keeps app-owned copies of those documents so they can be hosted independently on GitHub Pages.
