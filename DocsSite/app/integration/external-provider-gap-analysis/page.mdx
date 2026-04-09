@@ -1,0 +1,58 @@
+# External Provider Gap Analysis
+
+This page summarizes the current architecture gaps for a separate external decision provider.
+
+## What Already Exists
+
+- `external` is already a first-class decision provider id in the backend model.
+- Advisory and autonomous execution modes already exist in the decision vocabulary.
+- The backend already owns authoritative session state, proposal state, and intervention application.
+- Public read surfaces already exist for session state and intervention modules.
+
+## Main Gaps
+
+### No clean provider lifecycle in the current browser contract
+
+The system needed a dedicated provider boundary because the browser `/ws` contract did not model:
+
+- provider identity
+- provider capability declaration
+- heartbeat and liveness
+- provider-specific proposal submission
+- provider health and fallback
+
+### External provider was initially a stub
+
+The `external` mode existed in vocabulary before it existed as a real external process seam. That meant the system could name the boundary before it could actually support a separate provider client.
+
+### Decision-critical input ownership needed clarification
+
+Some decision-relevant signals were historically easier to derive in the browser. For a defendable external-provider seam, the important decision contract needs to be treated as backend-owned runtime state rather than researcher-browser-only state.
+
+### Researcher, participant, and provider actors needed clearer separation
+
+Without a dedicated provider contract, one WebSocket boundary risked collapsing three distinct actors into one anonymous channel.
+
+## Recommended Architectural Direction
+
+The repo’s planning work concluded that the right long-term direction is:
+
+- keep a dedicated provider boundary
+- keep the backend authoritative
+- let external providers suggest or request interventions
+- never let external providers become the final authority over runtime application
+
+## Validation Scenarios That Matter
+
+- a local Python provider can connect and stay registered
+- the provider receives session and reading signals
+- advisory proposals become backend-owned pending proposals
+- autonomous requests still go through backend validation
+- provider disconnect or timeout degrades safely
+- replay and export can preserve provider provenance
+
+## Related Full Reference Docs
+
+- [/integration/provider-protocol/](/integration/provider-protocol/)
+- [/integration/black-box-contract/](/integration/black-box-contract/)
+- [/integration/external-provider-roadmap/](/integration/external-provider-roadmap/)

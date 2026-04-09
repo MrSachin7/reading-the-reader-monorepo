@@ -1,0 +1,46 @@
+# Testing
+
+This page summarizes the current automated-testing situation in the repo.
+
+## Current Test Stack
+
+- backend tests use xUnit
+- backend tests live in `Backend/tests/ReadingTheReader.Realtime.Persistence.Tests/`
+- frontend does not currently have committed automated tests configured
+- frontend CI builds the app and only runs tests if a `test` script exists
+
+## What Is Covered Well Today
+
+- backend persistence adapters
+- replay export serialization and round-trip behavior
+- some intervention runtime behavior
+- filesystem-backed adapter behavior
+
+## What Is Not Covered Well Today
+
+- frontend UI behavior
+- frontend component or hook tests
+- backend Web API endpoint request/response tests
+- backend orchestration-heavy realtime services
+- hardware-facing Tobii integration paths
+- full end-to-end researcher or participant flows
+
+## Practical Commands
+
+```bash
+cd Backend
+dotnet test reading-the-reader-backend.sln
+```
+
+For the frontend, the main verification command today is the build:
+
+```bash
+cd Frontend
+bun build
+```
+
+## Deeper Reference
+
+For the detailed testing analysis, including patterns and gaps, use the source analysis document that informed this summary:
+
+- `.planning/codebase/TESTING.md`

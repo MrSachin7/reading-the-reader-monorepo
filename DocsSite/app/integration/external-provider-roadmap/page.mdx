@@ -1,0 +1,52 @@
+# External Provider Roadmap
+
+This page turns the external-provider planning work into a compact roadmap for future contributors.
+
+## Phase 1: Freeze the protocol
+
+- keep `/ws/provider` as the dedicated provider boundary
+- keep versioned JSON envelopes
+- keep backend authority over proposal lifecycle and intervention application
+- document every provider message type and actor rule
+
+## Phase 2: Registration and health
+
+- validate provider hello and shared-secret auth
+- track provider capabilities and last heartbeat
+- reject duplicate or invalid registrations cleanly
+
+## Phase 3: Real gateway behavior
+
+- route the `external` decision path through an actual provider gateway
+- support advisory proposal submission
+- support autonomous apply requests with backend validation
+
+## Phase 4: Stronger backend-owned decision inputs
+
+- keep provider-relevant session state projected from backend authority
+- avoid making the external provider depend on researcher-browser-only timing behavior
+
+## Phase 5: Fallback and resilience
+
+- detect stale or disconnected providers
+- disable unsafe autonomous behavior when provider health is lost
+- preserve researcher control when the provider is degraded
+
+## Phase 6: Researcher visibility
+
+- surface provider health in the authoritative session snapshot
+- surface provider state in the researcher UI
+
+## Phase 7: Export and replay provenance
+
+- preserve provider proposal ids, rationale, execution mode, and resolution history in export/replay data
+
+## Phase 8: Documentation freeze
+
+- keep provider docs complete enough that another team can build against the contract without rediscovering the architecture
+
+## Recommended Companion Pages
+
+- [/integration/provider-protocol/](/integration/provider-protocol/)
+- [/integration/black-box-contract/](/integration/black-box-contract/)
+- [/backend/data-export-analysis/](/backend/data-export-analysis/)

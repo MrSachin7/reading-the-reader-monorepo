@@ -1,0 +1,111 @@
+﻿# Project Research Summary
+
+**Project:** Reading the Reader Thesis Platform
+**Domain:** Researcher-operated adaptive reading experiment system
+**Researched:** 2026-03-26
+**Confidence:** HIGH
+
+## Executive Summary
+
+Reading the Reader should be treated as a brownfield thesis platform, not a new product build. The repo already covers most table-stakes flows: Tobii setup, calibration, guided session start, participant reading, researcher mirroring, manual interventions, and export/replay. The remaining thesis-critical work is to make that system defensible: explicit module seams for decision strategies and interventions, stronger context preservation during live adaptations, and better reproducibility and privacy discipline.
+
+The recommended approach is to keep the current typed browser frontend plus .NET backend split, keep the backend as the single experiment authority, and organize upcoming work around architectural hardening instead of feature expansion. For roadmap planning, the right priority order is: make the extension seams real, stabilize the realtime experiment path, prove context-preserving intervention behavior, then close the reproducibility, privacy, and documentation gaps needed for thesis defense.
+
+## Key Findings
+
+### Project framing
+
+This is a researcher-operated experiment platform with a participant-facing reading surface. The thesis value is not "more adaptive features"; it is a modular runtime that supports controlled studies, realtime observation, replay/export, and future decision providers without rewriting the core.
+
+### Recommended priorities
+
+1. Make decision-strategy and intervention boundaries explicit and additive.
+2. Keep the researcher-run experiment workflow stable under live conditions.
+3. Treat context preservation as core behavior, not presentation polish.
+4. Make exports scientifically defensible with stronger provenance metadata.
+5. Keep privacy, storage, and access control ahead of any external study use.
+
+### Table-stakes v1 scope
+
+- Eye tracker detection, selection, licensing, calibration, and validation
+- Guided experiment setup with valid start and stop gating
+- Markdown-only participant reading experience with stable rendering
+- Researcher live mirror, session health visibility, and manual intervention control
+- Export and replay support good enough to inspect and rerun study sessions
+
+### Differentiating thesis scope
+
+- Plug-and-play decision strategy boundary for manual, rule-based, hybrid, and external-provider modes
+- Plug-and-play intervention modules with declared parameters and controlled application paths
+- Context-preserving micro-interventions that minimize reading disruption
+- Architecture and documentation strong enough for future Reading the Reader teams to extend
+
+### Stack and architecture direction
+
+Keep the existing Next.js 16 / React 19 / TypeScript 5 frontend and layered .NET 10 backend. Keep REST for setup and durable control, raw WebSockets for bounded live session traffic, file-backed persistence plus versioned JSON/CSV exports for thesis runs, and Markdown constrained enough to preserve token and block mapping. Architecturally, preserve a single authoritative session core, but stop widening it: sensing, decision strategies, intervention execution, reader adaptation, researcher control, and export/replay need clearer seams.
+
+### Major risks
+
+- AI-first scope drift turns the thesis into a model-quality project instead of a platform thesis
+- `ExperimentSessionManager` keeps absorbing responsibilities and weakens the modularity claim
+- Realtime control, telemetry, and browser-derived analytics remain too tightly coupled
+- Exports stay replayable but not fully reproducible because configuration and version provenance are incomplete
+- Sensitive participant and gaze data remain exposed through anonymous routes, repo-local storage, or verbose logs
+
+## Implications for Roadmap
+
+### Phase 1: Architecture seams and contracts
+
+Make the decision and intervention interfaces explicit, align backend/frontend contracts, and document what belongs in orchestration versus modules. This should deliver the thesis-defensible extension story first because later work depends on it and because it prevents more coupling from landing in the realtime core.
+
+### Phase 2: Realtime experiment hardening
+
+Stabilize the live session path around researcher control, participant continuity, and bounded WebSocket behavior. This phase should ensure the participant session remains authoritative and usable even when the researcher view, summaries, or other derived telemetry are delayed or disconnected.
+
+### Phase 3: Context-preserving adaptive reading
+
+Implement and validate intervention guardrails, anchoring, cooldowns, and flow-preserving behavior in the participant reader. This is where the thesis differentiator becomes credible: adaptive behavior that can be justified without invalidating the reading session itself.
+
+### Phase 4: Reproducibility, privacy, and thesis evidence
+
+Stamp exports with configuration and build provenance, externalize sensitive storage, reduce anonymous access, redact logs, and produce the documentation needed to defend the final architecture and study process. This phase turns a working system into a defensible thesis artifact.
+
+### Phase ordering rationale
+
+- Architecture comes first because every new intervention or strategy otherwise deepens current coupling.
+- Realtime hardening comes before adaptation polish because the experiment path must stay trustworthy under live use.
+- Context preservation comes before secondary study tooling because it is central to the thesis research question.
+- Reproducibility and privacy must be closed before external study runs, even if some UX polish waits.
+
+### Research flags
+
+- Needs deeper planning research: export provenance design, privacy and access-control scope, and evaluation criteria for context preservation under live interventions.
+- Standard patterns: Next.js UI work, .NET endpoint layering, file-backed export pipelines, and guided setup workflow refinements.
+
+## Confidence Assessment
+
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | Strong official-source backing and close fit with the current brownfield repo |
+| Features | HIGH | Matches the repo's existing flows and the thesis framing in `PROJECT.md` |
+| Architecture | HIGH | Clear alignment on the macro-shape; remaining work is seam clarification, not redesign |
+| Pitfalls | MEDIUM-HIGH | Risks are well evidenced in the current codebase, with some mitigation details still needing phase-level decisions |
+
+**Overall confidence:** HIGH
+
+### Gaps to Address
+
+- Define the exact decision-provider contract and provenance fields before roadmap phases get too detailed.
+- Decide the minimum viable privacy posture for thesis studies: auth, storage location, pseudonymization, and log redaction.
+- Define how context-preservation success will be evaluated so intervention work is judged against clear criteria.
+
+## Sources
+
+Detailed source lists live in `.planning/research/STACK.md`, `.planning/research/FEATURES.md`, `.planning/research/ARCHITECTURE.md`, and `.planning/research/PITFALLS.md`.
+
+Primary references reflected in this summary include official Next.js, React, and .NET support/docs; OWASP WebSocket guidance; ICO privacy guidance; Tobii calibration references; and reproducibility guidance from The Turing Way.
+
+---
+*Research completed: 2026-03-26*
+*Ready for roadmap: yes*
+

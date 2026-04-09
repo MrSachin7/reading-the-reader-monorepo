@@ -10,5 +10,11 @@ export default {
   },
   'thesis-proposal': {
     title: 'Thesis Proposal'
+  },
+  'research-summary': {
+    title: 'Research Summary'
+  },
+  'risks-and-pitfalls': {
+    title: 'Risks & Pitfalls'
   }
 }

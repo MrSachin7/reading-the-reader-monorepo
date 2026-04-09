@@ -1,0 +1,606 @@
+﻿# Backend Architecture Proposal
+
+## Purpose
+
+This document proposes how to refactor the backend architecture so it better matches the thesis goals of:
+
+- explicit module boundaries
+- stronger domain ownership
+- swappable decision and intervention logic
+- defensible realtime orchestration
+- clearer separation between domain policy and application coordination
+
+This is a proposal only. It does not prescribe immediate code changes in this step.
+
+## Executive Summary
+
+The current backend macro-shape is broadly correct:
+
+- `WebApi` handles transport
+- `core.Application` handles orchestration and use cases
+- `infrastructure.*` handles Tobii, persistence, and transport adapters
+- one backend-owned authoritative session core exists
+
+The main architectural problem is not the overall layering. The problem is that `core.Domain` is too thin, while `core.Application` contains a large amount of domain policy, domain state modeling, domain constants, lifecycle rules, presets, and normalization logic.
+
+In practice, the backend currently behaves like:
+
+- thin domain
+- fat application contracts
+- strong runtime authority
+
+The recommended direction is:
+
+1. keep the current high-level backend layering
+2. extract real domain concepts and domain rules out of `ApplicationContracts`
+3. keep one orchestration-centric application layer
+4. split into additional .NET projects only after boundaries become stable enough to justify the extra packaging cost
+
+## Why This Change Is Needed
+
+The thesis documents consistently argue for strict separation between:
+
+- sensing
+- mapping
+- decision strategies
+- intervention rendering
+- session management
+
+That intent is visible in:
+
+- `docs/frontend/requirements.md`
+- `docs/frontend/thesis_proposal.md`
+- `.planning/research/ARCHITECTURE.md`
+- `.planning/research/SUMMARY.md`
+- `.planning/phases/01-experiment-authority-sensing-boundary/01-CONTEXT.md`
+
+Those same documents also support a different important conclusion:
+
+- the platform should keep one authoritative experiment/session core
+- the system should sharpen seams, not replace the macro-shape with a fragmented architecture too early
+
+So the current issue is not "we need more layers".
+The current issue is "the layers do not own the right things".
+
+## Current Problems
+
+### 1. Domain Is Anemic
+
+The `core.Domain` project currently contains a few passive entities such as:
+
+- `ExperimentSession`
+- `Participant`
+- `EyeTrackerDevice`
+- `GazeData`
+- `ReadingMaterial`
+
+These types have very limited behavior and do not own much of the business meaning of the system.
+
+### 2. Application Owns Domain Policy
+
+A large amount of domain logic lives in `core.Application/ApplicationContracts`, for example:
+
+- calibration patterns, presets, statuses, session snapshots, readiness helpers
+- reading presentation limits and normalization rules
+- reader appearance normalization rules
+- decision provider ids, execution modes, status lifecycle rules
+- intervention guardrails and layout change policies
+
+This means the application layer is doing both:
+
+- orchestration
+- domain modeling
+
+That weakens the architecture because use-case services start depending on implementation-level domain decisions instead of consuming domain objects and domain services.
+
+### 3. "Contracts" Folder Mixes Multiple Concerns
+
+The current `ApplicationContracts` area contains all of the following at once:
+
+- API-facing state shapes
+- orchestration-facing DTOs
+- domain policies
+- domain rules
+- domain snapshots
+- service interfaces
+- use-case implementations
+
+This makes the folder name misleading. Many of these types are not mere contracts.
+
+### 4. Module Boundaries Exist Conceptually More Than Structurally
+
+The codebase already talks about these boundaries:
+
+- sensing
+- reader observation
+- decisioning
+- interventions
+- replay/export
+- session authority
+
+But many of the core data types and rules are still colocated under one broad `core.Application` project.
+
+### 5. The Session Manager Still Absorbs Too Much Meaning
+
+`ExperimentSessionManager` is still the system's strongest architectural center. That is acceptable for orchestration, but risky when:
+
+- normalization helpers live there
+- lifecycle policy lives there
+- export shaping lives there
+- replay event semantics live there
+- calibration/readiness decision logic lives there
+
+The manager should remain the authority, but not become the permanent home of every rule in the platform.
+
+## Key Architectural Principle
+
+The right distinction is:
+
+- `Domain` should own meaning, invariants, state transitions, normalization rules, and vocabulary
+- `Application` should own orchestration, use cases, cross-boundary coordination, and dependency inversion
+- `Infrastructure` should own side effects and technology-specific implementations
+- `WebApi` should own transport
+
+This is more important than whether there are two projects or eight projects.
+
+## Proposal A: Strengthen Domain Ownership Without Changing the Macro-Shape
+
+### Recommendation
+
+Keep the current top-level core structure:
+
+- `ReadingTheReader.core.Domain`
+- `ReadingTheReader.core.Application`
+
+But substantially redistribute ownership.
+
+### What Should Move Into Domain
+
+The following categories belong in domain ownership:
+
+#### Calibration Domain
+
+Move calibration concepts and rules into domain:
+
+- calibration pattern names
+- calibration point definitions
+- calibration point presets
+- calibration point and validation point state
+- calibration result and validation result types
+- calibration session state
+- readiness/applicability checks
+- calibration status vocabulary
+
+Examples currently misplaced in application:
+
+- `CalibrationContracts.cs`
+- `CalibrationOptions.cs` partially
+
+Important nuance:
+- configuration binding types may stay application- or composition-facing
+- the meaning of calibration presets and states should not
+
+#### Reading Presentation Domain
+
+Move reading policy into domain:
+
+- presentation constraints
+- appearance constraints
+- normalization and validation rules
+- presentation lock semantics
+- content identity semantics
+- context preservation event meaning
+
+Examples currently misplaced:
+
+- `ReadingPresentationRules`
+- `ReaderAppearanceRules`
+- several types in `LiveReadingSessionSnapshot.cs`
+
+#### Decisioning Domain
+
+Move decision vocabulary and lifecycle policy into domain:
+
+- provider ids
+- execution modes
+- proposal statuses
+- proposal transition rules
+- proposal state shape
+- decision context shape if treated as a pure domain model
+
+Examples currently misplaced:
+
+- `DecisionProviderIds`
+- `DecisionExecutionModes`
+- `DecisionProposalStatus`
+- `DecisionProposalLifecycleRules`
+
+#### Intervention Domain
+
+Move intervention policy into domain:
+
+- intervention command/result concepts
+- safe application rules
+- layout-change guardrails
+- requested layout property semantics
+- additive module descriptors if treated as platform capabilities rather than application wiring
+
+Examples currently misplaced:
+
+- parts of `ReadingInterventionRuntime.cs`
+- module parameter semantics
+
+#### Replay/Export Domain
+
+Move replay/export semantics into domain if they represent canonical experiment evidence:
+
+- lifecycle event records
+- sensing event records
+- derived reading event records
+- replay baseline semantics
+- export schema/version vocabulary
+
+The export serializer itself remains outside domain.
+But the meaning of a canonical experiment evidence record should not live only as application DTO clutter.
+
+### What Should Stay In Application
+
+The following should remain in application:
+
+- use-case services
+- orchestration services
+- authority coordination
+- DI registration
+- adapter-facing interfaces
+- persistence abstractions
+- transport-ingress abstractions
+- mapping from transport contracts to domain/application commands
+- coordination between sensing, observation, decisioning, intervention execution, and persistence
+
+Examples:
+
+- `CalibrationService`
+- `EyeTrackerService`
+- `ReadingMaterialSetupService`
+- `ExperimentSessionManager`
+- `DecisionStrategyCoordinator`
+- `ApplicationModuleInstaller`
+
+But these services should consume domain-owned types and rules, not define them.
+
+## Proposal B: Restructure Core by Bounded Module Areas First, Projects Later
+
+### Recommendation
+
+Refactor by module ownership first inside the existing two-project core shape.
+
+Suggested domain foldering:
+
+- `Domain/Sensing/Calibration/*`
+- `Domain/Sensing/Devices/*`
+- `Domain/Reading/*`
+- `Domain/Decisioning/*`
+- `Domain/Interventions/*`
+- `Domain/Replay/*`
+- `Domain/Session/*`
+
+Suggested application foldering:
+
+- `Application/Sensing/*`
+- `Application/Observation/*`
+- `Application/Decisioning/*`
+- `Application/Interventions/*`
+- `Application/Replay/*`
+- `Application/Session/*`
+- `Application/ReadingMaterialSetups/*`
+- `Application/Participants/*`
+
+This gives the architecture the module shape it wants without immediately paying the cost of many assemblies.
+
+### Why This Is Better As a First Step
+
+It gives:
+
+- clearer ownership
+- easier refactoring
+- fewer cyclic dependency risks
+- less DI and project-file churn
+- better ability to observe the real stable seams
+
+It avoids:
+
+- premature assembly fragmentation
+- unnecessary project references
+- long-lived packaging decisions made before the boundaries are proven
+
+## Proposal C: Introduce More .NET Projects Only Where the Boundary Is Mature
+
+### Recommendation
+
+Do not immediately create one project per conceptual module.
+
+Instead, use the following rule:
+
+Create a separate .NET project only when a module has:
+
+- stable vocabulary
+- clear inward dependencies
+- low cross-module churn
+- a meaningful reason to compile or evolve separately
+
+### What Additional Projects Could Eventually Make Sense
+
+If the architecture matures, these are plausible future projects:
+
+- `ReadingTheReader.core.Domain`
+- `ReadingTheReader.core.Application`
+- `ReadingTheReader.core.Sensing`
+- `ReadingTheReader.core.Decisioning`
+- `ReadingTheReader.core.Interventions`
+- `ReadingTheReader.core.Replay`
+
+But only if the dependency direction stays clean.
+
+### What Should Not Happen
+
+Avoid an immediate split like:
+
+- `Application.Modules.Calibration`
+- `Application.Modules.Decisioning`
+- `Application.Modules.Reading`
+
+if those projects still share snapshots, constants, and domain state in tangled ways.
+
+That would create:
+
+- more ceremony
+- more project references
+- more coordination overhead
+- the appearance of modularity without the reality of modularity
+
+### Specific Judgment on Calibration
+
+Calibration should not primarily be modeled as its own top-level application module project.
+
+Calibration belongs inside the sensing boundary.
+
+That means the better mental model is:
+
+- sensing domain owns calibration meaning
+- sensing application services coordinate calibration workflows
+- infrastructure.Tobii implements calibration side effects
+
+So if there is ever a separate project, it should align more closely with `Sensing` than with a standalone `Calibration` project.
+
+## Proposed Target Shape
+
+### Option 1: Recommended Near-Term Shape
+
+#### Projects
+
+- `ReadingTheReader.core.Domain`
+- `ReadingTheReader.core.Application`
+
+#### Ownership
+
+- `Domain` contains the canonical domain models and rules by module area
+- `Application` contains services, interfaces, orchestration, and composition-facing options
+
+This is the recommended next architectural step.
+
+### Option 2: Possible Medium-Term Shape
+
+#### Projects
+
+- `ReadingTheReader.core.Domain`
+- `ReadingTheReader.core.Application`
+- `ReadingTheReader.core.Sensing`
+- `ReadingTheReader.core.Decisioning`
+- `ReadingTheReader.core.Interventions`
+- `ReadingTheReader.core.Replay`
+
+#### Conditions for Adoption
+
+- module boundaries have already been clarified inside the existing projects
+- the team sees real compile-time or ownership value from separation
+- dependencies can remain one-directional and obvious
+
+This is not recommended as the first refactor step.
+
+## Suggested Ownership Map
+
+### Domain
+
+Owns:
+
+- business vocabulary
+- invariants
+- state transitions
+- normalization
+- presets
+- rules
+- canonical event semantics
+
+Examples:
+
+- calibration patterns and session states
+- decision statuses and lifecycle transitions
+- reading presentation constraints
+- intervention safety rules
+- replay event definitions
+
+### Application
+
+Owns:
+
+- use cases
+- orchestration
+- module coordination
+- transaction boundaries
+- policy invocation
+- persistence interfaces
+- runtime authority
+
+Examples:
+
+- start session
+- stop session
+- run calibration workflow
+- apply intervention
+- evaluate decision provider
+- build export from canonical history
+
+### Infrastructure
+
+Owns:
+
+- Tobii SDK
+- file persistence
+- websocket broadcasting
+- realtime serialization
+- settings persistence
+
+### WebApi
+
+Owns:
+
+- HTTP contracts
+- websocket envelope parsing
+- endpoint error translation
+- composition root startup
+
+## Specific Refactoring Candidates
+
+### High Priority
+
+#### Move calibration state and presets out of application contracts
+
+Current problem:
+- calibration meaning is application-owned
+
+Proposal:
+- create domain-owned calibration types under sensing/calibration
+- let `CalibrationService` orchestrate them
+
+#### Move reading presentation rules into domain
+
+Current problem:
+- font, line width, spacing, and appearance rules are application-owned even though they are core reading-policy constraints
+
+Proposal:
+- move them into reading domain policy types
+
+#### Move decision lifecycle policy into domain
+
+Current problem:
+- proposal status and transition rules are application-owned
+
+Proposal:
+- make them domain-owned and let application services consume them
+
+#### Reduce semantic helpers inside `ExperimentSessionManager`
+
+Current problem:
+- the manager still carries normalization and policy logic that should belong elsewhere
+
+Proposal:
+- keep it as orchestrator
+- move reusable policy and state logic into domain or focused collaborators
+
+### Medium Priority
+
+#### Revisit replay/export model ownership
+
+If replay/export is thesis-critical evidence, then:
+
+- canonical event semantics should become first-class domain concepts
+- serializer and storage should remain infrastructure concerns
+
+#### Revisit `ReadingMaterial`
+
+The current `ReadingMaterial` domain model appears weak and possibly outdated relative to the active reading-session models.
+
+Proposal:
+- either evolve it into a meaningful reading/content domain model
+- or remove/replace it if it no longer represents the canonical concept in the system
+
+## Migration Strategy
+
+### Phase 1: Ownership Correction
+
+- identify domain rules currently living in `ApplicationContracts`
+- move them into `core.Domain`
+- update application services to depend on domain-owned types
+
+This should happen before any project split.
+
+### Phase 2: Namespace and Folder Clarification
+
+- group domain and application code by module area
+- make boundaries obvious in code organization
+- reduce misleading use of the word `Contracts`
+
+### Phase 3: Session Authority Slimming
+
+- keep `ExperimentSessionManager` authoritative
+- move non-orchestration logic into collaborators or domain policy types
+
+### Phase 4: Evaluate Project Split
+
+Only after phases 1-3:
+
+- review whether sensing, decisioning, interventions, or replay are stable enough for separate assemblies
+- split only where real coupling reduction is achieved
+
+## Risks and Tradeoffs
+
+### Risk: Premature Project Explosion
+
+If too many projects are introduced too early, the system may become:
+
+- harder to navigate
+- harder to wire
+- more fragile during refactoring
+
+without truly improving modularity.
+
+### Risk: Overcorrecting Toward Rich Domain Everywhere
+
+Not every snapshot or DTO needs to become a deep aggregate root.
+
+The goal is not "domain-driven design theater".
+The goal is correct ownership of business meaning.
+
+### Risk: Breaking Frontend/Backend Contract Alignment
+
+The backend currently mirrors many contracts manually into the frontend.
+
+Refactoring ownership in the backend should not accidentally churn transport shapes unless there is an explicit contract migration.
+
+## Final Recommendation
+
+The best next architectural move is:
+
+- keep the current macro backend structure
+- make `core.Domain` materially real
+- move business rules, presets, statuses, invariants, and canonical state semantics out of `ApplicationContracts`
+- keep `core.Application` focused on orchestration and use cases
+- postpone additional .NET project splits until module boundaries are proven by code ownership, not just by folder names
+
+In short:
+
+- your diagnosis about the weak domain layer is correct
+- your instinct about stronger module boundaries is also correct
+- but the first implementation step should be ownership refactoring, not immediate assembly fragmentation
+
+## Proposed Decision
+
+Adopt the following architectural policy:
+
+1. `core.Domain` owns business meaning and rules.
+2. `core.Application` owns orchestration and use cases.
+3. `ExperimentSessionManager` remains the authoritative orchestrator, but should shrink in responsibility over time.
+4. Calibration is part of the sensing boundary, not a standalone top-level application module.
+5. Additional .NET projects are optional future optimizations, not the first refactor step.
+
+

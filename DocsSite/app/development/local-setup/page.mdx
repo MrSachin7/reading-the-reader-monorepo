@@ -1,0 +1,82 @@
+# Local Setup
+
+This page consolidates the practical run commands across the monorepo.
+
+## Prerequisites
+
+- Bun for the frontend and docs site
+- .NET 10 SDK for the backend
+- Python 3.11+ for the mock decision-maker
+- Windows plus the Tobii SDK path if you need real hardware-backed eye tracking
+
+## Default Local URLs
+
+- frontend: `http://localhost:3000`
+- backend HTTP: `http://localhost:5190`
+- backend HTTPS: `https://localhost:7248`
+- provider WebSocket: `ws://localhost:5190/ws/provider`
+
+## Backend
+
+```bash
+cd Backend
+dotnet build reading-the-reader-backend.sln
+dotnet test reading-the-reader-backend.sln
+dotnet run --project src/ReadingTheReader.WebApi/ReadingTheReader.WebApi.csproj
+```
+
+## Frontend
+
+```bash
+cd Frontend
+bun install
+bun dev
+```
+
+Common frontend commands:
+
+```bash
+bun build
+bun lint
+```
+
+## Mock Decision-Maker
+
+```bash
+cd Decision-Maker
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+python -m decision_maker
+```
+
+Important environment values:
+
+- `DECISION_MAKER_WS_URL`
+- `DECISION_MAKER_SHARED_SECRET`
+- `DECISION_MAKER_PROVIDER_ID`
+
+The shared secret must match the backend provider secret in backend configuration.
+
+## Docs Site
+
+```bash
+cd DocsSite
+bun install
+bun run dev
+```
+
+For a static export check:
+
+```bash
+cd DocsSite
+bun run build
+```
+
+## Typical Full Local Flow
+
+1. Start the backend.
+2. Start the frontend.
+3. If you are validating the external provider seam, start the mock decision-maker.
+4. Open the frontend and run the experiment workflow.
+5. Use the docs site separately when updating or reviewing documentation.

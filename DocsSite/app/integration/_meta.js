@@ -10,5 +10,11 @@ export default {
   },
   'black-box-contract': {
     title: 'Black-Box Contract'
+  },
+  'external-provider-gap-analysis': {
+    title: 'Provider Gap Analysis'
+  },
+  'external-provider-roadmap': {
+    title: 'Provider Roadmap'
   }
 }
