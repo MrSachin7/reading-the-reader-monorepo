@@ -443,10 +443,10 @@ This is how the current runtime works when `providerId = "external"`.
 
 ```mermaid
 sequenceDiagram
-    participant Participant as Participant UI (/ws)
-    participant Backend as Reading The Reader Backend
-    participant Provider as External AI (/ws/provider)
-    participant Researcher as Researcher UI
+    participant Participant
+    participant Backend
+    participant Provider
+    participant Researcher
 
     Participant->>Backend: viewport / focus / attention updates
     Backend->>Provider: providerViewportChanged
@@ -479,10 +479,10 @@ This is how your AI service should connect to the app.
 
 ```mermaid
 sequenceDiagram
-    participant Provider as Your AI Service
-    participant API as Backend REST
-    participant WS as Backend /ws/provider
-    participant Runtime as Backend Decision Runtime
+    participant Provider
+    participant API
+    participant WS
+    participant Runtime
 
     Provider->>API: GET /api/intervention-modules
     Provider->>API: GET /api/experiment-session (optional cold start)
