@@ -1,0 +1,50 @@
+# Mock Decision-Maker
+
+The `Decision-Maker/` app is a mock external provider for the thesis platform. It exists to exercise the provider contract without implementing a real AI module inside this repository.
+
+## What It Does
+
+- connects to `/ws/provider`
+- registers with `providerHello`
+- sends `providerHeartbeat`
+- consumes provider-facing session and signal updates
+- submits advisory proposals or autonomous apply requests based on a simple heuristic
+
+## Current Rule
+
+The mock provider proposes a small font-size increase when:
+
+- the reader is inside the reading area
+- `currentTokenDurationMs >= 1200`
+- the font size can still increase safely
+- the same change has not been proposed too recently
+
+## Why It Matters
+
+This app is the practical proof that:
+
+- the backend external-provider seam is usable from a separate process
+- future teams can replace the heuristic engine without changing the transport contract
+- AI support in the thesis is architectural and integration-focused, not model-implementation-focused
+
+## Setup and Run
+
+```bash
+cd Decision-Maker
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+python -m decision_maker
+```
+
+## Key Config Values
+
+- `DECISION_MAKER_WS_URL`
+- `DECISION_MAKER_SHARED_SECRET`
+- `DECISION_MAKER_PROVIDER_ID`
+
+## Recommended Companion Pages
+
+- [/integration/provider-protocol/](/integration/provider-protocol/)
+- [/integration/black-box-contract/](/integration/black-box-contract/)
+- [/integration/external-provider-roadmap/](/integration/external-provider-roadmap/)

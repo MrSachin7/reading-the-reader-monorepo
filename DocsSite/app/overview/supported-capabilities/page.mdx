@@ -1,0 +1,77 @@
+# Supported Capabilities
+
+This page summarizes what the repository currently supports at a product level.
+
+## Supported Today
+
+### Experiment setup and control
+
+- eye tracker discovery through the backend
+- guided researcher setup flow
+- participant registration and experiment-session setup
+- calibration inside the application
+- validation-based session readiness gating
+- explicit experiment start, stop, and finish flows
+
+### Participant reading experience
+
+- Markdown-based reading content
+- presentation controls for font family, font size, line width, line height, and letter spacing
+- appearance controls for theme mode and palette
+- full-screen participant reading surface
+- researcher-controlled presentation locking
+
+### Researcher workflow
+
+- live researcher mirror of the participant session
+- realtime session monitoring via the frontend and backend WebSocket flow
+- manual intervention application from the researcher side
+- visibility into decision proposals and intervention events
+
+### Decision strategies
+
+- manual mode
+- rule-based mode
+- external-provider mode
+- advisory and autonomous execution semantics in the backend decision model
+
+### Intervention model
+
+- pluggable backend intervention modules with module ids and parameter descriptors
+- backend validation of intervention parameters and ranges
+- provenance fields such as source, trigger, reason, module id, and parameters
+
+### Replay and export
+
+- latest export download
+- saved named exports
+- JSON and CSV export serializers
+- replay import and playback in the frontend
+- live replay-ready persistence for unfinished sessions
+
+## Current Public Integration Surfaces
+
+- frontend/browser clients use `/api` and `/ws`
+- external provider clients use `/ws/provider`
+- intervention capability discovery uses `GET /api/intervention-modules`
+- session snapshot inspection uses `GET /api/experiment-session`
+
+## Explicit Scope Boundaries
+
+- Markdown content is supported; PDF is not part of the intended thesis scope.
+- External AI is supported as a contract boundary; a real AI system is not implemented in this repository.
+- The system is optimized for researcher-operated experiments rather than participant self-service.
+
+## Important Current Limitations
+
+- frontend automated tests are not configured in the repo today
+- backend tests are currently concentrated around persistence and runtime logic, not end-to-end UI flows
+- some replay/export provenance and privacy concerns are still documented as follow-up architecture work
+- the current Python decision-maker is a mock provider, not a production AI service
+
+## Best Reference Pages For Details
+
+- [/development/testing/](/development/testing/) for current testing coverage
+- [/backend/data-export-analysis/](/backend/data-export-analysis/) for export and replay details
+- [/integration/provider-protocol/](/integration/provider-protocol/) for the external-provider contract
+- [/project/research-summary/](/project/research-summary/) for the thesis-level interpretation of the platform

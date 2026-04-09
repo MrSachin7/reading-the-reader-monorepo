@@ -1,0 +1,43 @@
+# Constraints and Scope
+
+This project has explicit thesis and runtime constraints. They are important because they should shape design decisions, not just documentation language.
+
+## Core Constraints
+
+- Tobii eye tracker integration must work with real hardware.
+- The backend must remain the authoritative experiment runtime.
+- Decision strategies and intervention modules must stay swappable.
+- Researcher workflows have slightly higher priority than participant-only polish.
+- Reading content is Markdown-first.
+- AI support in this repo is architectural, not end-to-end product AI.
+
+## Scope That Is Intentionally Excluded
+
+- built-in production AI inference
+- PDF as the primary supported reading format
+- broad productization beyond the thesis scenario
+- multi-tenant platformization or generalized experiment-platform scope
+
+## Why These Constraints Matter
+
+They keep the thesis focused on the defendable system:
+
+- realtime experiment workflow
+- modular architecture
+- context-preserving adaptation
+- export, replay, and reproducibility
+
+Without those guardrails, the project risks drifting into either an AI thesis or a generic product thesis.
+
+## Practical Design Consequences
+
+- do not couple provider-specific logic directly into the participant or researcher UI
+- do not bypass backend validation when adding interventions or provider flows
+- prefer additive seams over broad rewrites
+- prefer documenting current support clearly instead of implying future capabilities that are not implemented
+
+## Recommended Companion Pages
+
+- [/project/thesis-proposal/](/project/thesis-proposal/)
+- [/project/research-summary/](/project/research-summary/)
+- [/project/risks-and-pitfalls/](/project/risks-and-pitfalls/)

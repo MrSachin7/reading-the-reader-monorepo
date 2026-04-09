@@ -1,0 +1,55 @@
+# Platform Overview
+
+Reading the Reader is a researcher-operated adaptive reading platform. It is built to run controlled reading experiments with Tobii eye tracking, a participant-facing reading surface, a researcher-facing live view, and modular intervention and decision seams that future teams can extend.
+
+## Core Idea
+
+The project is not primarily a generic reading app and it is not primarily an AI product.
+
+The thesis value is the combination of:
+
+- real hardware-backed reading experiments
+- a backend-owned authoritative runtime
+- interchangeable decision strategies
+- interchangeable intervention modules
+- context-aware micro-interventions that try to preserve reading flow
+- export and replay support for later analysis
+
+## Main Actors
+
+- Participant: reads the content and experiences the reading interventions.
+- Researcher: sets up the session, runs calibration, monitors the participant, and can manually control interventions.
+- Backend: owns the experiment session state, runtime rules, proposal lifecycle, and intervention application.
+- External decision provider: optional actor connected through `/ws/provider`, used to suggest or request interventions without owning final authority.
+
+## Main Applications In The Repo
+
+- `Frontend/`: researcher UI, participant reading UI, calibration flow, replay UI, and live mirror surfaces.
+- `Backend/`: ASP.NET Core API, WebSocket runtime, Tobii integration, persistence, replay export, and intervention/decision orchestration.
+- `Decision-Maker/`: Python mock provider that exercises the external-provider contract without implementing real AI.
+- `DocsSite/`: the standalone hosted docs app.
+
+## Runtime Shape
+
+The runtime is split into two main transport styles:
+
+- REST under `/api` for setup, explicit control, and durable retrieval
+- WebSockets under `/ws` and `/ws/provider` for live experiment traffic
+
+The backend remains the single experiment authority. Frontend clients and provider clients observe and request changes, but the backend owns the actual session truth.
+
+## What Makes This Thesis-Specific
+
+The key differentiators are not broad feature count. They are:
+
+- a defendable modular architecture
+- a clean seam for future decision providers
+- a clean seam for intervention modules
+- live researcher observation and control
+- context-preserving adaptation rather than disruptive layout churn
+
+## Where To Go Next
+
+- For current feature coverage, read [/overview/supported-capabilities/](/overview/supported-capabilities/).
+- For local setup and run commands, read [/development/local-setup/](/development/local-setup/).
+- For the backend runtime shape, read [/backend/architecture/](/backend/architecture/).
