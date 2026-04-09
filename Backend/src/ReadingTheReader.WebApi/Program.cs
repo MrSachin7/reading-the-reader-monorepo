@@ -12,12 +12,14 @@ var builder = WebApplication.CreateBuilder(args);
 const string LocalhostCorsPolicy = "LocalhostCorsPolicy";
 var calibrationOptions = builder.Configuration.GetSection(CalibrationOptions.SectionName).Get<CalibrationOptions>()
     ?? new CalibrationOptions();
+var experimentSetupTestingOptions = builder.Configuration.GetSection(ExperimentSetupTestingOptions.SectionName).Get<ExperimentSetupTestingOptions>()
+    ?? new ExperimentSetupTestingOptions();
 var externalProviderOptions = builder.Configuration.GetSection(ExternalProviderOptions.SectionName).Get<ExternalProviderOptions>()
     ?? new ExternalProviderOptions();
 
 // Modules installation
 builder.Services.InstallTobiiEyeTrackerModule();
-builder.Services.InstallApplicationModule(calibrationOptions, externalProviderOptions);
+builder.Services.InstallApplicationModule(calibrationOptions, experimentSetupTestingOptions, externalProviderOptions);
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();

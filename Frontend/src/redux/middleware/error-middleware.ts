@@ -32,6 +32,15 @@ function buildErrorTitle(action: UnknownAction) {
   return `${requestType}: ${label}`
 }
 
+function isIgnorableRejectedAction(action: UnknownAction) {
+  if (typeof action !== "object" || action === null || !("error" in action)) {
+    return false
+  }
+
+  const error = action.error as { message?: string } | undefined
+  return error?.message === "Aborted due to condition callback returning false."
+}
+
 export const errorMiddleware: Middleware = () => (next) => (action) => {
   if (isRejectedWithValue(action)) {
     const normalizedError = normalizeApiError(
@@ -43,6 +52,10 @@ export const errorMiddleware: Middleware = () => (next) => (action) => {
   }
 
   if (isRejected(action)) {
+    if (isIgnorableRejectedAction(action)) {
+      return next(action)
+    }
+
     const normalizedError = normalizeApiError(action.error, buildErrorTitle(action))
 
     next(pushError(normalizedError))

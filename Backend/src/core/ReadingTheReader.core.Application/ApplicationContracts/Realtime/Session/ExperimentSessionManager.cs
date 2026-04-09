@@ -21,6 +21,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
     private readonly IExperimentReplayExportStoreAdapter _experimentReplayExportStoreAdapter;
     private readonly IExperimentReplayRecoveryStoreAdapter _experimentReplayRecoveryStoreAdapter;
+    private readonly ExperimentSetupTestingOptions _experimentSetupTestingOptions;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
     private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
@@ -61,6 +62,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
         IExperimentReplayRecoveryStoreAdapter experimentReplayRecoveryStoreAdapter,
         CalibrationOptions calibrationOptions,
+        ExperimentSetupTestingOptions experimentSetupTestingOptions,
         IReadingInterventionRuntime readingInterventionRuntime,
         IReadingInterventionModuleRegistry interventionModuleRegistry,
         IDecisionStrategyCoordinator decisionStrategyCoordinator,
@@ -73,6 +75,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _experimentReplayExportStoreAdapter = experimentReplayExportStoreAdapter;
         _experimentReplayRecoveryStoreAdapter = experimentReplayRecoveryStoreAdapter;
         _calibrationOptions = calibrationOptions;
+        _experimentSetupTestingOptions = experimentSetupTestingOptions;
         _readingInterventionRuntime = readingInterventionRuntime;
         _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
@@ -1216,6 +1219,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
     {
         var session = Volatile.Read(ref _session);
+        var bypassingEyeTrackerReadiness =
+            _experimentSetupTestingOptions.ForceEyeTrackerReady == true &&
+            (session.EyeTrackerDevice is null ||
+             string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber));
         var shouldStream =
             session.IsActive &&
             (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider()) &&
@@ -1223,6 +1230,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
         if (shouldStream)
         {
+            if (bypassingEyeTrackerReadiness)
+            {
+                return;
+            }
+
             if (Interlocked.Exchange(ref _isSubscribedToHardware, 1) == 0)
             {
                 _eyeTrackerAdapter.GazeDataReceived += OnGazeDataReceived;
@@ -1765,23 +1777,25 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                                     !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
         var hasAppliedLicence = hasSelectedEyeTracker;
         var hasSavedLicence = session.EyeTrackerDevice?.HasSavedLicence == true;
+        var eyeTrackerReady = _experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence);
         var eyeTracker = new EyeTrackerSetupReadinessSnapshot(
-            hasSelectedEyeTracker && hasAppliedLicence,
+            eyeTrackerReady,
             hasSelectedEyeTracker,
             hasAppliedLicence,
             hasSavedLicence,
             hasSelectedEyeTracker && !hasSavedLicence,
             NormalizeNullableText(session.EyeTrackerDevice?.SerialNumber),
             NormalizeNullableText(session.EyeTrackerDevice?.Name),
-            hasSelectedEyeTracker && hasAppliedLicence ? null : eyeTrackerBlockReason);
+            eyeTrackerReady ? null : eyeTrackerBlockReason);
 
         var hasParticipant = session.Participant is not null &&
                              !string.IsNullOrWhiteSpace(session.Participant.Name);
+        var participantReady = _experimentSetupTestingOptions.ForceParticipantReady ?? hasParticipant;
         var participant = new ParticipantSetupReadinessSnapshot(
-            hasParticipant,
+            participantReady,
             hasParticipant,
             NormalizeNullableText(session.Participant?.Name),
-            hasParticipant ? null : participantBlockReason);
+            participantReady ? null : participantBlockReason);
 
         var validationResult = calibrationSnapshot.Validation.Result ?? calibrationSnapshot.Result?.Validation;
         var isCalibrationApplied = CalibrationSessionSnapshots.IsApplied(calibrationSnapshot);
@@ -1789,8 +1803,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         var hasCalibrationSession = calibrationSnapshot.SessionId.HasValue;
         var calibrationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status;
         var validationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status;
+        var calibrationReady = _experimentSetupTestingOptions.ForceCalibrationReady ?? (isCalibrationApplied && isValidationPassed);
         var calibration = new CalibrationSetupReadinessSnapshot(
-            isCalibrationApplied && isValidationPassed,
+            calibrationReady,
             hasCalibrationSession,
             isCalibrationApplied,
             isValidationPassed,
@@ -1800,14 +1815,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             validationResult?.AverageAccuracyDegrees,
             validationResult?.AveragePrecisionDegrees,
             validationResult?.SampleCount ?? 0,
-            isCalibrationApplied && isValidationPassed ? null : calibrationBlockReason);
+            calibrationReady ? null : calibrationBlockReason);
 
         var hasReadingMaterial = liveReadingSession.Content is not null &&
                                  !string.IsNullOrWhiteSpace(liveReadingSession.Content.Markdown);
         var usesSavedSetup = hasReadingMaterial && liveReadingSession.Content?.UsesSavedSetup == true;
         var allowsResearcherPresentationChanges = hasReadingMaterial && liveReadingSession.Presentation.EditableByResearcher;
+        var readingMaterialReady = _experimentSetupTestingOptions.ForceReadingMaterialReady ?? hasReadingMaterial;
         var readingMaterial = new ReadingMaterialSetupReadinessSnapshot(
-            hasReadingMaterial,
+            readingMaterialReady,
             hasReadingMaterial,
             NormalizeNullableText(liveReadingSession.Content?.DocumentId),
             NormalizeNullableText(liveReadingSession.Content?.Title),
@@ -1816,7 +1832,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             hasReadingMaterial ? liveReadingSession.Content?.UpdatedAtUnixMs : null,
             allowsResearcherPresentationChanges,
             hasReadingMaterial && liveReadingSession.Presentation.IsPresentationLocked,
-            hasReadingMaterial ? null : readingMaterialBlockReason);
+            readingMaterialReady ? null : readingMaterialBlockReason);
 
         var currentStepIndex = 3;
         ExperimentSetupBlockerSnapshot? blocker = null;

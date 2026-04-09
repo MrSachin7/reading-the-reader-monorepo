@@ -33,12 +33,14 @@ export {
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } from "./experiment-session-api"
 export type {
   ReplayExportFormat,
   SavedExperimentReplayExportSummary,
   UpdateDecisionConfigurationPayload,
+  UpdateExperimentSetupTestingOverridesPayload,
   UpsertReadingSessionPayload,
 } from "./experiment-session-api"
 export { eyetrackerApi, useGetEyetrackersQuery, useSelectEyetrackerMutation } from "./eyetracker-api"

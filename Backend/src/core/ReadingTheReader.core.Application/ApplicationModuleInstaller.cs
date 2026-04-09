@@ -17,9 +17,11 @@ public static class ApplicationModuleInstaller
     public static IServiceCollection InstallApplicationModule(
         this IServiceCollection collection,
         CalibrationOptions calibrationOptions,
+        ExperimentSetupTestingOptions experimentSetupTestingOptions,
         ExternalProviderOptions externalProviderOptions)
     {
         collection.AddSingleton(calibrationOptions);
+        collection.AddSingleton(experimentSetupTestingOptions);
         collection.AddSingleton(externalProviderOptions);
         collection.AddSingleton<IParticipantService, ParticipantService>();
         collection.AddSingleton<IReadingMaterialSetupService, ReadingMaterialSetupService>();
