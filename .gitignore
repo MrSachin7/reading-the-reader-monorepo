@@ -26,6 +26,11 @@ Frontend/coverage/
 Frontend/out/
 Frontend/build/
 
+# Docs site caches and export output
+DocsSite/node_modules/
+DocsSite/.next/
+DocsSite/out/
+
 # Decision-Maker caches and local environments
 Decision-Maker/.venv/
 Decision-Maker/**/__pycache__/

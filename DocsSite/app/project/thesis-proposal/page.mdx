@@ -1,0 +1,51 @@
+# Thesis Proposal
+
+## Title
+
+Adaptive Reading Systems: A Modular Software Architecture
+
+## Context
+
+Reading the Reader is an interdisciplinary research initiative focused on adaptive reading experiences. The thesis goal is not only to build a working system, but to justify a modular software architecture that can support experiments, interchangeable decision-making strategies, and context-preserving micro-interventions.
+
+## Problem Statement
+
+The thesis addresses the problem that adaptive reading prototypes often couple:
+
+- sensing
+- decision logic
+- intervention logic
+- UI behavior
+
+That coupling makes it difficult to:
+
+- swap decision strategies
+- compare AI and human-in-the-loop interventions
+- support controlled experiments
+- defend the architecture academically
+
+## Objectives
+
+1. Design a modular architecture for adaptive reading.
+2. Implement a full adaptive reading application for real experiments.
+3. Support real-time mirrored reading views and secondary-screen intervention control.
+4. Validate the system through software engineering and HCI practices.
+5. Produce architectural guidance for future contributors.
+
+## Research Questions
+
+1. How can the architecture support interchangeable adaptive micro-interventions without harming reading flow?
+2. How can AI-based automation and human-controlled intervention coexist in one system boundary?
+3. How can just-in-time micro-interventions improve readability without causing disruption?
+4. How can researchers observe and interact with the participant reading experience in real time?
+
+## System Framing
+
+The proposed architecture treats:
+
+- sensing as one replaceable boundary
+- decision-making as another boundary
+- intervention execution as a controlled backend-owned runtime
+- UI adaptation as a separate concern from the decision strategy itself
+
+This framing is what makes the provider protocol and black-box contract important: they turn the external AI team into a collaborator at a clean architecture boundary instead of a code-level dependency.
