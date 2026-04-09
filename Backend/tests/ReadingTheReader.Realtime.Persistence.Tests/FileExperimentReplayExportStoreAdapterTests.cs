@@ -29,6 +29,7 @@ public sealed class FileExperimentReplayExportStoreAdapterTests : IDisposable
         var loaded = await _sut.LoadSavedByIdAsync(saved.Id);
 
         Assert.Equal(ExperimentReplayExportFormats.Json, saved.Format);
+        Assert.StartsWith("participant-1-", saved.FileName, StringComparison.OrdinalIgnoreCase);
         Assert.EndsWith(".json", saved.FileName, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(listed, item => item.Id == saved.Id && item.Format == ExperimentReplayExportFormats.Json);
         Assert.NotNull(loaded);

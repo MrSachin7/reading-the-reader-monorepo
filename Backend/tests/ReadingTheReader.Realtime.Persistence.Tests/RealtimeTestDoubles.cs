@@ -15,15 +15,25 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 public sealed class RealtimeTestDoubles
 {
     public static RuntimeHarness CreateHarness(
-        FakeEyeTrackerAdapter? eyeTrackerAdapter = null,
-        FakeClientBroadcasterAdapter? broadcaster = null,
-        FakeExperimentStateStoreAdapter? stateStore = null,
-        FakeExperimentReplayExportStoreAdapter? replayExportStore = null)
+        CalibrationOptions? calibrationOptions = null)
     {
-        eyeTrackerAdapter ??= new FakeEyeTrackerAdapter();
-        broadcaster ??= new FakeClientBroadcasterAdapter();
-        stateStore ??= new FakeExperimentStateStoreAdapter();
-        replayExportStore ??= new FakeExperimentReplayExportStoreAdapter();
+        return CreateHarness(
+            new FakeEyeTrackerAdapter(),
+            new FakeClientBroadcasterAdapter(),
+            new FakeExperimentStateStoreAdapter(),
+            new FakeExperimentReplayExportStoreAdapter(),
+            calibrationOptions);
+    }
+
+    public static RuntimeHarness CreateHarness(
+        FakeEyeTrackerAdapter eyeTrackerAdapter,
+        FakeClientBroadcasterAdapter broadcaster,
+        FakeExperimentStateStoreAdapter stateStore,
+        FakeExperimentReplayExportStoreAdapter replayExportStore,
+        CalibrationOptions? calibrationOptions = null)
+    {
+        var replayRecoveryStore = new FakeExperimentReplayRecoveryStoreAdapter();
+        calibrationOptions ??= new CalibrationOptions();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
         var externalProviderOptions = new ExternalProviderOptions
@@ -47,6 +57,8 @@ public sealed class RealtimeTestDoubles
             broadcaster,
             stateStore,
             replayExportStore,
+            replayRecoveryStore,
+            calibrationOptions,
             interventionRuntime,
             interventionModuleRegistry,
             strategyCoordinator,
@@ -72,6 +84,7 @@ public sealed class RealtimeTestDoubles
             broadcaster,
             stateStore,
             replayExportStore,
+            replayRecoveryStore,
             interventionRuntime,
             providerRegistry,
             externalProviderTransport,
@@ -86,6 +99,7 @@ public sealed class RealtimeTestDoubles
         FakeClientBroadcasterAdapter Broadcaster,
         FakeExperimentStateStoreAdapter StateStore,
         FakeExperimentReplayExportStoreAdapter ReplayExportStore,
+        FakeExperimentReplayRecoveryStoreAdapter ReplayRecoveryStore,
         FakeReadingInterventionRuntime InterventionRuntime,
         ProviderConnectionRegistry ProviderRegistry,
         FakeExternalProviderTransportAdapter ExternalProviderTransport,
@@ -157,50 +171,6 @@ public sealed class RealtimeTestDoubles
     {
         private readonly List<ExperimentReplayExport> _savedActiveReplays = [];
         private ExperimentReplayExport? _latestActiveReplay;
-
-        public IReadOnlyList<ExperimentSessionSnapshot> SavedSnapshots => _savedActiveReplays
-            .Select(item => new ExperimentSessionSnapshot(
-                item.Experiment.SessionId,
-                item.Experiment.EndedAtUnixMs is null,
-                item.Experiment.StartedAtUnixMs,
-                item.Experiment.EndedAtUnixMs,
-                item.Experiment.Participant is null
-                    ? null
-                    : new Participant
-                    {
-                        Name = item.Experiment.Participant.Name,
-                        Age = item.Experiment.Participant.Age ?? 0,
-                        Sex = item.Experiment.Participant.Sex ?? string.Empty,
-                        ExistingEyeCondition = item.Experiment.Participant.ExistingEyeCondition ?? string.Empty,
-                        ReadingProficiency = item.Experiment.Participant.ReadingProficiency ?? string.Empty
-                    },
-                item.Experiment.Device is null
-                    ? null
-                    : new EyeTrackerDevice
-                    {
-                        Name = item.Experiment.Device.Name ?? string.Empty,
-                        Model = item.Experiment.Device.Model ?? string.Empty,
-                        SerialNumber = item.Experiment.Device.SerialNumber ?? string.Empty,
-                        HasSavedLicence = item.Experiment.Device.HasSavedLicence ?? false
-                    },
-                CalibrationSessionSnapshots.CreateIdle(),
-                new ExperimentSetupSnapshot(
-                    false,
-                    0,
-                    null,
-                    new EyeTrackerSetupReadinessSnapshot(false, false, false, false, false, null, null, null),
-                    new ParticipantSetupReadinessSnapshot(false, false, null, null),
-                    new CalibrationSetupReadinessSnapshot(false, false, false, false, "idle", "idle", null, null, null, 0, null),
-                    new ReadingMaterialSetupReadinessSnapshot(false, false, null, null, null, false, null, false, false, null)),
-                item.Sensing.GazeSamples.Count,
-                null,
-                0,
-                ExperimentLiveMonitoringSnapshot.Empty,
-                ExternalProviderStatusSnapshot.Disconnected,
-                null,
-                item.Experiment.Condition.Copy(),
-                DecisionRuntimeStateSnapshot.Empty))
-            .ToArray();
 
         public IReadOnlyList<ExperimentReplayExport> SavedActiveReplays => _savedActiveReplays;
 
@@ -279,6 +249,147 @@ public sealed class RealtimeTestDoubles
                 ? exportDocument.Copy()
                 : null);
         }
+    }
+
+    public sealed class FakeExperimentReplayRecoveryStoreAdapter : IExperimentReplayRecoveryStoreAdapter
+    {
+        private readonly Dictionary<Guid, RecoveryState> _sessions = [];
+
+        public ValueTask InitializeSessionAsync(ExperimentReplayRecoverySessionSeed seed, CancellationToken ct = default)
+        {
+            _sessions[seed.SessionId] = new RecoveryState(
+                seed.SessionId,
+                BuildName(seed.InitialSnapshot, seed.SessionId),
+                ExperimentReplayRecoveryStatuses.Recording,
+                seed.CreatedAtUnixMs,
+                seed.CreatedAtUnixMs,
+                seed.InitialSnapshot.Copy(),
+                seed.InitialSnapshot.Copy(),
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                []);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask AppendChunkAsync(ExperimentReplayRecoveryChunkBatch batch, CancellationToken ct = default)
+        {
+            if (!_sessions.TryGetValue(batch.SessionId, out var session))
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            _sessions[batch.SessionId] = session with
+            {
+                UpdatedAtUnixMs = batch.FlushedAtUnixMs,
+                LatestSnapshot = batch.LatestSnapshot.Copy(),
+                LifecycleEvents = [.. session.LifecycleEvents, .. batch.LifecycleEvents.Select(item => item.Copy())],
+                GazeSamples = [.. session.GazeSamples, .. batch.GazeSamples.Select(item => item.Copy())],
+                ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
+                FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
+                AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
+                DecisionProposalEvents = [.. session.DecisionProposalEvents, .. batch.DecisionProposalEvents.Select(item => item.Copy())],
+                InterventionEvents = [.. session.InterventionEvents, .. batch.InterventionEvents.Select(item => item.Copy())]
+            };
+
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask<ExperimentReplayExport?> BuildExportAsync(
+            Guid sessionId,
+            string completionSource,
+            long exportedAtUnixMs,
+            CancellationToken ct = default)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return ValueTask.FromResult<ExperimentReplayExport?>(null);
+            }
+
+            return ValueTask.FromResult<ExperimentReplayExport?>(ExperimentReplayExportFactory.Create(
+                session.InitialSnapshot,
+                session.LatestSnapshot,
+                completionSource,
+                exportedAtUnixMs,
+                session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.ViewportEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.AttentionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+        }
+
+        public ValueTask MarkCompletedAsync(
+            Guid sessionId,
+            ExperimentReplayExport completedExport,
+            long completedAtUnixMs,
+            CancellationToken ct = default)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+            {
+                _sessions[sessionId] = session with
+                {
+                    Status = ExperimentReplayRecoveryStatuses.Completed,
+                    UpdatedAtUnixMs = completedAtUnixMs,
+                    LatestSnapshot = session.LatestSnapshot with
+                    {
+                        IsActive = false,
+                        StoppedAtUnixMs = session.LatestSnapshot.StoppedAtUnixMs ?? completedAtUnixMs
+                    }
+                };
+            }
+
+            return ValueTask.CompletedTask;
+        }
+
+        public void MarkRecovered(Guid sessionId)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+            {
+                _sessions[sessionId] = session with
+                {
+                    Status = ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
+                    LatestSnapshot = session.LatestSnapshot with
+                    {
+                        IsActive = false,
+                        StoppedAtUnixMs = session.LatestSnapshot.StoppedAtUnixMs ?? session.UpdatedAtUnixMs
+                    }
+                };
+            }
+        }
+
+        private static string BuildName(ExperimentSessionSnapshot snapshot, Guid sessionId)
+        {
+            return snapshot.ReadingSession?.Content?.Title?.Trim() switch
+            {
+                { Length: > 0 } title => title,
+                _ => snapshot.Participant?.Name?.Trim() switch
+                {
+                    { Length: > 0 } participantName => participantName,
+                    _ => $"Recovered session {sessionId:N}"
+                }
+            };
+        }
+
+        private sealed record RecoveryState(
+            Guid Id,
+            string Name,
+            string Status,
+            long CreatedAtUnixMs,
+            long UpdatedAtUnixMs,
+            ExperimentSessionSnapshot InitialSnapshot,
+            ExperimentSessionSnapshot LatestSnapshot,
+            IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
+            IReadOnlyList<RawGazeSampleRecord> GazeSamples,
+            IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
+            IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
+            IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
+            IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
+            IReadOnlyList<InterventionEventRecord> InterventionEvents);
     }
 
     public sealed class FakeEyeTrackerAdapter : IEyeTrackerAdapter
@@ -398,26 +509,9 @@ public sealed class RealtimeTestDoubles
 
     public static class TestRuntimeSetup
     {
-        public static async Task ConfigureReadySessionAsync(RuntimeHarness harness)
+        public static CalibrationSessionSnapshot CreateCompletedCalibrationSnapshot()
         {
-            await harness.SessionManager.SetCurrentParticipantAsync(new Participant
-            {
-                Name = "Participant 1",
-                Age = 29,
-                Sex = "female",
-                ExistingEyeCondition = "none",
-                ReadingProficiency = "advanced"
-            });
-
-            await harness.SessionManager.SetCurrentEyeTrackerAsync(new EyeTrackerDevice
-            {
-                Name = "Tobii Pro Nano",
-                Model = "Nano",
-                SerialNumber = "nano-001",
-                HasSavedLicence = true
-            });
-
-            await harness.SessionManager.SetCalibrationStateAsync(new CalibrationSessionSnapshot(
+            return new CalibrationSessionSnapshot(
                 Guid.NewGuid(),
                 "completed",
                 CalibrationPatterns.ScreenBasedNinePoint,
@@ -454,7 +548,29 @@ public sealed class RealtimeTestDoubles
                         [],
                         []),
                     []),
-                []));
+                []);
+        }
+
+        public static async Task ConfigureReadySessionAsync(RuntimeHarness harness)
+        {
+            await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+            {
+                Name = "Participant 1",
+                Age = 29,
+                Sex = "female",
+                ExistingEyeCondition = "none",
+                ReadingProficiency = "advanced"
+            });
+
+            await harness.SessionManager.SetCurrentEyeTrackerAsync(new EyeTrackerDevice
+            {
+                Name = "Tobii Pro Nano",
+                Model = "Nano",
+                SerialNumber = "nano-001",
+                HasSavedLicence = true
+            });
+
+            await harness.SessionManager.SetCalibrationStateAsync(CreateCompletedCalibrationSnapshot());
 
             await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
                 "doc-1",

@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using System.Text;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
@@ -12,7 +10,7 @@ using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
-public sealed class ExperimentSessionManager : IExperimentSessionManager, IExperimentRuntimeAuthority, IExperimentSessionQueryService
+public sealed class ExperimentSessionManager : IExperimentSessionManager, IExperimentRuntimeAuthority, IExperimentSessionQueryService, IExperimentReplayRecoveryBuffer
 {
     private const int MaxRecentInterventions = 25;
     private const int MaxRecentDecisionHistory = 25;
@@ -22,11 +20,13 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
     private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
     private readonly IExperimentReplayExportStoreAdapter _experimentReplayExportStoreAdapter;
+    private readonly IExperimentReplayRecoveryStoreAdapter _experimentReplayRecoveryStoreAdapter;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
     private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
     private readonly IExternalProviderGateway _externalProviderGateway;
     private readonly IProviderConnectionRegistry _providerConnectionRegistry;
+    private readonly CalibrationOptions _calibrationOptions;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
     private readonly ConcurrentDictionary<string, byte> _participantViewConnections = new();
@@ -44,21 +44,23 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private LiveReadingSessionSnapshot _liveReadingSession = LiveReadingSessionSnapshot.Empty;
     private DecisionConfigurationSnapshot _decisionConfiguration = DecisionConfigurationSnapshot.Default;
     private DecisionRuntimeStateSnapshot _decisionState = DecisionRuntimeStateSnapshot.Empty;
-    private ExperimentSessionSnapshot? _initialSnapshot;
-    private List<ExperimentLifecycleEventRecord> _lifecycleEvents = [];
-    private List<RawGazeSampleRecord> _gazeSamples = [];
-    private List<ReadingSessionStateRecord> _readingSessionStates = [];
-    private List<ParticipantViewportEventRecord> _participantViewportEvents = [];
-    private List<ReadingFocusEventRecord> _readingFocusEvents = [];
-    private List<ReadingAttentionEventRecord> _attentionEvents = [];
-    private List<DecisionProposalEventRecord> _decisionProposalEvents = [];
-    private List<InterventionEventRecord> _interventionEvents = [];
+    private Guid? _activeReplayRecoverySessionId;
+    private bool _hasPendingReplayPersistence;
+    private List<ExperimentLifecycleEventRecord> _pendingLifecycleEvents = [];
+    private List<RawGazeSampleRecord> _pendingGazeSamples = [];
+    private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
+    private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
+    private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];
+    private List<DecisionProposalEventRecord> _pendingDecisionProposalEvents = [];
+    private List<InterventionEventRecord> _pendingInterventionEvents = [];
 
     public ExperimentSessionManager(
         IEyeTrackerAdapter eyeTrackerAdapter,
         IClientBroadcasterAdapter clientBroadcasterAdapter,
         IExperimentStateStoreAdapter experimentStateStoreAdapter,
         IExperimentReplayExportStoreAdapter experimentReplayExportStoreAdapter,
+        IExperimentReplayRecoveryStoreAdapter experimentReplayRecoveryStoreAdapter,
+        CalibrationOptions calibrationOptions,
         IReadingInterventionRuntime readingInterventionRuntime,
         IReadingInterventionModuleRegistry interventionModuleRegistry,
         IDecisionStrategyCoordinator decisionStrategyCoordinator,
@@ -69,6 +71,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
         _experimentStateStoreAdapter = experimentStateStoreAdapter;
         _experimentReplayExportStoreAdapter = experimentReplayExportStoreAdapter;
+        _experimentReplayRecoveryStoreAdapter = experimentReplayRecoveryStoreAdapter;
+        _calibrationOptions = calibrationOptions;
         _readingInterventionRuntime = readingInterventionRuntime;
         _interventionModuleRegistry = interventionModuleRegistry;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
@@ -844,7 +848,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             await EnsureGazeStreamingStateAsync(ct);
 
             var snapshot = GetCurrentSnapshot();
-            SetInitialSnapshot(snapshot);
+            if (snapshot.SessionId.HasValue)
+            {
+                _activeReplayRecoverySessionId = snapshot.SessionId.Value;
+                _hasPendingReplayPersistence = false;
+                await _experimentReplayRecoveryStoreAdapter.InitializeSessionAsync(
+                    new ExperimentReplayRecoverySessionSeed(
+                        snapshot.SessionId.Value,
+                        snapshot,
+                        startedAt),
+                    ct);
+            }
+
             await SaveCurrentActiveReplayAsync(ct);
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStarted, snapshot, ct);
             if (ShouldPublishToExternalProvider())
@@ -976,10 +991,21 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             await EnsureGazeStreamingStateAsync(ct);
 
             var snapshot = GetCurrentSnapshot();
-            var exportDocument = BuildReplayExport(snapshot, source, stoppedAtUnixMs);
-            await _experimentStateStoreAdapter.SaveActiveReplayAsync(exportDocument, ct);
+            await FlushPendingReplayChunksCoreAsync(snapshot, forceFlush: true, ct);
+            if (!snapshot.SessionId.HasValue)
+            {
+                throw new InvalidOperationException("Cannot export a replay without a session id.");
+            }
+
+            var exportDocument = await _experimentReplayRecoveryStoreAdapter.BuildExportAsync(
+                snapshot.SessionId.Value,
+                source,
+                stoppedAtUnixMs,
+                ct) ?? throw new InvalidOperationException("No replay recovery data is available for this session.");
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
+            await _experimentReplayRecoveryStoreAdapter.MarkCompletedAsync(snapshot.SessionId.Value, exportDocument, stoppedAtUnixMs, ct);
             await _experimentStateStoreAdapter.ClearActiveReplayAsync(ct);
+            ResetReplayHistory();
             await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentStopped, snapshot, ct);
             if (ShouldPublishToExternalProvider())
             {
@@ -1038,12 +1064,25 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     public ExperimentReplayExport? GetCurrentActiveReplayExport()
     {
         var snapshot = GetCurrentSnapshot();
-        if (!snapshot.IsActive || snapshot.ReadingSession?.Content is null)
+        if (!snapshot.IsActive || snapshot.ReadingSession?.Content is null || !snapshot.SessionId.HasValue)
         {
             return null;
         }
 
-        return BuildReplayExport(snapshot, "live", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        FlushPendingReplayChunksCoreAsync(snapshot, forceFlush: true, CancellationToken.None)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
+
+        return _experimentReplayRecoveryStoreAdapter
+            .BuildExportAsync(
+                snapshot.SessionId.Value,
+                "live",
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                CancellationToken.None)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
     }
 
     public IReadOnlyList<ReadingInterventionModuleDescriptor> GetInterventionModules()
@@ -1432,37 +1471,34 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            _initialSnapshot = null;
-            _lifecycleEvents = [];
-            _gazeSamples = [];
-            _readingSessionStates = [];
-            _participantViewportEvents = [];
-            _readingFocusEvents = [];
-            _attentionEvents = [];
-            _decisionProposalEvents = [];
-            _interventionEvents = [];
+            _activeReplayRecoverySessionId = null;
+            _hasPendingReplayPersistence = false;
+            _pendingLifecycleEvents = [];
+            _pendingGazeSamples = [];
+            _pendingParticipantViewportEvents = [];
+            _pendingReadingFocusEvents = [];
+            _pendingAttentionEvents = [];
+            _pendingDecisionProposalEvents = [];
+            _pendingInterventionEvents = [];
         }
     }
 
-    private void SetInitialSnapshot(ExperimentSessionSnapshot snapshot)
+    public ValueTask FlushPendingReplayChunksAsync(CancellationToken ct = default)
     {
-        lock (_historyGate)
-        {
-            _initialSnapshot = snapshot.Copy();
-        }
+        return FlushPendingReplayChunksCoreAsync(null, forceFlush: false, ct);
     }
 
     private void RecordLifecycleEvent(string eventType, string source, long occurredAtUnixMs)
     {
         lock (_historyGate)
         {
-            var record = new ExperimentLifecycleEventRecord(
+            _pendingLifecycleEvents.Add(new ExperimentLifecycleEventRecord(
                 NextSequenceNumber(),
                 eventType,
                 source,
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs));
-            _lifecycleEvents.Add(record);
+                CalculateElapsedSinceStart(occurredAtUnixMs)));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -1470,7 +1506,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new RawGazeSampleRecord(
+            _pendingGazeSamples.Add(new RawGazeSampleRecord(
                 NextSequenceNumber(),
                 capturedAtUnixMs,
                 CalculateElapsedSinceStart(capturedAtUnixMs),
@@ -1507,27 +1543,19 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     gazeData.RightGazeOriginValidity,
                     gazeData.RightGazeOriginInTrackBoxX,
                     gazeData.RightGazeOriginInTrackBoxY,
-                    gazeData.RightGazeOriginInTrackBoxZ));
-            _gazeSamples.Add(record);
+                    gazeData.RightGazeOriginInTrackBoxZ)));
+            _hasPendingReplayPersistence = true;
         }
     }
 
     private void RecordReadingSessionState(string reason, long occurredAtUnixMs, LiveReadingSessionSnapshot session)
     {
-        if (session.Content is null)
-        {
-            return;
-        }
-
         lock (_historyGate)
         {
-            var record = new ReadingSessionStateRecord(
-                NextSequenceNumber(),
-                reason,
-                occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
-                session.Copy());
-            _readingSessionStates.Add(record);
+            if (_activeReplayRecoverySessionId.HasValue)
+            {
+                _hasPendingReplayPersistence = true;
+            }
         }
     }
 
@@ -1535,12 +1563,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new ParticipantViewportEventRecord(
+            _pendingParticipantViewportEvents.Add(new ParticipantViewportEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                viewport.Copy());
-            _participantViewportEvents.Add(record);
+                viewport.Copy()));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -1548,12 +1576,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new ReadingFocusEventRecord(
+            _pendingReadingFocusEvents.Add(new ReadingFocusEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                focus.Copy());
-            _readingFocusEvents.Add(record);
+                focus.Copy()));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -1561,12 +1589,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new ReadingAttentionEventRecord(
+            _pendingAttentionEvents.Add(new ReadingAttentionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                summary.Copy());
-            _attentionEvents.Add(record);
+                summary.Copy()));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -1574,12 +1602,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new DecisionProposalEventRecord(
+            _pendingDecisionProposalEvents.Add(new DecisionProposalEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                proposal.Copy());
-            _decisionProposalEvents.Add(record);
+                proposal.Copy()));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -1587,113 +1615,91 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     {
         lock (_historyGate)
         {
-            var record = new InterventionEventRecord(
+            _pendingInterventionEvents.Add(new InterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
-                intervention.Copy());
-            _interventionEvents.Add(record);
+                intervention.Copy()));
+            _hasPendingReplayPersistence = true;
         }
     }
 
-    private ExperimentReplayExport BuildReplayExport(
-        ExperimentSessionSnapshot finalSnapshot,
-        string completionSource,
-        long exportedAtUnixMs)
+    private async ValueTask FlushPendingReplayChunksCoreAsync(
+        ExperimentSessionSnapshot? snapshotOverride,
+        bool forceFlush,
+        CancellationToken ct)
     {
+        Guid? sessionId;
+        bool hasPendingReplayPersistence;
+        ExperimentLifecycleEventRecord[] lifecycleEvents;
+        RawGazeSampleRecord[] gazeSamples;
+        ParticipantViewportEventRecord[] participantViewportEvents;
+        ReadingFocusEventRecord[] readingFocusEvents;
+        ReadingAttentionEventRecord[] attentionEvents;
+        DecisionProposalEventRecord[] decisionProposalEvents;
+        InterventionEventRecord[] interventionEvents;
+
         lock (_historyGate)
         {
-            var initialSnapshot = (_initialSnapshot ?? finalSnapshot).Copy();
-            var lifecycleEvents = _lifecycleEvents.Select(item => item.Copy()).ToArray();
-            var gazeSamples = _gazeSamples.Select(item => item.Copy()).ToArray();
-            var participantViewportEvents = _participantViewportEvents.Select(item => item.Copy()).ToArray();
-            var readingFocusEvents = _readingFocusEvents.Select(item => item.Copy()).ToArray();
-            var attentionEvents = _attentionEvents.Select(item => item.Copy()).ToArray();
-            var decisionProposalEvents = _decisionProposalEvents.Select(item => item.Copy()).ToArray();
-            var interventionEvents = _interventionEvents.Select(item => item.Copy()).ToArray();
-            long? durationMs = finalSnapshot.StartedAtUnixMs > 0 && finalSnapshot.StoppedAtUnixMs.HasValue
-                ? Math.Max(0L, finalSnapshot.StoppedAtUnixMs.Value - finalSnapshot.StartedAtUnixMs)
-                : null;
-            var content = initialSnapshot.ReadingSession?.Content ?? finalSnapshot.ReadingSession?.Content;
-            if (content is null)
+            sessionId = _activeReplayRecoverySessionId;
+            hasPendingReplayPersistence = _hasPendingReplayPersistence;
+
+            if (!sessionId.HasValue || (!forceFlush && !hasPendingReplayPersistence))
             {
-                throw new InvalidOperationException("Cannot export a replay without reading content.");
+                return;
             }
 
-            var baselinePresentation =
-                initialSnapshot.ReadingSession?.Presentation?.Copy() ??
-                finalSnapshot.ReadingSession?.Presentation?.Copy() ??
-                ReadingPresentationSnapshot.Default.Copy();
-            var baselineAppearance =
-                initialSnapshot.ReadingSession?.Appearance?.Copy() ??
-                finalSnapshot.ReadingSession?.Appearance?.Copy() ??
-                ReaderAppearanceSnapshot.Default.Copy();
-            var validationResult = finalSnapshot.Calibration.Validation.Result ?? finalSnapshot.Calibration.Result?.Validation;
+            lifecycleEvents = _pendingLifecycleEvents.Select(item => item.Copy()).ToArray();
+            gazeSamples = _pendingGazeSamples.Select(item => item.Copy()).ToArray();
+            participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
+            readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
+            attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
+            decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
+            interventionEvents = _pendingInterventionEvents.Select(item => item.Copy()).ToArray();
 
-            return new ExperimentReplayExport(
-                new ExperimentReplayExportManifest(
-                    ExperimentReplayExportSchema.Name,
-                    ExperimentReplayExportSchema.Version,
-                    exportedAtUnixMs,
-                    completionSource,
-                    "core",
-                    new ExperimentReplayExportProducer(
-                        "reading-the-reader",
-                        "Tobii.Research.x64",
-                        "1.11.0.1334",
-                        ExperimentReplayExportSchema.Version.ToString()),
-                    null),
-                new ExperimentReplayContext(
-                    finalSnapshot.SessionId,
-                    finalSnapshot.StartedAtUnixMs,
-                    finalSnapshot.StoppedAtUnixMs,
-                    durationMs,
-                    finalSnapshot.DecisionConfiguration.Copy(),
-                    finalSnapshot.Participant is null
-                        ? null
-                        : new ExperimentReplayParticipant(
-                            finalSnapshot.Participant.Name,
-                            finalSnapshot.Participant.Age,
-                            finalSnapshot.Participant.Sex,
-                            finalSnapshot.Participant.ExistingEyeCondition,
-                            finalSnapshot.Participant.ReadingProficiency),
-                    finalSnapshot.EyeTrackerDevice is null
-                        ? null
-                        : new ExperimentReplayDevice(
-                            finalSnapshot.EyeTrackerDevice.Name,
-                            finalSnapshot.EyeTrackerDevice.Model,
-                            finalSnapshot.EyeTrackerDevice.SerialNumber,
-                            finalSnapshot.EyeTrackerDevice.HasSavedLicence),
-                    new ExperimentReplayCalibrationSummary(
-                        NormalizeNullableText(finalSnapshot.Calibration.Pattern),
-                        CalibrationSessionSnapshots.IsApplied(finalSnapshot.Calibration),
-                        validationResult?.Passed == true,
-                        NormalizeNullableText(validationResult?.Quality),
-                        validationResult?.AverageAccuracyDegrees,
-                        validationResult?.AveragePrecisionDegrees,
-                        validationResult?.SampleCount ?? 0),
-                    lifecycleEvents),
-                new ExperimentReplayContent(
-                    content.DocumentId,
-                    content.Title,
-                    content.Markdown,
-                    content.SourceSetupId,
-                    content.UpdatedAtUnixMs,
-                    ComputeContentHash(content.Markdown),
-                    new ExperimentReplayContentTokenization("minimal-markdown", "v1")),
-                new ExperimentReplaySensing(gazeSamples),
-                new ExperimentReplayDerived(
+            _pendingLifecycleEvents = [];
+            _pendingGazeSamples = [];
+            _pendingParticipantViewportEvents = [];
+            _pendingReadingFocusEvents = [];
+            _pendingAttentionEvents = [];
+            _pendingDecisionProposalEvents = [];
+            _pendingInterventionEvents = [];
+            _hasPendingReplayPersistence = false;
+        }
+
+        var snapshot = snapshotOverride ?? GetCurrentSnapshot();
+
+        try
+        {
+            await _experimentReplayRecoveryStoreAdapter.AppendChunkAsync(
+                new ExperimentReplayRecoveryChunkBatch(
+                    sessionId.Value,
+                    snapshot,
+                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    lifecycleEvents,
+                    gazeSamples,
                     participantViewportEvents,
                     readingFocusEvents,
-                    attentionEvents),
-                new ExperimentReplayInterventions(
+                    attentionEvents,
                     decisionProposalEvents,
                     interventionEvents),
-                new ExperimentReplayData(
-                    new ExperimentReplayBaseline(
-                        baselinePresentation,
-                        baselineAppearance)),
-                []);
+                ct);
+        }
+        catch
+        {
+            lock (_historyGate)
+            {
+                _pendingLifecycleEvents = [.. lifecycleEvents.Select(item => item.Copy()), .. _pendingLifecycleEvents];
+                _pendingGazeSamples = [.. gazeSamples.Select(item => item.Copy()), .. _pendingGazeSamples];
+                _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
+                _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
+                _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
+                _pendingDecisionProposalEvents = [.. decisionProposalEvents.Select(item => item.Copy()), .. _pendingDecisionProposalEvents];
+                _pendingInterventionEvents = [.. interventionEvents.Select(item => item.Copy()), .. _pendingInterventionEvents];
+                _hasPendingReplayPersistence = true;
+            }
+
+            throw;
         }
     }
 
@@ -1729,51 +1735,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 gazeOriginInTrackBoxZ));
     }
 
-    private static string ComputeContentHash(string markdown)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(markdown));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
-
-    private static GazeData? ToGazeData(RawGazeSampleRecord gazeSample)
-    {
-        return new GazeData
-        {
-            DeviceTimeStamp = gazeSample.DeviceTimeStampUs,
-            SystemTimeStamp = gazeSample.SystemTimeStampUs,
-            LeftEyeX = gazeSample.Left?.GazePoint2D.X ?? 0,
-            LeftEyeY = gazeSample.Left?.GazePoint2D.Y ?? 0,
-            LeftEyeValidity = gazeSample.Left?.GazePoint2D.Validity ?? "Invalid",
-            LeftEyePositionInUserX = gazeSample.Left?.GazePoint3D?.X,
-            LeftEyePositionInUserY = gazeSample.Left?.GazePoint3D?.Y,
-            LeftEyePositionInUserZ = gazeSample.Left?.GazePoint3D?.Z,
-            LeftPupilDiameterMm = gazeSample.Left?.Pupil?.DiameterMm,
-            LeftPupilValidity = gazeSample.Left?.Pupil?.Validity ?? "Invalid",
-            LeftGazeOriginInUserX = gazeSample.Left?.GazeOrigin3D?.X,
-            LeftGazeOriginInUserY = gazeSample.Left?.GazeOrigin3D?.Y,
-            LeftGazeOriginInUserZ = gazeSample.Left?.GazeOrigin3D?.Z,
-            LeftGazeOriginValidity = gazeSample.Left?.GazeOrigin3D?.Validity ?? "Invalid",
-            LeftGazeOriginInTrackBoxX = gazeSample.Left?.GazeOriginTrackBox?.X,
-            LeftGazeOriginInTrackBoxY = gazeSample.Left?.GazeOriginTrackBox?.Y,
-            LeftGazeOriginInTrackBoxZ = gazeSample.Left?.GazeOriginTrackBox?.Z,
-            RightEyeX = gazeSample.Right?.GazePoint2D.X ?? 0,
-            RightEyeY = gazeSample.Right?.GazePoint2D.Y ?? 0,
-            RightEyeValidity = gazeSample.Right?.GazePoint2D.Validity ?? "Invalid",
-            RightEyePositionInUserX = gazeSample.Right?.GazePoint3D?.X,
-            RightEyePositionInUserY = gazeSample.Right?.GazePoint3D?.Y,
-            RightEyePositionInUserZ = gazeSample.Right?.GazePoint3D?.Z,
-            RightPupilDiameterMm = gazeSample.Right?.Pupil?.DiameterMm,
-            RightPupilValidity = gazeSample.Right?.Pupil?.Validity ?? "Invalid",
-            RightGazeOriginInUserX = gazeSample.Right?.GazeOrigin3D?.X,
-            RightGazeOriginInUserY = gazeSample.Right?.GazeOrigin3D?.Y,
-            RightGazeOriginInUserZ = gazeSample.Right?.GazeOrigin3D?.Z,
-            RightGazeOriginValidity = gazeSample.Right?.GazeOrigin3D?.Validity ?? "Invalid",
-            RightGazeOriginInTrackBoxX = gazeSample.Right?.GazeOriginTrackBox?.X,
-            RightGazeOriginInTrackBoxY = gazeSample.Right?.GazeOriginTrackBox?.Y,
-            RightGazeOriginInTrackBoxZ = gazeSample.Right?.GazeOriginTrackBox?.Z
-        };
-    }
-
     private long NextSequenceNumber()
     {
         return Interlocked.Increment(ref _eventSequenceNumber);
@@ -1790,7 +1751,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return Math.Max(0, occurredAtUnixMs - startedAtUnixMs);
     }
 
-    private static ExperimentSetupSnapshot BuildSetupSnapshot(
+    private ExperimentSetupSnapshot BuildSetupSnapshot(
         ExperimentSession session,
         CalibrationSessionSnapshot calibrationSnapshot,
         LiveReadingSessionSnapshot liveReadingSession)
@@ -1825,13 +1786,16 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         var validationResult = calibrationSnapshot.Validation.Result ?? calibrationSnapshot.Result?.Validation;
         var isCalibrationApplied = CalibrationSessionSnapshots.IsApplied(calibrationSnapshot);
         var isValidationPassed = validationResult?.Passed == true;
+        var hasCalibrationSession = calibrationSnapshot.SessionId.HasValue;
+        var calibrationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status;
+        var validationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status;
         var calibration = new CalibrationSetupReadinessSnapshot(
             isCalibrationApplied && isValidationPassed,
-            calibrationSnapshot.SessionId.HasValue,
+            hasCalibrationSession,
             isCalibrationApplied,
             isValidationPassed,
-            string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status,
-            string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status,
+            calibrationStatus,
+            validationStatus,
             NormalizeNullableText(validationResult?.Quality),
             validationResult?.AverageAccuracyDegrees,
             validationResult?.AveragePrecisionDegrees,
@@ -1941,7 +1905,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
     }
 
-    private static void EnsureSetupIsReadyForStart(
+    private void EnsureSetupIsReadyForStart(
         ExperimentSession session,
         CalibrationSessionSnapshot calibrationSnapshot,
         LiveReadingSessionSnapshot liveReadingSession)

@@ -63,16 +63,16 @@ export function ReplayUploadState({
           <Input
             id={inputId}
             type="file"
-            accept=".json,application/json"
+            accept=".json,.csv,application/json,text/csv"
             className="sr-only"
             onChange={onInputChange}
           />
           <div className="flex h-18 w-18 items-center justify-center rounded-2xl border bg-background shadow-sm">
             <FileUp className="h-8 w-8 text-sky-500" />
           </div>
-          <p className="mt-6 text-xl font-semibold">Upload replay JSON</p>
+          <p className="mt-6 text-xl font-semibold">Upload replay file</p>
           <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            Drop the exported file here or choose it from disk.
+            Drop a replay JSON or CSV file here or choose it from disk.
           </p>
           <Button type="button" size="lg" asChild className="mt-6">
             <span>
@@ -84,7 +84,7 @@ export function ReplayUploadState({
 
         <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
           <div className="space-y-1">
-            <p className="text-lg font-semibold">Saved replay exports</p>
+            <p className="text-lg font-semibold">Saved files</p>
             <p className="text-sm text-muted-foreground">
               Load a replay file that was saved on the backend.
             </p>
@@ -93,11 +93,11 @@ export function ReplayUploadState({
             <div className="space-y-3">
               {isLoadingSavedExports ? (
                 <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                  Loading saved replay exports...
+                  Loading saved files...
                 </div>
               ) : savedExports.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                  No saved replay exports yet.
+                  No saved files yet.
                 </div>
               ) : (
                 savedExports.map((item) => (
