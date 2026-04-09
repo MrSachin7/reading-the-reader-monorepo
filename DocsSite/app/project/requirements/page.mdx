@@ -1,0 +1,33 @@
+# Requirements
+
+## Core Product Goal
+
+Build a modular adaptive reading platform that supports real Tobii-backed experiments and interchangeable intervention and decision modules without breaking participant reading flow or researcher workflows.
+
+## Architectural Requirements
+
+- clear separation between sensing, decision strategies, intervention execution, and UI adaptation
+- backend remains authoritative for experiment runtime state
+- external AI support must exist as an interface boundary, not as a tightly coupled implementation
+- interventions must be swappable without rewriting the full system
+
+## Operational Requirements
+
+- system must support real Tobii hardware
+- system must support researcher-operated experiment workflows
+- reading material format is Markdown only
+- exports and replay must support later analysis
+
+## Documentation Requirements
+
+- architecture must be explainable and defendable as thesis material
+- transport and provider contracts must be documented for external teams
+- docs must be hostable independently of the main frontend app
+
+## Prioritized Themes
+
+1. architecture and modularity
+2. real experiment capability
+3. researcher workflow support
+4. context-preserving interventions
+5. external provider extensibility

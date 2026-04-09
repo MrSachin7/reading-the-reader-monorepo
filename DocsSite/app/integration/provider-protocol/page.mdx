@@ -1,0 +1,160 @@
+import { Callout } from 'nextra/components'
+
+# External AI Provider Integration Guide
+
+This guide is for teams that want to connect a real AI decision-maker to the Reading the Reader backend over `/ws/provider`.
+
+<Callout type="info">
+  The external AI provider does not talk to the frontend protocol. It talks to the dedicated provider protocol on `/ws/provider`.
+</Callout>
+
+## Boundary
+
+- Browser clients use `/ws`
+- External AI providers use `/ws/provider`
+- The backend remains authoritative for session state, decision state, intervention validation, and intervention application
+
+## Activation
+
+The provider flow is active only when the backend decision configuration is set to:
+
+- `providerId = "external"`
+- `executionMode = "advisory"` or `executionMode = "autonomous"`
+
+Example REST request:
+
+```http
+PUT /api/experiment-session/decision-configuration HTTP/1.1
+Content-Type: application/json
+
+{
+  "conditionLabel": "External AI",
+  "providerId": "external",
+  "executionMode": "advisory",
+  "automationPaused": false
+}
+```
+
+## Provider Handshake
+
+Example `providerHello` envelope:
+
+```json
+{
+  "type": "providerHello",
+  "protocolVersion": "provider.v1",
+  "providerId": "my-ai-provider",
+  "sessionId": null,
+  "correlationId": null,
+  "sentAtUnixMs": 1710000000000,
+  "payload": {
+    "providerId": "my-ai-provider",
+    "displayName": "My AI Provider",
+    "protocolVersion": "provider.v1",
+    "authToken": "shared-secret-here",
+    "supportsAdvisoryExecution": true,
+    "supportsAutonomousExecution": true,
+    "supportedInterventionModuleIds": ["font-size", "line-height"]
+  }
+}
+```
+
+Example `providerWelcome` response:
+
+```json
+{
+  "type": "providerWelcome",
+  "protocolVersion": "provider.v1",
+  "providerId": "my-ai-provider",
+  "sessionId": null,
+  "correlationId": null,
+  "sentAtUnixMs": 1710000000100,
+  "payload": {
+    "providerId": "my-ai-provider",
+    "displayName": "My AI Provider",
+    "acceptedProtocolVersion": "provider.v1",
+    "status": "active",
+    "registeredAtUnixMs": 1710000000100,
+    "heartbeatTimeoutMilliseconds": 15000
+  }
+}
+```
+
+## Advisory Proposal Example
+
+```json
+{
+  "type": "providerSubmitProposal",
+  "protocolVersion": "provider.v1",
+  "providerId": "my-ai-provider",
+  "sessionId": "f0c2ce58-9249-489a-ae5f-4c5d8e2cb8b5",
+  "correlationId": "ctx-1710000001234",
+  "sentAtUnixMs": 1710000001300,
+  "payload": {
+    "providerId": "my-ai-provider",
+    "sessionId": "f0c2ce58-9249-489a-ae5f-4c5d8e2cb8b5",
+    "correlationId": "ctx-1710000001234",
+    "proposalId": "6b3d6d15-50b6-4d8e-b7a0-9d7885c2d31a",
+    "executionMode": "advisory",
+    "rationale": "Sustained fixation suggests a small font-size increase.",
+    "signalSummary": "current token dwell time exceeded 1200 ms",
+    "providerObservedAtUnixMs": 1710000001234,
+    "proposedIntervention": {
+      "moduleId": "font-size",
+      "trigger": "attention-summary",
+      "reason": "Increase font size to reduce local reading strain.",
+      "presentation": {
+        "fontFamily": null,
+        "fontSizePx": 20,
+        "lineWidthPx": null,
+        "lineHeight": null,
+        "letterSpacingEm": null,
+        "editableByResearcher": null
+      },
+      "appearance": {
+        "themeMode": null,
+        "palette": null,
+        "appFont": null
+      },
+      "parameters": {
+        "fontSizePx": "20"
+      }
+    }
+  }
+}
+```
+
+## Current Runtime Flow
+
+```mermaid
+sequenceDiagram
+    participant Participant
+    participant Backend
+    participant Provider
+    participant Researcher
+
+    Participant->>Backend: viewport / focus / attention updates
+    Backend->>Provider: providerViewportChanged
+    Backend->>Provider: providerReadingFocusChanged
+    Backend->>Provider: providerAttentionSummaryChanged
+    Backend->>Provider: providerGazeSample
+    Backend->>Provider: providerDecisionContext
+
+    alt advisory mode
+        Provider->>Backend: providerSubmitProposal
+        Backend->>Researcher: decisionProposalChanged
+        Researcher->>Backend: approveDecisionProposal / rejectDecisionProposal
+        Backend->>Provider: providerDecisionModeChanged
+    else autonomous mode
+        Provider->>Backend: providerRequestAutonomousApply
+        Backend->>Provider: providerDecisionModeChanged
+        Backend->>Provider: providerInterventionEvent
+    end
+```
+
+## Key Rules
+
+- send only provider messages on `/ws/provider`
+- preserve `providerId`, `sessionId`, and `correlationId`
+- treat backend module ids and parameter keys as strict contract values
+- let the backend remain the final authority for proposal lifecycle and intervention application
