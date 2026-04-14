@@ -14,8 +14,12 @@ import { useFontTheme } from "@/hooks/use-font-theme"
 import { usePaletteTheme } from "@/hooks/use-palette-theme"
 import {
   EMPTY_DECISION_CONFIGURATION,
+  EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
+  EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
   EMPTY_EXTERNAL_PROVIDER_STATUS,
   type DecisionConfiguration,
+  type EyeMovementAnalysisConfiguration,
+  type EyeMovementAnalysisProviderStatusSnapshot,
   type ExternalProviderStatusSnapshot,
 } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
@@ -40,6 +44,7 @@ import {
   useSaveParticipantMutation,
   useStartExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateEyeMovementAnalysisConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } from "@/redux"
@@ -527,14 +532,18 @@ function ParticipantInformationForm({
 type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
   currentDecisionConfiguration?: DecisionConfiguration
+  currentEyeMovementAnalysisConfiguration?: EyeMovementAnalysisConfiguration
   externalProviderStatus?: ExternalProviderStatusSnapshot
+  eyeMovementAnalysisProviderStatus?: EyeMovementAnalysisProviderStatusSnapshot
   automationPaused?: boolean
 }
 
 function SessionContentStep({
   onCompletionChange,
   currentDecisionConfiguration = EMPTY_DECISION_CONFIGURATION,
+  currentEyeMovementAnalysisConfiguration = EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
   externalProviderStatus = EMPTY_EXTERNAL_PROVIDER_STATUS,
+  eyeMovementAnalysisProviderStatus = EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
   automationPaused = false,
 }: SessionContentStepProps) {
   const router = useRouter()
@@ -546,6 +555,8 @@ function SessionContentStep({
     useLazyGetReadingMaterialSetupByIdQuery()
   const [updateDecisionConfiguration, { isLoading: isSavingDecisionConfiguration }] =
     useUpdateDecisionConfigurationMutation()
+  const [updateEyeMovementAnalysisConfiguration, { isLoading: isSavingAnalysisConfiguration }] =
+    useUpdateEyeMovementAnalysisConfigurationMutation()
   const { experimentSetupId, resetReadingSettings } = useReadingSettings()
 
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
@@ -555,6 +566,9 @@ function SessionContentStep({
     providerId: currentDecisionConfiguration.providerId,
     executionMode: currentDecisionConfiguration.executionMode,
   })
+  const [selectedAnalysisProviderId, setSelectedAnalysisProviderId] = React.useState(
+    currentEyeMovementAnalysisConfiguration.providerId
+  )
   const hasSelectedMaterial = readingSession.title.trim().length > 0
   const selectedSavedSetup = React.useMemo(
     () => materialSetups.find((setup) => setup.id === experimentSetupId) ?? null,
@@ -615,6 +629,10 @@ function SessionContentStep({
       executionMode: currentDecisionConfiguration.executionMode,
     })
   }, [currentDecisionConfiguration.executionMode, currentDecisionConfiguration.providerId])
+
+  React.useEffect(() => {
+    setSelectedAnalysisProviderId(currentEyeMovementAnalysisConfiguration.providerId)
+  }, [currentEyeMovementAnalysisConfiguration.providerId])
 
   return (
     <div className="space-y-6">
@@ -848,6 +866,132 @@ function SessionContentStep({
                       ) : null}
                     </div>
                   </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold">Eye movement analysis</p>
+              <p className="text-sm text-muted-foreground">
+                Choose whether fixation and saccade analysis stays built in or comes from an external provider.
+              </p>
+            </div>
+
+            <div
+              className={cn(
+                "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
+                eyeMovementAnalysisProviderStatus.isConnected &&
+                  "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
+                !eyeMovementAnalysisProviderStatus.isConnected &&
+                  selectedAnalysisProviderId === "external" &&
+                  "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
+                !eyeMovementAnalysisProviderStatus.isConnected &&
+                  selectedAnalysisProviderId !== "external" &&
+                  "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]"
+              )}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
+                    External Analysis Status
+                  </p>
+                  <h3 className="text-lg font-semibold tracking-tight">
+                    {eyeMovementAnalysisProviderStatus.isConnected
+                      ? "External eye movement analysis connected"
+                      : selectedAnalysisProviderId === "external"
+                        ? "External analysis currently unavailable"
+                        : "Built-in eye movement analysis active"}
+                  </h3>
+                </div>
+                <Badge
+                  className={cn(
+                    "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
+                    eyeMovementAnalysisProviderStatus.isConnected &&
+                      "border-emerald-600/30 bg-emerald-600 text-white",
+                    !eyeMovementAnalysisProviderStatus.isConnected &&
+                      selectedAnalysisProviderId === "external" &&
+                      "border-rose-600/30 bg-rose-600 text-white",
+                    !eyeMovementAnalysisProviderStatus.isConnected &&
+                      selectedAnalysisProviderId !== "external" &&
+                      "border-amber-600/30 bg-amber-500 text-amber-950"
+                  )}
+                >
+                  {eyeMovementAnalysisProviderStatus.isConnected
+                    ? "Connected"
+                    : selectedAnalysisProviderId === "external"
+                      ? "Unavailable"
+                      : "Built-in"}
+                </Badge>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-foreground/85">
+                {eyeMovementAnalysisProviderStatus.isConnected
+                  ? `${eyeMovementAnalysisProviderStatus.displayName ?? eyeMovementAnalysisProviderStatus.providerId ?? "External analysis provider"} is available for backend-owned fixation and saccade analysis.`
+                  : selectedAnalysisProviderId === "external"
+                    ? "The current analysis provider stays selected, but no external analysis provider is connected right now."
+                    : "The backend built-in analyzer remains the authoritative source for fixation and saccade state."}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                {
+                  label: "Built-in analysis",
+                  providerId: "builtin",
+                  description: "Backend thresholds reproduce the current fixation behavior.",
+                  unavailable: false,
+                },
+                {
+                  label: "External analysis",
+                  providerId: "external",
+                  description: "Use the dedicated analysis-provider WebSocket for authoritative state.",
+                  unavailable: !eyeMovementAnalysisProviderStatus.isConnected,
+                },
+              ].map((option) => {
+                const isSelected = selectedAnalysisProviderId === option.providerId
+
+                return (
+                  <button
+                    key={option.providerId}
+                    type="button"
+                    disabled={isSavingAnalysisConfiguration || option.unavailable}
+                    onClick={async () => {
+                      if (option.unavailable) {
+                        return
+                      }
+
+                      setSelectionError(null)
+
+                      try {
+                        await updateEyeMovementAnalysisConfiguration({
+                          providerId: option.providerId,
+                        }).unwrap()
+                        setSelectedAnalysisProviderId(option.providerId)
+                      } catch (error) {
+                        setSelectionError(
+                          getErrorMessage(error, "Could not update eye movement analysis.")
+                        )
+                      }
+                    }}
+                    className={cn(
+                      "w-full rounded-2xl border p-5 text-left transition-colors",
+                      "bg-card hover:border-primary/40 hover:bg-accent/30",
+                      isSelected && "border-primary bg-accent/50",
+                      option.unavailable &&
+                        "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+                    )}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-semibold">{option.label}</p>
+                        {option.unavailable ? <Badge variant="outline">Unavailable</Badge> : null}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{option.providerId}</p>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
+                    </div>
                   </button>
                 )
               })}
@@ -1160,8 +1304,16 @@ export function ExperimentStepper() {
             currentDecisionConfiguration={
               experimentSession?.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION
             }
+            currentEyeMovementAnalysisConfiguration={
+              experimentSession?.eyeMovementAnalysisConfiguration ??
+              EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION
+            }
             externalProviderStatus={
               experimentSession?.externalProviderStatus ?? EMPTY_EXTERNAL_PROVIDER_STATUS
+            }
+            eyeMovementAnalysisProviderStatus={
+              experimentSession?.eyeMovementAnalysisProviderStatus ??
+              EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS
             }
             automationPaused={experimentSession?.decisionState?.automationPaused ?? false}
           />

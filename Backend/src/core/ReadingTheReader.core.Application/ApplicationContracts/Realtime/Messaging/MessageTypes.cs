@@ -23,10 +23,12 @@ public static class MessageTypes
     public const string ReadingFocusChanged = "readingFocusChanged";
     public const string ReadingContextPreservationChanged = "readingContextPreservationChanged";
     public const string ReadingAttentionSummaryChanged = "readingAttentionSummaryChanged";
+    public const string EyeMovementAnalysisChanged = "eyeMovementAnalysisChanged";
     public const string RegisterParticipantView = "registerParticipantView";
     public const string UnregisterParticipantView = "unregisterParticipantView";
     public const string ParticipantViewportUpdated = "participantViewportUpdated";
     public const string ReadingFocusUpdated = "readingFocusUpdated";
+    public const string ReadingGazeObservationUpdated = "readingGazeObservationUpdated";
     public const string ReadingContextPreservationUpdated = "readingContextPreservationUpdated";
     public const string ReadingAttentionSummaryUpdated = "readingAttentionSummaryUpdated";
     public const string ApplyIntervention = "applyIntervention";

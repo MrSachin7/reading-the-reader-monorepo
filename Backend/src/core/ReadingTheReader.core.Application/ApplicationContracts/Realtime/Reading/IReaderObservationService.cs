@@ -1,3 +1,6 @@
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
+
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
 public interface IReaderObservationService
@@ -13,6 +16,10 @@ public interface IReaderObservationService
 
     ValueTask<ReadingFocusSnapshot> UpdateReadingFocusAsync(
         UpdateReadingFocusCommand command,
+        CancellationToken ct = default);
+
+    ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
+        ReadingGazeObservationCommand command,
         CancellationToken ct = default);
 
     ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
