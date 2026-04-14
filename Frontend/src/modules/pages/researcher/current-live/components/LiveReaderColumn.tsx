@@ -195,12 +195,16 @@ export function LiveReaderColumn({
                       normalizedContentX: readingSession.focus.normalizedContentX,
                       normalizedContentY: readingSession.focus.normalizedContentY,
                       activeTokenId: readingSession.focus.activeTokenId,
+                      activeSentenceId: readingSession.focus.activeSentenceId,
                       updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
                     }}
                     remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
                     onRemoteTokenAttentionChange={onTokenAttentionChange}
                     showRemoteFocusMarker={readerOptions.displayGazePosition}
                     embedded
+                    interventionAppliedAtUnixMs={readingSession.latestIntervention?.appliedAtUnixMs ?? null}
+                    interventionAppliedBoundary={readingSession.latestIntervention?.appliedBoundary ?? null}
+                    interventionWaitDurationMs={readingSession.latestIntervention?.waitDurationMs ?? null}
                     frameClassName="h-full rounded-none border-0 shadow-none"
                     frameStyle={{
                       width: `${participantViewportWidth}px`,
@@ -242,12 +246,16 @@ export function LiveReaderColumn({
                 normalizedContentX: readingSession.focus.normalizedContentX,
                 normalizedContentY: readingSession.focus.normalizedContentY,
                 activeTokenId: readingSession.focus.activeTokenId,
+                activeSentenceId: readingSession.focus.activeSentenceId,
                 updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
               }}
               remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
               onRemoteTokenAttentionChange={onTokenAttentionChange}
               showRemoteFocusMarker={readerOptions.displayGazePosition}
               embedded
+              interventionAppliedAtUnixMs={readingSession.latestIntervention?.appliedAtUnixMs ?? null}
+              interventionAppliedBoundary={readingSession.latestIntervention?.appliedBoundary ?? null}
+              interventionWaitDurationMs={readingSession.latestIntervention?.waitDurationMs ?? null}
               frameClassName="mx-auto rounded-none border-0 shadow-none"
               frameStyle={{
                 width: "100%",

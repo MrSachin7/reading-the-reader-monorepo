@@ -140,16 +140,68 @@ export type ReadingFocusSnapshot = {
   normalizedContentY: number | null
   activeTokenId: string | null
   activeBlockId: string | null
+  activeSentenceId: string | null
   updatedAtUnixMs: number
+}
+
+export type ReadingInterventionCommitBoundary =
+  | "immediate"
+  | "sentence-end"
+  | "paragraph-end"
+  | "page-turn"
+
+export type ReadingInterventionPolicySnapshot = {
+  layoutCommitBoundary: ReadingInterventionCommitBoundary
+  layoutFallbackBoundary: ReadingInterventionCommitBoundary
+  layoutFallbackAfterMs: number
+}
+
+export type ApplyInterventionCommandSnapshot = {
+  source: string
+  trigger: string
+  reason: string
+  moduleId: string | null
+  parameters: InterventionParameterValues | null
+  presentation: {
+    fontFamily: string | null
+    fontSizePx: number | null
+    lineWidthPx: number | null
+    lineHeight: number | null
+    letterSpacingEm: number | null
+    editableByResearcher: boolean | null
+  }
+  appearance: {
+    themeMode: string | null
+    palette: string | null
+    appFont: string | null
+  }
+}
+
+export type PendingInterventionSnapshot = {
+  id: string
+  status: "queued" | "applied" | "superseded"
+  requestedBoundary: ReadingInterventionCommitBoundary
+  fallbackBoundary: ReadingInterventionCommitBoundary | null
+  fallbackAfterMs: number
+  queuedAtUnixMs: number
+  appliedAtUnixMs: number | null
+  supersededAtUnixMs: number | null
+  waitDurationMs: number | null
+  isFallbackEligible: boolean
+  resolutionReason: string | null
+  intervention: ApplyInterventionCommandSnapshot
 }
 
 export type ReadingContextPreservationSnapshot = {
   status: "preserved" | "degraded" | "failed"
-  anchorSource: "active-token" | "fallback-token" | "block-anchor" | "scroll-only"
+  anchorSource: "sentence-anchor" | "active-token" | "fallback-token" | "block-anchor" | "scroll-only"
+  anchorSentenceId: string | null
   anchorTokenId: string | null
   anchorBlockId: string | null
   anchorErrorPx: number | null
   viewportDeltaPx: number | null
+  commitBoundary: ReadingInterventionCommitBoundary
+  waitDurationMs: number | null
   interventionAppliedAtUnixMs: number
   measuredAtUnixMs: number
   reason: string | null
@@ -169,6 +221,8 @@ export type InterventionEventSnapshot = {
   trigger: string
   reason: string
   appliedAtUnixMs: number
+  appliedBoundary: ReadingInterventionCommitBoundary
+  waitDurationMs: number | null
   appliedPresentation: ReadingPresentationSnapshot
   appliedAppearance: ReaderAppearanceSnapshot
   moduleId: string | null
@@ -234,8 +288,10 @@ export type LiveReadingSessionSnapshot = {
   content: ReadingContentSnapshot | null
   presentation: ReadingPresentationSnapshot
   appearance: ReaderAppearanceSnapshot
+  interventionPolicy: ReadingInterventionPolicySnapshot
   participantViewport: ParticipantViewportSnapshot
   focus: ReadingFocusSnapshot
+  pendingIntervention: PendingInterventionSnapshot | null
   latestContextPreservation: ReadingContextPreservationSnapshot | null
   recentContextPreservationEvents: ReadingContextPreservationSnapshot[]
   latestLayoutGuardrail: LayoutInterventionGuardrailSnapshot | null
@@ -306,6 +362,11 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     palette: "default",
     appFont: "geist",
   },
+  interventionPolicy: {
+    layoutCommitBoundary: "paragraph-end",
+    layoutFallbackBoundary: "sentence-end",
+    layoutFallbackAfterMs: 6000,
+  },
   participantViewport: {
     isConnected: false,
     scrollProgress: 0,
@@ -322,8 +383,10 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     normalizedContentY: null,
     activeTokenId: null,
     activeBlockId: null,
+    activeSentenceId: null,
     updatedAtUnixMs: 0,
   },
+  pendingIntervention: null,
   latestContextPreservation: null,
   recentContextPreservationEvents: [],
   latestLayoutGuardrail: null,

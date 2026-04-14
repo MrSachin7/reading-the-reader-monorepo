@@ -141,6 +141,7 @@ type ClientEnvelope =
         normalizedContentY: number | null;
         activeTokenId: string | null;
         activeBlockId: string | null;
+        activeSentenceId: string | null;
       };
     }
   | {
@@ -216,6 +217,7 @@ type ReadingFocusPayload = {
   normalizedContentY: number | null;
   activeTokenId: string | null;
   activeBlockId: string | null;
+  activeSentenceId: string | null;
 };
 type ReadingContextPreservationPayload = ReadingContextPreservationSnapshot;
 type ReadingAttentionSummaryPayload = ReadingAttentionSummarySnapshot;

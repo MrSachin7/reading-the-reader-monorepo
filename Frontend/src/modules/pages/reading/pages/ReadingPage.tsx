@@ -98,6 +98,7 @@ export function ReadingPage() {
       normalizedContentY: focus.normalizedContentY,
       activeTokenId: focus.activeTokenId,
       activeBlockId: focus.activeBlockId,
+      activeSentenceId: focus.activeSentenceId,
     })
   }, [])
 
@@ -219,6 +220,8 @@ export function ReadingPage() {
         onFocusChange={handleFocusChange}
         onContextPreservationChange={handleContextPreservationChange}
         interventionAppliedAtUnixMs={liveReadingSession?.latestIntervention?.appliedAtUnixMs ?? null}
+        interventionAppliedBoundary={liveReadingSession?.latestIntervention?.appliedBoundary ?? null}
+        interventionWaitDurationMs={liveReadingSession?.latestIntervention?.waitDurationMs ?? null}
       />
       {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
         <FullscreenGate

@@ -52,9 +52,13 @@ export function ReplayReaderColumn({
             normalizedContentX: readingSession.focus.normalizedContentX,
             normalizedContentY: readingSession.focus.normalizedContentY,
             activeTokenId: readingSession.focus.activeTokenId,
+            activeSentenceId: readingSession.focus.activeSentenceId,
           }}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
           embedded
+          interventionAppliedAtUnixMs={readingSession.latestIntervention?.appliedAtUnixMs ?? null}
+          interventionAppliedBoundary={readingSession.latestIntervention?.appliedBoundary ?? null}
+          interventionWaitDurationMs={readingSession.latestIntervention?.waitDurationMs ?? null}
           frameClassName="mx-auto rounded-none border-0 shadow-none"
           frameStyle={{
             width: "100%",

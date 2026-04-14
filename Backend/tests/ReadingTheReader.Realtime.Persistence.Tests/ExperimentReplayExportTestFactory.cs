@@ -15,7 +15,7 @@ internal static class ExperimentReplayExportTestFactory
         var presentation = new ReadingPresentationSnapshot("merriweather", 18, 680, 1.8, 0, true);
         var appearance = new ReaderAppearanceSnapshot("dark", "sepia", "inter");
         var viewport = new ParticipantViewportSnapshot(true, 0.35, 420, 1280, 720, 2400, 900, 1_710_000_001_500);
-        var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", 1_710_000_001_600);
+        var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", "sentence-1", 1_710_000_001_600);
         var attentionSummary = new ReadingAttentionSummarySnapshot(
             1_710_000_001_900,
             new Dictionary<string, ReadingAttentionTokenSnapshot>
@@ -27,12 +27,50 @@ internal static class ExperimentReplayExportTestFactory
             340,
             1,
             1);
+        var contextPreservation = new ReadingContextPreservationEventSnapshot(
+            "preserved",
+            "sentence-anchor",
+            "sentence-1",
+            "token-1",
+            "block-1",
+            6,
+            2,
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            300,
+            1_710_000_002_000,
+            1_710_000_002_100,
+            null);
+        var scheduledIntervention = new PendingInterventionSnapshot(
+            Guid.Parse("f8edb76d-cb94-4d25-88b2-7b36a70d8b66"),
+            PendingInterventionStatuses.Applied,
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            ReadingInterventionCommitBoundaries.SentenceEnd,
+            6_000,
+            1_710_000_001_700,
+            1_710_000_002_000,
+            null,
+            300,
+            true,
+            "boundary-met",
+            new ApplyInterventionCommand(
+                "manual",
+                "researcher-ui",
+                "Adjusted font size",
+                new ReadingPresentationPatch(null, 20, null, null, null, null),
+                new ReaderAppearancePatch(null, null, null),
+                ReadingInterventionModuleIds.FontSize,
+                new Dictionary<string, string?>
+                {
+                    ["fontSizePx"] = "20"
+                }));
         var intervention = new InterventionEventSnapshot(
             Guid.Parse("f2220a31-1d74-48db-99fe-9e1a30f446f2"),
             "manual",
             "researcher-ui",
             "Adjusted font size",
             1_710_000_002_000,
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            300,
             presentation,
             appearance,
             ReadingInterventionModuleIds.FontSize,
@@ -75,7 +113,7 @@ internal static class ExperimentReplayExportTestFactory
                     "reading-the-reader",
                     "Tobii.Research.x64",
                     "1.11.0.1334",
-                    "2"),
+                    "3"),
                 "Sample export"),
             new ExperimentReplayContext(
                 sessionId,
@@ -129,10 +167,12 @@ internal static class ExperimentReplayExportTestFactory
             new ExperimentReplayDerived(
                 [new ParticipantViewportEventRecord(3, 1_710_000_001_500, 1500, viewport)],
                 [new ReadingFocusEventRecord(4, 1_710_000_001_600, 1600, focus)],
-                [new ReadingAttentionEventRecord(5, 1_710_000_001_900, 1900, attentionSummary)]),
+                [new ReadingAttentionEventRecord(5, 1_710_000_001_900, 1900, attentionSummary)],
+                [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, 2100, contextPreservation)]),
             new ExperimentReplayInterventions(
-                [new DecisionProposalEventRecord(6, 1_710_000_002_000, 2000, proposal)],
-                [new InterventionEventRecord(7, 1_710_000_002_000, 2000, intervention)]),
+                [new DecisionProposalEventRecord(7, 1_710_000_002_000, 2000, proposal)],
+                [new ScheduledInterventionEventRecord(8, 1_710_000_001_700, 1700, scheduledIntervention)],
+                [new InterventionEventRecord(9, 1_710_000_002_000, 2000, intervention)]),
             new ExperimentReplayData(
                 new ExperimentReplayBaseline(
                     presentation,

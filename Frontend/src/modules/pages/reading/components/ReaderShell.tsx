@@ -20,7 +20,10 @@ import {
 import { useRemoteTokenHighlight } from "@/modules/pages/reading/lib/useRemoteTokenHighlight";
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown";
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
-import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session";
+import type {
+  ReadingContextPreservationSnapshot,
+  ReadingInterventionCommitBoundary,
+} from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
 
 type ReaderViewportMetrics = {
@@ -57,6 +60,7 @@ type ReaderShellProps = {
     normalizedContentX: number | null;
     normalizedContentY: number | null;
     activeTokenId: string | null;
+    activeSentenceId?: string | null;
     updatedAtUnixMs?: number | null;
   } | null;
   remoteTokenAttention?: RemoteTokenAttentionSnapshot | null;
@@ -68,6 +72,8 @@ type ReaderShellProps = {
   frameStyle?: CSSProperties;
   embedded?: boolean;
   interventionAppliedAtUnixMs?: number | null;
+  interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null;
+  interventionWaitDurationMs?: number | null;
 };
 
 const FONT_FAMILY_STYLES = {
@@ -131,6 +137,8 @@ export function ReaderShell({
   frameStyle,
   embedded = false,
   interventionAppliedAtUnixMs = null,
+  interventionAppliedBoundary = null,
+  interventionWaitDurationMs = null,
 }: ReaderShellProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -186,6 +194,8 @@ export function ReaderShell({
     contentKey: `${docId}:${markdown}`,
     interventionKey: `${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}:${presentation.fontFamily}`,
     interventionAppliedAtUnixMs,
+    interventionAppliedBoundary,
+    interventionWaitDurationMs,
     onContextPreservationChange,
   });
 

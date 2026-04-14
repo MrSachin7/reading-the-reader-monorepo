@@ -1,4 +1,7 @@
-import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
+import type {
+  ExperimentSessionSnapshot,
+  ReadingInterventionCommitBoundary,
+} from "@/lib/experiment-session"
 import { baseApi } from "@/redux/api/base-api"
 
 export type ReplayExportFormat = "json" | "csv"
@@ -42,6 +45,12 @@ export type UpdateExperimentSetupTestingOverridesPayload = {
   forceParticipantReady: boolean | null
   forceCalibrationReady: boolean | null
   forceReadingMaterialReady: boolean | null
+}
+
+export type UpdateInterventionPolicyPayload = {
+  layoutCommitBoundary: ReadingInterventionCommitBoundary
+  layoutFallbackBoundary: ReadingInterventionCommitBoundary
+  layoutFallbackAfterMs: number
 }
 
 export const experimentSessionApi = baseApi.injectEndpoints({
@@ -95,6 +104,25 @@ export const experimentSessionApi = baseApi.injectEndpoints({
           // Let the request surface through normal RTK Query error handling.
         }
       },
+    }),
+    updateInterventionPolicy: builder.mutation<
+      ExperimentSessionSnapshot,
+      UpdateInterventionPolicyPayload
+    >({
+      query: (body) => ({
+        url: "/experiment-session/intervention-policy",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    applyPendingInterventionNow: builder.mutation<ExperimentSessionSnapshot, void>({
+      query: () => ({
+        url: "/experiment-session/intervention-policy/apply-now",
+        method: "POST",
+        body: {},
+      }),
+      invalidatesTags: ["Experiment"],
     }),
     startExperimentSession: builder.mutation<void, void>({
       query: () => ({
@@ -163,6 +191,7 @@ export const experimentSessionApi = baseApi.injectEndpoints({
 })
 
 export const {
+  useApplyPendingInterventionNowMutation,
   useGetExperimentSessionQuery,
   useGetSavedExperimentReplayExportByIdQuery,
   useFinishExperimentSessionMutation,
@@ -174,5 +203,6 @@ export const {
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
+  useUpdateInterventionPolicyMutation,
   useUpsertReadingSessionMutation,
 } = experimentSessionApi

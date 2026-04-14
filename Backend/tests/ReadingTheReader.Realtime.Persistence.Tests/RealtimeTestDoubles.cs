@@ -276,6 +276,8 @@ public sealed class RealtimeTestDoubles
                 [],
                 [],
                 [],
+                [],
+                [],
                 []);
             return ValueTask.CompletedTask;
         }
@@ -296,8 +298,10 @@ public sealed class RealtimeTestDoubles
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
-                DecisionProposalEvents = [.. session.DecisionProposalEvents, .. batch.DecisionProposalEvents.Select(item => item.Copy())],
-                InterventionEvents = [.. session.InterventionEvents, .. batch.InterventionEvents.Select(item => item.Copy())]
+                ContextPreservationEvents = [.. session.ContextPreservationEvents, .. (batch.ContextPreservationEvents ?? []).Select(item => item.Copy())],
+                DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
+                ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
+                InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())]
             };
 
             return ValueTask.CompletedTask;
@@ -324,7 +328,9 @@ public sealed class RealtimeTestDoubles
                 session.ViewportEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.AttentionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.ContextPreservationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
         }
 
@@ -390,11 +396,13 @@ public sealed class RealtimeTestDoubles
             ExperimentSessionSnapshot LatestSnapshot,
             IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
             IReadOnlyList<RawGazeSampleRecord> GazeSamples,
-            IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
-            IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
-            IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
-            IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
-            IReadOnlyList<InterventionEventRecord> InterventionEvents);
+        IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
+        IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
+        IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
+        IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
+        IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
+        IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
+        IReadOnlyList<InterventionEventRecord> InterventionEvents);
     }
 
     public sealed class FakeEyeTrackerAdapter : IEyeTrackerAdapter

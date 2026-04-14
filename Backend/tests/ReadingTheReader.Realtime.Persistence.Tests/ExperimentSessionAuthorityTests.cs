@@ -426,10 +426,13 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingContextPreservationCommand(
                 "degraded",
                 "fallback-token",
+                null,
                 "token-2",
                 "block-2",
                 42,
                 18,
+                ReadingInterventionCommitBoundaries.Immediate,
+                null,
                 1_710_000_003_000,
                 1_710_000_003_500,
                 "Anchor drift exceeded threshold"));
@@ -438,10 +441,13 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingContextPreservationCommand(
                 "preserved",
                 "active-token",
+                null,
                 "token-3",
                 "block-3",
                 12,
                 4,
+                ReadingInterventionCommitBoundaries.Immediate,
+                null,
                 1_710_000_004_000,
                 1_710_000_005_000,
                 null));
@@ -482,6 +488,10 @@ public sealed class ExperimentSessionAuthorityTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
 
         var firstIntervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
             "manual",
@@ -516,6 +526,10 @@ public sealed class ExperimentSessionAuthorityTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
 
         var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
             "manual",
@@ -535,5 +549,168 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(18, readingSession.Presentation.FontSizePx);
         Assert.Null(readingSession.LatestIntervention);
         Assert.Empty(readingSession.RecentInterventions);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenLayoutChangeIsQueued_AppliesOnParagraphBoundary()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var queuedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var queuedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(queuedSnapshot.ReadingSession);
+        var pending = Assert.IsType<PendingInterventionSnapshot>(queuedReadingSession.PendingIntervention);
+
+        Assert.Null(intervention);
+        Assert.Equal(PendingInterventionStatuses.Queued, pending.Status);
+        Assert.Equal(18, queuedReadingSession.Presentation.FontSizePx);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.4, "token-2", "block-1", "sentence-2"));
+
+        Assert.Equal(18, harness.SessionManager.GetCurrentSnapshot().ReadingSession!.Presentation.FontSizePx);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.45, "token-3", "block-2", "sentence-3"));
+
+        var appliedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var appliedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(appliedSnapshot.ReadingSession);
+        var appliedPending = Assert.IsType<PendingInterventionSnapshot>(appliedReadingSession.PendingIntervention);
+
+        Assert.Equal(20, appliedReadingSession.Presentation.FontSizePx);
+        Assert.Equal(PendingInterventionStatuses.Applied, appliedPending.Status);
+        Assert.Equal(ReadingInterventionCommitBoundaries.ParagraphEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
+        Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenParagraphBoundaryWaitsTooLong_FallsBackToSentenceBoundary()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            ReadingInterventionCommitBoundaries.SentenceEnd,
+            1));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+
+        await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        await Task.Delay(20);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.4, "token-2", "block-1", "sentence-2"));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+
+        Assert.Equal(20, readingSession.Presentation.FontSizePx);
+        Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, readingSession.LatestIntervention!.AppliedBoundary);
+        Assert.True(readingSession.LatestIntervention.WaitDurationMs >= 1);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenNewQueuedLayoutChangeArrives_SupersedesPreviousPendingIntervention()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+
+        await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size to 20",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+        await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size to 19",
+            new ReadingPresentationPatch(null, 19, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+        var pending = Assert.IsType<PendingInterventionSnapshot>(readingSession.PendingIntervention);
+        var activeReplay = Assert.IsType<ExperimentReplayExport>(harness.SessionManager.GetCurrentActiveReplayExport());
+
+        Assert.Equal(PendingInterventionStatuses.Queued, pending.Status);
+        Assert.Equal("Increase font size to 19", pending.Intervention.Reason);
+        Assert.Contains(
+            activeReplay.Interventions.ScheduledInterventions,
+            item => item.PendingIntervention.Status == PendingInterventionStatuses.Superseded &&
+                    item.PendingIntervention.Intervention.Reason == "Increase font size to 20");
+        Assert.Contains(
+            activeReplay.Interventions.ScheduledInterventions,
+            item => item.PendingIntervention.Status == PendingInterventionStatuses.Queued &&
+                    item.PendingIntervention.Intervention.Reason == "Increase font size to 19");
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenAppearanceOnlyChangeRequested_AppliesImmediately()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Switch palette",
+            new ReadingPresentationPatch(null, null, null, null, null, null),
+            new ReaderAppearancePatch(null, "high-contrast", null)));
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+
+        Assert.NotNull(intervention);
+        Assert.Null(readingSession.PendingIntervention);
+        Assert.Equal("high-contrast", readingSession.Appearance.Palette);
+        Assert.Equal(ReadingInterventionCommitBoundaries.Immediate, intervention!.AppliedBoundary);
+    }
+
+    [Fact]
+    public async Task ApplyPendingInterventionNowAsync_ForceAppliesQueuedLayoutChange()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+        await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var intervention = await harness.SessionManager.ApplyPendingInterventionNowAsync();
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+
+        Assert.NotNull(intervention);
+        Assert.Equal(20, readingSession.Presentation.FontSizePx);
+        Assert.Equal(ReadingInterventionCommitBoundaries.Immediate, intervention!.AppliedBoundary);
+        Assert.Equal(PendingInterventionStatuses.Applied, readingSession.PendingIntervention!.Status);
     }
 }

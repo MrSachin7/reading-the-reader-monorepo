@@ -52,7 +52,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
     private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
     private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];
+    private List<ReadingContextPreservationEventRecord> _pendingContextPreservationEvents = [];
     private List<DecisionProposalEventRecord> _pendingDecisionProposalEvents = [];
+    private List<ScheduledInterventionEventRecord> _pendingScheduledInterventionEvents = [];
     private List<InterventionEventRecord> _pendingInterventionEvents = [];
 
     public ExperimentSessionManager(
@@ -177,6 +179,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     UpdatedAtUnixMs = updatedAtUnixMs
                 },
                 Focus = ReadingFocusSnapshot.Empty,
+                PendingIntervention = null,
                 LatestContextPreservation = null,
                 RecentContextPreservationEvents = [],
                 LatestLayoutGuardrail = null,
@@ -279,11 +282,14 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         CancellationToken ct = default)
     {
         ReadingFocusSnapshot focus;
+        LiveReadingSessionSnapshot? nextState = null;
+        InterventionEventSnapshot? interventionEvent = null;
 
         await _lifecycleGate.WaitAsync(ct);
         try
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var previousFocus = _liveReadingSession.Focus;
             _liveReadingSession = _liveReadingSession with
             {
                 Focus = new ReadingFocusSnapshot(
@@ -292,10 +298,14 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     command.IsInsideReadingArea ? ClampNullable(command.NormalizedContentY, 0, 1) : null,
                     command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveTokenId) : null,
                     command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveBlockId) : null,
+                    command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveSentenceId) : null,
                     updatedAtUnixMs)
             };
 
             focus = _liveReadingSession.Focus.Copy();
+            var appliedPending = TryApplyPendingInterventionForBoundary(previousFocus, focus, updatedAtUnixMs);
+            interventionEvent = appliedPending?.Copy();
+            nextState = appliedPending is null ? null : _liveReadingSession.Copy();
             RecordReadingFocusEvent(updatedAtUnixMs, focus);
             await SaveCurrentCheckpointAsync(ct);
         }
@@ -308,6 +318,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         if (ShouldPublishToExternalProvider())
         {
             await _externalProviderGateway.PublishReadingFocusChangedAsync(GetCurrentSessionId(), focus, ct);
+        }
+        if (nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
+            }
         }
         await EvaluateDecisionStrategiesAsync(ct);
         return focus;
@@ -330,6 +352,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     _liveReadingSession.RecentContextPreservationEvents,
                     contextPreservation)
             };
+            RecordReadingContextPreservationEvent(contextPreservation.MeasuredAtUnixMs, contextPreservation);
             await SaveCurrentCheckpointAsync(ct);
         }
         finally
@@ -389,7 +412,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var supersededProposal = SupersedeActiveProposal(updatedAtUnixMs, "researcher");
-            var outcome = ApplyInterventionCore(command, updatedAtUnixMs);
+            var outcome = ScheduleOrApplyIntervention(command, updatedAtUnixMs);
 
             if (!outcome.DidUpdateReadingSession)
             {
@@ -417,6 +440,80 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             {
                 await _externalProviderGateway.PublishDecisionUpdateAsync(GetCurrentSessionId(), decisionUpdate, ct);
             }
+        }
+
+        if (nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
+            }
+        }
+
+        return interventionEvent;
+    }
+
+    public async ValueTask<ReadingInterventionPolicySnapshot> UpdateInterventionPolicyAsync(
+        ReadingInterventionPolicySnapshot policy,
+        CancellationToken ct = default)
+    {
+        ReadingInterventionPolicySnapshot nextPolicy;
+        LiveReadingSessionSnapshot nextState;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            nextPolicy = NormalizeInterventionPolicy(policy);
+            _liveReadingSession = _liveReadingSession with
+            {
+                InterventionPolicy = nextPolicy.Copy()
+            };
+
+            nextState = _liveReadingSession.Copy();
+            await SaveCurrentCheckpointAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
+        }
+
+        return nextPolicy;
+    }
+
+    public async ValueTask<InterventionEventSnapshot?> ApplyPendingInterventionNowAsync(CancellationToken ct = default)
+    {
+        InterventionEventSnapshot? interventionEvent = null;
+        LiveReadingSessionSnapshot? nextState = null;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            interventionEvent = ApplyPendingInterventionInternal(
+                updatedAtUnixMs,
+                ReadingInterventionCommitBoundaries.Immediate,
+                "force-applied")?.Copy();
+            nextState = _liveReadingSession.PendingIntervention is null ? null : _liveReadingSession.Copy();
+
+            if (nextState is not null)
+            {
+                await SaveCurrentCheckpointAsync(ct);
+            }
+        }
+        finally
+        {
+            _lifecycleGate.Release();
         }
 
         if (nextState is not null)
@@ -504,7 +601,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
 
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var outcome = ApplyInterventionCore(_decisionState.ActiveProposal.ProposedIntervention, updatedAtUnixMs);
+            var outcome = ScheduleOrApplyIntervention(_decisionState.ActiveProposal.ProposedIntervention, updatedAtUnixMs);
             var resolvedProposal = _decisionState.ActiveProposal.WithResolution(
                 DecisionProposalStatus.Approved,
                 updatedAtUnixMs,
@@ -711,7 +808,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             if (string.Equals(_decisionConfiguration.ExecutionMode, DecisionExecutionModes.Autonomous, StringComparison.Ordinal))
             {
-                var outcome = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
+                var outcome = ScheduleOrApplyIntervention(proposal.ProposedIntervention, updatedAtUnixMs);
                 var autoAppliedProposal = proposal.WithResolution(
                     DecisionProposalStatus.AutoApplied,
                     updatedAtUnixMs,
@@ -1301,12 +1398,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             if (applyAutonomously)
             {
-                var outcome = ApplyInterventionCore(proposal.ProposedIntervention, updatedAtUnixMs);
-                var autoAppliedProposal = proposal.WithResolution(
-                    DecisionProposalStatus.AutoApplied,
-                    updatedAtUnixMs,
-                    command.ProviderId,
-                    outcome.Execution?.Event.Id);
+            var outcome = ScheduleOrApplyIntervention(proposal.ProposedIntervention, updatedAtUnixMs);
+            var autoAppliedProposal = proposal.WithResolution(
+                DecisionProposalStatus.AutoApplied,
+                updatedAtUnixMs,
+                command.ProviderId,
+                outcome.Execution?.Event.Id);
 
                 _decisionState = new DecisionRuntimeStateSnapshot(
                     _decisionState.AutomationPaused,
@@ -1490,7 +1587,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
+            _pendingContextPreservationEvents = [];
             _pendingDecisionProposalEvents = [];
+            _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
         }
     }
@@ -1610,6 +1709,21 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
     }
 
+    private void RecordReadingContextPreservationEvent(
+        long occurredAtUnixMs,
+        ReadingContextPreservationEventSnapshot contextPreservation)
+    {
+        lock (_historyGate)
+        {
+            _pendingContextPreservationEvents.Add(new ReadingContextPreservationEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                CalculateElapsedSinceStart(occurredAtUnixMs),
+                contextPreservation.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
     private void RecordDecisionProposalEvent(long occurredAtUnixMs, DecisionProposalSnapshot proposal)
     {
         lock (_historyGate)
@@ -1619,6 +1733,19 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 occurredAtUnixMs,
                 CalculateElapsedSinceStart(occurredAtUnixMs),
                 proposal.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordScheduledInterventionEvent(long occurredAtUnixMs, PendingInterventionSnapshot pendingIntervention)
+    {
+        lock (_historyGate)
+        {
+            _pendingScheduledInterventionEvents.Add(new ScheduledInterventionEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                CalculateElapsedSinceStart(occurredAtUnixMs),
+                pendingIntervention.Copy()));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -1648,7 +1775,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         ParticipantViewportEventRecord[] participantViewportEvents;
         ReadingFocusEventRecord[] readingFocusEvents;
         ReadingAttentionEventRecord[] attentionEvents;
+        ReadingContextPreservationEventRecord[] contextPreservationEvents;
         DecisionProposalEventRecord[] decisionProposalEvents;
+        ScheduledInterventionEventRecord[] scheduledInterventionEvents;
         InterventionEventRecord[] interventionEvents;
 
         lock (_historyGate)
@@ -1666,7 +1795,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
             readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
+            contextPreservationEvents = _pendingContextPreservationEvents.Select(item => item.Copy()).ToArray();
             decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
+            scheduledInterventionEvents = _pendingScheduledInterventionEvents.Select(item => item.Copy()).ToArray();
             interventionEvents = _pendingInterventionEvents.Select(item => item.Copy()).ToArray();
 
             _pendingLifecycleEvents = [];
@@ -1674,7 +1805,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
+            _pendingContextPreservationEvents = [];
             _pendingDecisionProposalEvents = [];
+            _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
             _hasPendingReplayPersistence = false;
         }
@@ -1693,7 +1826,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     participantViewportEvents,
                     readingFocusEvents,
                     attentionEvents,
+                    contextPreservationEvents,
                     decisionProposalEvents,
+                    scheduledInterventionEvents,
                     interventionEvents),
                 ct);
         }
@@ -1706,7 +1841,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
                 _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
+                _pendingContextPreservationEvents = [.. contextPreservationEvents.Select(item => item.Copy()), .. _pendingContextPreservationEvents];
                 _pendingDecisionProposalEvents = [.. decisionProposalEvents.Select(item => item.Copy()), .. _pendingDecisionProposalEvents];
+                _pendingScheduledInterventionEvents = [.. scheduledInterventionEvents.Select(item => item.Copy()), .. _pendingScheduledInterventionEvents];
                 _pendingInterventionEvents = [.. interventionEvents.Select(item => item.Copy()), .. _pendingInterventionEvents];
                 _hasPendingReplayPersistence = true;
             }
@@ -1995,7 +2132,242 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             cooldownUntilUnixMs.HasValue ? Math.Max(cooldownUntilUnixMs.Value, 0) : null);
     }
 
-    private InterventionApplicationOutcome ApplyInterventionCore(ApplyInterventionCommand command, long appliedAtUnixMs)
+    private InterventionApplicationOutcome ScheduleOrApplyIntervention(ApplyInterventionCommand command, long occurredAtUnixMs)
+    {
+        if (ShouldQueueIntervention(command))
+        {
+            QueuePendingIntervention(command, occurredAtUnixMs);
+            return new InterventionApplicationOutcome(null, true);
+        }
+
+        return ApplyInterventionCore(
+            command,
+            occurredAtUnixMs,
+            ReadingInterventionCommitBoundaries.Immediate,
+            null);
+    }
+
+    private InterventionEventSnapshot? TryApplyPendingInterventionForBoundary(
+        ReadingFocusSnapshot previousFocus,
+        ReadingFocusSnapshot currentFocus,
+        long occurredAtUnixMs)
+    {
+        var pendingIntervention = _liveReadingSession.PendingIntervention;
+        if (!CanApplyPendingIntervention(pendingIntervention))
+        {
+            return null;
+        }
+
+        if (DidBoundaryChange(
+                pendingIntervention!.RequestedBoundary,
+                previousFocus,
+                currentFocus,
+                occurredAtUnixMs,
+                pendingIntervention.QueuedAtUnixMs))
+        {
+            return ApplyPendingInterventionInternal(
+                occurredAtUnixMs,
+                pendingIntervention.RequestedBoundary,
+                "boundary-met");
+        }
+
+        var isFallbackReady = pendingIntervention.IsFallbackEligible &&
+                              !string.IsNullOrWhiteSpace(pendingIntervention.FallbackBoundary) &&
+                              occurredAtUnixMs - pendingIntervention.QueuedAtUnixMs >= pendingIntervention.FallbackAfterMs;
+        if (isFallbackReady &&
+            DidBoundaryChange(
+                pendingIntervention.FallbackBoundary!,
+                previousFocus,
+                currentFocus,
+                occurredAtUnixMs,
+                pendingIntervention.QueuedAtUnixMs))
+        {
+            return ApplyPendingInterventionInternal(
+                occurredAtUnixMs,
+                pendingIntervention.FallbackBoundary!,
+                "fallback-boundary-met");
+        }
+
+        return null;
+    }
+
+    private InterventionEventSnapshot? ApplyPendingInterventionInternal(
+        long appliedAtUnixMs,
+        string appliedBoundary,
+        string resolutionReason)
+    {
+        var pendingIntervention = _liveReadingSession.PendingIntervention;
+        if (!CanApplyPendingIntervention(pendingIntervention))
+        {
+            return null;
+        }
+
+        var waitDurationMs = Math.Max(appliedAtUnixMs - pendingIntervention!.QueuedAtUnixMs, 0);
+        var outcome = ApplyInterventionCore(
+            pendingIntervention.Intervention,
+            appliedAtUnixMs,
+            appliedBoundary,
+            waitDurationMs);
+        var appliedPending = pendingIntervention with
+        {
+            Status = PendingInterventionStatuses.Applied,
+            AppliedAtUnixMs = appliedAtUnixMs,
+            WaitDurationMs = waitDurationMs,
+            ResolutionReason = NormalizeNullableText(resolutionReason)
+        };
+
+        _liveReadingSession = _liveReadingSession with
+        {
+            PendingIntervention = appliedPending.Copy()
+        };
+
+        RecordScheduledInterventionEvent(appliedAtUnixMs, appliedPending);
+        RecordReadingSessionState("scheduled-intervention-applied", appliedAtUnixMs, _liveReadingSession.Copy());
+        return outcome.Execution?.Event;
+    }
+
+    private void QueuePendingIntervention(ApplyInterventionCommand command, long queuedAtUnixMs)
+    {
+        var queuedIntervention = BuildQueuedPendingIntervention(command, queuedAtUnixMs);
+        SupersedePendingInterventionIfQueued(queuedAtUnixMs, "superseded-by-new-queue");
+
+        _liveReadingSession = _liveReadingSession with
+        {
+            PendingIntervention = queuedIntervention.Copy()
+        };
+
+        RecordScheduledInterventionEvent(queuedAtUnixMs, queuedIntervention);
+        RecordReadingSessionState("intervention-queued", queuedAtUnixMs, _liveReadingSession.Copy());
+    }
+
+    private void SupersedePendingInterventionIfQueued(long supersededAtUnixMs, string reason)
+    {
+        var pendingIntervention = _liveReadingSession.PendingIntervention;
+        if (!CanApplyPendingIntervention(pendingIntervention))
+        {
+            return;
+        }
+
+        var superseded = pendingIntervention! with
+        {
+            Status = PendingInterventionStatuses.Superseded,
+            SupersededAtUnixMs = supersededAtUnixMs,
+            WaitDurationMs = Math.Max(supersededAtUnixMs - pendingIntervention.QueuedAtUnixMs, 0),
+            ResolutionReason = NormalizeNullableText(reason)
+        };
+
+        _liveReadingSession = _liveReadingSession with
+        {
+            PendingIntervention = superseded.Copy()
+        };
+
+        RecordScheduledInterventionEvent(supersededAtUnixMs, superseded);
+    }
+
+    private PendingInterventionSnapshot BuildQueuedPendingIntervention(
+        ApplyInterventionCommand command,
+        long queuedAtUnixMs)
+    {
+        var policy = NormalizeInterventionPolicy(_liveReadingSession.InterventionPolicy);
+        var fallbackBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
+            policy.LayoutFallbackBoundary,
+            ReadingInterventionCommitBoundaries.SentenceEnd);
+        var isFallbackEligible = policy.LayoutFallbackAfterMs > 0 &&
+                                 !string.Equals(
+                                     fallbackBoundary,
+                                     policy.LayoutCommitBoundary,
+                                     StringComparison.Ordinal);
+
+        return new PendingInterventionSnapshot(
+            Guid.NewGuid(),
+            PendingInterventionStatuses.Queued,
+            policy.LayoutCommitBoundary,
+            isFallbackEligible ? fallbackBoundary : null,
+            policy.LayoutFallbackAfterMs,
+            queuedAtUnixMs,
+            null,
+            null,
+            null,
+            isFallbackEligible,
+            null,
+            command.Copy());
+    }
+
+    private static bool CanApplyPendingIntervention(PendingInterventionSnapshot? pendingIntervention)
+    {
+        return pendingIntervention is not null &&
+               string.Equals(
+                   pendingIntervention.Status,
+                   PendingInterventionStatuses.Queued,
+                   StringComparison.Ordinal);
+    }
+
+    private bool ShouldQueueIntervention(ApplyInterventionCommand command)
+    {
+        if (ReadingInterventionRuntime.GetRequestedLayoutProperties(command).Count == 0)
+        {
+            return false;
+        }
+
+        var policy = NormalizeInterventionPolicy(_liveReadingSession.InterventionPolicy);
+        return !string.Equals(
+            policy.LayoutCommitBoundary,
+            ReadingInterventionCommitBoundaries.Immediate,
+            StringComparison.Ordinal);
+    }
+
+    private static bool DidBoundaryChange(
+        string boundary,
+        ReadingFocusSnapshot previousFocus,
+        ReadingFocusSnapshot currentFocus,
+        long occurredAtUnixMs,
+        long queuedAtUnixMs)
+    {
+        if (occurredAtUnixMs <= queuedAtUnixMs)
+        {
+            return false;
+        }
+
+        return boundary switch
+        {
+            ReadingInterventionCommitBoundaries.SentenceEnd =>
+                !string.IsNullOrWhiteSpace(previousFocus.ActiveSentenceId) &&
+                !string.IsNullOrWhiteSpace(currentFocus.ActiveSentenceId) &&
+                !string.Equals(previousFocus.ActiveSentenceId, currentFocus.ActiveSentenceId, StringComparison.Ordinal),
+            ReadingInterventionCommitBoundaries.ParagraphEnd =>
+                !string.IsNullOrWhiteSpace(previousFocus.ActiveBlockId) &&
+                !string.IsNullOrWhiteSpace(currentFocus.ActiveBlockId) &&
+                !string.Equals(previousFocus.ActiveBlockId, currentFocus.ActiveBlockId, StringComparison.Ordinal),
+            ReadingInterventionCommitBoundaries.Immediate => true,
+            _ => false
+        };
+    }
+
+    private static ReadingInterventionPolicySnapshot NormalizeInterventionPolicy(ReadingInterventionPolicySnapshot? policy)
+    {
+        var candidate = policy?.Copy() ?? ReadingInterventionPolicySnapshot.Default.Copy();
+        var commitBoundary = NormalizePhaseOneBoundary(candidate.LayoutCommitBoundary, ReadingInterventionPolicySnapshot.Default.LayoutCommitBoundary);
+        var fallbackBoundary = NormalizePhaseOneBoundary(candidate.LayoutFallbackBoundary, ReadingInterventionPolicySnapshot.Default.LayoutFallbackBoundary);
+
+        return new ReadingInterventionPolicySnapshot(
+            commitBoundary,
+            fallbackBoundary,
+            ReadingInterventionPolicySnapshot.NormalizeFallbackAfterMs(candidate.LayoutFallbackAfterMs));
+    }
+
+    private static string NormalizePhaseOneBoundary(string? boundary, string fallback)
+    {
+        var normalized = ReadingInterventionPolicySnapshot.NormalizeBoundary(boundary, fallback);
+        return string.Equals(normalized, ReadingInterventionCommitBoundaries.PageTurn, StringComparison.Ordinal)
+            ? fallback
+            : normalized;
+    }
+
+    private InterventionApplicationOutcome ApplyInterventionCore(
+        ApplyInterventionCommand command,
+        long appliedAtUnixMs,
+        string appliedBoundary,
+        long? waitDurationMs)
     {
         var requestedLayoutProperties = ReadingInterventionRuntime.GetRequestedLayoutProperties(command);
         var execution = _readingInterventionRuntime.Apply(
@@ -2026,6 +2398,16 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         var layoutChange = ReadingInterventionRuntime.SummarizeLayoutChange(
             _liveReadingSession.Presentation,
             execution.Presentation);
+        execution = execution with
+        {
+            Event = execution.Event with
+            {
+                AppliedBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
+                    appliedBoundary,
+                    ReadingInterventionCommitBoundaries.Immediate),
+                WaitDurationMs = waitDurationMs.HasValue ? Math.Max(waitDurationMs.Value, 0) : null
+            }
+        };
         var latestLayoutGuardrail = _liveReadingSession.LatestLayoutGuardrail;
 
         if (layoutChange.IsLayoutAffecting)
@@ -2246,10 +2628,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return new ReadingContextPreservationEventSnapshot(
             ReadingContextPreservationEventSnapshot.NormalizeStatus(command.Status),
             ReadingContextPreservationEventSnapshot.NormalizeAnchorSource(command.AnchorSource),
+            NormalizeNullableText(command.AnchorSentenceId),
             NormalizeNullableText(command.AnchorTokenId),
             NormalizeNullableText(command.AnchorBlockId),
             command.AnchorErrorPx.HasValue ? Math.Max(command.AnchorErrorPx.Value, 0) : null,
             command.ViewportDeltaPx,
+            ReadingInterventionPolicySnapshot.NormalizeBoundary(
+                command.CommitBoundary,
+                ReadingInterventionCommitBoundaries.Immediate),
+            command.WaitDurationMs.HasValue ? Math.Max(command.WaitDurationMs.Value, 0) : null,
             Math.Max(command.InterventionAppliedAtUnixMs, 0),
             Math.Max(command.MeasuredAtUnixMs, 0),
             NormalizeNullableText(command.Reason));

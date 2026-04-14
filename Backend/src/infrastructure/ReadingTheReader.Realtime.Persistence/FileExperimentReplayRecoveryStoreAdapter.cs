@@ -54,6 +54,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             [],
             [],
             [],
+            [],
+            [],
             []);
 
         await WriteMetadataAsync(metadata, ct);
@@ -83,8 +85,10 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             batch.ViewportEvents,
             batch.FocusEvents,
             batch.AttentionEvents,
-            batch.DecisionProposalEvents,
-            batch.InterventionEvents);
+            batch.ContextPreservationEvents ?? [],
+            batch.DecisionProposalEvents ?? [],
+            batch.ScheduledInterventionEvents ?? [],
+            batch.InterventionEvents ?? []);
 
         await WriteMetadataAsync(metadata, ct);
         await WriteRecoveryExportAsync(sessionDirectoryPath, recoveryExport, ct);
@@ -109,6 +113,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             existingExport,
             completionSource,
             exportedAtUnixMs,
+            [],
+            [],
             [],
             [],
             [],
@@ -159,7 +165,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         IReadOnlyList<ParticipantViewportEventRecord> viewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> focusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
+        IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
+        IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents)
     {
         return ExperimentReplayExportFactory.Create(
@@ -172,7 +180,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             MergeAndSort(existingExport?.Derived.ViewportEvents, viewportEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Derived.FocusEvents, focusEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Derived.AttentionEvents, attentionEvents, item => item.SequenceNumber),
+            MergeAndSort(existingExport?.Derived.ContextPreservationEvents, contextPreservationEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Interventions.DecisionProposals, decisionProposalEvents, item => item.SequenceNumber),
+            MergeAndSort(existingExport?.Interventions.ScheduledInterventions, scheduledInterventionEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Interventions.InterventionEvents, interventionEvents, item => item.SequenceNumber));
     }
 
@@ -316,6 +326,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             existingExport,
             ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
             metadata.UpdatedAtUnixMs,
+            [],
+            [],
             [],
             [],
             [],

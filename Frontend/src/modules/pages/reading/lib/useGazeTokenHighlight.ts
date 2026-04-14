@@ -52,6 +52,7 @@ export type GazeFocusState = {
   normalizedContentY: number | null;
   activeTokenId: string | null;
   activeBlockId: string | null;
+  activeSentenceId: string | null;
   updatedAtUnixMs: number;
 };
 
@@ -317,6 +318,7 @@ export function useGazeTokenHighlight({
         partial.normalizedContentY?.toFixed(4) ?? null,
         partial.activeTokenId,
         partial.activeBlockId,
+        partial.activeSentenceId,
       ]);
       const now = Date.now();
 
@@ -456,6 +458,7 @@ export function useGazeTokenHighlight({
           normalizedContentY: null,
           activeTokenId: null,
           activeBlockId: null,
+          activeSentenceId: null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -472,6 +475,7 @@ export function useGazeTokenHighlight({
           normalizedContentY: null,
           activeTokenId: null,
           activeBlockId: null,
+          activeSentenceId: null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -496,6 +500,7 @@ export function useGazeTokenHighlight({
           normalizedContentY: null,
           activeTokenId: null,
           activeBlockId: null,
+          activeSentenceId: null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -519,6 +524,7 @@ export function useGazeTokenHighlight({
           normalizedContentY: null,
           activeTokenId: null,
           activeBlockId: null,
+          activeSentenceId: null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -541,6 +547,7 @@ export function useGazeTokenHighlight({
           normalizedContentY,
           activeTokenId: null,
           activeBlockId: null,
+          activeSentenceId: null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -558,6 +565,7 @@ export function useGazeTokenHighlight({
           normalizedContentY,
           activeTokenId: activeLayout?.element.dataset.tokenId ?? null,
           activeBlockId: activeLayout?.blockId ?? null,
+          activeSentenceId: activeLayout?.element.dataset.sentenceId ?? null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -579,6 +587,7 @@ export function useGazeTokenHighlight({
           normalizedContentY,
           activeTokenId: activeLayout?.element.dataset.tokenId ?? null,
           activeBlockId: activeLayout?.blockId ?? null,
+          activeSentenceId: activeLayout?.element.dataset.sentenceId ?? null,
         });
         renderFrameId = window.requestAnimationFrame(render);
         return;
@@ -605,6 +614,7 @@ export function useGazeTokenHighlight({
         normalizedContentY,
         activeTokenId: activeLayout?.element.dataset.tokenId ?? null,
         activeBlockId: activeLayout?.blockId ?? null,
+        activeSentenceId: activeLayout?.element.dataset.sentenceId ?? null,
       });
 
       renderFrameId = window.requestAnimationFrame(render);

@@ -23,6 +23,7 @@ export {
 } from "./intervention-modules-api"
 export {
   experimentSessionApi,
+  useApplyPendingInterventionNowMutation,
   useFinishExperimentSessionMutation,
   useGetExperimentSessionQuery,
   useGetSavedExperimentReplayExportByIdQuery,
@@ -34,6 +35,7 @@ export {
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
+  useUpdateInterventionPolicyMutation,
   useUpsertReadingSessionMutation,
 } from "./experiment-session-api"
 export type {
@@ -41,6 +43,7 @@ export type {
   SavedExperimentReplayExportSummary,
   UpdateDecisionConfigurationPayload,
   UpdateExperimentSetupTestingOverridesPayload,
+  UpdateInterventionPolicyPayload,
   UpsertReadingSessionPayload,
 } from "./experiment-session-api"
 export { eyetrackerApi, useGetEyetrackersQuery, useSelectEyetrackerMutation } from "./eyetracker-api"

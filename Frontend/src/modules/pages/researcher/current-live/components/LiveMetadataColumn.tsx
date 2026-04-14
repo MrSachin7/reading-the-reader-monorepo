@@ -262,6 +262,25 @@ export function LiveMetadataColumn({
                         )}
                         mono
                       />
+                      <MetricTile
+                        label="Sentence"
+                        value={readingSession.latestContextPreservation.anchorSentenceId ?? "-"}
+                        mono
+                        className="col-span-2"
+                      />
+                      <MetricTile
+                        label="Boundary"
+                        value={readingSession.latestContextPreservation.commitBoundary}
+                      />
+                      <MetricTile
+                        label="Wait"
+                        value={
+                          readingSession.latestContextPreservation.waitDurationMs === null
+                            ? "-"
+                            : `${readingSession.latestContextPreservation.waitDurationMs} ms`
+                        }
+                        mono
+                      />
                     </div>
                   </div>
                 ) : (
@@ -272,6 +291,39 @@ export function LiveMetadataColumn({
               </div>
 
               {/* ── Continuity history ── */}
+              <div className="space-y-1.5">
+                <SectionLabel>Pending intervention</SectionLabel>
+                {readingSession.pendingIntervention ? (
+                  <div className="rounded-xl border bg-background/80 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant="outline">{readingSession.pendingIntervention.status}</Badge>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatAbsoluteTime(readingSession.pendingIntervention.queuedAtUnixMs)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-foreground">
+                      {readingSession.pendingIntervention.intervention.reason}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {readingSession.pendingIntervention.requestedBoundary}
+                      {readingSession.pendingIntervention.fallbackBoundary
+                        ? ` · fallback ${readingSession.pendingIntervention.fallbackBoundary}`
+                        : ""}
+                      {readingSession.pendingIntervention.waitDurationMs !== null
+                        ? ` · waited ${readingSession.pendingIntervention.waitDurationMs} ms`
+                        : ""}
+                      {readingSession.pendingIntervention.resolutionReason
+                        ? ` · ${readingSession.pendingIntervention.resolutionReason}`
+                        : ""}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-dashed bg-background/60 px-4 py-3 text-xs text-muted-foreground">
+                    No queued intervention.
+                  </p>
+                )}
+              </div>
+
               <div className="rounded-xl border bg-background/80">
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
                   <SectionLabel>Continuity history</SectionLabel>
@@ -305,6 +357,8 @@ export function LiveMetadataColumn({
                         <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
                           err {formatNumeric(event.anchorErrorPx, 1)} px · vp{" "}
                           {formatNumeric(event.viewportDeltaPx, 1)} px
+                          {event.commitBoundary ? ` · ${event.commitBoundary}` : ""}
+                          {event.waitDurationMs !== null ? ` · wait ${event.waitDurationMs} ms` : ""}
                           {event.reason ? ` · ${event.reason}` : ""}
                         </p>
                       </div>
@@ -368,6 +422,12 @@ export function LiveMetadataColumn({
                         moduleLookup,
                         readingSession.latestIntervention
                       )}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {readingSession.latestIntervention.appliedBoundary}
+                      {readingSession.latestIntervention.waitDurationMs !== null
+                        ? ` · waited ${readingSession.latestIntervention.waitDurationMs} ms`
+                        : ""}
                     </p>
                   </div>
                 </div>
@@ -519,12 +579,12 @@ function formatParameterValue(
     return formatRawParameters(parameters)
   }
 
-  const module = moduleLookup.get(moduleId)
-  if (!module) {
+  const moduleDescriptor = moduleLookup.get(moduleId)
+  if (!moduleDescriptor) {
     return formatRawParameters(parameters)
   }
 
-  const formatted = module.parameters.flatMap((parameter) => {
+  const formatted = moduleDescriptor.parameters.flatMap((parameter) => {
     const rawValue = parameters[parameter.key]
     if (rawValue === undefined || rawValue === null) {
       return []
@@ -540,7 +600,7 @@ function formatParameterValue(
     return `${parameter.displayName}: ${optionLabel}${suffix}`
   })
 
-  return formatted.length > 0 ? formatted.join(" · ") : module.description
+  return formatted.length > 0 ? formatted.join(" · ") : moduleDescriptor.description
 }
 
 function formatRawParameters(parameters: Record<string, string | null>) {

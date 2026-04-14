@@ -9,9 +9,12 @@ import {
   type ExperimentParticipantSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
+  type PendingInterventionSnapshot,
   type ParticipantViewportSnapshot,
   type ReadingContentSnapshot,
+  type ReadingContextPreservationSnapshot,
   type ReadingFocusSnapshot,
+  type ReadingInterventionPolicySnapshot,
   type ReadingPresentationSnapshot,
   type ReaderAppearanceSnapshot,
 } from "@/lib/experiment-session"
@@ -114,11 +117,25 @@ export type ReadingAttentionEventRecord = {
   summary: ReadingAttentionSummarySnapshot
 }
 
+export type ReadingContextPreservationEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  contextPreservation: ReadingContextPreservationSnapshot
+}
+
 export type DecisionProposalEventRecord = {
   sequenceNumber: number
   occurredAtUnixMs: number
   elapsedSinceStartMs: number | null
   proposal: DecisionProposalSnapshot
+}
+
+export type ScheduledInterventionEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs: number | null
+  pendingIntervention: PendingInterventionSnapshot
 }
 
 export type InterventionEventRecord = {
@@ -150,9 +167,11 @@ export type ExperimentReplayExport = {
     viewportEvents: ParticipantViewportEventRecord[]
     focusEvents: ReadingFocusEventRecord[]
     attentionEvents: ReadingAttentionEventRecord[]
+    contextPreservationEvents: ReadingContextPreservationEventRecord[]
   }
   interventions: {
     decisionProposals: DecisionProposalEventRecord[]
+    scheduledInterventions: ScheduledInterventionEventRecord[]
     interventionEvents: InterventionEventRecord[]
   }
   replay: {
@@ -198,14 +217,16 @@ export type ReplayFrame = {
   viewportRecord: ParticipantViewportEventRecord | null
   focusRecord: ReadingFocusEventRecord | null
   attentionRecord: ReadingAttentionEventRecord | null
+  contextPreservationRecord: ReadingContextPreservationEventRecord | null
   decisionProposalRecord: DecisionProposalEventRecord | null
+  scheduledInterventionRecord: ScheduledInterventionEventRecord | null
   interventionRecord: InterventionEventRecord | null
   lifecycleRecord: ExperimentLifecycleEventRecord | null
 }
 
 export type ReplayKeyEvent = {
   id: string
-  kind: "lifecycle" | "state" | "proposal" | "intervention" | "connection"
+  kind: "lifecycle" | "state" | "proposal" | "intervention" | "connection" | "recovery"
   timeMs: number
   title: string
   detail: string
@@ -383,6 +404,40 @@ function buildIntervention(intervention: InterventionEventSnapshot): Interventio
   }
 }
 
+function buildReadingInterventionPolicy(
+  policy: ReadingInterventionPolicySnapshot | null | undefined
+): ReadingInterventionPolicySnapshot {
+  return {
+    layoutCommitBoundary: policy?.layoutCommitBoundary ?? "paragraph-end",
+    layoutFallbackBoundary: policy?.layoutFallbackBoundary ?? "sentence-end",
+    layoutFallbackAfterMs: policy?.layoutFallbackAfterMs ?? 6000,
+  }
+}
+
+function buildPendingIntervention(
+  pendingIntervention: PendingInterventionSnapshot | null | undefined
+): PendingInterventionSnapshot | null {
+  if (!pendingIntervention) {
+    return null
+  }
+
+  return {
+    ...pendingIntervention,
+    intervention: {
+      ...pendingIntervention.intervention,
+      parameters: cloneInterventionParameters(pendingIntervention.intervention.parameters),
+      presentation: { ...pendingIntervention.intervention.presentation },
+      appearance: { ...pendingIntervention.intervention.appearance },
+    },
+  }
+}
+
+function buildContextPreservation(
+  contextPreservation: ReadingContextPreservationSnapshot
+): ReadingContextPreservationSnapshot {
+  return { ...contextPreservation }
+}
+
 function buildDecisionProposal(proposal: DecisionProposalSnapshot): DecisionProposalSnapshot {
   return {
     ...proposal,
@@ -401,8 +456,10 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     content: buildReadingContent(replay.content),
     presentation: buildReadingPresentation(replay.replay.baseline.presentation),
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
+    interventionPolicy: buildReadingInterventionPolicy(null),
     participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0 },
-    focus: { isInsideReadingArea: false, normalizedContentX: null, normalizedContentY: null, activeTokenId: null, activeBlockId: null, updatedAtUnixMs: 0 },
+    focus: { isInsideReadingArea: false, normalizedContentX: null, normalizedContentY: null, activeTokenId: null, activeBlockId: null, activeSentenceId: null, updatedAtUnixMs: 0 },
+    pendingIntervention: null,
     latestContextPreservation: null,
     recentContextPreservationEvents: [],
     latestLayoutGuardrail: null,
@@ -569,7 +626,13 @@ export function resolveReplayDurationMs(replay: ExperimentReplayExport) {
     ...replay.derived.attentionEvents.map((record) =>
       resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
     ),
+    ...replay.derived.contextPreservationEvents.map((record) =>
+      resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    ),
     ...replay.interventions.decisionProposals.map((record) =>
+      resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    ),
+    ...replay.interventions.scheduledInterventions.map((record) =>
       resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
     ),
     ...replay.interventions.interventionEvents.map((record) =>
@@ -605,8 +668,18 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   const attentionIndex = findLatestIndexAtOrBefore(replay.derived.attentionEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
+  const contextPreservationIndex = findLatestIndexAtOrBefore(
+    replay.derived.contextPreservationEvents,
+    currentTimeMs,
+    (record) => resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+  )
   const proposalIndex = findLatestIndexAtOrBefore(replay.interventions.decisionProposals, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+  )
+  const scheduledInterventionIndex = findLatestIndexAtOrBefore(
+    replay.interventions.scheduledInterventions,
+    currentTimeMs,
+    (record) => resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
   )
   const interventionIndex = findLatestIndexAtOrBefore(replay.interventions.interventionEvents, currentTimeMs, (record) =>
     resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
@@ -619,11 +692,23 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   const viewportRecord = viewportIndex >= 0 ? replay.derived.viewportEvents[viewportIndex]! : null
   const focusRecord = focusIndex >= 0 ? replay.derived.focusEvents[focusIndex]! : null
   const attentionRecord = attentionIndex >= 0 ? replay.derived.attentionEvents[attentionIndex]! : null
+  const contextPreservationRecord =
+    contextPreservationIndex >= 0 ? replay.derived.contextPreservationEvents[contextPreservationIndex]! : null
   const decisionProposalRecord = proposalIndex >= 0 ? replay.interventions.decisionProposals[proposalIndex]! : null
+  const scheduledInterventionRecord =
+    scheduledInterventionIndex >= 0 ? replay.interventions.scheduledInterventions[scheduledInterventionIndex]! : null
   const interventionRecord = interventionIndex >= 0 ? replay.interventions.interventionEvents[interventionIndex]! : null
   const lifecycleRecord = lifecycleIndex >= 0 ? replay.experiment.lifecycleEvents[lifecycleIndex]! : null
 
   const readingSession = buildEmptyReadingSession(replay)
+  const recentContextPreservationEvents =
+    contextPreservationIndex >= 0
+      ? replay.derived.contextPreservationEvents
+          .slice(0, contextPreservationIndex + 1)
+          .slice(-10)
+          .reverse()
+          .map((record) => buildContextPreservation(record.contextPreservation))
+      : []
   const recentInterventions = interventionIndex >= 0
     ? replay.interventions.interventionEvents.slice(0, interventionIndex + 1).slice(-25).reverse().map((record) => buildIntervention(record.intervention))
     : []
@@ -631,6 +716,11 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   readingSession.participantViewport = viewportRecord ? { ...viewportRecord.viewport } : readingSession.participantViewport
   readingSession.focus = focusRecord ? { ...focusRecord.focus } : readingSession.focus
   readingSession.attentionSummary = attentionRecord ? normalizeReadingAttentionSummary(attentionRecord.summary) : null
+  readingSession.recentContextPreservationEvents = recentContextPreservationEvents
+  readingSession.latestContextPreservation = recentContextPreservationEvents[0] ?? null
+  readingSession.pendingIntervention = scheduledInterventionRecord
+    ? buildPendingIntervention(scheduledInterventionRecord.pendingIntervention)
+    : null
   readingSession.recentInterventions = recentInterventions
   readingSession.latestIntervention = recentInterventions[0] ?? null
   if (readingSession.latestIntervention) {
@@ -668,7 +758,9 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     viewportRecord,
     focusRecord,
     attentionRecord,
+    contextPreservationRecord,
     decisionProposalRecord,
+    scheduledInterventionRecord,
     interventionRecord,
     lifecycleRecord,
   }
@@ -709,7 +801,32 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
       kind: "intervention",
       timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
       title: "Intervention applied",
-      detail: record.intervention.reason,
+      detail:
+        record.intervention.waitDurationMs && record.intervention.waitDurationMs > 0
+          ? `${record.intervention.reason} · ${record.intervention.appliedBoundary} after ${record.intervention.waitDurationMs} ms`
+          : `${record.intervention.reason} · ${record.intervention.appliedBoundary}`,
+    })
+  }
+
+  for (const record of replay.interventions.scheduledInterventions) {
+    const pending = record.pendingIntervention
+    const detailParts: string[] = [pending.requestedBoundary]
+    if (pending.fallbackBoundary) {
+      detailParts.push(`fallback ${pending.fallbackBoundary}`)
+    }
+    if (pending.waitDurationMs !== null) {
+      detailParts.push(`wait ${pending.waitDurationMs} ms`)
+    }
+    if (pending.resolutionReason) {
+      detailParts.push(pending.resolutionReason)
+    }
+
+    events.push({
+      id: `scheduled-${record.sequenceNumber}`,
+      kind: "state",
+      timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
+      title: `Intervention ${pending.status}`,
+      detail: detailParts.join(" · "),
     })
   }
 
@@ -720,6 +837,28 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
       timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
       title: `Proposal ${record.proposal.status}`,
       detail: record.proposal.rationale,
+    })
+  }
+
+  for (const record of replay.derived.contextPreservationEvents) {
+    const context = record.contextPreservation
+    const detailParts: string[] = [context.anchorSource]
+    if (context.commitBoundary) {
+      detailParts.push(context.commitBoundary)
+    }
+    if (context.waitDurationMs !== null) {
+      detailParts.push(`wait ${context.waitDurationMs} ms`)
+    }
+    if (context.reason) {
+      detailParts.push(context.reason)
+    }
+
+    events.push({
+      id: `context-${record.sequenceNumber}`,
+      kind: "recovery",
+      timeMs: resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs),
+      title: `Context ${context.status}`,
+      detail: detailParts.join(" · "),
     })
   }
 
