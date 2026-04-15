@@ -305,6 +305,18 @@ function applyStyles(element: HTMLElement, variant: HighlightVariant) {
   }
 }
 
+function getTokenObservationFields(layout: WordLayout | null) {
+  return {
+    tokenId: layout?.element.dataset.tokenId ?? null,
+    tokenText: layout?.element.textContent ?? null,
+    tokenKind: layout?.element.dataset.tokenKind ?? null,
+    blockId: layout?.blockId ?? null,
+    tokenIndex: layout?.index ?? null,
+    lineIndex: layout?.line ?? null,
+    blockIndex: layout?.blockIndex ?? null,
+  }
+}
+
 export function useGazeTokenHighlight({
   containerRef,
   contentRef,
@@ -383,6 +395,8 @@ export function useGazeTokenHighlight({
         partial.normalizedContentX?.toFixed(4) ?? null,
         partial.normalizedContentY?.toFixed(4) ?? null,
         partial.tokenId,
+        partial.tokenText,
+        partial.tokenKind,
         partial.blockId,
         partial.tokenIndex,
         partial.lineIndex,
@@ -534,11 +548,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: false,
           normalizedContentX: null,
           normalizedContentY: null,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("no-point"),
         })
@@ -563,11 +573,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: false,
           normalizedContentX: null,
           normalizedContentY: null,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("point-stale"),
         })
@@ -588,11 +594,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: false,
           normalizedContentX: null,
           normalizedContentY: null,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("point-stale"),
         })
@@ -613,11 +615,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: false,
           normalizedContentX: null,
           normalizedContentY: null,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("no-point"),
         })
@@ -649,11 +647,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: false,
           normalizedContentX: null,
           normalizedContentY: null,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("outside-reading-area"),
         })
@@ -684,11 +678,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: true,
           normalizedContentX,
           normalizedContentY,
-          tokenId: null,
-          blockId: null,
-          tokenIndex: null,
-          lineIndex: null,
-          blockIndex: null,
+          ...getTokenObservationFields(null),
           isStale: true,
           staleReason: normalizeObservationStaleReason("no-token-hit"),
         })
@@ -714,11 +704,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: true,
           normalizedContentX,
           normalizedContentY,
-          tokenId: activeLayout?.element.dataset.tokenId ?? null,
-          blockId: activeLayout?.blockId ?? null,
-          tokenIndex: activeLayout?.index ?? null,
-          lineIndex: activeLayout?.line ?? null,
-          blockIndex: activeLayout?.blockIndex ?? null,
+          ...getTokenObservationFields(activeLayout),
           isStale: false,
           staleReason: normalizeObservationStaleReason("none"),
         })
@@ -745,11 +731,7 @@ export function useGazeTokenHighlight({
           isInsideReadingArea: true,
           normalizedContentX,
           normalizedContentY,
-          tokenId: candidateLayout?.element.dataset.tokenId ?? null,
-          blockId: candidateLayout?.blockId ?? null,
-          tokenIndex: candidateLayout?.index ?? null,
-          lineIndex: candidateLayout?.line ?? null,
-          blockIndex: candidateLayout?.blockIndex ?? null,
+          ...getTokenObservationFields(candidateLayout),
           isStale: false,
           staleReason: normalizeObservationStaleReason("none"),
         })
@@ -785,11 +767,7 @@ export function useGazeTokenHighlight({
         isInsideReadingArea: true,
         normalizedContentX,
         normalizedContentY,
-        tokenId: candidateLayout?.element.dataset.tokenId ?? null,
-        blockId: candidateLayout?.blockId ?? null,
-        tokenIndex: candidateLayout?.index ?? null,
-        lineIndex: candidateLayout?.line ?? null,
-        blockIndex: candidateLayout?.blockIndex ?? null,
+        ...getTokenObservationFields(candidateLayout),
         isStale: false,
         staleReason: normalizeObservationStaleReason("none"),
       })

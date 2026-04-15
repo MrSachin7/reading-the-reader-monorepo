@@ -209,6 +209,8 @@ export type ReadingGazeObservationSnapshot = {
   normalizedContentX: number | null
   normalizedContentY: number | null
   tokenId: string | null
+  tokenText: string | null
+  tokenKind: string | null
   blockId: string | null
   tokenIndex: number | null
   lineIndex: number | null
