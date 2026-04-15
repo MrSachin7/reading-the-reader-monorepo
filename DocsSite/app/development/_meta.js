@@ -8,6 +8,9 @@ export default {
   'mock-decision-maker': {
     title: 'Mock Decision-Maker'
   },
+  'mock-eye-movement-analyzer': {
+    title: 'Mock Eye Analyzer'
+  },
   testing: {
     title: 'Testing'
   }
