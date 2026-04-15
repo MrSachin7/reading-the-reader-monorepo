@@ -213,14 +213,59 @@ const participantReadingProficiencyOptions = [
 ]
 
 const DECISION_CONDITION_OPTIONS = [
-  { label: "Manual only", providerId: "manual", executionMode: "advisory" },
-  { label: "Rule-based advisory", providerId: "rule-based", executionMode: "advisory" },
-  { label: "Rule-based autonomous", providerId: "rule-based", executionMode: "autonomous" },
-  { label: "External advisory", providerId: "external", executionMode: "advisory" },
-  { label: "External autonomous", providerId: "external", executionMode: "autonomous" },
+  {
+    label: "Manual control",
+    providerId: "manual",
+    executionMode: "advisory",
+    pluginLabel: "No decision plugin",
+    description: "Interventions stay researcher-operated.",
+  },
+  {
+    label: "Rule-based advisory",
+    providerId: "rule-based",
+    executionMode: "advisory",
+    pluginLabel: "Built-in plugin",
+    description: "Backend rules can propose interventions for review.",
+  },
+  {
+    label: "Rule-based autonomous",
+    providerId: "rule-based",
+    executionMode: "autonomous",
+    pluginLabel: "Built-in plugin",
+    description: "Backend rules can apply supported interventions.",
+  },
+  {
+    label: "Decision-maker advisory",
+    providerId: "external",
+    executionMode: "advisory",
+    pluginLabel: "External plugin",
+    description: "Use the connected decision-maker service for proposals.",
+  },
+  {
+    label: "Decision-maker autonomous",
+    providerId: "external",
+    executionMode: "autonomous",
+    pluginLabel: "External plugin",
+    description: "Use the connected decision-maker service for automatic intervention requests.",
+  },
 ] as const
 
 type DecisionConditionOption = (typeof DECISION_CONDITION_OPTIONS)[number]
+
+const EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS = [
+  {
+    label: "Built-in analyzer",
+    providerId: "builtin",
+    pluginLabel: "Built-in plugin",
+    description: "Backend thresholds provide fixation and saccade state.",
+  },
+  {
+    label: "Eye analyzer service",
+    providerId: "external",
+    pluginLabel: "External plugin",
+    description: "Use the connected analyzer service for fixation and saccade state.",
+  },
+] as const
 
 function resolveConditionOption(
   providerId?: string | null,
@@ -257,6 +302,129 @@ function getAvailableDecisionConditionOptions(
 ) {
   return DECISION_CONDITION_OPTIONS.filter((option) =>
     isExternalConditionAvailable(option, externalProviderStatus)
+  )
+}
+
+type PluginStatusPanelProps = {
+  eyebrow: string
+  title: string
+  badge: string
+  tone: "connected" | "offline" | "unavailable" | "builtin"
+  description: string
+  details?: string[]
+}
+
+function PluginStatusPanel({
+  eyebrow,
+  title,
+  badge,
+  tone,
+  description,
+  details = [],
+}: PluginStatusPanelProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
+        tone === "connected" &&
+          "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
+        tone === "unavailable" &&
+          "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
+        tone === "offline" &&
+          "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]",
+        tone === "builtin" &&
+          "border-sky-500/60 bg-sky-500/10 shadow-[0_12px_32px_rgba(14,165,233,0.12)]"
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
+            {eyebrow}
+          </p>
+          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+        </div>
+        <Badge
+          className={cn(
+            "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
+            tone === "connected" && "border-emerald-600/30 bg-emerald-600 text-white",
+            tone === "unavailable" && "border-rose-600/30 bg-rose-600 text-white",
+            tone === "offline" && "border-amber-600/30 bg-amber-500 text-amber-950",
+            tone === "builtin" && "border-sky-600/30 bg-sky-600 text-white"
+          )}
+        >
+          {badge}
+        </Badge>
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-foreground/85">{description}</p>
+      {details.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {details.map((detail) => (
+            <Badge key={detail} variant="outline" className="bg-background/70">
+              {detail}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+type RuntimePluginOptionButtonProps = {
+  label: string
+  pluginLabel: string
+  meta: string
+  description: string
+  isSelected: boolean
+  isUnavailable?: boolean
+  disabled?: boolean
+  unavailableMessage: string
+  onClick: () => void
+}
+
+function RuntimePluginOptionButton({
+  label,
+  pluginLabel,
+  meta,
+  description,
+  isSelected,
+  isUnavailable = false,
+  disabled = false,
+  unavailableMessage,
+  onClick,
+}: RuntimePluginOptionButtonProps) {
+  return (
+    <button
+      type="button"
+      disabled={disabled || isUnavailable}
+      onClick={() => {
+        if (!isUnavailable) {
+          onClick()
+        }
+      }}
+      className={cn(
+        "w-full rounded-2xl border p-5 text-left transition-colors",
+        "bg-card hover:border-primary/40 hover:bg-accent/30",
+        isSelected && "border-primary bg-accent/50",
+        isUnavailable &&
+          "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+      )}
+    >
+      <div className="space-y-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-base font-semibold">{label}</p>
+            <Badge variant={isSelected ? "secondary" : "outline"}>{pluginLabel}</Badge>
+            {isUnavailable ? <Badge variant="outline">Unavailable</Badge> : null}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
+          <p className="mt-3 text-sm text-muted-foreground">{description}</p>
+          {isUnavailable ? (
+            <p className="mt-2 text-xs text-amber-700">{unavailableMessage}</p>
+          ) : null}
+        </div>
+      </div>
+    </button>
   )
 }
 
@@ -618,6 +786,16 @@ function SessionContentStep({
     externalProviderStatus.supportsAdvisoryExecution ? "advisory" : null,
     externalProviderStatus.supportsAutonomousExecution ? "autonomous" : null,
   ].filter(Boolean) as string[]
+  const decisionPluginName =
+    externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "Decision-maker service"
+  const eyeAnalyzerPluginName =
+    eyeMovementAnalysisProviderStatus.displayName ??
+    eyeMovementAnalysisProviderStatus.providerId ??
+    "Eye analyzer service"
+  const isSelectedAnalysisPluginUnavailable =
+    selectedAnalysisProviderId === "external" && !eyeMovementAnalysisProviderStatus.isConnected
+  const selectedAnalysisPluginLabel =
+    selectedAnalysisProviderId === "external" ? "Eye analyzer service" : "Built-in analyzer"
 
   React.useEffect(() => {
     onCompletionChange?.(hasSelectedMaterial)
@@ -642,9 +820,9 @@ function SessionContentStep({
             <Badge variant="secondary">Step 4</Badge>
             <Badge variant="outline">Reading material</Badge>
           </div>
-          <CardTitle className="mt-3 text-3xl tracking-tight">Choose the text and session setup.</CardTitle>
+          <CardTitle className="mt-3 text-3xl tracking-tight">Choose the text and runtime plugins.</CardTitle>
           <CardDescription className="max-w-3xl text-base leading-7">
-            Pick a saved reading material setup or create a new one.
+            Pick the reading material, decision plugin, and eye analyzer plugin.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -740,69 +918,53 @@ function SessionContentStep({
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-5">
             <div>
-              <p className="text-sm font-semibold">Experiment condition</p>
+              <p className="text-sm font-semibold">Runtime plugins</p>
               <p className="text-sm text-muted-foreground">
-                Choose whether decision support stays advisory or is allowed to run autonomously.
+                Choose the decision and eye movement analysis plugins for this session.
               </p>
             </div>
 
-            <div
-              className={cn(
-                "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
-                externalProviderStatus.isConnected &&
-                  "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
-                !externalProviderStatus.isConnected &&
-                  isSelectedConditionUnavailable &&
-                  "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
-                !externalProviderStatus.isConnected &&
-                  !isSelectedConditionUnavailable &&
-                  "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]"
-              )}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
-                    External Decision-Maker Status
-                  </p>
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    {externalProviderStatus.isConnected
-                      ? "External decision-maker connected"
-                      : isSelectedConditionUnavailable
-                        ? "External condition currently unavailable"
-                        : "No external decision-maker connected"}
-                  </h3>
-                </div>
-                <Badge
-                  className={cn(
-                    "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
-                    externalProviderStatus.isConnected &&
-                      "border-emerald-600/30 bg-emerald-600 text-white",
-                    !externalProviderStatus.isConnected &&
-                      isSelectedConditionUnavailable &&
-                      "border-rose-600/30 bg-rose-600 text-white",
-                    !externalProviderStatus.isConnected &&
-                      !isSelectedConditionUnavailable &&
-                      "border-amber-600/30 bg-amber-500 text-amber-950"
-                  )}
-                >
-                  {externalProviderStatus.isConnected
-                    ? "Connected"
-                    : isSelectedConditionUnavailable
-                      ? "Unavailable"
-                      : "Offline"}
-                </Badge>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-foreground/85">
-                {externalProviderStatus.isConnected
-                  ? `${externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "External provider"} is available. ${connectedExternalModes.length > 0 ? `External ${connectedExternalModes.join(" and ")} conditions can be selected.` : "It does not currently advertise any execution capabilities."}`
+            <PluginStatusPanel
+              eyebrow="Decision plugin"
+              title={
+                externalProviderStatus.isConnected
+                  ? `${decisionPluginName} connected`
                   : isSelectedConditionUnavailable
-                    ? "The current experiment condition stays selected, but no external provider is connected right now. Reconnect the provider or switch to a manual or rule-based condition before relying on automation."
-                    : "External conditions are hidden until a decision-maker service connects to the backend."}
-              </p>
-            </div>
+                    ? "Selected decision plugin unavailable"
+                    : "Built-in decision flow active"
+              }
+              badge={
+                externalProviderStatus.isConnected
+                  ? "Connected"
+                  : isSelectedConditionUnavailable
+                    ? "Unavailable"
+                    : "Built-in"
+              }
+              tone={
+                externalProviderStatus.isConnected
+                  ? "connected"
+                  : isSelectedConditionUnavailable
+                    ? "unavailable"
+                    : "builtin"
+              }
+              description={
+                externalProviderStatus.isConnected
+                  ? connectedExternalModes.length > 0
+                    ? `The external decision-maker is available for ${connectedExternalModes.join(" and ")} execution.`
+                    : "The external decision-maker is connected but does not advertise execution support."
+                  : isSelectedConditionUnavailable
+                    ? "Reconnect the decision-maker service or switch to a built-in decision plugin before relying on automation."
+                    : "External decision plugins become selectable when a decision-maker service connects."
+              }
+              details={[
+                `Selected: ${selectedConditionLabel}`,
+                externalProviderStatus.providerId
+                  ? `Provider: ${externalProviderStatus.providerId}`
+                  : "Provider: built-in",
+              ]}
+            />
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {visibleDecisionOptions.map((option) => {
@@ -854,14 +1016,18 @@ function SessionContentStep({
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-base font-semibold">{option.label}</p>
+                        <Badge variant={isSelected ? "secondary" : "outline"}>
+                          {option.pluginLabel}
+                        </Badge>
                         {isUnavailable ? <Badge variant="outline">Unavailable</Badge> : null}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {option.providerId} · {option.executionMode}
                       </p>
+                      <p className="mt-3 text-sm text-muted-foreground">{option.description}</p>
                       {isUnavailable ? (
                         <p className="mt-2 text-xs text-amber-700">
-                          The external provider is offline, so this condition cannot be chosen right now.
+                          Start the decision-maker service before choosing this plugin.
                         </p>
                       ) : null}
                     </div>
@@ -874,95 +1040,74 @@ function SessionContentStep({
 
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-semibold">Eye movement analysis</p>
+              <p className="text-sm font-semibold">Eye analyzer plugin</p>
               <p className="text-sm text-muted-foreground">
-                Choose whether fixation and saccade analysis stays built in or comes from an external provider.
+                Choose which plugin owns fixation and saccade analysis.
               </p>
             </div>
 
-            <div
-              className={cn(
-                "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
-                eyeMovementAnalysisProviderStatus.isConnected &&
-                  "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
-                !eyeMovementAnalysisProviderStatus.isConnected &&
-                  selectedAnalysisProviderId === "external" &&
-                  "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
-                !eyeMovementAnalysisProviderStatus.isConnected &&
-                  selectedAnalysisProviderId !== "external" &&
-                  "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]"
-              )}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
-                    External Analysis Status
-                  </p>
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    {eyeMovementAnalysisProviderStatus.isConnected
-                      ? "External eye movement analysis connected"
-                      : selectedAnalysisProviderId === "external"
-                        ? "External analysis currently unavailable"
-                        : "Built-in eye movement analysis active"}
-                  </h3>
-                </div>
-                <Badge
-                  className={cn(
-                    "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
-                    eyeMovementAnalysisProviderStatus.isConnected &&
-                      "border-emerald-600/30 bg-emerald-600 text-white",
-                    !eyeMovementAnalysisProviderStatus.isConnected &&
-                      selectedAnalysisProviderId === "external" &&
-                      "border-rose-600/30 bg-rose-600 text-white",
-                    !eyeMovementAnalysisProviderStatus.isConnected &&
-                      selectedAnalysisProviderId !== "external" &&
-                      "border-amber-600/30 bg-amber-500 text-amber-950"
-                  )}
-                >
-                  {eyeMovementAnalysisProviderStatus.isConnected
-                    ? "Connected"
-                    : selectedAnalysisProviderId === "external"
-                      ? "Unavailable"
-                      : "Built-in"}
-                </Badge>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-foreground/85">
-                {eyeMovementAnalysisProviderStatus.isConnected
-                  ? `${eyeMovementAnalysisProviderStatus.displayName ?? eyeMovementAnalysisProviderStatus.providerId ?? "External analysis provider"} is available for backend-owned fixation and saccade analysis.`
-                  : selectedAnalysisProviderId === "external"
-                    ? "The current analysis provider stays selected, but no external analysis provider is connected right now."
-                    : "The backend built-in analyzer remains the authoritative source for fixation and saccade state."}
-              </p>
-            </div>
+            <PluginStatusPanel
+              eyebrow="Eye analyzer plugin"
+              title={
+                eyeMovementAnalysisProviderStatus.isConnected
+                  ? `${eyeAnalyzerPluginName} connected`
+                  : isSelectedAnalysisPluginUnavailable
+                    ? "Selected eye analyzer unavailable"
+                    : "Built-in analyzer active"
+              }
+              badge={
+                eyeMovementAnalysisProviderStatus.isConnected
+                  ? "Connected"
+                  : isSelectedAnalysisPluginUnavailable
+                    ? "Unavailable"
+                    : "Built-in"
+              }
+              tone={
+                eyeMovementAnalysisProviderStatus.isConnected
+                  ? "connected"
+                  : isSelectedAnalysisPluginUnavailable
+                    ? "unavailable"
+                    : "builtin"
+              }
+              description={
+                eyeMovementAnalysisProviderStatus.isConnected
+                  ? "The external analyzer can provide backend-owned fixation and saccade state for this session."
+                  : isSelectedAnalysisPluginUnavailable
+                    ? "Reconnect the analyzer service or switch to the built-in analyzer before starting the session."
+                    : "The built-in analyzer remains the authoritative fixation and saccade source until an external analyzer is selected."
+              }
+              details={[
+                `Selected: ${selectedAnalysisPluginLabel}`,
+                eyeMovementAnalysisProviderStatus.providerId
+                  ? `Provider: ${eyeMovementAnalysisProviderStatus.providerId}`
+                  : "Provider: built-in",
+              ]}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
-              {[
-                {
-                  label: "Built-in analysis",
-                  providerId: "builtin",
-                  description: "Backend thresholds reproduce the current fixation behavior.",
-                  unavailable: false,
-                },
-                {
-                  label: "External analysis",
-                  providerId: "external",
-                  description: "Use the dedicated analysis-provider WebSocket for authoritative state.",
-                  unavailable: !eyeMovementAnalysisProviderStatus.isConnected,
-                },
-              ].map((option) => {
+              {EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS.map((option) => {
                 const isSelected = selectedAnalysisProviderId === option.providerId
+                const isUnavailable =
+                  option.providerId === "external" &&
+                  !eyeMovementAnalysisProviderStatus.isConnected
 
                 return (
-                  <button
+                  <RuntimePluginOptionButton
                     key={option.providerId}
-                    type="button"
-                    disabled={isSavingAnalysisConfiguration || option.unavailable}
+                    label={option.label}
+                    pluginLabel={option.pluginLabel}
+                    meta={option.providerId}
+                    description={
+                      option.providerId === "external" &&
+                      eyeMovementAnalysisProviderStatus.isConnected
+                        ? `Use ${eyeAnalyzerPluginName} for fixation and saccade state.`
+                        : option.description
+                    }
+                    isSelected={isSelected}
+                    isUnavailable={isUnavailable}
+                    disabled={isSavingAnalysisConfiguration}
+                    unavailableMessage="Start the eye analyzer service before choosing this plugin."
                     onClick={async () => {
-                      if (option.unavailable) {
-                        return
-                      }
-
                       setSelectionError(null)
 
                       try {
@@ -976,23 +1121,7 @@ function SessionContentStep({
                         )
                       }
                     }}
-                    className={cn(
-                      "w-full rounded-2xl border p-5 text-left transition-colors",
-                      "bg-card hover:border-primary/40 hover:bg-accent/30",
-                      isSelected && "border-primary bg-accent/50",
-                      option.unavailable &&
-                        "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
-                    )}
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-semibold">{option.label}</p>
-                        {option.unavailable ? <Badge variant="outline">Unavailable</Badge> : null}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{option.providerId}</p>
-                      <p className="text-sm text-muted-foreground">{option.description}</p>
-                    </div>
-                  </button>
+                  />
                 )
               })}
             </div>
