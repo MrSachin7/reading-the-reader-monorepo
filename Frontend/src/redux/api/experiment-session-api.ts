@@ -37,6 +37,10 @@ export type UpdateDecisionConfigurationPayload = {
   automationPaused: boolean
 }
 
+export type UpdateEyeMovementAnalysisConfigurationPayload = {
+  providerId: string
+}
+
 export type UpdateExperimentSetupTestingOverridesPayload = {
   forceEyeTrackerReady: boolean | null
   forceParticipantReady: boolean | null
@@ -67,6 +71,17 @@ export const experimentSessionApi = baseApi.injectEndpoints({
     >({
       query: (body) => ({
         url: "/experiment-session/decision-configuration",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    updateEyeMovementAnalysisConfiguration: builder.mutation<
+      ExperimentSessionSnapshot,
+      UpdateEyeMovementAnalysisConfigurationPayload
+    >({
+      query: (body) => ({
+        url: "/experiment-session/eye-movement-analysis-configuration",
         method: "PUT",
         body,
       }),
@@ -173,6 +188,7 @@ export const {
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateEyeMovementAnalysisConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } = experimentSessionApi

@@ -8,6 +8,9 @@ export default {
   'provider-protocol': {
     title: 'Provider Integration'
   },
+  'eye-movement-analysis-provider': {
+    title: 'Eye Analyzer Modules'
+  },
   'black-box-contract': {
     title: 'Black-Box Contract'
   },

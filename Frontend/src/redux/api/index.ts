@@ -33,6 +33,7 @@ export {
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
+  useUpdateEyeMovementAnalysisConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
   useUpsertReadingSessionMutation,
 } from "./experiment-session-api"
@@ -40,6 +41,7 @@ export type {
   ReplayExportFormat,
   SavedExperimentReplayExportSummary,
   UpdateDecisionConfigurationPayload,
+  UpdateEyeMovementAnalysisConfigurationPayload,
   UpdateExperimentSetupTestingOverridesPayload,
   UpsertReadingSessionPayload,
 } from "./experiment-session-api"

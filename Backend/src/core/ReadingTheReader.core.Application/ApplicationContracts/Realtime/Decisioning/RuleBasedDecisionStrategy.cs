@@ -12,10 +12,16 @@ public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
 
     public ValueTask<DecisionProposalSnapshot?> EvaluateAsync(DecisionContextSnapshot context, CancellationToken ct = default)
     {
+        var currentTokenDurationMs = context.EyeMovementAnalysis?.CurrentTokenDurationMs
+            ?? context.AttentionSummary?.CurrentTokenDurationMs;
+        var observedAtUnixMs = context.EyeMovementAnalysis?.LatestObservation?.ObservedAtUnixMs
+            ?? context.AttentionSummary?.UpdatedAtUnixMs
+            ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
         if (!context.IsSessionActive ||
             context.AutomationPaused ||
-            context.AttentionSummary?.CurrentTokenDurationMs is null ||
-            context.AttentionSummary.CurrentTokenDurationMs.Value < 1_200 ||
+            currentTokenDurationMs is null ||
+            currentTokenDurationMs.Value < 1_200 ||
             !context.Focus.IsInsideReadingArea)
         {
             return ValueTask.FromResult<DecisionProposalSnapshot?>(null);
@@ -24,7 +30,7 @@ public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
         var latestIntervention = context.RecentInterventions.FirstOrDefault();
         if (latestIntervention is not null)
         {
-            var elapsedSinceIntervention = Math.Max(0, context.AttentionSummary.UpdatedAtUnixMs - latestIntervention.AppliedAtUnixMs);
+            var elapsedSinceIntervention = Math.Max(0, observedAtUnixMs - latestIntervention.AppliedAtUnixMs);
             if (elapsedSinceIntervention < (long)InterventionCooldown.TotalMilliseconds)
             {
                 return ValueTask.FromResult<DecisionProposalSnapshot?>(null);
@@ -44,10 +50,10 @@ public sealed class RuleBasedDecisionStrategy : IDecisionStrategy
             return ValueTask.FromResult<DecisionProposalSnapshot?>(null);
         }
 
-        var proposedAtUnixMs = context.AttentionSummary.UpdatedAtUnixMs;
+        var proposedAtUnixMs = observedAtUnixMs;
         var signal = new DecisionSignalSnapshot(
-            "attention-summary",
-            $"Token dwell time reached {context.AttentionSummary.CurrentTokenDurationMs.Value} ms.",
+            context.EyeMovementAnalysis is null ? "attention-summary" : "eye-movement-analysis",
+            $"Token dwell time reached {currentTokenDurationMs.Value} ms.",
             proposedAtUnixMs,
             0.66);
 

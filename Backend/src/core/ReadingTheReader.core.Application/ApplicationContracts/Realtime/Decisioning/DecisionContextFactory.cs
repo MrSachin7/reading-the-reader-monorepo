@@ -1,5 +1,6 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 
@@ -28,6 +29,7 @@ public sealed class DecisionContextFactory : IDecisionContextFactory
             readingSession.ParticipantViewport.Copy(),
             readingSession.RecentInterventions is null
                 ? []
-                : [.. readingSession.RecentInterventions.Select(item => item.Copy())]);
+                : [.. readingSession.RecentInterventions.Select(item => item.Copy())],
+            snapshot.EyeMovementAnalysis?.Copy() ?? EyeMovementAnalysisSnapshot.Empty.Copy());
     }
 }

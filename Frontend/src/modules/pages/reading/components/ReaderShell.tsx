@@ -21,6 +21,7 @@ import { useRemoteTokenHighlight } from "@/modules/pages/reading/lib/useRemoteTo
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown";
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
 import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session";
+import type { ReadingGazeObservationSnapshot } from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
 
 type ReaderViewportMetrics = {
@@ -49,6 +50,7 @@ type ReaderShellProps = {
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
   viewportScrollProgress?: number | null;
   viewportScrollTopPx?: number | null;
@@ -118,6 +120,7 @@ export function ReaderShell({
   onPresentationChange,
   onViewportMetricsChange,
   onFocusChange,
+  onObservationChange,
   onContextPreservationChange,
   viewportScrollProgress = null,
   viewportScrollTopPx = null,
@@ -144,6 +147,7 @@ export function ReaderShell({
     enabled: enableLiveGazeTracking,
     highlightTokensBeingLookedAt,
     onFocusChange,
+    onObservationChange,
   });
 
   useRemoteTokenHighlight({

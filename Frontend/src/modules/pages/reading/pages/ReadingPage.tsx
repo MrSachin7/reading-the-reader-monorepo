@@ -10,21 +10,19 @@ import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
   unregisterParticipantView,
+  updateReadingGazeObservation,
   updateReadingContextPreservation,
   updateParticipantViewport,
   updateReadingFocus,
 } from "@/lib/gaze-socket"
-import {
-  READER_SHELL_SETTINGS_DEFAULTS,
-  getReaderShellViewSettings,
-} from "@/lib/reader-shell-settings"
+import { READER_SHELL_SETTINGS_DEFAULTS, getReaderShellViewSettings } from "@/lib/reader-shell-settings"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
-import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session"
+import type { ReadingContextPreservationSnapshot, ReadingGazeObservationSnapshot } from "@/lib/experiment-session"
 import { useGetReaderShellSettingsQuery } from "@/redux"
 
 function FullscreenGate({
@@ -107,6 +105,10 @@ export function ReadingPage() {
     },
     []
   )
+
+  const handleObservationChange = useCallback((observation: ReadingGazeObservationSnapshot) => {
+    updateReadingGazeObservation(observation)
+  }, [])
 
   const liveReadingSession = liveSession?.readingSession
   const liveReaderAppearance =
@@ -217,6 +219,7 @@ export function ReadingPage() {
         gazeOverlayHasRecentPoint={liveGaze.hasRecentGaze}
         onViewportMetricsChange={handleViewportMetricsChange}
         onFocusChange={handleFocusChange}
+        onObservationChange={handleObservationChange}
         onContextPreservationChange={handleContextPreservationChange}
         interventionAppliedAtUnixMs={liveReadingSession?.latestIntervention?.appliedAtUnixMs ?? null}
       />

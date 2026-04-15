@@ -26,7 +26,9 @@ public static class WebSocketConfiguration
         services.AddSingleton<WebSocketRealtimeMessenger>();
         services.AddSingleton<IClientBroadcasterAdapter>(sp => sp.GetRequiredService<WebSocketRealtimeMessenger>());
         services.AddSingleton<IExternalProviderTransportAdapter, ExternalProviderRealtimeMessenger>();
+        services.AddSingleton<IExternalAnalysisProviderTransportAdapter, ExternalAnalysisProviderRealtimeMessenger>();
         services.AddProviderWebSocketServices();
+        services.AddAnalysisProviderWebSocketServices();
 
         return services;
     }
@@ -38,6 +40,7 @@ public static class WebSocketConfiguration
     {
         app.UseWebSockets();
         app.ConfigureProviderWebSockets();
+        app.ConfigureAnalysisProviderWebSockets();
 
         app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connections, IExperimentCommandIngress ingress) =>
         {

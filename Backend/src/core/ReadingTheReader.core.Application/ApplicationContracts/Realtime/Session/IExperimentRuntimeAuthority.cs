@@ -1,8 +1,10 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -19,6 +21,10 @@ public interface IExperimentRuntimeAuthority
     ValueTask<DecisionRealtimeUpdateSnapshot> UpdateDecisionConfigurationAsync(
         DecisionConfigurationSnapshot configuration,
         bool automationPaused,
+        CancellationToken ct = default);
+
+    ValueTask<EyeMovementAnalysisConfigurationSnapshot> UpdateEyeMovementAnalysisConfigurationAsync(
+        EyeMovementAnalysisConfigurationSnapshot configuration,
         CancellationToken ct = default);
 
     ValueTask<DecisionRealtimeUpdateSnapshot> ApproveDecisionProposalAsync(
@@ -47,6 +53,10 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask<DecisionRealtimeUpdateSnapshot> RequestExternalAutonomousApplyAsync(
         ExternalDecisionAutonomousApplyCommand command,
+        CancellationToken ct = default);
+
+    ValueTask<EyeMovementAnalysisSnapshot> ApplyExternalEyeMovementAnalysisAsync(
+        ExternalEyeMovementAnalysisCommand command,
         CancellationToken ct = default);
 
     ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(

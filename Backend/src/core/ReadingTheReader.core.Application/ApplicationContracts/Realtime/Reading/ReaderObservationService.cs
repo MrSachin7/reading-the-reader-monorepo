@@ -1,4 +1,6 @@
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
@@ -27,6 +29,11 @@ public sealed class ReaderObservationService : IReaderObservationService
         UpdateReadingFocusCommand command,
         CancellationToken ct = default)
         => _sessionManager.UpdateReadingFocusAsync(command, ct);
+
+    public ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
+        ReadingGazeObservationCommand command,
+        CancellationToken ct = default)
+        => _sessionManager.UpdateReadingGazeObservationAsync(command, ct);
 
     public ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
         UpdateReadingContextPreservationCommand command,

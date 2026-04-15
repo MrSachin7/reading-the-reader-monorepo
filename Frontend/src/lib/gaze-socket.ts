@@ -2,15 +2,20 @@ import type { CalibrationSessionSnapshot } from "@/lib/calibration"
 import {
   EMPTY_DECISION_CONFIGURATION,
   EMPTY_DECISION_STATE,
+  EMPTY_EYE_MOVEMENT_ANALYSIS,
+  EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
+  EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
   EMPTY_EXTERNAL_PROVIDER_STATUS,
   EMPTY_LIVE_MONITORING,
   EMPTY_READING_SESSION,
   type DecisionRealtimeUpdate,
+  type EyeMovementAnalysisSnapshot,
   type ExperimentSessionSnapshot,
   type ExperimentLiveMonitoringSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
   type ParticipantViewportSnapshot,
+  type ReadingGazeObservationSnapshot,
   type ReadingContextPreservationSnapshot,
   type ReadingFocusSnapshot,
 } from "@/lib/experiment-session"
@@ -95,6 +100,11 @@ type ServerEnvelope =
       payload: ReadingAttentionSummarySnapshot;
     }
   | {
+      type: "eyeMovementAnalysisChanged";
+      sentAtUnixMs: number;
+      payload: EyeMovementAnalysisSnapshot;
+    }
+  | {
       type: "interventionEvent";
       sentAtUnixMs: number;
       payload: InterventionEventSnapshot;
@@ -142,6 +152,10 @@ type ClientEnvelope =
         activeTokenId: string | null;
         activeBlockId: string | null;
       };
+    }
+  | {
+      type: "readingGazeObservationUpdated";
+      payload: ReadingGazeObservationSnapshot;
     }
   | {
       type: "readingContextPreservationUpdated";
@@ -217,6 +231,7 @@ type ReadingFocusPayload = {
   activeTokenId: string | null;
   activeBlockId: string | null;
 };
+type ReadingGazeObservationPayload = ReadingGazeObservationSnapshot;
 type ReadingContextPreservationPayload = ReadingContextPreservationSnapshot;
 type ReadingAttentionSummaryPayload = ReadingAttentionSummarySnapshot;
 type ApplyInterventionPayload = {
@@ -427,6 +442,24 @@ function patchDecisionRealtimeUpdate(update: DecisionRealtimeUpdate) {
   emitExperimentSession()
 }
 
+function patchEyeMovementAnalysis(analysis: EyeMovementAnalysisSnapshot) {
+  if (!latestExperimentSession) {
+    return
+  }
+
+  latestExperimentSession = {
+    ...latestExperimentSession,
+    eyeMovementAnalysis: analysis,
+    readingSession: latestReadingSession
+      ? {
+          ...latestReadingSession,
+          attentionSummary: latestReadingSession.attentionSummary,
+        }
+      : latestReadingSession,
+  }
+  emitExperimentSession()
+}
+
 function handleMessage(raw: MessageEvent<string>) {
   try {
     const message = JSON.parse(raw.data) as ServerEnvelope;
@@ -468,6 +501,13 @@ function handleMessage(raw: MessageEvent<string>) {
         ),
         externalProviderStatus:
           message.payload.externalProviderStatus ?? EMPTY_EXTERNAL_PROVIDER_STATUS,
+        eyeMovementAnalysisProviderStatus:
+          message.payload.eyeMovementAnalysisProviderStatus ??
+          EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
+        eyeMovementAnalysisConfiguration:
+          message.payload.eyeMovementAnalysisConfiguration ??
+          EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
+        eyeMovementAnalysis: message.payload.eyeMovementAnalysis ?? EMPTY_EYE_MOVEMENT_ANALYSIS,
         readingSession: latestReadingSession,
         decisionConfiguration: message.payload.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION,
         decisionState: message.payload.decisionState ?? EMPTY_DECISION_STATE,
@@ -517,6 +557,15 @@ function handleMessage(raw: MessageEvent<string>) {
         attentionSummary: message.payload,
       }));
       return;
+    }
+
+    if (message.type === "eyeMovementAnalysisChanged") {
+      patchEyeMovementAnalysis(message.payload)
+      patchReadingSession((current) => ({
+        ...current,
+        attentionSummary: current.attentionSummary,
+      }))
+      return
     }
 
     if (message.type === "interventionEvent") {
@@ -701,6 +750,14 @@ export function updateReadingContextPreservation(payload: ReadingContextPreserva
     type: "readingContextPreservationUpdated",
     payload,
   });
+}
+
+export function updateReadingGazeObservation(payload: ReadingGazeObservationPayload) {
+  connect()
+  send({
+    type: "readingGazeObservationUpdated",
+    payload,
+  })
 }
 
 export function applyInterventionCommand(payload: ApplyInterventionPayload) {

@@ -1,0 +1,22 @@
+[project]
+name = "reading-the-reader-eye-movement-analyzer"
+version = "0.1.0"
+description = "Mock external eye movement analysis provider for the Reading The Reader thesis platform."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "websockets>=12,<16",
+]
+
+[project.scripts]
+eye-movement-analyzer = "eye_movement_analyzer.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

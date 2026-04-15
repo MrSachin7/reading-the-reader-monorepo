@@ -31,10 +31,11 @@ DocsSite/node_modules/
 DocsSite/.next/
 DocsSite/out/
 
-# Decision-Maker caches and local environments
-Decision-Maker/.venv/
-Decision-Maker/**/__pycache__/
-Decision-Maker/**/*.pyc
+# Python service caches and local environments
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
 
 # Backend runtime data and local experiment outputs
 Backend/src/ReadingTheReader.WebApi/data/

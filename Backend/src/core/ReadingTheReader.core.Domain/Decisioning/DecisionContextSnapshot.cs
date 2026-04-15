@@ -1,3 +1,4 @@
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Domain.Decisioning;
@@ -16,7 +17,8 @@ public sealed record DecisionContextSnapshot(
     ReadingFocusSnapshot Focus,
     ReadingAttentionSummarySnapshot? AttentionSummary,
     ParticipantViewportSnapshot ParticipantViewport,
-    IReadOnlyList<InterventionEventSnapshot> RecentInterventions)
+    IReadOnlyList<InterventionEventSnapshot> RecentInterventions,
+    EyeMovementAnalysisSnapshot? EyeMovementAnalysis = null)
 {
     public DecisionContextSnapshot Copy()
     {
@@ -34,6 +36,7 @@ public sealed record DecisionContextSnapshot(
             Focus.Copy(),
             AttentionSummary?.Copy(),
             ParticipantViewport.Copy(),
-            RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())]);
+            RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())],
+            EyeMovementAnalysis?.Copy());
     }
 }
