@@ -7,6 +7,7 @@ import type { Token, TokenRun, TokenizedBlock } from "@/modules/pages/reading/li
 type MarkdownReaderProps = {
   blocks: TokenizedBlock[];
   showLixScores?: boolean;
+  lixDisplayMode?: "inline" | "overlay";
 };
 
 function formatLixScore(score: number) {
@@ -89,6 +90,7 @@ function renderRun(run: TokenRun, index: number) {
 export function MarkdownReader({
   blocks,
   showLixScores = true,
+  lixDisplayMode = "inline",
 }: MarkdownReaderProps) {
   return (
     <article className="text-foreground">
@@ -119,14 +121,20 @@ export function MarkdownReader({
               <p
                 key={block.blockId}
                 data-block-id={block.blockId}
-                className="mb-5"
+                className="relative mb-5"
                 style={{ lineHeight: "inherit" }}
               >
                 {block.runs.map(renderRun)}
                 {showLixScores && block.lixScore !== null ? (
-                  <span className="ml-3 inline-flex rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs font-medium tracking-[0.02em] text-muted-foreground">
-                    LIX {formatLixScore(block.lixScore)}
-                  </span>
+                  lixDisplayMode === "overlay" ? (
+                    <span className="pointer-events-none absolute right-0 bottom-0 z-10 inline-flex rounded-full border border-border/50 bg-background/72 px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-[0.01em] text-muted-foreground shadow-[0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-[1px]">
+                      {formatLixScore(block.lixScore)}
+                    </span>
+                  ) : (
+                    <span className="ml-3 inline-flex rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs font-medium tracking-[0.02em] text-muted-foreground">
+                      LIX {formatLixScore(block.lixScore)}
+                    </span>
+                  )
                 ) : null}
               </p>
             );
