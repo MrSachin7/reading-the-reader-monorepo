@@ -1,617 +1,522 @@
-"use client";
+"use client"
 
-import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react"
 
-import type { ReadingContextPreservationSnapshot } from "@/lib/experiment-session";
+import type {
+  ReadingContextPreservationSnapshot,
+  ReadingInterventionCommitBoundary,
+} from "@/lib/experiment-session"
 
 type UsePreserveReadingContextParams = {
-  containerRef: RefObject<HTMLElement | null>;
-  contentRef: RefObject<HTMLElement | null>;
-  enabled: boolean;
-  highlightContext: boolean;
-  contentKey: string;
-  interventionKey: string;
-  interventionAppliedAtUnixMs?: number | null;
-  onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
-};
-
-type TokenAnchor = {
-  tokenId: string;
-  blockId: string | null;
-  centerY: number;
-};
-
-type BlockAnchor = {
-  blockId: string;
-  centerY: number;
-};
-
-type ContextSnapshot = {
-  primaryAnchor: TokenAnchor | null;
-  fallbackAnchors: TokenAnchor[];
-  blockAnchor: BlockAnchor | null;
-  scrollTopPx: number;
-};
-
-type RestoreAttempt = {
-  anchorSource: ReadingContextPreservationSnapshot["anchorSource"];
-  anchorTokenId: string | null;
-  anchorBlockId: string | null;
-  anchorErrorPx: number | null;
-  highlightTokenId: string | null;
-  reason: string | null;
-};
-
-const PRIMARY_ANCHOR_MAX_ERROR_PX = 8;
-const FALLBACK_ANCHOR_MAX_ERROR_PX = 16;
-const TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX = 24;
-const BLOCK_ANCHOR_MAX_ERROR_PX = 28;
-const CONTEXT_HIGHLIGHT_DURATION_MS = 4000;
-const CONTEXT_HIGHLIGHT_MIN_VISIBLE_MS = 900;
-
-function getTokenCenterY(token: HTMLElement) {
-  const rect = token.getBoundingClientRect();
-  return rect.top + rect.height / 2;
+  containerRef: RefObject<HTMLElement | null>
+  contentRef?: RefObject<HTMLElement | null>
+  enabled?: boolean
+  highlightContext?: boolean
+  contentKey: string
+  interventionKey: string
+  interventionAppliedAtUnixMs?: number | null
+  interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null
+  interventionWaitDurationMs?: number | null
+  currentPageIndex?: number
+  pageWidthPx?: number
+  setActivePageIndex?: (pageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => void
+  onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void
 }
 
-function getBlockCenterY(block: HTMLElement) {
-  const rect = block.getBoundingClientRect();
-  return rect.top + rect.height / 2;
+type InternalAnchorSource = "sentence-anchor" | "active-token" | "fallback-token" | "block-anchor"
+
+type AnchorSnapshot = {
+  capturedAtUnixMs: number
+  source: InternalAnchorSource
+  anchorSentenceId: string | null
+  anchorTokenId: string | null
+  anchorBlockId: string | null
+  anchorViewportOffsetPx: number
+  scrollTopPx: number
 }
 
-function getTokenSelector(tokenId: string) {
-  return `[data-token-id="${tokenId.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
-}
+type LocatedAnchor =
+  | {
+      anchorSource: ReadingContextPreservationSnapshot["anchorSource"]
+      anchorElements: HTMLElement[]
+      primaryElement: HTMLElement
+      reason: string | null
+    }
+  | null
 
-function getBlockSelector(blockId: string) {
-  return `[data-block-id="${blockId.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
-}
+const CAPTURE_REFRESH_MS = 120
+const ANCHOR_STALE_AFTER_MS = 15_000
+const HIGHLIGHT_HOLD_MS = 3_000
+const HIGHLIGHT_FADE_MS = 3_000
+const HIGHLIGHT_BACKGROUND = "rgba(245, 158, 11, 0.18)"
+const HIGHLIGHT_RING = "0 0 0 1px rgba(245, 158, 11, 0.34)"
 
-function setVerticalCompensation(content: HTMLElement, offsetY: number) {
-  if (Math.abs(offsetY) < 0.5) {
-    content.style.transform = "";
-    content.style.transformOrigin = "";
-    content.style.willChange = "";
-    return;
+function escapeAttributeValue(value: string) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value)
   }
 
-  content.style.transform = `translateY(${offsetY}px)`;
-  content.style.transformOrigin = "center top";
-  content.style.willChange = "transform";
+  return value.replace(/["\\]/g, "\\$&")
 }
 
-function clearVerticalCompensation(content: HTMLElement | null) {
-  if (!content) {
-    return;
+function getContainerRect(container: HTMLElement) {
+  return container.getBoundingClientRect()
+}
+
+function intersectsViewport(rect: DOMRect, viewportRect: DOMRect) {
+  return (
+    rect.right >= viewportRect.left &&
+    rect.left <= viewportRect.right &&
+    rect.bottom >= viewportRect.top &&
+    rect.top <= viewportRect.bottom
+  )
+}
+
+function getFirstVisibleWord(content: HTMLElement, containerRect: DOMRect) {
+  const tokens = Array.from(
+    content.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
+  )
+
+  let best: { element: HTMLElement; score: number } | null = null
+  const viewportCenter = containerRect.top + containerRect.height * 0.35
+
+  for (const element of tokens) {
+    const rect = element.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) {
+      continue
+    }
+
+    if (!intersectsViewport(rect, containerRect)) {
+      continue
+    }
+
+    const score = Math.abs(rect.top - viewportCenter)
+    if (!best || score < best.score) {
+      best = { element, score }
+    }
   }
 
-  content.style.transform = "";
-  content.style.transformOrigin = "";
-  content.style.willChange = "";
+  return best?.element ?? null
 }
 
-function applyContextHighlight(element: HTMLElement) {
-  element.dataset.contextAnchor = "true";
-  element.style.setProperty("outline", "2px solid rgba(245, 158, 11, 0.7)");
-  element.style.setProperty("outline-offset", "0.12em");
-}
-
-function clearContextHighlightFromElement(element: HTMLElement | null) {
-  if (!element) {
-    return;
-  }
-
-  delete element.dataset.contextAnchor;
-  element.style.removeProperty("outline");
-  element.style.removeProperty("outline-offset");
-}
-
-function captureBlockAnchor(
+function measureAnchor(
   container: HTMLElement,
-  activeToken: HTMLElement | null
-) {
-  const activeBlock = activeToken?.closest<HTMLElement>("[data-block-id]") ?? null;
-  if (activeBlock?.dataset.blockId) {
-    return {
-      blockId: activeBlock.dataset.blockId,
-      centerY: getBlockCenterY(activeBlock),
-    } satisfies BlockAnchor;
-  }
-
-  const viewportCenterY = container.getBoundingClientRect().top + container.clientHeight / 2;
-  let closestBlock: BlockAnchor | null = null;
-
-  for (const block of container.querySelectorAll<HTMLElement>("[data-block-id]")) {
-    const blockId = block.dataset.blockId;
-    if (!blockId) {
-      continue;
-    }
-
-    const centerY = getBlockCenterY(block);
-    if (
-      closestBlock === null ||
-      Math.abs(centerY - viewportCenterY) < Math.abs(closestBlock.centerY - viewportCenterY)
-    ) {
-      closestBlock = { blockId, centerY };
-    }
-  }
-
-  return closestBlock;
-}
-
-function captureSnapshot(container: HTMLElement): ContextSnapshot {
-  const orderedTokens = Array.from(
-    container.querySelectorAll<HTMLElement>('[data-token-kind="word"]')
-  );
+  content: HTMLElement
+): AnchorSnapshot | null {
+  const containerRect = getContainerRect(container)
+  const activeTokenCandidate = content.querySelector<HTMLElement>("[data-gaze-active='true'][data-token-id]")
   const activeToken =
-    container.querySelector<HTMLElement>('[data-gaze-active="true"]') ?? null;
-  const blockAnchor = captureBlockAnchor(container, activeToken);
+    activeTokenCandidate && intersectsViewport(activeTokenCandidate.getBoundingClientRect(), containerRect)
+      ? activeTokenCandidate
+      : null
+  const visibleToken = activeToken ?? getFirstVisibleWord(content, containerRect)
+  const anchorBlockId =
+    visibleToken?.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ??
+    content.querySelector<HTMLElement>("[data-block-id]")?.dataset.blockId ??
+    null
 
-  if (orderedTokens.length === 0 || !activeToken) {
+  if (visibleToken) {
+    const tokenRect = visibleToken.getBoundingClientRect()
     return {
-      primaryAnchor: null,
-      fallbackAnchors: [],
-      blockAnchor,
+      capturedAtUnixMs: Date.now(),
+      source: activeToken ? "active-token" : "fallback-token",
+      anchorSentenceId: visibleToken.dataset.sentenceId ?? null,
+      anchorTokenId: visibleToken.dataset.tokenId ?? null,
+      anchorBlockId,
+      anchorViewportOffsetPx: tokenRect.top - containerRect.top,
       scrollTopPx: container.scrollTop,
-    };
+    }
   }
 
-  const activeTokenId = activeToken.dataset.tokenId;
-  if (!activeTokenId) {
-    return {
-      primaryAnchor: null,
-      fallbackAnchors: [],
-      blockAnchor,
-      scrollTopPx: container.scrollTop,
-    };
+  const visibleBlock = Array.from(content.querySelectorAll<HTMLElement>("[data-block-id]")).find((element) => {
+    const rect = element.getBoundingClientRect()
+    return intersectsViewport(rect, containerRect)
+  })
+
+  if (!visibleBlock) {
+    return null
   }
 
-  const activeIndex = orderedTokens.findIndex(
-    (token) => token.dataset.tokenId === activeTokenId
-  );
-
-  if (activeIndex < 0) {
-    return {
-      primaryAnchor: null,
-      fallbackAnchors: [],
-      blockAnchor,
-      scrollTopPx: container.scrollTop,
-    };
-  }
-
-  const candidateIndexes = [
-    activeIndex,
-    activeIndex - 1,
-    activeIndex + 1,
-    activeIndex - 2,
-    activeIndex + 2,
-  ].filter((index, position, array) => {
-    return index >= 0 && index < orderedTokens.length && array.indexOf(index) === position;
-  });
-
-  const anchors = candidateIndexes
-    .map((index) => orderedTokens[index])
-    .map((token) => {
-      const tokenId = token.dataset.tokenId;
-      return tokenId
-        ? {
-            tokenId,
-            blockId: token.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ?? null,
-            centerY: getTokenCenterY(token),
-          }
-        : null;
-    })
-    .filter((anchor): anchor is TokenAnchor => anchor !== null);
-
+  const blockRect = visibleBlock.getBoundingClientRect()
   return {
-    primaryAnchor: anchors[0] ?? null,
-    fallbackAnchors: anchors.slice(1),
-    blockAnchor,
+    capturedAtUnixMs: Date.now(),
+    source: "block-anchor",
+    anchorSentenceId: null,
+    anchorTokenId: null,
+    anchorBlockId: visibleBlock.dataset.blockId ?? null,
+    anchorViewportOffsetPx: blockRect.top - containerRect.top,
     scrollTopPx: container.scrollTop,
-  };
+  }
 }
 
-function alignTokenAnchor(
-  container: HTMLElement,
-  content: HTMLElement,
-  anchor: TokenAnchor
-) {
-  const token = container.querySelector<HTMLElement>(getTokenSelector(anchor.tokenId));
-  if (!token) {
-    return null;
+function findSentenceElements(content: HTMLElement, sentenceId: string) {
+  const selector = `[data-sentence-id="${escapeAttributeValue(sentenceId)}"]:not([data-token-id])`
+  const wrappers = Array.from(content.querySelectorAll<HTMLElement>(selector))
+  if (wrappers.length > 0) {
+    return wrappers
   }
 
-  clearVerticalCompensation(content);
-
-  const beforeCenterY = getTokenCenterY(token);
-  const beforeDeltaY = beforeCenterY - anchor.centerY;
-  const nextScrollTop = container.scrollTop + beforeDeltaY;
-  const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
-  container.scrollTop = Math.min(Math.max(nextScrollTop, 0), maxScrollTop);
-
-  const afterCenterY = getTokenCenterY(token);
-  const residualOffsetY = anchor.centerY - afterCenterY;
-  setVerticalCompensation(content, residualOffsetY);
-
-  const finalCenterY = getTokenCenterY(token);
-  return Math.abs(finalCenterY - anchor.centerY);
+  return Array.from(content.querySelectorAll<HTMLElement>(`[data-sentence-id="${escapeAttributeValue(sentenceId)}"]`))
 }
 
-function alignBlockAnchor(
-  container: HTMLElement,
-  content: HTMLElement,
-  anchor: BlockAnchor
-) {
-  const block = container.querySelector<HTMLElement>(getBlockSelector(anchor.blockId));
-  if (!block) {
-    return null;
-  }
-
-  clearVerticalCompensation(content);
-
-  const beforeCenterY = getBlockCenterY(block);
-  const beforeDeltaY = beforeCenterY - anchor.centerY;
-  const nextScrollTop = container.scrollTop + beforeDeltaY;
-  const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
-  container.scrollTop = Math.min(Math.max(nextScrollTop, 0), maxScrollTop);
-
-  const afterCenterY = getBlockCenterY(block);
-  const residualOffsetY = anchor.centerY - afterCenterY;
-  setVerticalCompensation(content, residualOffsetY);
-
-  const finalCenterY = getBlockCenterY(block);
-  return Math.abs(finalCenterY - anchor.centerY);
-}
-
-function restoreScrollOnly(container: HTMLElement, content: HTMLElement, snapshot: ContextSnapshot) {
-  clearVerticalCompensation(content);
-  const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
-  container.scrollTop = Math.min(Math.max(snapshot.scrollTopPx, 0), maxScrollTop);
-}
-
-function measureViewportDelta(container: HTMLElement, snapshot: ContextSnapshot) {
-  return Math.abs(container.scrollTop - snapshot.scrollTopPx);
-}
-
-function classifyRestoreAttempt(
-  snapshot: ContextSnapshot,
-  attempt: RestoreAttempt | null
-): Pick<ReadingContextPreservationSnapshot, "status" | "reason"> {
-  if (!attempt) {
-    return {
-      status: "failed",
-      reason: snapshot.primaryAnchor || snapshot.blockAnchor
-        ? "anchor-error-exceeded-threshold"
-        : "no-anchor-captured",
-    };
-  }
-
-  if (attempt.anchorSource === "active-token" && (attempt.anchorErrorPx ?? Infinity) <= PRIMARY_ANCHOR_MAX_ERROR_PX) {
-    return { status: "preserved", reason: null };
-  }
-
-  if (
-    attempt.anchorSource === "active-token" &&
-    (attempt.anchorErrorPx ?? Infinity) <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
-  ) {
-    return { status: "degraded", reason: "anchor-error-above-preserved-threshold" };
-  }
-
-  if (
-    attempt.anchorSource === "fallback-token" &&
-    (attempt.anchorErrorPx ?? Infinity) <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
-  ) {
-    return { status: "degraded", reason: attempt.reason ?? "fallback-token-used" };
-  }
-
-  if (
-    attempt.anchorSource === "block-anchor" &&
-    (attempt.anchorErrorPx ?? Infinity) <= BLOCK_ANCHOR_MAX_ERROR_PX
-  ) {
-    return { status: "degraded", reason: attempt.reason ?? "block-anchor-used" };
-  }
-
-  if (attempt.anchorSource === "scroll-only") {
-    return { status: "degraded", reason: attempt.reason ?? "scroll-only-fallback" };
-  }
-
-  return {
-    status: "failed",
-    reason: attempt.reason ?? "anchor-error-exceeded-threshold",
-  };
-}
-
-function restoreSnapshot(
-  container: HTMLElement,
-  content: HTMLElement,
-  snapshot: ContextSnapshot
-) {
-  const primaryAnchor = snapshot.primaryAnchor;
-  if (primaryAnchor) {
-    const primaryError = alignTokenAnchor(container, content, primaryAnchor);
-    if (
-      primaryError !== null &&
-      primaryError <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX
-    ) {
+function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnchor {
+  if (anchor.anchorSentenceId) {
+    const sentenceElements = findSentenceElements(content, anchor.anchorSentenceId)
+    if (sentenceElements.length > 0) {
       return {
-        anchorSource: "active-token",
-        anchorTokenId: primaryAnchor.tokenId,
-        anchorBlockId: primaryAnchor.blockId,
-        anchorErrorPx: primaryError,
-        highlightTokenId: primaryAnchor.tokenId,
-        reason:
-          primaryError <= PRIMARY_ANCHOR_MAX_ERROR_PX
-            ? null
-            : "anchor-error-above-preserved-threshold",
-      } satisfies RestoreAttempt;
-    }
-
-    let bestFallback: { anchor: TokenAnchor; error: number } | null = null;
-
-    for (const anchor of snapshot.fallbackAnchors) {
-      const error = alignTokenAnchor(container, content, anchor);
-      if (error === null) {
-        continue;
-      }
-
-      if (!bestFallback || error < bestFallback.error) {
-        bestFallback = { anchor, error };
+        anchorSource: "sentence-anchor",
+        anchorElements: sentenceElements,
+        primaryElement: sentenceElements[0]!,
+        reason: null,
       }
     }
+  }
 
-    if (bestFallback && bestFallback.error <= TOKEN_ANCHOR_DEGRADED_MAX_ERROR_PX) {
-      alignTokenAnchor(container, content, bestFallback.anchor);
+  if (anchor.anchorTokenId) {
+    const token = content.querySelector<HTMLElement>(
+      `[data-token-id="${escapeAttributeValue(anchor.anchorTokenId)}"]`
+    )
+    if (token) {
       return {
-        anchorSource: "fallback-token",
-        anchorTokenId: bestFallback.anchor.tokenId,
-        anchorBlockId: bestFallback.anchor.blockId,
-        anchorErrorPx: bestFallback.error,
-        highlightTokenId: bestFallback.anchor.tokenId,
-        reason:
-          bestFallback.error <= FALLBACK_ANCHOR_MAX_ERROR_PX
-            ? "fallback-token-used"
-            : "fallback-token-error-high",
-      } satisfies RestoreAttempt;
+        anchorSource: anchor.source === "active-token" ? "active-token" : "fallback-token",
+        anchorElements: [token],
+        primaryElement: token,
+        reason: anchor.anchorSentenceId ? "Sentence anchor unavailable; restored token anchor instead." : null,
+      }
     }
   }
 
-  if (snapshot.blockAnchor) {
-    const blockError = alignBlockAnchor(container, content, snapshot.blockAnchor);
-    if (blockError !== null && blockError <= BLOCK_ANCHOR_MAX_ERROR_PX) {
+  if (anchor.anchorBlockId) {
+    const block = content.querySelector<HTMLElement>(
+      `[data-block-id="${escapeAttributeValue(anchor.anchorBlockId)}"]`
+    )
+    if (block) {
       return {
         anchorSource: "block-anchor",
-        anchorTokenId: null,
-        anchorBlockId: snapshot.blockAnchor.blockId,
-        anchorErrorPx: blockError,
-        highlightTokenId: null,
-        reason: "block-anchor-used",
-      } satisfies RestoreAttempt;
+        anchorElements: [block],
+        primaryElement: block,
+        reason:
+          anchor.anchorSentenceId || anchor.anchorTokenId
+            ? "Semantic anchors unavailable; restored block anchor instead."
+            : null,
+      }
     }
   }
 
-  if (!snapshot.primaryAnchor) {
-    restoreScrollOnly(container, content, snapshot);
-    return {
-      anchorSource: "scroll-only",
-      anchorTokenId: null,
-      anchorBlockId: snapshot.blockAnchor?.blockId ?? null,
-      anchorErrorPx: null,
-      highlightTokenId: null,
-      reason: "scroll-only-fallback",
-    } satisfies RestoreAttempt;
+  return null
+}
+
+function highlightAnchor(elements: HTMLElement[]) {
+  const timers: number[] = []
+  const previous = elements.map((element) => ({
+    element,
+    backgroundColor: element.style.backgroundColor,
+    boxShadow: element.style.boxShadow,
+    borderRadius: element.style.borderRadius,
+    boxDecorationBreak: (element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak ?? "",
+    webkitBoxDecorationBreak: (element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak ?? "",
+    paddingInline: element.style.paddingInline,
+    transition: element.style.transition,
+  }))
+
+  for (const element of elements) {
+    element.style.transition = "none"
+    element.style.backgroundColor = HIGHLIGHT_BACKGROUND
+    element.style.boxShadow = HIGHLIGHT_RING
+    element.style.borderRadius = "0.35rem"
+    element.style.paddingInline = "0.08em"
+    ;(element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = "clone"
+    ;(element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = "clone"
   }
 
-  clearVerticalCompensation(content);
-  return null;
+  timers.push(
+    window.setTimeout(() => {
+      for (const element of elements) {
+        element.style.transition = `background-color ${HIGHLIGHT_FADE_MS}ms ease, box-shadow ${HIGHLIGHT_FADE_MS}ms ease`
+        element.style.backgroundColor = "transparent"
+        element.style.boxShadow = "none"
+      }
+    }, HIGHLIGHT_HOLD_MS)
+  )
+
+  timers.push(
+    window.setTimeout(() => {
+      for (const item of previous) {
+        item.element.style.backgroundColor = item.backgroundColor
+        item.element.style.boxShadow = item.boxShadow
+        item.element.style.borderRadius = item.borderRadius
+        item.element.style.paddingInline = item.paddingInline
+        ;(item.element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = item.boxDecorationBreak
+        ;(item.element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = item.webkitBoxDecorationBreak
+        item.element.style.transition = item.transition
+      }
+    }, HIGHLIGHT_HOLD_MS + HIGHLIGHT_FADE_MS + 60)
+  )
+
+  return () => {
+    for (const timer of timers) {
+      window.clearTimeout(timer)
+    }
+
+    for (const item of previous) {
+      item.element.style.backgroundColor = item.backgroundColor
+      item.element.style.boxShadow = item.boxShadow
+      item.element.style.borderRadius = item.borderRadius
+      item.element.style.paddingInline = item.paddingInline
+      ;(item.element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = item.boxDecorationBreak
+      ;(item.element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = item.webkitBoxDecorationBreak
+      item.element.style.transition = item.transition
+    }
+  }
+}
+
+function resolveAnchorPageIndex(
+  primaryElement: HTMLElement,
+  containerRect: DOMRect,
+  currentPageIndex: number,
+  pageWidthPx: number
+) {
+  if (!Number.isFinite(pageWidthPx) || pageWidthPx <= 0) {
+    return currentPageIndex
+  }
+
+  const rect = primaryElement.getBoundingClientRect()
+  const pageDelta = Math.round((rect.left - containerRect.left) / pageWidthPx)
+  return Math.max(0, currentPageIndex + pageDelta)
 }
 
 export function usePreserveReadingContext({
   containerRef,
   contentRef,
-  enabled,
-  highlightContext,
+  enabled = false,
+  highlightContext = false,
   contentKey,
   interventionKey,
   interventionAppliedAtUnixMs = null,
+  interventionAppliedBoundary = null,
+  interventionWaitDurationMs = null,
+  currentPageIndex = 0,
+  pageWidthPx,
+  setActivePageIndex,
   onContextPreservationChange,
 }: UsePreserveReadingContextParams) {
-  const shouldTrackContext = enabled || highlightContext;
-  const latestSnapshotRef = useRef<ContextSnapshot | null>(null);
-  const previousInterventionKeyRef = useRef<string | null>(null);
-  const previousContentKeyRef = useRef<string | null>(null);
-  const highlightedTokenIdRef = useRef<string | null>(null);
-  const highlightTimeoutRef = useRef<number | null>(null);
-  const highlightFrameRef = useRef<number | null>(null);
-
-  const clearContextHighlight = useCallback((container: HTMLElement | null) => {
-    if (highlightTimeoutRef.current !== null) {
-      window.clearTimeout(highlightTimeoutRef.current);
-      highlightTimeoutRef.current = null;
-    }
-
-    if (highlightFrameRef.current !== null) {
-      window.cancelAnimationFrame(highlightFrameRef.current);
-      highlightFrameRef.current = null;
-    }
-
-    if (container && highlightedTokenIdRef.current) {
-      clearContextHighlightFromElement(
-        container.querySelector<HTMLElement>(getTokenSelector(highlightedTokenIdRef.current))
-      );
-    }
-
-    highlightedTokenIdRef.current = null;
-  }, []);
-
-  const startContextHighlight = useCallback(
-    (container: HTMLElement, tokenId: string) => {
-      clearContextHighlight(container);
-
-      const token = container.querySelector<HTMLElement>(getTokenSelector(tokenId));
-      if (!token) {
-        return;
-      }
-
-      highlightedTokenIdRef.current = tokenId;
-      applyContextHighlight(token);
-
-      const startedAt = performance.now();
-
-      const checkForReacquire = () => {
-        const currentTokenId = highlightedTokenIdRef.current;
-        if (!currentTokenId) {
-          return;
-        }
-
-        const currentToken = container.querySelector<HTMLElement>(getTokenSelector(currentTokenId));
-        if (currentToken) {
-          applyContextHighlight(currentToken);
-        }
-
-        const activeToken = container.querySelector<HTMLElement>('[data-gaze-active="true"]');
-        const activeTokenId = activeToken?.dataset.tokenId;
-        if (
-          activeTokenId === currentTokenId &&
-          performance.now() - startedAt >= CONTEXT_HIGHLIGHT_MIN_VISIBLE_MS
-        ) {
-          clearContextHighlight(container);
-          return;
-        }
-
-        highlightFrameRef.current = window.requestAnimationFrame(checkForReacquire);
-      };
-
-      highlightTimeoutRef.current = window.setTimeout(() => {
-        clearContextHighlight(container);
-      }, CONTEXT_HIGHLIGHT_DURATION_MS);
-
-      highlightFrameRef.current = window.requestAnimationFrame(checkForReacquire);
-    },
-    [clearContextHighlight]
-  );
+  const latestAnchorRef = useRef<AnchorSnapshot | null>(null)
+  const latestInterventionKeyRef = useRef(interventionKey)
+  const latestAppliedAtRef = useRef<number | null>(interventionAppliedAtUnixMs)
+  const highlightCleanupRef = useRef<(() => void) | null>(null)
+  const lastHandledSignatureRef = useRef<string | null>(null)
 
   const captureContextAnchor = useCallback(() => {
-    const container = containerRef.current;
-    if (!shouldTrackContext || !container) {
-      return;
+    const container = containerRef.current
+    const content = contentRef?.current ?? container?.querySelector<HTMLElement>("[data-reader-content='true']") ?? null
+    if (!enabled || !container || !content) {
+      latestAnchorRef.current = null
+      return
     }
 
-    latestSnapshotRef.current = captureSnapshot(container);
-  }, [containerRef, shouldTrackContext]);
+    latestAnchorRef.current = measureAnchor(container, content)
+  }, [containerRef, contentRef, enabled])
 
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    const content = contentRef.current;
+  useEffect(() => {
+    latestAnchorRef.current = null
+    highlightCleanupRef.current?.()
+    highlightCleanupRef.current = null
+    lastHandledSignatureRef.current = null
+  }, [contentKey])
 
-    if (!shouldTrackContext || !container || !content) {
-      clearContextHighlight(container ?? null);
-      clearVerticalCompensation(content ?? null);
-      previousContentKeyRef.current = contentKey;
-      previousInterventionKeyRef.current = interventionKey;
-      return;
+  useEffect(() => {
+    if (!enabled) {
+      latestAnchorRef.current = null
+      highlightCleanupRef.current?.()
+      highlightCleanupRef.current = null
+      return
     }
 
-    if (previousContentKeyRef.current === null || previousContentKeyRef.current !== contentKey) {
-      previousContentKeyRef.current = contentKey;
-      previousInterventionKeyRef.current = interventionKey;
-      latestSnapshotRef.current = captureSnapshot(container);
-      clearVerticalCompensation(content);
-      return;
+    captureContextAnchor()
+    const interval = window.setInterval(captureContextAnchor, CAPTURE_REFRESH_MS)
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [captureContextAnchor, enabled])
+
+  useEffect(() => {
+    if (!enabled) {
+      latestInterventionKeyRef.current = interventionKey
+      latestAppliedAtRef.current = interventionAppliedAtUnixMs
+      return
     }
 
-    if (previousInterventionKeyRef.current === null) {
-      previousInterventionKeyRef.current = interventionKey;
-      latestSnapshotRef.current = captureSnapshot(container);
-      return;
+    const keyChanged = latestInterventionKeyRef.current !== interventionKey
+    const appliedAtChanged = latestAppliedAtRef.current !== interventionAppliedAtUnixMs
+
+    latestInterventionKeyRef.current = interventionKey
+    latestAppliedAtRef.current = interventionAppliedAtUnixMs
+
+    if (!keyChanged && !appliedAtChanged) {
+      return
     }
 
-    if (previousInterventionKeyRef.current === interventionKey) {
-      latestSnapshotRef.current = captureSnapshot(container);
-      return;
+    const signature = `${interventionKey}:${interventionAppliedAtUnixMs ?? "none"}`
+    if (lastHandledSignatureRef.current === signature) {
+      return
     }
 
-    previousInterventionKeyRef.current = interventionKey;
-    const snapshot = latestSnapshotRef.current;
-
-    if (!snapshot) {
-      latestSnapshotRef.current = captureSnapshot(container);
-      return;
+    const anchor = latestAnchorRef.current
+    const container = containerRef.current
+    const content = contentRef?.current ?? container?.querySelector<HTMLElement>("[data-reader-content='true']") ?? null
+    if (!container || !content) {
+      return
     }
 
-    let frameA = 0;
-    let frameB = 0;
-    let frameC = 0;
+    lastHandledSignatureRef.current = signature
 
-    frameA = window.requestAnimationFrame(() => {
-      let restoreAttempt: RestoreAttempt | null = null;
-      if (enabled) {
-        restoreAttempt = restoreSnapshot(container, content, snapshot);
+    const effectiveBoundary = interventionAppliedBoundary ?? "immediate"
+    const effectiveAppliedAt = interventionAppliedAtUnixMs ?? Date.now()
+
+    const commitFailure = (reason: string) => {
+      onContextPreservationChange?.({
+        status: "failed",
+        anchorSource: "scroll-only",
+        anchorSentenceId: anchor?.anchorSentenceId ?? null,
+        anchorTokenId: anchor?.anchorTokenId ?? null,
+        anchorBlockId: anchor?.anchorBlockId ?? null,
+        anchorErrorPx: null,
+        viewportDeltaPx: null,
+        commitBoundary: effectiveBoundary,
+        waitDurationMs: interventionWaitDurationMs,
+        interventionAppliedAtUnixMs: effectiveAppliedAt,
+        measuredAtUnixMs: Date.now(),
+        reason,
+      })
+    }
+
+    if (!anchor || Date.now() - anchor.capturedAtUnixMs > ANCHOR_STALE_AFTER_MS) {
+      commitFailure("Anchor snapshot was unavailable or stale.")
+      return
+    }
+
+    let cancelled = false
+    let frameId = 0
+
+    const restore = () => {
+      if (cancelled) {
+        return
       }
-      frameB = window.requestAnimationFrame(() => {
-        if (enabled) {
-          restoreAttempt = restoreSnapshot(container, content, snapshot) ?? restoreAttempt;
+
+      const located = locateAnchor(content, anchor)
+      if (!located) {
+        container.scrollTop = anchor.scrollTopPx
+        onContextPreservationChange?.({
+          status: "degraded",
+          anchorSource: "scroll-only",
+          anchorSentenceId: anchor.anchorSentenceId,
+          anchorTokenId: anchor.anchorTokenId,
+          anchorBlockId: anchor.anchorBlockId,
+          anchorErrorPx: null,
+          viewportDeltaPx: Math.abs(container.scrollTop - anchor.scrollTopPx),
+          commitBoundary: effectiveBoundary,
+          waitDurationMs: interventionWaitDurationMs,
+          interventionAppliedAtUnixMs: effectiveAppliedAt,
+          measuredAtUnixMs: Date.now(),
+          reason: "Anchor elements were not found; restored scroll position only.",
+        })
+        return
+      }
+
+      const applyFinalAlignment = (viewportDeltaPx: number | null) => {
+        const finalContainerRect = getContainerRect(container)
+        const beforeScrollTop = container.scrollTop
+        const currentTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
+        container.scrollTop += currentTop - anchor.anchorViewportOffsetPx
+
+        const finalTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
+        const anchorErrorPx = Math.abs(finalTop - anchor.anchorViewportOffsetPx)
+        const scrollDeltaPx = Math.abs(container.scrollTop - beforeScrollTop)
+        const effectiveViewportDeltaPx =
+          viewportDeltaPx === null ? scrollDeltaPx : Math.max(viewportDeltaPx, scrollDeltaPx)
+        const status =
+          located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48
+            ? "preserved"
+            : anchorErrorPx > 120 || located.anchorSource === "block-anchor"
+              ? "degraded"
+              : "preserved"
+
+        if (highlightContext) {
+          highlightCleanupRef.current?.()
+          highlightCleanupRef.current = highlightAnchor(located.anchorElements)
         }
-        frameC = window.requestAnimationFrame(() => {
-          if (enabled) {
-            restoreAttempt = restoreSnapshot(container, content, snapshot) ?? restoreAttempt;
-          }
 
-          if (highlightContext && restoreAttempt?.highlightTokenId) {
-            startContextHighlight(container, restoreAttempt.highlightTokenId);
-          }
+        onContextPreservationChange?.({
+          status,
+          anchorSource: located.anchorSource,
+          anchorSentenceId: anchor.anchorSentenceId,
+          anchorTokenId: anchor.anchorTokenId,
+          anchorBlockId: anchor.anchorBlockId,
+          anchorErrorPx,
+          viewportDeltaPx: effectiveViewportDeltaPx,
+          commitBoundary: effectiveBoundary,
+          waitDurationMs: interventionWaitDurationMs,
+          interventionAppliedAtUnixMs: effectiveAppliedAt,
+          measuredAtUnixMs: Date.now(),
+          reason: located.reason,
+        })
+      }
 
-          if (enabled && onContextPreservationChange) {
-            const classification = classifyRestoreAttempt(snapshot, restoreAttempt);
-            onContextPreservationChange({
-              status: classification.status,
-              anchorSource: restoreAttempt?.anchorSource ?? (snapshot.blockAnchor ? "block-anchor" : "scroll-only"),
-              anchorTokenId: restoreAttempt?.anchorTokenId ?? snapshot.primaryAnchor?.tokenId ?? null,
-              anchorBlockId:
-                restoreAttempt?.anchorBlockId ??
-                snapshot.primaryAnchor?.blockId ??
-                snapshot.blockAnchor?.blockId ??
-                null,
-              anchorErrorPx: restoreAttempt?.anchorErrorPx ?? null,
-              viewportDeltaPx: measureViewportDelta(container, snapshot),
-              interventionAppliedAtUnixMs: interventionAppliedAtUnixMs ?? 0,
-              measuredAtUnixMs: Date.now(),
-              reason: classification.reason,
-            });
-          }
+      if (setActivePageIndex && pageWidthPx && pageWidthPx > 0) {
+        const containerRect = getContainerRect(container)
+        const targetPageIndex = resolveAnchorPageIndex(
+          located.primaryElement,
+          containerRect,
+          currentPageIndex,
+          pageWidthPx
+        )
+        const viewportDeltaPx = Math.abs(targetPageIndex - currentPageIndex) * pageWidthPx
 
-          latestSnapshotRef.current = captureSnapshot(container);
-        });
-      });
-    });
+        setActivePageIndex(targetPageIndex, { persist: false, markTurn: false })
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            if (!cancelled) {
+              applyFinalAlignment(viewportDeltaPx)
+            }
+          })
+        })
+        return
+      }
+
+      applyFinalAlignment(null)
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      frameId = window.requestAnimationFrame(restore)
+    })
 
     return () => {
-      window.cancelAnimationFrame(frameA);
-      window.cancelAnimationFrame(frameB);
-      window.cancelAnimationFrame(frameC);
-    };
+      cancelled = true
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
   }, [
-    clearContextHighlight,
     containerRef,
-    contentKey,
     contentRef,
     enabled,
     highlightContext,
     interventionAppliedAtUnixMs,
+    interventionAppliedBoundary,
     interventionKey,
+    interventionWaitDurationMs,
+    currentPageIndex,
     onContextPreservationChange,
-    shouldTrackContext,
-    startContextHighlight,
-  ]);
+    pageWidthPx,
+    setActivePageIndex,
+  ])
 
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-
+  useEffect(() => {
     return () => {
-      clearContextHighlight(container);
-    };
-  }, [clearContextHighlight, containerRef]);
+      highlightCleanupRef.current?.()
+      highlightCleanupRef.current = null
+    }
+  }, [])
 
-  return {
-    captureContextAnchor,
-  };
+  return { captureContextAnchor }
 }

@@ -66,6 +66,10 @@ public sealed class DecisionProposalLifecycleTests
                 DecisionProviderIds.RuleBased,
                 DecisionExecutionModes.Autonomous),
             automationPaused: false);
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.45, 0.32, "token-1", "block-1"));
         await harness.SessionManager.UpdateReadingAttentionSummaryAsync(
@@ -108,6 +112,10 @@ public sealed class DecisionProposalLifecycleTests
                 DecisionProviderIds.RuleBased,
                 DecisionExecutionModes.Advisory),
             automationPaused: false);
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.41, 0.31, "token-1", "block-1"));
         await harness.SessionManager.UpdateReadingAttentionSummaryAsync(
@@ -228,6 +236,10 @@ public sealed class DecisionProposalLifecycleTests
                 DecisionProviderIds.External,
                 DecisionExecutionModes.Autonomous),
             automationPaused: false);
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
 
         var sessionId = harness.SessionManager.GetCurrentSnapshot().SessionId!.Value.ToString("D");
         var result = await harness.ProviderIngress.HandleAsync(new ProviderRequestAutonomousApplyRealtimeCommand(

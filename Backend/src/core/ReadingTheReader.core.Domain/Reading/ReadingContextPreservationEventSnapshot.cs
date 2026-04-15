@@ -3,10 +3,13 @@ namespace ReadingTheReader.core.Domain.Reading;
 public sealed record ReadingContextPreservationEventSnapshot(
     string Status,
     string AnchorSource,
+    string? AnchorSentenceId,
     string? AnchorTokenId,
     string? AnchorBlockId,
     double? AnchorErrorPx,
     double? ViewportDeltaPx,
+    string CommitBoundary,
+    long? WaitDurationMs,
     long InterventionAppliedAtUnixMs,
     long MeasuredAtUnixMs,
     string? Reason)
@@ -16,10 +19,15 @@ public sealed record ReadingContextPreservationEventSnapshot(
         return new ReadingContextPreservationEventSnapshot(
             NormalizeStatus(Status),
             NormalizeAnchorSource(AnchorSource),
+            DomainText.NormalizeOptional(AnchorSentenceId),
             DomainText.NormalizeOptional(AnchorTokenId),
             DomainText.NormalizeOptional(AnchorBlockId),
             AnchorErrorPx,
             ViewportDeltaPx,
+            ReadingInterventionPolicySnapshot.NormalizeBoundary(
+                CommitBoundary,
+                ReadingInterventionCommitBoundaries.Immediate),
+            WaitDurationMs.HasValue ? Math.Max(WaitDurationMs.Value, 0) : null,
             InterventionAppliedAtUnixMs,
             MeasuredAtUnixMs,
             DomainText.NormalizeOptional(Reason));
@@ -42,6 +50,11 @@ public sealed record ReadingContextPreservationEventSnapshot(
 
     public static string NormalizeAnchorSource(string? anchorSource)
     {
+        if (string.Equals(anchorSource?.Trim(), "sentence-anchor", StringComparison.OrdinalIgnoreCase))
+        {
+            return "sentence-anchor";
+        }
+
         if (string.Equals(anchorSource?.Trim(), "fallback-token", StringComparison.OrdinalIgnoreCase))
         {
             return "fallback-token";

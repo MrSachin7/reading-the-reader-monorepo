@@ -8,7 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { formatReplayClock, type ReplayFrame, type ReplayKeyEvent } from "@/lib/experiment-replay"
 import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
-import { formatAbsoluteTime, formatEventKind, formatNumeric, getEventTone } from "@/modules/pages/replay/utils"
+import {
+  formatAbsoluteTime,
+  formatEventKind,
+  formatNumeric,
+  getEventTone,
+} from "@/modules/pages/replay/utils"
 
 function MetadataRow({
   label,
@@ -81,6 +86,10 @@ export function ReplayMetadataColumn({
                     label="Presentation"
                     value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
                   />
+                  <MetadataRow
+                    label="Page"
+                    value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
+                  />
                   <MetadataRow label="Eyetracker" value={frame.session.eyeTrackerDevice?.name ?? "-"} />
                   <MetadataRow label="Samples" value={frame.session.receivedGazeSamples.toLocaleString()} />
                 </dl>
@@ -98,10 +107,86 @@ export function ReplayMetadataColumn({
                         </span>
                       </div>
                       <p className="mt-3 text-sm leading-6">{readingSession.latestIntervention.reason}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {readingSession.latestIntervention.appliedBoundary}
+                        {readingSession.latestIntervention.waitDurationMs !== null
+                          ? ` · waited ${readingSession.latestIntervention.waitDurationMs} ms`
+                          : ""}
+                      </p>
                     </div>
                   ) : (
                     <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
                       No intervention yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Context recovery</p>
+                <div className="mt-3">
+                  {readingSession.latestContextPreservation ? (
+                    <div className="rounded-[1rem] border bg-muted/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <Badge variant="outline">{readingSession.latestContextPreservation.status}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatAbsoluteTime(readingSession.latestContextPreservation.measuredAtUnixMs)}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6">
+                        {readingSession.latestContextPreservation.anchorSource}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {readingSession.latestContextPreservation.commitBoundary}
+                        {readingSession.latestContextPreservation.waitDurationMs !== null
+                          ? ` · waited ${readingSession.latestContextPreservation.waitDurationMs} ms`
+                          : ""}
+                        {readingSession.participantViewport.lastPageTurnAtUnixMs
+                          ? ` · last turn ${formatAbsoluteTime(readingSession.participantViewport.lastPageTurnAtUnixMs)}`
+                          : ""}
+                        {readingSession.latestContextPreservation.reason
+                          ? ` · ${readingSession.latestContextPreservation.reason}`
+                          : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+                      No context recovery event yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Pending intervention</p>
+                <div className="mt-3">
+                  {readingSession.pendingIntervention ? (
+                    <div className="rounded-[1rem] border bg-muted/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <Badge variant="outline">{readingSession.pendingIntervention.status}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatAbsoluteTime(readingSession.pendingIntervention.queuedAtUnixMs)}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6">
+                        {readingSession.pendingIntervention.intervention.reason}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {readingSession.pendingIntervention.requestedBoundary}
+                        {readingSession.pendingIntervention.fallbackBoundary
+                          ? ` · fallback ${readingSession.pendingIntervention.fallbackBoundary}`
+                          : ""}
+                        {readingSession.pendingIntervention.waitDurationMs !== null
+                          ? ` · waited ${readingSession.pendingIntervention.waitDurationMs} ms`
+                          : ""}
+                        {readingSession.pendingIntervention.resolutionReason
+                          ? ` · ${readingSession.pendingIntervention.resolutionReason}`
+                          : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+                      No queued intervention at this point in the replay.
                     </div>
                   )}
                 </div>

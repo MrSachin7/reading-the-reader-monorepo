@@ -20,6 +20,7 @@ function renderToken(token: Token) {
         key={token.id}
         data-token-id={token.id}
         data-token-kind={token.kind}
+        data-sentence-id={token.sentenceId ?? undefined}
         className="rounded-[0.4rem] px-[0.08em] transition-[background-color,box-shadow] duration-150"
       >
         {token.text}
@@ -28,14 +29,51 @@ function renderToken(token: Token) {
   }
 
   return (
-    <span key={token.id} data-token-id={token.id} data-token-kind={token.kind} aria-hidden="true">
+    <span
+      key={token.id}
+      data-token-id={token.id}
+      data-token-kind={token.kind}
+      data-sentence-id={token.sentenceId ?? undefined}
+      aria-hidden="true"
+    >
       {token.text}
     </span>
   );
 }
 
 function renderRun(run: TokenRun, index: number) {
-  const content = run.tokens.map(renderToken);
+  const sentenceGroups = run.tokens.reduce<Array<{ sentenceId: string | null; tokens: Token[] }>>(
+    (groups, token) => {
+      const previousGroup = groups[groups.length - 1]
+      if (!previousGroup || previousGroup.sentenceId !== token.sentenceId) {
+        groups.push({
+          sentenceId: token.sentenceId,
+          tokens: [token],
+        })
+        return groups
+      }
+
+      previousGroup.tokens.push(token)
+      return groups
+    },
+    []
+  )
+
+  const content = sentenceGroups.map((group, groupIndex) => {
+    const tokens = group.tokens.map(renderToken)
+    if (!group.sentenceId) {
+      return <Fragment key={`run-${index}-group-${groupIndex}`}>{tokens}</Fragment>
+    }
+
+    return (
+      <span
+        key={`run-${index}-group-${groupIndex}`}
+        data-sentence-id={group.sentenceId}
+      >
+        {tokens}
+      </span>
+    )
+  })
 
   if (run.style === "bold") {
     return <strong key={`run-${index}`}>{content}</strong>;

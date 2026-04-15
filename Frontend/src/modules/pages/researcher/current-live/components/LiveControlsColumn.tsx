@@ -28,6 +28,9 @@ import type {
   ExternalProviderStatusSnapshot,
   ExperimentLiveMonitoringSnapshot,
   LayoutInterventionGuardrailSnapshot,
+  PendingInterventionSnapshot,
+  ReadingInterventionCommitBoundary,
+  ReadingInterventionPolicySnapshot,
 } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
@@ -220,6 +223,8 @@ type LiveControlsColumnProps = {
   skimmedTokenCount: number
   appearance: ReaderAppearanceSettings
   presentation: ReadingPresentationSettings
+  interventionPolicy: ReadingInterventionPolicySnapshot
+  pendingIntervention: PendingInterventionSnapshot | null
   readerOptions: LiveReaderOptions
   onFollowParticipantChange: (checked: boolean) => void
   onReaderOptionChange: (key: keyof LiveReaderOptions, value: boolean) => void
@@ -232,6 +237,12 @@ type LiveControlsColumnProps = {
     },
     reason: string
   ) => void
+  onInterventionPolicyChange: (patch: {
+    layoutCommitBoundary?: ReadingInterventionCommitBoundary
+    layoutFallbackBoundary?: ReadingInterventionCommitBoundary
+    layoutFallbackAfterMs?: number
+  }) => void | Promise<void>
+  onApplyPendingInterventionNow: () => void | Promise<void>
   onApproveProposal: (proposalId: string) => void
   onRejectProposal: (proposalId: string) => void
   onPauseAutomation: () => void
@@ -259,10 +270,14 @@ export function LiveControlsColumn({
   skimmedTokenCount,
   appearance,
   presentation,
+  interventionPolicy,
+  pendingIntervention,
   readerOptions,
   onFollowParticipantChange,
   onReaderOptionChange,
   onCommitIntervention,
+  onInterventionPolicyChange,
+  onApplyPendingInterventionNow,
   onApproveProposal,
   onRejectProposal,
   onPauseAutomation,
@@ -945,6 +960,127 @@ export function LiveControlsColumn({
                 </div>
               )}
 
+              <div className="rounded-[1.2rem] border bg-background/80 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Timing policy</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Queue layout changes until a safer reading boundary, then fall back if the wait gets too long.
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {formatBoundaryLabel(interventionPolicy.layoutCommitBoundary)}
+                  </Badge>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <Field>
+                    <FieldLabel>Commit boundary</FieldLabel>
+                    <Select
+                      value={interventionPolicy.layoutCommitBoundary}
+                      onValueChange={(value) =>
+                        void onInterventionPolicyChange({
+                          layoutCommitBoundary: value as ReadingInterventionCommitBoundary,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Commit boundary" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="page-turn">Page turn</SelectItem>
+                        <SelectItem value="sentence-end">Sentence end</SelectItem>
+                        <SelectItem value="paragraph-end">Paragraph end</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>Fallback boundary</FieldLabel>
+                    <Select
+                      value={interventionPolicy.layoutFallbackBoundary}
+                      onValueChange={(value) =>
+                        void onInterventionPolicyChange({
+                          layoutFallbackBoundary: value as ReadingInterventionCommitBoundary,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Fallback boundary" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="page-turn">Page turn</SelectItem>
+                        <SelectItem value="sentence-end">Sentence end</SelectItem>
+                        <SelectItem value="paragraph-end">Paragraph end</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <FieldLabel>Fallback wait</FieldLabel>
+                      <span className="text-xs text-muted-foreground">
+                        {interventionPolicy.layoutFallbackAfterMs} ms
+                      </span>
+                    </div>
+                    <Slider
+                      min={1000}
+                      max={12000}
+                      step={500}
+                      value={[interventionPolicy.layoutFallbackAfterMs]}
+                      onValueChange={(value) =>
+                        void onInterventionPolicyChange({
+                          layoutFallbackAfterMs: value[0] ?? interventionPolicy.layoutFallbackAfterMs,
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <div className="mt-4 rounded-xl border bg-muted/20 px-3 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Pending intervention</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {pendingIntervention
+                          ? pendingIntervention.intervention.reason
+                          : "No queued typography change right now."}
+                      </p>
+                    </div>
+                    <Badge variant={pendingIntervention ? "secondary" : "outline"}>
+                      {pendingIntervention?.status ?? "idle"}
+                    </Badge>
+                  </div>
+
+                  {pendingIntervention ? (
+                    <>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                        {formatBoundaryLabel(pendingIntervention.requestedBoundary)}
+                        {pendingIntervention.fallbackBoundary
+                          ? ` · fallback ${formatBoundaryLabel(pendingIntervention.fallbackBoundary)}`
+                          : ""}
+                        {pendingIntervention.waitDurationMs !== null
+                          ? ` · waited ${pendingIntervention.waitDurationMs} ms`
+                          : ""}
+                        {pendingIntervention.resolutionReason
+                          ? ` · ${pendingIntervention.resolutionReason}`
+                          : ""}
+                      </p>
+                      <Button
+                        className="mt-3 w-full"
+                        variant="outline"
+                        disabled={pendingIntervention.status !== "queued"}
+                        onClick={() => void onApplyPendingInterventionNow()}
+                      >
+                        Apply now
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
               <FollowParticipantRow
                 checked={followParticipant}
                 onCheckedChange={onFollowParticipantChange}
@@ -994,6 +1130,15 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
+              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                <p className="text-sm font-medium">Test interventions from here</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Use the controls below to queue a manual intervention. Appearance changes apply
+                  immediately. Typography changes follow the timing policy above, so with{" "}
+                  <span className="font-medium text-foreground">Page turn</span> selected you can
+                  either turn the page in the participant view or press <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
+                </p>
+              </div>
               {groupedInterventionModules.length > 0 ? (
                 groupedInterventionModules.map((group) => (
                   <div key={group.key} className="space-y-4">
@@ -1113,16 +1258,18 @@ function formatExecutionModeLabel(executionMode: string) {
   return executionMode === "autonomous" ? "Autonomous" : "Advisory"
 }
 
-function formatProviderLabel(providerId: string) {
-  switch (providerId) {
-    case "external":
-      return "External provider"
-    case "rule-based":
-      return "Rule-based provider"
-    case "manual":
-      return "Manual mode"
+function formatBoundaryLabel(boundary: ReadingInterventionCommitBoundary) {
+  switch (boundary) {
+    case "immediate":
+      return "Immediate"
+    case "sentence-end":
+      return "Sentence end"
+    case "paragraph-end":
+      return "Paragraph end"
+    case "page-turn":
+      return "Page turn"
     default:
-      return providerId
+      return boundary
   }
 }
 

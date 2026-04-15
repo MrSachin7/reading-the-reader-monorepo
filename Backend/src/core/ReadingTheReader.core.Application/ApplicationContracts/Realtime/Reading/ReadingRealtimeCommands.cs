@@ -16,25 +16,32 @@ public sealed record UpdateParticipantViewportCommand(
     double ViewportWidthPx,
     double ViewportHeightPx,
     double ContentHeightPx,
-    double ContentWidthPx);
+    double ContentWidthPx,
+    int ActivePageIndex = 0,
+    int PageCount = 1,
+    long? LastPageTurnAtUnixMs = null);
 
 public sealed record UpdateReadingFocusCommand(
     bool IsInsideReadingArea,
     double? NormalizedContentX,
     double? NormalizedContentY,
     string? ActiveTokenId,
-    string? ActiveBlockId);
+    string? ActiveBlockId,
+    string? ActiveSentenceId = null);
 
 public sealed record UpdateReadingContextPreservationCommand(
     string Status,
     string AnchorSource,
-    string? AnchorTokenId,
-    string? AnchorBlockId,
-    double? AnchorErrorPx,
-    double? ViewportDeltaPx,
-    long InterventionAppliedAtUnixMs,
-    long MeasuredAtUnixMs,
-    string? Reason);
+    string? AnchorSentenceId = null,
+    string? AnchorTokenId = null,
+    string? AnchorBlockId = null,
+    double? AnchorErrorPx = null,
+    double? ViewportDeltaPx = null,
+    string CommitBoundary = ReadingInterventionCommitBoundaries.Immediate,
+    long? WaitDurationMs = null,
+    long InterventionAppliedAtUnixMs = 0,
+    long MeasuredAtUnixMs = 0,
+    string? Reason = null);
 
 public sealed record UpdateReadingAttentionSummaryCommand(
     long UpdatedAtUnixMs,

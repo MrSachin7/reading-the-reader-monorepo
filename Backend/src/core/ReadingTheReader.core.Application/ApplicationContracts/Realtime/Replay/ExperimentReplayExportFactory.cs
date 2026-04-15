@@ -16,7 +16,9 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<ParticipantViewportEventRecord> participantViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
+        IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
+        IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
@@ -31,7 +33,9 @@ public static class ExperimentReplayExportFactory
                 participantViewportEvents,
                 readingFocusEvents,
                 attentionEvents,
+                contextPreservationEvents,
                 decisionProposalEvents,
+                scheduledInterventionEvents,
                 interventionEvents);
 
         var finalSnapshot = latestSnapshot with
@@ -115,9 +119,11 @@ public static class ExperimentReplayExportFactory
             new ExperimentReplayDerived(
                 participantViewportEvents.Select(item => item.Copy()).ToArray(),
                 readingFocusEvents.Select(item => item.Copy()).ToArray(),
-                attentionEvents.Select(item => item.Copy()).ToArray()),
+                attentionEvents.Select(item => item.Copy()).ToArray(),
+                contextPreservationEvents.Select(item => item.Copy()).ToArray()),
             new ExperimentReplayInterventions(
                 decisionProposalEvents.Select(item => item.Copy()).ToArray(),
+                scheduledInterventionEvents.Select(item => item.Copy()).ToArray(),
                 interventionEvents.Select(item => item.Copy()).ToArray()),
             new ExperimentReplayData(
                 new ExperimentReplayBaseline(
@@ -133,7 +139,9 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<ParticipantViewportEventRecord> participantViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
+        IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
+        IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents)
     {
         long? latest = null;
@@ -173,7 +181,9 @@ public static class ExperimentReplayExportFactory
         Consider(MaxOrNull(participantViewportEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(readingFocusEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(attentionEvents.Select(item => item.OccurredAtUnixMs)));
+        Consider(MaxOrNull(contextPreservationEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(decisionProposalEvents.Select(item => item.OccurredAtUnixMs)));
+        Consider(MaxOrNull(scheduledInterventionEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(interventionEvents.Select(item => item.OccurredAtUnixMs)));
 
         return latest ?? (startedAtUnixMs > 0 ? startedAtUnixMs : null);

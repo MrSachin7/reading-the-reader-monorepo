@@ -41,16 +41,16 @@ function toTitleCase(value: string) {
 export function groupInterventionModules(
   modules: InterventionModuleDescriptor[]
 ): LiveInterventionModuleGroup[] {
-  const byId = new Map(modules.map((module) => [module.moduleId, module] as const))
+  const byId = new Map(modules.map((descriptor) => [descriptor.moduleId, descriptor] as const))
   const assigned = new Set<string>()
 
   const groups = SECTION_DEFINITIONS.map((section) => {
     const sectionModules = section.moduleIds
       .map((moduleId) => byId.get(moduleId))
-      .filter((module): module is InterventionModuleDescriptor => Boolean(module))
+      .filter((descriptor): descriptor is InterventionModuleDescriptor => Boolean(descriptor))
 
-    for (const module of sectionModules) {
-      assigned.add(module.moduleId)
+    for (const descriptor of sectionModules) {
+      assigned.add(descriptor.moduleId)
     }
 
     return {
@@ -61,16 +61,16 @@ export function groupInterventionModules(
   }).filter((group) => group.modules.length > 0)
 
   const remainingModules = modules
-    .filter((module) => !assigned.has(module.moduleId))
+    .filter((descriptor) => !assigned.has(descriptor.moduleId))
     .sort((left, right) => left.sortOrder - right.sortOrder)
 
   if (remainingModules.length > 0) {
     const extrasByGroup = new Map<string, InterventionModuleDescriptor[]>()
 
-    for (const module of remainingModules) {
-      const bucket = extrasByGroup.get(module.group) ?? []
-      bucket.push(module)
-      extrasByGroup.set(module.group, bucket)
+    for (const descriptor of remainingModules) {
+      const bucket = extrasByGroup.get(descriptor.group) ?? []
+      bucket.push(descriptor)
+      extrasByGroup.set(descriptor.group, bucket)
     }
 
     for (const [key, groupModules] of extrasByGroup) {

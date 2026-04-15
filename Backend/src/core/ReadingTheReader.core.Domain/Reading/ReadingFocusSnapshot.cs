@@ -6,9 +6,10 @@ public sealed record ReadingFocusSnapshot(
     double? NormalizedContentY,
     string? ActiveTokenId,
     string? ActiveBlockId,
+    string? ActiveSentenceId,
     long UpdatedAtUnixMs)
 {
-    public static ReadingFocusSnapshot Empty { get; } = new(false, null, null, null, null, 0);
+    public static ReadingFocusSnapshot Empty { get; } = new(false, null, null, null, null, null, 0);
 
     public ReadingFocusSnapshot Copy()
     {

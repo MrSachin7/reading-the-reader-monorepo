@@ -75,10 +75,20 @@ function getAxisDistance(position: number, start: number, end: number) {
   return 0;
 }
 
+function intersectsViewport(rect: DOMRect, viewportRect: DOMRect) {
+  return (
+    rect.right >= viewportRect.left &&
+    rect.left <= viewportRect.right &&
+    rect.bottom >= viewportRect.top &&
+    rect.top <= viewportRect.bottom
+  );
+}
+
 function buildWordLayouts(container: HTMLElement) {
   const elements = Array.from(
     container.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
   );
+  const viewportRect = container.getBoundingClientRect();
 
   const layouts: WordLayout[] = [];
   let currentLine = -1;
@@ -88,6 +98,10 @@ function buildWordLayouts(container: HTMLElement) {
   for (const element of elements) {
     const rect = element.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
+      continue;
+    }
+
+    if (!intersectsViewport(rect, viewportRect)) {
       continue;
     }
 
@@ -365,27 +379,25 @@ export function useRemoteFocusTokenAttention({
       return;
     }
 
-    const contentElement =
-      contentRef?.current ?? containerRef.current?.querySelector<HTMLElement>("[data-reader-content='true']");
-
-    if (!contentElement) {
+    const readingAreaElement = containerRef.current;
+    if (!readingAreaElement) {
       return;
     }
 
-    const contentRect = contentElement.getBoundingClientRect();
-    if (contentRect.width <= 0 || contentRect.height <= 0) {
+    const readingAreaRect = readingAreaElement.getBoundingClientRect();
+    if (readingAreaRect.width <= 0 || readingAreaRect.height <= 0) {
       return;
     }
 
     const x = clamp(
-      contentRect.left + remoteFocus.normalizedContentX * contentRect.width,
-      contentRect.left,
-      contentRect.right
+      readingAreaRect.left + remoteFocus.normalizedContentX * readingAreaRect.width,
+      readingAreaRect.left,
+      readingAreaRect.right
     );
     const y = clamp(
-      contentRect.top + remoteFocus.normalizedContentY * contentRect.height,
-      contentRect.top,
-      contentRect.bottom
+      readingAreaRect.top + remoteFocus.normalizedContentY * readingAreaRect.height,
+      readingAreaRect.top,
+      readingAreaRect.bottom
     );
 
     const candidateIndex = pickWordIndex(wordLayoutsRef.current, x, y);
