@@ -6,6 +6,8 @@ public sealed record ReadingGazeObservationCommand(
     double? NormalizedContentX,
     double? NormalizedContentY,
     string? TokenId,
+    string? TokenText,
+    string? TokenKind,
     string? BlockId,
     int? TokenIndex,
     int? LineIndex,

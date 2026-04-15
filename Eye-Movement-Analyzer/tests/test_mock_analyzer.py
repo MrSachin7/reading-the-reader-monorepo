@@ -48,6 +48,8 @@ def observation(
         "normalizedContentX": 0.5,
         "normalizedContentY": 0.5,
         "tokenId": token_id,
+        "tokenText": "example" if token_id is not None else None,
+        "tokenKind": "word" if token_id is not None else None,
         "blockId": "block-1",
         "tokenIndex": token_index if token_id is not None else None,
         "lineIndex": line_index if token_id is not None else None,
@@ -95,6 +97,14 @@ class MockAnalyzerTests(unittest.TestCase):
         self.assertEqual("analysis-provider.v1", heartbeat["protocolVersion"])
         self.assertEqual("mock-python-analysis", heartbeat["payload"]["providerId"])
         self.assertEqual(SESSION_ID, heartbeat["sessionId"])
+
+    def test_submit_analysis_preserves_observation_token_text(self) -> None:
+        result = self.send_observation(observation(1000, "token-1"))
+        latest = result["payload"]["analysisState"]["latestObservation"]
+
+        self.assertEqual("token-1", latest["tokenId"])
+        self.assertEqual("example", latest["tokenText"])
+        self.assertEqual("word", latest["tokenKind"])
 
     def test_initial_fixation_starts_at_90ms(self) -> None:
         first = self.send_observation(observation(1000))

@@ -2364,6 +2364,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             isInsideReadingArea ? ClampNullable(command.NormalizedContentX, 0, 1) : null,
             isInsideReadingArea ? ClampNullable(command.NormalizedContentY, 0, 1) : null,
             isInsideReadingArea ? NormalizeNullableText(command.TokenId) : null,
+            isInsideReadingArea ? NormalizeNullableTokenText(command.TokenText) : null,
+            isInsideReadingArea ? NormalizeNullableText(command.TokenKind) : null,
             isInsideReadingArea ? NormalizeNullableText(command.BlockId) : null,
             command.TokenIndex,
             command.LineIndex,
@@ -2395,6 +2397,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
 
         return ReadingGazeObservationStaleReasons.None;
+    }
+
+    private static string? NormalizeNullableTokenText(string? text)
+    {
+        return string.IsNullOrEmpty(text) ? null : text;
     }
 
     private static IReadOnlyList<DecisionProposalSnapshot> BuildRecentProposalHistory(

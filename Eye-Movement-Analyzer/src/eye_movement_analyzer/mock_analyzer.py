@@ -152,6 +152,8 @@ class MockEyeMovementAnalyzer:
             "normalizedContentX": self._read_optional_float(observation, "normalizedContentX"),
             "normalizedContentY": self._read_optional_float(observation, "normalizedContentY"),
             "tokenId": self._read_optional_text(observation, "tokenId"),
+            "tokenText": self._read_optional_text(observation, "tokenText"),
+            "tokenKind": self._read_optional_text(observation, "tokenKind"),
             "blockId": self._read_optional_text(observation, "blockId"),
             "tokenIndex": self._read_optional_int(observation, "tokenIndex"),
             "lineIndex": self._read_optional_int(observation, "lineIndex"),
