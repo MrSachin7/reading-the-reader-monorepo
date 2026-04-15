@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   applyInterventionCommand,
   approveDecisionProposal,
@@ -35,6 +35,7 @@ import {
 } from "@/modules/pages/reading/lib/readingPresentation"
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize"
 import { LiveControlsColumn } from "@/modules/pages/researcher/current-live/components/LiveControlsColumn"
+import { LiveInterventionsColumn } from "@/modules/pages/researcher/current-live/components/LiveInterventionsColumn"
 import { LiveReaderColumn } from "@/modules/pages/researcher/current-live/components/LiveReaderColumn"
 import type {
   ActiveLiveExperimentSession,
@@ -376,14 +377,9 @@ function ResearcherCurrentLiveBody({
           skimmedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.skimmedTokenCount : 0}
           appearance={readerAppearance}
           presentation={presentation}
-          interventionPolicy={readingSession.interventionPolicy}
-          pendingIntervention={readingSession.pendingIntervention}
           readerOptions={readerOptions}
           onFollowParticipantChange={setFollowParticipant}
           onReaderOptionChange={setReaderOption}
-          onCommitIntervention={commitIntervention}
-          onInterventionPolicyChange={handleInterventionPolicyChange}
-          onApplyPendingInterventionNow={handleApplyPendingInterventionNow}
           onApproveProposal={(proposalId) => approveDecisionProposal(proposalId)}
           onRejectProposal={(proposalId) => rejectDecisionProposal(proposalId)}
           onPauseAutomation={() => pauseDecisionAutomation()}
@@ -404,17 +400,17 @@ function ResearcherCurrentLiveBody({
           onTokenAttentionChange={setTokenAttention}
         />
 
-        <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
-          <Card className="h-full min-h-0 rounded-[1.6rem] bg-card/96 shadow-sm">
-            <CardContent className="pt-6">
-              <ExperimentCompletionActions
-                session={session}
-                source="researcher-live-view"
-                className="w-full items-stretch [&>div:first-child]:w-full [&>div:first-child]:flex-col [&>div:first-child]:items-stretch [&_button]:w-full"
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <LiveInterventionsColumn
+          session={session}
+          interventionModules={effectiveInterventionModules}
+          appearance={readerAppearance}
+          presentation={presentation}
+          interventionPolicy={readingSession.interventionPolicy}
+          pendingIntervention={readingSession.pendingIntervention}
+          onCommitIntervention={commitIntervention}
+          onInterventionPolicyChange={handleInterventionPolicyChange}
+          onApplyPendingInterventionNow={handleApplyPendingInterventionNow}
+        />
       </div>
     </main>
   )
