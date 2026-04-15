@@ -2570,6 +2570,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
     private bool ShouldQueueIntervention(ApplyInterventionCommand command)
     {
+        if (IsManualIntervention(command))
+        {
+            return false;
+        }
+
         if (ReadingInterventionRuntime.GetRequestedLayoutProperties(command).Count == 0)
         {
             return false;
@@ -2580,6 +2585,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             policy.LayoutCommitBoundary,
             ReadingInterventionCommitBoundaries.Immediate,
             StringComparison.Ordinal);
+    }
+
+    private static bool IsManualIntervention(ApplyInterventionCommand command)
+    {
+        return string.Equals(command.Source?.Trim(), "manual", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool DidBoundaryChange(
@@ -2679,10 +2689,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             }
         };
         var latestLayoutGuardrail = _liveReadingSession.LatestLayoutGuardrail;
+        var enforceLayoutTimingGuardrails = !IsManualIntervention(command);
 
         if (layoutChange.IsLayoutAffecting)
         {
-            if (layoutChange.ExceedsMaximumStep)
+            if (enforceLayoutTimingGuardrails && layoutChange.ExceedsMaximumStep)
             {
                 _liveReadingSession = _liveReadingSession with
                 {
@@ -2699,7 +2710,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             var cooldownUntilUnixMs = _lastLayoutInterventionAppliedAtUnixMs > 0
                 ? _lastLayoutInterventionAppliedAtUnixMs + ReadingInterventionRuntime.LayoutChangeCooldownMs
                 : (long?)null;
-            if (cooldownUntilUnixMs.HasValue && appliedAtUnixMs < cooldownUntilUnixMs.Value)
+            if (enforceLayoutTimingGuardrails && cooldownUntilUnixMs.HasValue && appliedAtUnixMs < cooldownUntilUnixMs.Value)
             {
                 _liveReadingSession = _liveReadingSession with
                 {
