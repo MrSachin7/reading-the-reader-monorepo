@@ -409,8 +409,8 @@ function buildReadingInterventionPolicy(
 ): ReadingInterventionPolicySnapshot {
   return {
     layoutCommitBoundary: policy?.layoutCommitBoundary ?? "paragraph-end",
-    layoutFallbackBoundary: policy?.layoutFallbackBoundary ?? "sentence-end",
-    layoutFallbackAfterMs: policy?.layoutFallbackAfterMs ?? 6000,
+    layoutFallbackBoundary: policy?.layoutFallbackBoundary ?? "page-turn",
+    layoutFallbackAfterMs: policy?.layoutFallbackAfterMs ?? 0,
   }
 }
 

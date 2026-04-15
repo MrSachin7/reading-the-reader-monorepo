@@ -2435,25 +2435,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 "boundary-met");
         }
 
-        var isFallbackReady = pendingIntervention.IsFallbackEligible &&
-                              !string.IsNullOrWhiteSpace(pendingIntervention.FallbackBoundary) &&
-                              occurredAtUnixMs - pendingIntervention.QueuedAtUnixMs >= pendingIntervention.FallbackAfterMs;
-        if (isFallbackReady &&
-            DidBoundaryChange(
-                pendingIntervention.FallbackBoundary!,
-                previousFocus,
-                currentFocus,
-                previousViewport,
-                currentViewport,
-                occurredAtUnixMs,
-                pendingIntervention.QueuedAtUnixMs))
-        {
-            return ApplyPendingInterventionInternal(
-                occurredAtUnixMs,
-                pendingIntervention.FallbackBoundary!,
-                "fallback-boundary-met");
-        }
-
         return null;
     }
 
@@ -2535,26 +2516,17 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         long queuedAtUnixMs)
     {
         var policy = NormalizeInterventionPolicy(_liveReadingSession.InterventionPolicy);
-        var fallbackBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
-            policy.LayoutFallbackBoundary,
-            ReadingInterventionCommitBoundaries.SentenceEnd);
-        var isFallbackEligible = policy.LayoutFallbackAfterMs > 0 &&
-                                 !string.Equals(
-                                     fallbackBoundary,
-                                     policy.LayoutCommitBoundary,
-                                     StringComparison.Ordinal);
-
         return new PendingInterventionSnapshot(
             Guid.NewGuid(),
             PendingInterventionStatuses.Queued,
             policy.LayoutCommitBoundary,
-            isFallbackEligible ? fallbackBoundary : null,
-            policy.LayoutFallbackAfterMs,
+            null,
+            0,
             queuedAtUnixMs,
             null,
             null,
             null,
-            isFallbackEligible,
+            false,
             null,
             command.Copy());
     }

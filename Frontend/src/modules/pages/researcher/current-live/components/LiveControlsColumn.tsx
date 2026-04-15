@@ -28,6 +28,7 @@ import type {
   DecisionState,
   ExternalProviderStatusSnapshot,
   ExperimentLiveMonitoringSnapshot,
+  ApplyInterventionCommandSnapshot,
   LayoutInterventionGuardrailSnapshot,
   PendingInterventionSnapshot,
   ReadingInterventionCommitBoundary,
@@ -309,6 +310,15 @@ export function LiveControlsColumn({
         interventionModules
       )
     : []
+  const pendingBoundaryLabel = pendingIntervention
+    ? formatBoundaryLabel(pendingIntervention.requestedBoundary)
+    : formatBoundaryLabel(interventionPolicy.layoutCommitBoundary)
+  const pendingBoundaryCue = pendingIntervention
+    ? formatPendingBoundaryCue(pendingIntervention.requestedBoundary)
+    : formatBoundaryCue(interventionPolicy.layoutCommitBoundary)
+  const pendingChangeSummary = pendingIntervention
+    ? summarizeInterventionChange(pendingIntervention.intervention, presentation, appearance)
+    : null
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -506,6 +516,40 @@ export function LiveControlsColumn({
     }
   }
 
+  function getPendingSliderValue(moduleId: string, parameterKey: string) {
+    if (
+      !pendingIntervention ||
+      pendingIntervention.status !== "queued" ||
+      pendingIntervention.intervention.moduleId !== moduleId
+    ) {
+      return null
+    }
+
+    const pendingPresentation = pendingIntervention.intervention.presentation
+    const explicitParameterValue = pendingIntervention.intervention.parameters?.[parameterKey]
+    const parsedParameterValue =
+      typeof explicitParameterValue === "string" && explicitParameterValue.trim().length > 0
+        ? Number(explicitParameterValue)
+        : null
+    const fallbackParameterValue =
+      typeof parsedParameterValue === "number" && Number.isFinite(parsedParameterValue)
+        ? parsedParameterValue
+        : null
+
+    switch (moduleId) {
+      case "font-size":
+        return pendingPresentation.fontSizePx ?? fallbackParameterValue
+      case "line-width":
+        return pendingPresentation.lineWidthPx ?? fallbackParameterValue
+      case "line-height":
+        return pendingPresentation.lineHeight ?? fallbackParameterValue
+      case "letter-spacing":
+        return pendingPresentation.letterSpacingEm ?? fallbackParameterValue
+      default:
+        return fallbackParameterValue
+    }
+  }
+
   function renderModuleControl(module: InterventionModuleDescriptor) {
     const parameter = module.parameters[0]
     if (!parameter) {
@@ -587,6 +631,8 @@ export function LiveControlsColumn({
           parameter,
           presentation.fontSizePx,
           `${presentation.fontSizePx}px`,
+          getPendingSliderValue(module.moduleId, parameter.key),
+          (value) => `${value}px`,
           (value) => commitModule(module, { [parameter.key]: String(value) })
         )
 
@@ -596,6 +642,8 @@ export function LiveControlsColumn({
           parameter,
           presentation.lineWidthPx,
           `${presentation.lineWidthPx}px`,
+          getPendingSliderValue(module.moduleId, parameter.key),
+          (value) => `${value}px`,
           (value) => commitModule(module, { [parameter.key]: String(value) })
         )
 
@@ -605,6 +653,8 @@ export function LiveControlsColumn({
           parameter,
           presentation.lineHeight,
           presentation.lineHeight.toFixed(2),
+          getPendingSliderValue(module.moduleId, parameter.key),
+          (value) => value.toFixed(2),
           (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
         )
 
@@ -614,6 +664,8 @@ export function LiveControlsColumn({
           parameter,
           presentation.letterSpacingEm,
           `${presentation.letterSpacingEm.toFixed(2)}em`,
+          getPendingSliderValue(module.moduleId, parameter.key),
+          (value) => `${value.toFixed(2)}em`,
           (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
         )
 
@@ -966,9 +1018,9 @@ export function LiveControlsColumn({
               <div className="rounded-[1.2rem] border bg-background/80 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">Timing policy</p>
+                    <p className="text-sm font-medium">When to apply typography</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Typography changes apply at the selected reading boundary, then fall back if the wait gets too long.
+                      Request the change now. The participant sees it only when they naturally reach the selected boundary.
                     </p>
                   </div>
                   <Badge variant="outline">
@@ -978,12 +1030,14 @@ export function LiveControlsColumn({
 
                 <div className="mt-4 space-y-3">
                   <Field>
-                    <FieldLabel>Commit boundary</FieldLabel>
+                    <FieldLabel>Apply typography at</FieldLabel>
                     <Select
                       value={interventionPolicy.layoutCommitBoundary}
                       onValueChange={(value) =>
                         void onInterventionPolicyChange({
                           layoutCommitBoundary: value as ReadingInterventionCommitBoundary,
+                          layoutFallbackBoundary: value as ReadingInterventionCommitBoundary,
+                          layoutFallbackAfterMs: 0,
                         })
                       }
                     >
@@ -999,78 +1053,45 @@ export function LiveControlsColumn({
                     </Select>
                   </Field>
 
-                  <Field>
-                    <FieldLabel>Fallback boundary</FieldLabel>
-                    <Select
-                      value={interventionPolicy.layoutFallbackBoundary}
-                      onValueChange={(value) =>
-                        void onInterventionPolicyChange({
-                          layoutFallbackBoundary: value as ReadingInterventionCommitBoundary,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Fallback boundary" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="immediate">Immediate</SelectItem>
-                        <SelectItem value="page-turn">Page turn</SelectItem>
-                        <SelectItem value="sentence-end">Sentence end</SelectItem>
-                        <SelectItem value="paragraph-end">Paragraph end</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-
-                  <Field>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <FieldLabel>Fallback wait</FieldLabel>
-                      <span className="text-xs text-muted-foreground">
-                        {interventionPolicy.layoutFallbackAfterMs} ms
-                      </span>
-                    </div>
-                    <Slider
-                      min={1000}
-                      max={12000}
-                      step={500}
-                      value={[interventionPolicy.layoutFallbackAfterMs]}
-                      onValueChange={(value) =>
-                        void onInterventionPolicyChange({
-                          layoutFallbackAfterMs: value[0] ?? interventionPolicy.layoutFallbackAfterMs,
-                        })
-                      }
-                    />
-                  </Field>
                 </div>
 
-                <div className="mt-4 rounded-xl border bg-muted/20 px-3 py-3">
+                <div
+                  className={cn(
+                    "mt-4 rounded-xl border px-3 py-3",
+                    pendingIntervention
+                      ? "border-amber-500/35 bg-amber-500/10"
+                      : "bg-muted/20"
+                  )}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium">Pending intervention</p>
+                      <p className="text-sm font-medium">
+                        {pendingIntervention ? pendingBoundaryCue : "No pending typography change"}
+                      </p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
                         {pendingIntervention
-                          ? `Waiting for ${formatBoundaryLabel(pendingIntervention.requestedBoundary).toLowerCase()}: ${pendingIntervention.intervention.reason}`
-                          : "No queued typography change right now."}
+                          ? `${pendingBoundaryLabel} is only a trigger point. The intervention will not move the participant.`
+                          : `New typography changes will ${formatBoundaryCue(interventionPolicy.layoutCommitBoundary).toLowerCase()}.`}
                       </p>
                     </div>
                     <Badge variant={pendingIntervention ? "secondary" : "outline"}>
-                      {pendingIntervention?.status ?? "idle"}
+                      {pendingIntervention ? "queued" : "idle"}
                     </Badge>
                   </div>
 
                   {pendingIntervention ? (
                     <>
-                      <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                        {formatBoundaryLabel(pendingIntervention.requestedBoundary)}
-                        {pendingIntervention.fallbackBoundary
-                          ? ` · fallback ${formatBoundaryLabel(pendingIntervention.fallbackBoundary)}`
-                          : ""}
-                        {pendingIntervention.waitDurationMs !== null
-                          ? ` · waited ${pendingIntervention.waitDurationMs} ms`
-                          : ""}
-                        {pendingIntervention.resolutionReason
-                          ? ` · ${pendingIntervention.resolutionReason}`
-                          : ""}
-                      </p>
+                      <div className="mt-3 rounded-lg border bg-background/80 px-3 py-2">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          Requested change
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-foreground">
+                          {pendingChangeSummary}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {pendingIntervention.intervention.reason}
+                        </p>
+                      </div>
                       <Button
                         className="mt-3 w-full"
                         variant="outline"
@@ -1137,8 +1158,7 @@ export function LiveControlsColumn({
                     <p className="text-sm font-medium">Test interventions from here</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       Use the controls below to queue a manual intervention. Appearance changes apply
-                      immediately. Typography changes follow the selected commit boundary; press{" "}
-                      <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
+                      immediately. Typography changes show as pending until the selected boundary is reached.
                     </p>
                   </div>
                   {groupedInterventionModules.length > 0 ? (
@@ -1277,6 +1297,78 @@ function formatBoundaryLabel(boundary: ReadingInterventionCommitBoundary) {
   }
 }
 
+function formatBoundaryCue(boundary: ReadingInterventionCommitBoundary) {
+  switch (boundary) {
+    case "immediate":
+      return "apply immediately"
+    case "page-turn":
+      return "apply on the next page"
+    case "sentence-end":
+      return "apply at the next sentence"
+    case "paragraph-end":
+      return "apply at the next paragraph"
+    default:
+      return "wait for the selected boundary"
+  }
+}
+
+function formatPendingBoundaryCue(boundary: ReadingInterventionCommitBoundary) {
+  switch (boundary) {
+    case "immediate":
+      return "Applying now"
+    case "page-turn":
+      return "Pending for next page"
+    case "sentence-end":
+      return "Pending for next sentence"
+    case "paragraph-end":
+      return "Pending for next paragraph"
+    default:
+      return "Pending"
+  }
+}
+
+function summarizeInterventionChange(
+  intervention: ApplyInterventionCommandSnapshot,
+  presentation: ReadingPresentationSettings,
+  appearance: ReaderAppearanceSettings
+) {
+  const changes: string[] = []
+  const nextPresentation = intervention.presentation
+  const nextAppearance = intervention.appearance
+
+  pushNumericChange(changes, "Font size", presentation.fontSizePx, nextPresentation.fontSizePx, "px")
+  pushNumericChange(changes, "Line width", presentation.lineWidthPx, nextPresentation.lineWidthPx, "px")
+  pushNumericChange(changes, "Line height", presentation.lineHeight, nextPresentation.lineHeight, "")
+  pushNumericChange(changes, "Letter spacing", presentation.letterSpacingEm, nextPresentation.letterSpacingEm, "em")
+
+  if (nextPresentation.fontFamily && nextPresentation.fontFamily !== presentation.fontFamily) {
+    changes.push(`Font family: ${presentation.fontFamily} -> ${nextPresentation.fontFamily}`)
+  }
+
+  if (
+    typeof nextPresentation.editableByResearcher === "boolean" &&
+    nextPresentation.editableByResearcher !== presentation.editableByExperimenter
+  ) {
+    changes.push(
+      `Participant presentation controls: ${presentation.editableByExperimenter ? "enabled" : "locked"} -> ${nextPresentation.editableByResearcher ? "enabled" : "locked"}`
+    )
+  }
+
+  if (nextAppearance.themeMode && nextAppearance.themeMode !== appearance.themeMode) {
+    changes.push(`Theme mode: ${appearance.themeMode} -> ${nextAppearance.themeMode}`)
+  }
+
+  if (nextAppearance.palette && nextAppearance.palette !== appearance.palette) {
+    changes.push(`Palette: ${appearance.palette} -> ${nextAppearance.palette}`)
+  }
+
+  if (nextAppearance.appFont && nextAppearance.appFont !== appearance.appFont) {
+    changes.push(`App font: ${appearance.appFont} -> ${nextAppearance.appFont}`)
+  }
+
+  return changes[0] ?? intervention.reason
+}
+
 function summarizeProposalChanges(
   proposal: DecisionProposalSnapshot,
   presentation: ReadingPresentationSettings,
@@ -1376,22 +1468,52 @@ function renderSliderField(
   parameter: InterventionModuleDescriptor["parameters"][number],
   currentValue: number,
   formattedValue: string,
+  pendingValue: number | null,
+  formatValue: (value: number) => string,
   onValueChange: (value: number) => void
 ) {
+  const hasPendingValue = typeof pendingValue === "number" && Number.isFinite(pendingValue)
+  const visibleValue = hasPendingValue ? pendingValue! : currentValue
+  const min = parameter.minValue ?? currentValue
+  const max = parameter.maxValue ?? currentValue
+
   return (
     <Field key={module.moduleId}>
       <div className="mb-2 flex items-center justify-between">
         <FieldLabel>{parameter.displayName}</FieldLabel>
-        <span className="text-xs text-muted-foreground">{formattedValue}</span>
+        <span className="text-xs text-muted-foreground">
+          {hasPendingValue ? "pending" : formattedValue}
+        </span>
+      </div>
+      <div
+        className={cn(
+          "mb-2 grid gap-2 text-xs",
+          hasPendingValue ? "grid-cols-2" : "grid-cols-1"
+        )}
+      >
+        <div className="rounded-md border bg-background px-2 py-1.5">
+          <span className="text-muted-foreground">Current</span>
+          <span className="ml-2 font-medium text-foreground">{formattedValue}</span>
+        </div>
+        {hasPendingValue ? (
+          <div className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">
+            <span className="text-amber-900 dark:text-amber-100">Next</span>
+            <span className="ml-2 font-medium text-foreground">{formatValue(visibleValue)}</span>
+          </div>
+        ) : null}
       </div>
       <Slider
-        min={parameter.minValue ?? currentValue}
-        max={parameter.maxValue ?? currentValue}
+        min={min}
+        max={max}
         step={parameter.step ?? 1}
-        value={[currentValue]}
-        onValueChange={(value) => onValueChange(value[0] ?? currentValue)}
+        value={[visibleValue]}
+        onValueChange={(value) => onValueChange(value[0] ?? visibleValue)}
       />
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{module.description}</p>
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        {hasPendingValue
+          ? `${module.description} The next value is queued until the selected boundary.`
+          : module.description}
+      </p>
     </Field>
   )
 }

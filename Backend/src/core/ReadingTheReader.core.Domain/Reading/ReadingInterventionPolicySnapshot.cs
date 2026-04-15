@@ -17,8 +17,8 @@ public sealed record ReadingInterventionPolicySnapshot(
 {
     public static ReadingInterventionPolicySnapshot Default { get; } = new(
         ReadingInterventionCommitBoundaries.PageTurn,
-        ReadingInterventionCommitBoundaries.SentenceEnd,
-        6_000);
+        ReadingInterventionCommitBoundaries.PageTurn,
+        0);
 
     public ReadingInterventionPolicySnapshot Copy()
     {
