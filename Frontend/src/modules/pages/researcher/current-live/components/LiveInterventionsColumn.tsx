@@ -75,10 +75,26 @@ export function LiveInterventionsColumn({
   onApplyPendingInterventionNow,
 }: LiveInterventionsColumnProps) {
   const [moduleDrafts, setModuleDrafts] = useState<Record<string, InterventionParameterValues>>({})
+  const [sliderDrafts, setSliderDrafts] = useState<Record<string, number>>({})
   const groupedInterventionModules = useMemo(
     () => groupInterventionModules(interventionModules),
     [interventionModules]
   )
+
+  function rememberSliderDraft(moduleId: string, value: number) {
+    setSliderDrafts((previous) => ({ ...previous, [moduleId]: value }))
+  }
+
+  function getSliderDraft(moduleId: string, currentValue: number) {
+    const drafted = sliderDrafts[moduleId]
+    if (typeof drafted !== "number" || !Number.isFinite(drafted)) {
+      return null
+    }
+    if (drafted === currentValue) {
+      return null
+    }
+    return drafted
+  }
 
   const pendingBoundaryCue = pendingIntervention
     ? formatPendingBoundaryCue(pendingIntervention.requestedBoundary)
@@ -436,9 +452,13 @@ export function LiveInterventionsColumn({
           parameter,
           presentation.fontSizePx,
           `${presentation.fontSizePx}px`,
-          getPendingSliderValue(module.moduleId, parameter.key),
+          getPendingSliderValue(module.moduleId, parameter.key) ??
+            getSliderDraft(module.moduleId, presentation.fontSizePx),
           (value) => `${value}px`,
-          (value) => commitModule(module, { [parameter.key]: String(value) })
+          (value) => {
+            rememberSliderDraft(module.moduleId, value)
+            commitModule(module, { [parameter.key]: String(value) })
+          }
         )
 
       case "line-width":
@@ -447,9 +467,13 @@ export function LiveInterventionsColumn({
           parameter,
           presentation.lineWidthPx,
           `${presentation.lineWidthPx}px`,
-          getPendingSliderValue(module.moduleId, parameter.key),
+          getPendingSliderValue(module.moduleId, parameter.key) ??
+            getSliderDraft(module.moduleId, presentation.lineWidthPx),
           (value) => `${value}px`,
-          (value) => commitModule(module, { [parameter.key]: String(value) })
+          (value) => {
+            rememberSliderDraft(module.moduleId, value)
+            commitModule(module, { [parameter.key]: String(value) })
+          }
         )
 
       case "line-height":
@@ -458,9 +482,13 @@ export function LiveInterventionsColumn({
           parameter,
           presentation.lineHeight,
           presentation.lineHeight.toFixed(2),
-          getPendingSliderValue(module.moduleId, parameter.key),
+          getPendingSliderValue(module.moduleId, parameter.key) ??
+            getSliderDraft(module.moduleId, presentation.lineHeight),
           (value) => value.toFixed(2),
-          (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
+          (value) => {
+            rememberSliderDraft(module.moduleId, value)
+            commitModule(module, { [parameter.key]: value.toFixed(2) })
+          }
         )
 
       case "letter-spacing":
@@ -469,9 +497,13 @@ export function LiveInterventionsColumn({
           parameter,
           presentation.letterSpacingEm,
           `${presentation.letterSpacingEm.toFixed(2)}em`,
-          getPendingSliderValue(module.moduleId, parameter.key),
+          getPendingSliderValue(module.moduleId, parameter.key) ??
+            getSliderDraft(module.moduleId, presentation.letterSpacingEm),
           (value) => `${value.toFixed(2)}em`,
-          (value) => commitModule(module, { [parameter.key]: value.toFixed(2) })
+          (value) => {
+            rememberSliderDraft(module.moduleId, value)
+            commitModule(module, { [parameter.key]: value.toFixed(2) })
+          }
         )
 
       default:
