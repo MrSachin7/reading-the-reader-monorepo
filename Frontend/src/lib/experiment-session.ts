@@ -445,8 +445,8 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   },
   interventionPolicy: {
     layoutCommitBoundary: "page-turn",
-    layoutFallbackBoundary: "sentence-end",
-    layoutFallbackAfterMs: 6000,
+    layoutFallbackBoundary: "page-turn",
+    layoutFallbackAfterMs: 0,
   },
   participantViewport: {
     isConnected: false,

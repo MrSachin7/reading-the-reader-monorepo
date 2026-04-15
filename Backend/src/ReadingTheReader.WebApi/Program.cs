@@ -6,11 +6,10 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.Realtime.Persistence;
 using ReadingTheReader.TobiiEyetracker;
-using ReadingTheReader.WebApi;
 using ReadingTheReader.WebApi.Websockets;
 
 var builder = WebApplication.CreateBuilder(args);
-const string LocalhostCorsPolicy = "LocalhostCorsPolicy";
+const string localhostCorsPolicy = "LocalhostCorsPolicy";
 var calibrationOptions = builder.Configuration.GetSection(CalibrationOptions.SectionName).Get<CalibrationOptions>()
     ?? new CalibrationOptions();
 var experimentSetupTestingOptions = builder.Configuration.GetSection(ExperimentSetupTestingOptions.SectionName).Get<ExperimentSetupTestingOptions>()
@@ -34,7 +33,7 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(LocalhostCorsPolicy, policy =>
+    options.AddPolicy(localhostCorsPolicy, policy =>
     {
         policy
             .SetIsOriginAllowed(origin =>
@@ -71,7 +70,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseCors(LocalhostCorsPolicy);
+app.UseCors(localhostCorsPolicy);
 app.UseFastEndpoints(c =>
 {
     c.Endpoints.RoutePrefix = "api";

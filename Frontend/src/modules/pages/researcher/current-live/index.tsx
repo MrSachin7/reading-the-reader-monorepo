@@ -333,10 +333,11 @@ function ResearcherCurrentLiveBody({
       layoutFallbackAfterMs?: number
     }) => {
       const currentPolicy = readingSession.interventionPolicy
+      const commitBoundary = patch.layoutCommitBoundary ?? currentPolicy.layoutCommitBoundary
       await updateInterventionPolicy({
-        layoutCommitBoundary: patch.layoutCommitBoundary ?? currentPolicy.layoutCommitBoundary,
-        layoutFallbackBoundary: patch.layoutFallbackBoundary ?? currentPolicy.layoutFallbackBoundary,
-        layoutFallbackAfterMs: patch.layoutFallbackAfterMs ?? currentPolicy.layoutFallbackAfterMs,
+        layoutCommitBoundary: commitBoundary,
+        layoutFallbackBoundary: patch.layoutFallbackBoundary ?? commitBoundary,
+        layoutFallbackAfterMs: patch.layoutFallbackAfterMs ?? 0,
       }).unwrap()
     },
     [readingSession.interventionPolicy, updateInterventionPolicy]

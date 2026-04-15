@@ -559,8 +559,8 @@ public sealed class ExperimentSessionAuthorityTests
         await harness.SessionManager.StartSessionAsync();
         await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
             ReadingInterventionCommitBoundaries.SentenceEnd,
-            ReadingInterventionCommitBoundaries.Immediate,
-            6000));
+            ReadingInterventionCommitBoundaries.SentenceEnd,
+            0));
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
@@ -578,6 +578,8 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Null(intervention);
         Assert.Equal(PendingInterventionStatuses.Queued, pending.Status);
         Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, pending.RequestedBoundary);
+        Assert.False(pending.IsFallbackEligible);
+        Assert.Null(pending.FallbackBoundary);
         Assert.Equal(18, queuedReadingSession.Presentation.FontSizePx);
 
         await Task.Delay(5);
@@ -600,8 +602,8 @@ public sealed class ExperimentSessionAuthorityTests
         await harness.SessionManager.StartSessionAsync();
         await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
             ReadingInterventionCommitBoundaries.ParagraphEnd,
-            ReadingInterventionCommitBoundaries.SentenceEnd,
-            6000));
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            0));
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
@@ -666,6 +668,7 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Null(intervention);
         Assert.Equal(18, queuedReadingSession.Presentation.FontSizePx);
         Assert.NotNull(queuedReadingSession.PendingIntervention);
+        Assert.Equal(0, queuedReadingSession.ParticipantViewport.ActivePageIndex);
 
         await Task.Delay(5);
         await harness.SessionManager.UpdateParticipantViewportAsync(
@@ -679,38 +682,6 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(ReadingInterventionCommitBoundaries.PageTurn, appliedReadingSession.LatestIntervention!.AppliedBoundary);
         Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
         Assert.Equal(1, appliedReadingSession.ParticipantViewport.ActivePageIndex);
-    }
-
-    [Fact]
-    public async Task ApplyInterventionAsync_WhenParagraphBoundaryWaitsTooLong_FallsBackToSentenceBoundary()
-    {
-        var harness = RealtimeTestDoubles.CreateHarness();
-        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
-        await harness.SessionManager.StartSessionAsync();
-        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
-            ReadingInterventionCommitBoundaries.ParagraphEnd,
-            ReadingInterventionCommitBoundaries.SentenceEnd,
-            1));
-        await harness.SessionManager.UpdateReadingFocusAsync(
-            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
-
-        await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            "manual",
-            "researcher-ui",
-            "Increase font size",
-            new ReadingPresentationPatch(null, 20, null, null, null, null),
-            new ReaderAppearancePatch(null, null, null)));
-
-        await Task.Delay(20);
-        await harness.SessionManager.UpdateReadingFocusAsync(
-            new UpdateReadingFocusCommand(true, 0.5, 0.4, "token-2", "block-1", "sentence-2"));
-
-        var snapshot = harness.SessionManager.GetCurrentSnapshot();
-        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
-
-        Assert.Equal(20, readingSession.Presentation.FontSizePx);
-        Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, readingSession.LatestIntervention!.AppliedBoundary);
-        Assert.True(readingSession.LatestIntervention.WaitDurationMs >= 1);
     }
 
     [Fact]
