@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
@@ -7,6 +8,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -24,8 +26,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private readonly ExperimentSetupTestingOptions _experimentSetupTestingOptions;
     private readonly IReadingInterventionRuntime _readingInterventionRuntime;
     private readonly IReadingInterventionModuleRegistry _interventionModuleRegistry;
+    private readonly IEyeMovementAnalysisStrategyCoordinator _eyeMovementAnalysisStrategyCoordinator;
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
+    private readonly IAnalysisProviderGateway _analysisProviderGateway;
     private readonly IExternalProviderGateway _externalProviderGateway;
+    private readonly IAnalysisProviderConnectionRegistry _analysisProviderConnectionRegistry;
     private readonly IProviderConnectionRegistry _providerConnectionRegistry;
     private readonly CalibrationOptions _calibrationOptions;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
@@ -43,6 +48,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private CalibrationSessionSnapshot _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
     private ExperimentSession _session = ExperimentSession.Inactive;
     private LiveReadingSessionSnapshot _liveReadingSession = LiveReadingSessionSnapshot.Empty;
+    private EyeMovementAnalysisConfigurationSnapshot _eyeMovementAnalysisConfiguration = EyeMovementAnalysisConfigurationSnapshot.Default;
+    private EyeMovementAnalysisRuntimeState _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
     private DecisionConfigurationSnapshot _decisionConfiguration = DecisionConfigurationSnapshot.Default;
     private DecisionRuntimeStateSnapshot _decisionState = DecisionRuntimeStateSnapshot.Empty;
     private Guid? _activeReplayRecoverySessionId;
@@ -67,8 +74,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         ExperimentSetupTestingOptions experimentSetupTestingOptions,
         IReadingInterventionRuntime readingInterventionRuntime,
         IReadingInterventionModuleRegistry interventionModuleRegistry,
+        IEyeMovementAnalysisStrategyCoordinator eyeMovementAnalysisStrategyCoordinator,
         IDecisionStrategyCoordinator decisionStrategyCoordinator,
+        IAnalysisProviderGateway analysisProviderGateway,
         IExternalProviderGateway externalProviderGateway,
+        IAnalysisProviderConnectionRegistry analysisProviderConnectionRegistry,
         IProviderConnectionRegistry providerConnectionRegistry)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
@@ -80,8 +90,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         _experimentSetupTestingOptions = experimentSetupTestingOptions;
         _readingInterventionRuntime = readingInterventionRuntime;
         _interventionModuleRegistry = interventionModuleRegistry;
+        _eyeMovementAnalysisStrategyCoordinator = eyeMovementAnalysisStrategyCoordinator;
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
+        _analysisProviderGateway = analysisProviderGateway;
         _externalProviderGateway = externalProviderGateway;
+        _analysisProviderConnectionRegistry = analysisProviderConnectionRegistry;
         _providerConnectionRegistry = providerConnectionRegistry;
     }
 
@@ -185,6 +198,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 LatestLayoutGuardrail = null,
                 AttentionSummary = null,
             };
+            _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
             _lastLayoutInterventionAppliedAtUnixMs = 0;
 
             nextState = _liveReadingSession.Copy();
@@ -200,6 +214,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         if (ShouldPublishToExternalProvider())
         {
             await _externalProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
+        }
+        if (ShouldPublishToExternalAnalysisProvider())
+        {
+            await _analysisProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
         }
     }
 
@@ -304,6 +322,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 }
             }
         }
+        if (ShouldPublishToExternalAnalysisProvider())
+        {
+            await _analysisProviderGateway.PublishViewportChangedAsync(GetCurrentSessionId(), viewport, ct);
+        }
         await EvaluateDecisionStrategiesAsync(ct);
         return viewport;
     }
@@ -371,6 +393,54 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return focus;
     }
 
+    public async ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
+        ReadingGazeObservationCommand command,
+        CancellationToken ct = default)
+    {
+        EyeMovementAnalysisSnapshot analysisSnapshot;
+        ReadingAttentionSummarySnapshot summary;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var observation = NormalizeReadingGazeObservation(command);
+            var runtimeState = _eyeMovementAnalysisRuntimeState.Copy() with
+            {
+                LatestObservation = observation.Copy()
+            };
+
+            var result = await _eyeMovementAnalysisStrategyCoordinator.AnalyzeAsync(
+                GetCurrentSnapshot(),
+                _eyeMovementAnalysisConfiguration,
+                runtimeState,
+                observation,
+                ct);
+
+            _eyeMovementAnalysisRuntimeState = result?.RuntimeState.Copy() ?? runtimeState;
+            analysisSnapshot = EyeMovementAnalysisProjector.ToSnapshot(
+                _eyeMovementAnalysisRuntimeState,
+                observation.ObservedAtUnixMs);
+            summary = EyeMovementAnalysisProjector.ToAttentionSummary(
+                _eyeMovementAnalysisRuntimeState,
+                observation.ObservedAtUnixMs);
+            _liveReadingSession = _liveReadingSession with
+            {
+                AttentionSummary = summary
+            };
+            RecordReadingAttentionEvent(observation.ObservedAtUnixMs, summary);
+            await SaveCurrentCheckpointAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
+        return analysisSnapshot;
+    }
+
     public async ValueTask<ReadingContextPreservationEventSnapshot> UpdateReadingContextPreservationAsync(
         UpdateReadingContextPreservationCommand command,
         CancellationToken ct = default)
@@ -413,7 +483,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         try
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            summary = NormalizeReadingAttentionSummary(command);
+            summary = HasAuthoritativeEyeMovementAnalysisState()
+                ? EyeMovementAnalysisProjector.ToAttentionSummary(_eyeMovementAnalysisRuntimeState, updatedAtUnixMs)
+                : NormalizeReadingAttentionSummary(command);
             _liveReadingSession = _liveReadingSession with
             {
                 AttentionSummary = summary
@@ -433,6 +505,52 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         }
         await EvaluateDecisionStrategiesAsync(ct);
         return summary;
+    }
+
+    public async ValueTask<EyeMovementAnalysisConfigurationSnapshot> UpdateEyeMovementAnalysisConfigurationAsync(
+        EyeMovementAnalysisConfigurationSnapshot configuration,
+        CancellationToken ct = default)
+    {
+        EyeMovementAnalysisConfigurationSnapshot normalizedConfiguration;
+        EyeMovementAnalysisSnapshot analysisSnapshot;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            normalizedConfiguration = NormalizeEyeMovementAnalysisConfiguration(configuration);
+            var providerChanged = !string.Equals(
+                _eyeMovementAnalysisConfiguration.ProviderId,
+                normalizedConfiguration.ProviderId,
+                StringComparison.Ordinal);
+
+            _eyeMovementAnalysisConfiguration = normalizedConfiguration;
+            if (providerChanged)
+            {
+                _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
+                _liveReadingSession = _liveReadingSession with
+                {
+                    AttentionSummary = null
+                };
+            }
+
+            analysisSnapshot = EyeMovementAnalysisProjector.ToSnapshot(
+                _eyeMovementAnalysisRuntimeState,
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await SaveCurrentCheckpointAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ExperimentState, GetCurrentSnapshot(), ct);
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
+        if (ShouldPublishToExternalAnalysisProvider())
+        {
+            await _analysisProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
+        }
+
+        return normalizedConfiguration;
     }
 
     public async ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(
@@ -977,6 +1095,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
             var startedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             Volatile.Write(ref _session, ExperimentSession.StartNew(startedAt, current.Participant, current.EyeTrackerDevice));
+            _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
             _decisionState = new DecisionRuntimeStateSnapshot(_decisionState.AutomationPaused, null, []);
             ResetReplayHistory();
             RecordLifecycleEvent("session-started", "system", startedAt);
@@ -1002,6 +1121,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             {
                 await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
                 await _externalProviderGateway.PublishDecisionUpdateAsync(snapshot.SessionId, BuildDecisionRealtimeUpdate(), ct);
+            }
+            if (ShouldPublishToExternalAnalysisProvider())
+            {
+                await _analysisProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
             }
             return true;
         }
@@ -1042,6 +1165,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             Volatile.Write(ref _session, ExperimentSession.Inactive);
             _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
             _liveReadingSession = LiveReadingSessionSnapshot.Empty;
+            _eyeMovementAnalysisConfiguration = EyeMovementAnalysisConfigurationSnapshot.Default.Copy();
+            _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
             _decisionConfiguration = DecisionConfigurationSnapshot.Default.Copy();
             _decisionState = DecisionRuntimeStateSnapshot.Empty.Copy();
             _lastLayoutInterventionAppliedAtUnixMs = 0;
@@ -1053,6 +1178,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             if (ShouldPublishToExternalProvider())
             {
                 await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
+            }
+            if (ShouldPublishToExternalAnalysisProvider())
+            {
+                await _analysisProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
             }
             return snapshot;
         }
@@ -1148,6 +1277,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 await _externalProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
                 await _externalProviderGateway.PublishDecisionUpdateAsync(snapshot.SessionId, BuildDecisionRealtimeUpdate(), ct);
             }
+            if (ShouldPublishToExternalAnalysisProvider())
+            {
+                await _analysisProviderGateway.PublishSessionSnapshotAsync(snapshot, ct);
+            }
             return snapshot;
         }
         finally
@@ -1177,6 +1310,9 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             Volatile.Read(ref _isHardwareTracking) == 1,
             _gazeSubscribers.Count);
         var externalProviderStatus = BuildExternalProviderStatusSnapshot(_providerConnectionRegistry);
+        var eyeMovementAnalysisProviderStatus = BuildEyeMovementAnalysisProviderStatusSnapshot(_analysisProviderConnectionRegistry);
+        var analysisObservedAtUnixMs = _eyeMovementAnalysisRuntimeState.LatestObservation?.ObservedAtUnixMs
+            ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         return new ExperimentSessionSnapshot(
             session.Id,
@@ -1194,7 +1330,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             externalProviderStatus,
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
-            _decisionState.Copy());
+            _decisionState.Copy(),
+            eyeMovementAnalysisProviderStatus,
+            _eyeMovementAnalysisConfiguration.Copy(),
+            EyeMovementAnalysisProjector.ToSnapshot(_eyeMovementAnalysisRuntimeState, analysisObservedAtUnixMs));
     }
 
     public ExperimentReplayExport? GetCurrentActiveReplayExport()
@@ -1229,14 +1368,15 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
     {
         var shouldPublishToProvider = ShouldPublishToExternalProvider();
-        if (_gazeSubscribers.IsEmpty && !shouldPublishToProvider)
+        var shouldPublishToAnalysisProvider = ShouldPublishToExternalAnalysisProvider();
+        if (_gazeSubscribers.IsEmpty && !shouldPublishToProvider && !shouldPublishToAnalysisProvider)
         {
             return;
         }
 
         UpdateGazeSample(gazeData);
         var subscribers = _gazeSubscribers.Keys.ToArray();
-        var sendTask = BroadcastGazeSampleAsync(subscribers, shouldPublishToProvider, gazeData);
+        var sendTask = BroadcastGazeSampleAsync(subscribers, shouldPublishToProvider, shouldPublishToAnalysisProvider, gazeData);
         if (!sendTask.IsCompletedSuccessfully)
         {
             _ = IgnoreFailuresAsync(sendTask.AsTask());
@@ -1347,6 +1487,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 await _externalProviderGateway.PublishReadingFocusChangedAsync(sessionId, focus, ct);
             }
         }
+        if (ShouldPublishToExternalAnalysisProvider() && viewport is not null)
+        {
+            await _analysisProviderGateway.PublishViewportChangedAsync(GetCurrentSessionId(), viewport, ct);
+        }
     }
 
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
@@ -1358,7 +1502,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
              string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber));
         var shouldStream =
             session.IsActive &&
-            (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider()) &&
+            (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider() || ShouldPublishToExternalAnalysisProvider()) &&
                            Volatile.Read(ref _isGazeStreamingSuppressed) == 0;
 
         if (shouldStream)
@@ -1401,7 +1545,11 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             $"Gaze streaming stopped. SessionId={session.Id}, Subscribers={_gazeSubscribers.Count}, SessionActive={session.IsActive}, Suppressed={Volatile.Read(ref _isGazeStreamingSuppressed) == 1}");
     }
 
-    private async ValueTask BroadcastGazeSampleAsync(string[] subscribers, bool shouldPublishToProvider, GazeData gazeData)
+    private async ValueTask BroadcastGazeSampleAsync(
+        string[] subscribers,
+        bool shouldPublishToProvider,
+        bool shouldPublishToAnalysisProvider,
+        GazeData gazeData)
     {
         foreach (var connectionId in subscribers)
         {
@@ -1412,6 +1560,51 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         {
             await _externalProviderGateway.PublishGazeSampleAsync(GetCurrentSessionId(), gazeData, CancellationToken.None);
         }
+
+        if (shouldPublishToAnalysisProvider)
+        {
+            await _analysisProviderGateway.PublishGazeSampleAsync(GetCurrentSessionId(), gazeData, CancellationToken.None);
+        }
+    }
+
+    public async ValueTask<EyeMovementAnalysisSnapshot> ApplyExternalEyeMovementAnalysisAsync(
+        ExternalEyeMovementAnalysisCommand command,
+        CancellationToken ct = default)
+    {
+        EyeMovementAnalysisSnapshot analysisSnapshot;
+        ReadingAttentionSummarySnapshot summary;
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            ValidateExternalEyeMovementAnalysisCommand(command);
+
+            analysisSnapshot = command.AnalysisState.Copy() with
+            {
+                CurrentFixation = command.CurrentFixation?.Copy() ?? command.AnalysisState.CurrentFixation?.Copy()
+            };
+
+            _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisProjector.FromSnapshot(analysisSnapshot);
+            summary = EyeMovementAnalysisProjector.ToAttentionSummary(
+                _eyeMovementAnalysisRuntimeState,
+                Math.Max(command.ObservedAtUnixMs, 0));
+            _liveReadingSession = _liveReadingSession with
+            {
+                AttentionSummary = summary
+            };
+
+            RecordReadingAttentionEvent(Math.Max(command.ObservedAtUnixMs, 0), summary);
+            await SaveCurrentCheckpointAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        await EvaluateDecisionStrategiesAsync(ct);
+        return analysisSnapshot;
     }
 
     private async ValueTask<DecisionRealtimeUpdateSnapshot> ApplyExternalDecisionProposalAsync(
@@ -1582,6 +1775,21 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal) &&
                _providerConnectionRegistry.TryGetActiveProvider(out var provider) &&
                provider is not null;
+    }
+
+    private bool ShouldPublishToExternalAnalysisProvider()
+    {
+        return string.Equals(_eyeMovementAnalysisConfiguration.ProviderId, EyeMovementAnalysisProviderIds.External, StringComparison.Ordinal) &&
+               _analysisProviderConnectionRegistry.TryGetActiveProvider(out var provider) &&
+               provider is not null;
+    }
+
+    private bool HasAuthoritativeEyeMovementAnalysisState()
+    {
+        return _eyeMovementAnalysisRuntimeState.LatestObservation is not null ||
+               _eyeMovementAnalysisRuntimeState.CurrentFixation is not null ||
+               _eyeMovementAnalysisRuntimeState.CandidateFixation is not null ||
+               (_eyeMovementAnalysisRuntimeState.TokenStats?.Count ?? 0) > 0;
     }
 
     private static async Task IgnoreFailuresAsync(Task task)
@@ -2094,6 +2302,22 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
     }
 
+    private static EyeMovementAnalysisProviderStatusSnapshot BuildEyeMovementAnalysisProviderStatusSnapshot(
+        IAnalysisProviderConnectionRegistry providerConnectionRegistry)
+    {
+        if (!providerConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        {
+            return EyeMovementAnalysisProviderStatusSnapshot.Disconnected.Copy();
+        }
+
+        return new EyeMovementAnalysisProviderStatusSnapshot(
+            true,
+            string.IsNullOrWhiteSpace(provider.Status) ? "active" : provider.Status,
+            NormalizeNullableText(provider.ProviderId),
+            NormalizeNullableText(provider.DisplayName),
+            provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
+    }
+
     private void EnsureSetupIsReadyForStart(
         ExperimentSession session,
         CalibrationSessionSnapshot calibrationSnapshot,
@@ -2545,6 +2769,62 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             _decisionState.Copy());
     }
 
+    private static EyeMovementAnalysisConfigurationSnapshot NormalizeEyeMovementAnalysisConfiguration(
+        EyeMovementAnalysisConfigurationSnapshot configuration)
+    {
+        return new EyeMovementAnalysisConfigurationSnapshot(
+            NormalizeEyeMovementAnalysisProviderId(configuration.ProviderId));
+    }
+
+    private static string NormalizeEyeMovementAnalysisProviderId(string? providerId)
+    {
+        return string.Equals(providerId?.Trim(), EyeMovementAnalysisProviderIds.External, StringComparison.OrdinalIgnoreCase)
+            ? EyeMovementAnalysisProviderIds.External
+            : EyeMovementAnalysisProviderIds.BuiltIn;
+    }
+
+    private static ReadingGazeObservationSnapshot NormalizeReadingGazeObservation(ReadingGazeObservationCommand command)
+    {
+        var isInsideReadingArea = command.IsInsideReadingArea;
+        return new ReadingGazeObservationSnapshot(
+            Math.Max(command.ObservedAtUnixMs, 0),
+            isInsideReadingArea,
+            isInsideReadingArea ? ClampNullable(command.NormalizedContentX, 0, 1) : null,
+            isInsideReadingArea ? ClampNullable(command.NormalizedContentY, 0, 1) : null,
+            isInsideReadingArea ? NormalizeNullableText(command.TokenId) : null,
+            isInsideReadingArea ? NormalizeNullableText(command.BlockId) : null,
+            command.TokenIndex,
+            command.LineIndex,
+            command.BlockIndex,
+            command.IsStale,
+            NormalizeReadingObservationStaleReason(command.StaleReason));
+    }
+
+    private static string NormalizeReadingObservationStaleReason(string? staleReason)
+    {
+        if (string.Equals(staleReason?.Trim(), ReadingGazeObservationStaleReasons.NoPoint, StringComparison.OrdinalIgnoreCase))
+        {
+            return ReadingGazeObservationStaleReasons.NoPoint;
+        }
+
+        if (string.Equals(staleReason?.Trim(), ReadingGazeObservationStaleReasons.PointStale, StringComparison.OrdinalIgnoreCase))
+        {
+            return ReadingGazeObservationStaleReasons.PointStale;
+        }
+
+        if (string.Equals(staleReason?.Trim(), ReadingGazeObservationStaleReasons.OutsideReadingArea, StringComparison.OrdinalIgnoreCase))
+        {
+            return ReadingGazeObservationStaleReasons.OutsideReadingArea;
+        }
+
+        if (string.Equals(staleReason?.Trim(), ReadingGazeObservationStaleReasons.NoTokenHit, StringComparison.OrdinalIgnoreCase))
+        {
+            return ReadingGazeObservationStaleReasons.NoTokenHit;
+        }
+
+        return ReadingGazeObservationStaleReasons.None;
+    }
+
     private static IReadOnlyList<DecisionProposalSnapshot> BuildRecentProposalHistory(
         IReadOnlyList<DecisionProposalSnapshot>? existing,
         DecisionProposalSnapshot next)
@@ -2598,6 +2878,35 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private static string NormalizeDecisionResolutionSource(string? source)
     {
         return string.IsNullOrWhiteSpace(source) ? "system" : source.Trim();
+    }
+
+    private void ValidateExternalEyeMovementAnalysisCommand(ExternalEyeMovementAnalysisCommand command)
+    {
+        if (!string.Equals(_eyeMovementAnalysisConfiguration.ProviderId, EyeMovementAnalysisProviderIds.External, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("External eye movement analysis provider is not active for the current session.");
+        }
+
+        var currentSession = Volatile.Read(ref _session);
+        if (!currentSession.IsActive || currentSession.Id is null)
+        {
+            throw new InvalidOperationException("No active experiment session is available.");
+        }
+
+        if (!Guid.TryParse(command.SessionId, out var sessionId) || sessionId != currentSession.Id.Value)
+        {
+            throw new InvalidOperationException("Analysis provider session id does not match the active experiment session.");
+        }
+
+        if (!_analysisProviderConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        {
+            throw new InvalidOperationException("No active analysis provider is registered.");
+        }
+
+        if (!string.Equals(provider.ProviderId, command.ProviderId, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Analysis provider identity does not match the active connection.");
+        }
     }
 
     private static bool ProposalsMatch(DecisionProposalSnapshot current, DecisionProposalSnapshot next)

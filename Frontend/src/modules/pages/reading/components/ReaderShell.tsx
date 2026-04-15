@@ -24,6 +24,7 @@ import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
 import type {
   ReadingContextPreservationSnapshot,
   ReadingInterventionCommitBoundary,
+  ReadingGazeObservationSnapshot,
 } from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ type ReaderShellProps = {
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
   viewportActivePageIndex?: number | null;
   viewportPageCount?: number | null;
@@ -138,6 +140,7 @@ export function ReaderShell({
   onPresentationChange,
   onViewportMetricsChange,
   onFocusChange,
+  onObservationChange,
   onContextPreservationChange,
   viewportActivePageIndex = null,
   viewportPageCount = null,
@@ -182,6 +185,7 @@ export function ReaderShell({
     enabled: enableLiveGazeTracking,
     highlightTokensBeingLookedAt,
     onFocusChange,
+    onObservationChange,
   });
 
   useRemoteTokenHighlight({

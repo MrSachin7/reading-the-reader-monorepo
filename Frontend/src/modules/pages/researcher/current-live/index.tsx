@@ -14,7 +14,6 @@ import {
   resumeDecisionAutomation,
   setDecisionExecutionMode,
   subscribeToGaze,
-  updateReadingAttentionSummary,
 } from "@/lib/gaze-socket"
 import {
   FALLBACK_INTERVENTION_MODULES,
@@ -200,6 +199,7 @@ function ResearcherCurrentLiveBody({
     readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
   )
   const lastSyncedAttentionKeyRef = useRef("")
+  const effectiveTokenAttention = readingSession.attentionSummary ?? tokenAttention
   const [followParticipant, setFollowParticipant] = useState(true)
   const persistedReaderOptions =
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
@@ -266,7 +266,7 @@ function ResearcherCurrentLiveBody({
       : null
   const documentLix = calculateLix(content.markdown)
   const topAttentionTokens = useMemo(() => {
-    return Object.entries(tokenAttention.tokenStats)
+    return Object.entries(effectiveTokenAttention.tokenStats)
       .filter(([, stats]) => stats.maxFixationMs > 0 || stats.skimCount > 0)
       .sort((left, right) => {
         if (right[1].maxFixationMs !== left[1].maxFixationMs) {
@@ -281,28 +281,12 @@ function ResearcherCurrentLiveBody({
         tokenText: tokenTextLookup.get(tokenId) ?? tokenId,
         ...stats,
       }))
-  }, [tokenAttention.tokenStats, tokenTextLookup])
+  }, [effectiveTokenAttention.tokenStats, tokenTextLookup])
 
   useEffect(() => {
-    latestTokenAttentionRef.current = tokenAttention
-  }, [tokenAttention])
-
-  useEffect(() => {
-    const syncTimer = window.setInterval(() => {
-      const snapshot = latestTokenAttentionRef.current
-      const serialized = JSON.stringify(snapshot)
-      if (serialized === lastSyncedAttentionKeyRef.current) {
-        return
-      }
-
-      updateReadingAttentionSummary(snapshot)
-      lastSyncedAttentionKeyRef.current = serialized
-    }, 750)
-
-    return () => {
-      window.clearInterval(syncTimer)
-    }
-  }, [])
+    latestTokenAttentionRef.current = effectiveTokenAttention
+    lastSyncedAttentionKeyRef.current = JSON.stringify(effectiveTokenAttention)
+  }, [effectiveTokenAttention])
 
   const setReaderOption = useCallback((key: keyof LiveReaderOptions, value: boolean) => {
     setLocalReaderOptions((previous) => ({
@@ -411,10 +395,10 @@ function ResearcherCurrentLiveBody({
           latencyMs={latencyMs}
           readingDynamicsEnabled={readerOptions.showFixationHeatmap}
           currentFixationDurationMs={
-            readerOptions.showFixationHeatmap ? tokenAttention.currentTokenDurationMs : null
+            readerOptions.showFixationHeatmap ? effectiveTokenAttention.currentTokenDurationMs : null
           }
-          fixatedTokenCount={readerOptions.showFixationHeatmap ? tokenAttention.fixatedTokenCount : 0}
-          skimmedTokenCount={readerOptions.showFixationHeatmap ? tokenAttention.skimmedTokenCount : 0}
+          fixatedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.fixatedTokenCount : 0}
+          skimmedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.skimmedTokenCount : 0}
           appearance={readerAppearance}
           presentation={presentation}
           interventionPolicy={readingSession.interventionPolicy}
@@ -441,7 +425,7 @@ function ResearcherCurrentLiveBody({
           exactMirrorEnabled={exactMirrorEnabled}
           mirrorTrustState={mirrorTrustState}
           showReadingDynamics={readerOptions.showFixationHeatmap}
-          tokenAttention={tokenAttention}
+          tokenAttention={effectiveTokenAttention}
           onTokenAttentionChange={setTokenAttention}
         />
 

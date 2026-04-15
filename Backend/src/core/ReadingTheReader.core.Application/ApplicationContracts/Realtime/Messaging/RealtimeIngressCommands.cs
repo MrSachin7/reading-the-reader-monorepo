@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
@@ -31,6 +32,10 @@ public sealed record ParticipantViewportUpdatedRealtimeCommand(
 public sealed record ReadingFocusUpdatedRealtimeCommand(
     string ConnectionId,
     UpdateReadingFocusCommand Payload) : IRealtimeIngressCommand;
+
+public sealed record ReadingGazeObservationUpdatedRealtimeCommand(
+    string ConnectionId,
+    ReadingGazeObservationCommand Payload) : IRealtimeIngressCommand;
 
 public sealed record ReadingContextPreservationUpdatedRealtimeCommand(
     string ConnectionId,
@@ -99,6 +104,11 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Reading focus payload is invalid.",
                 parsed => new ReadingFocusUpdatedRealtimeCommand(connectionId, parsed)),
+            MessageTypes.ReadingGazeObservationUpdated => Deserialize<ReadingGazeObservationCommand>(
+                payload,
+                connectionId,
+                "Reading gaze observation payload is invalid.",
+                parsed => new ReadingGazeObservationUpdatedRealtimeCommand(connectionId, parsed)),
             MessageTypes.ReadingContextPreservationUpdated => Deserialize<UpdateReadingContextPreservationCommand>(
                 payload,
                 connectionId,

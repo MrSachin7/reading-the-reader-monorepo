@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
@@ -48,6 +49,20 @@ public sealed class RealtimeTestDoubles
         var providerRegistry = new ProviderConnectionRegistry(externalProviderOptions);
         var externalProviderTransport = new FakeExternalProviderTransportAdapter();
         var externalProviderGateway = new ExternalProviderGateway(providerRegistry, externalProviderTransport);
+        var externalAnalysisProviderOptions = new ExternalAnalysisProviderOptions
+        {
+            SharedSecret = "test-analysis-provider-secret",
+            HeartbeatTimeoutMilliseconds = 12_000
+        };
+        var analysisProviderRegistry = new AnalysisProviderConnectionRegistry(externalAnalysisProviderOptions);
+        var externalAnalysisProviderTransport = new FakeExternalAnalysisProviderTransportAdapter();
+        var analysisProviderGateway = new AnalysisProviderGateway(analysisProviderRegistry, externalAnalysisProviderTransport);
+        var analysisStrategyRegistry = new EyeMovementAnalysisStrategyRegistry(
+            [
+                new BuiltInEyeMovementAnalysisStrategy(),
+                new ExternalEyeMovementAnalysisStrategy(analysisProviderGateway)
+            ]);
+        var analysisStrategyCoordinator = new EyeMovementAnalysisStrategyCoordinator(analysisStrategyRegistry);
         var decisionContextFactory = new DecisionContextFactory();
         var strategyRegistry = new DecisionStrategyRegistry(
             [
@@ -66,8 +81,11 @@ public sealed class RealtimeTestDoubles
             experimentSetupTestingOptions,
             interventionRuntime,
             interventionModuleRegistry,
+            analysisStrategyCoordinator,
             strategyCoordinator,
+            analysisProviderGateway,
             externalProviderGateway,
+            analysisProviderRegistry,
             providerRegistry);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
@@ -147,6 +165,32 @@ public sealed class RealtimeTestDoubles
     }
 
     public sealed class FakeExternalProviderTransportAdapter : IExternalProviderTransportAdapter
+    {
+        private readonly ConcurrentQueue<ProviderTransportMessage> _messages = new();
+
+        public IReadOnlyCollection<ProviderTransportMessage> Messages => _messages.ToArray();
+
+        public ValueTask SendToProviderAsync<TPayload>(
+            string connectionId,
+            string messageType,
+            TPayload payload,
+            string? providerId = null,
+            string? sessionId = null,
+            string? correlationId = null,
+            CancellationToken ct = default)
+        {
+            _messages.Enqueue(new ProviderTransportMessage(
+                connectionId,
+                messageType,
+                payload,
+                providerId,
+                sessionId,
+                correlationId));
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    public sealed class FakeExternalAnalysisProviderTransportAdapter : IExternalAnalysisProviderTransportAdapter
     {
         private readonly ConcurrentQueue<ProviderTransportMessage> _messages = new();
 

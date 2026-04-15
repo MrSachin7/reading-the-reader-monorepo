@@ -87,6 +87,14 @@ export type ExternalProviderStatusSnapshot = {
   lastHeartbeatAtUnixMs: number | null
 }
 
+export type EyeMovementAnalysisProviderStatusSnapshot = {
+  isConnected: boolean
+  status: string
+  providerId: string | null
+  displayName: string | null
+  lastHeartbeatAtUnixMs: number | null
+}
+
 export type ExperimentParticipantSnapshot = {
   name: string
   age: number
@@ -195,6 +203,59 @@ export type PendingInterventionSnapshot = {
   intervention: ApplyInterventionCommandSnapshot
 }
 
+export type ReadingGazeObservationSnapshot = {
+  observedAtUnixMs: number
+  isInsideReadingArea: boolean
+  normalizedContentX: number | null
+  normalizedContentY: number | null
+  tokenId: string | null
+  blockId: string | null
+  tokenIndex: number | null
+  lineIndex: number | null
+  blockIndex: number | null
+  isStale: boolean
+  staleReason: string
+}
+
+export type FixationSnapshot = {
+  tokenId: string
+  blockId: string | null
+  tokenIndex: number
+  lineIndex: number
+  blockIndex: number
+  startedAtUnixMs: number
+  lastObservedAtUnixMs: number
+  durationMs: number
+  endedAtUnixMs: number | null
+}
+
+export type SaccadeSnapshot = {
+  fromTokenId: string
+  toTokenId: string
+  fromBlockId: string | null
+  toBlockId: string | null
+  fromTokenIndex: number
+  toTokenIndex: number
+  lineDelta: number
+  blockDelta: number
+  startedAtUnixMs: number
+  endedAtUnixMs: number
+  durationMs: number
+  direction: string
+}
+
+export type EyeMovementAnalysisSnapshot = {
+  latestObservation: ReadingGazeObservationSnapshot | null
+  currentFixation: FixationSnapshot | null
+  recentFixations: FixationSnapshot[]
+  recentSaccades: SaccadeSnapshot[]
+  tokenStats: Record<string, ReadingAttentionSummarySnapshot["tokenStats"][string]>
+  currentTokenId: string | null
+  currentTokenDurationMs: number | null
+  fixatedTokenCount: number
+  skimmedTokenCount: number
+}
+
 export type ReadingContextPreservationSnapshot = {
   status: "preserved" | "degraded" | "failed"
   anchorSource: "sentence-anchor" | "active-token" | "fallback-token" | "block-anchor" | "scroll-only"
@@ -236,6 +297,10 @@ export type DecisionConfiguration = {
   conditionLabel: string
   providerId: string
   executionMode: string
+}
+
+export type EyeMovementAnalysisConfiguration = {
+  providerId: string
 }
 
 export type DecisionSignalSnapshot = {
@@ -320,6 +385,9 @@ export type ExperimentSessionSnapshot = {
   readingSession: LiveReadingSessionSnapshot | null
   decisionConfiguration: DecisionConfiguration
   decisionState: DecisionState
+  eyeMovementAnalysisProviderStatus: EyeMovementAnalysisProviderStatusSnapshot
+  eyeMovementAnalysisConfiguration: EyeMovementAnalysisConfiguration
+  eyeMovementAnalysis: EyeMovementAnalysisSnapshot
 }
 
 export const EMPTY_LIVE_MONITORING: ExperimentLiveMonitoringSnapshot = {
@@ -342,6 +410,14 @@ export const EMPTY_EXTERNAL_PROVIDER_STATUS: ExternalProviderStatusSnapshot = {
   supportsAdvisoryExecution: false,
   supportsAutonomousExecution: false,
   supportedInterventionModuleIds: [],
+  lastHeartbeatAtUnixMs: null,
+}
+
+export const EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS: EyeMovementAnalysisProviderStatusSnapshot = {
+  isConnected: false,
+  status: "disconnected",
+  providerId: null,
+  displayName: null,
   lastHeartbeatAtUnixMs: null,
 }
 
@@ -405,6 +481,22 @@ export const EMPTY_DECISION_CONFIGURATION: DecisionConfiguration = {
   conditionLabel: "Manual only",
   providerId: "manual",
   executionMode: "advisory",
+}
+
+export const EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION: EyeMovementAnalysisConfiguration = {
+  providerId: "builtin",
+}
+
+export const EMPTY_EYE_MOVEMENT_ANALYSIS: EyeMovementAnalysisSnapshot = {
+  latestObservation: null,
+  currentFixation: null,
+  recentFixations: [],
+  recentSaccades: [],
+  tokenStats: {},
+  currentTokenId: null,
+  currentTokenDurationMs: null,
+  fixatedTokenCount: 0,
+  skimmedTokenCount: 0,
 }
 
 export const EMPTY_DECISION_STATE: DecisionState = {

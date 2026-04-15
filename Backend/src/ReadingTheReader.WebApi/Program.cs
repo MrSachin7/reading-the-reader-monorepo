@@ -1,6 +1,7 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using ReadingTheReader.core.Application;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.Realtime.Persistence;
@@ -16,10 +17,16 @@ var experimentSetupTestingOptions = builder.Configuration.GetSection(ExperimentS
     ?? new ExperimentSetupTestingOptions();
 var externalProviderOptions = builder.Configuration.GetSection(ExternalProviderOptions.SectionName).Get<ExternalProviderOptions>()
     ?? new ExternalProviderOptions();
+var externalAnalysisProviderOptions = builder.Configuration.GetSection(ExternalAnalysisProviderOptions.SectionName).Get<ExternalAnalysisProviderOptions>()
+    ?? new ExternalAnalysisProviderOptions();
 
 // Modules installation
 builder.Services.InstallTobiiEyeTrackerModule();
-builder.Services.InstallApplicationModule(calibrationOptions, experimentSetupTestingOptions, externalProviderOptions);
+builder.Services.InstallApplicationModule(
+    calibrationOptions,
+    experimentSetupTestingOptions,
+    externalProviderOptions,
+    externalAnalysisProviderOptions);
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();

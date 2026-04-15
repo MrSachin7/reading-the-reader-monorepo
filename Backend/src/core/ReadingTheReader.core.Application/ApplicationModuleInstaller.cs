@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.Participants;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
@@ -18,11 +19,13 @@ public static class ApplicationModuleInstaller
         this IServiceCollection collection,
         CalibrationOptions calibrationOptions,
         ExperimentSetupTestingOptions experimentSetupTestingOptions,
-        ExternalProviderOptions externalProviderOptions)
+        ExternalProviderOptions externalProviderOptions,
+        ExternalAnalysisProviderOptions externalAnalysisProviderOptions)
     {
         collection.AddSingleton(calibrationOptions);
         collection.AddSingleton(experimentSetupTestingOptions);
         collection.AddSingleton(externalProviderOptions);
+        collection.AddSingleton(externalAnalysisProviderOptions);
         collection.AddSingleton<IParticipantService, ParticipantService>();
         collection.AddSingleton<IReadingMaterialSetupService, ReadingMaterialSetupService>();
         foreach (var module in BuiltInReadingInterventionModules.All)
@@ -32,6 +35,11 @@ public static class ApplicationModuleInstaller
 
         collection.AddSingleton<IReadingInterventionModuleRegistry, ReadingInterventionModuleRegistry>();
         collection.AddSingleton<IReadingInterventionRuntime, ReadingInterventionRuntime>();
+        collection.AddSingleton<IEyeMovementAnalysisStrategy, BuiltInEyeMovementAnalysisStrategy>();
+        collection.AddSingleton<IAnalysisProviderGateway, AnalysisProviderGateway>();
+        collection.AddSingleton<IEyeMovementAnalysisStrategy, ExternalEyeMovementAnalysisStrategy>();
+        collection.AddSingleton<IEyeMovementAnalysisStrategyRegistry, EyeMovementAnalysisStrategyRegistry>();
+        collection.AddSingleton<IEyeMovementAnalysisStrategyCoordinator, EyeMovementAnalysisStrategyCoordinator>();
         collection.AddSingleton<IDecisionContextFactory, DecisionContextFactory>();
         collection.AddSingleton<IDecisionStrategy, RuleBasedDecisionStrategy>();
         collection.AddSingleton<IExternalProviderGateway, ExternalProviderGateway>();
@@ -47,6 +55,8 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton<IExperimentCommandIngress, ExperimentCommandIngress>();
         collection.AddSingleton<IProviderConnectionRegistry, ProviderConnectionRegistry>();
         collection.AddSingleton<IProviderIngressService, ProviderIngressService>();
+        collection.AddSingleton<IAnalysisProviderConnectionRegistry, AnalysisProviderConnectionRegistry>();
+        collection.AddSingleton<IAnalysisProviderIngressService, AnalysisProviderIngressService>();
         collection.AddSingleton<ISensingOperations, SensingOperations>();
         collection.AddSingleton<IEyeTrackerService, EyeTrackerService>();
         collection.AddSingleton<ICalibrationService, CalibrationService>();
