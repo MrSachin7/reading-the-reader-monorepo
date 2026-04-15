@@ -181,10 +181,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 updatedAtUnixMs);
 
             var viewportIsConnected = _liveReadingSession.ParticipantViewport.IsConnected;
+            var normalizedInitialPresentation = ReadingPresentationRules.Normalize(command.Presentation);
             _liveReadingSession = _liveReadingSession with
             {
                 Content = content,
-                Presentation = ReadingPresentationRules.Normalize(command.Presentation),
+                Presentation = normalizedInitialPresentation,
+                InitialPresentation = normalizedInitialPresentation.Copy(),
                 Appearance = ReaderAppearanceRules.Normalize(command.Appearance),
                 ParticipantViewport = ParticipantViewportSnapshot.Disconnected with
                 {
@@ -2645,6 +2647,7 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         var layoutChange = ReadingInterventionRuntime.SummarizeLayoutChange(
             _liveReadingSession.Presentation,
             execution.Presentation);
+        var committedFocus = _liveReadingSession.Focus;
         execution = execution with
         {
             Event = execution.Event with
@@ -2652,7 +2655,10 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 AppliedBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
                     appliedBoundary,
                     ReadingInterventionCommitBoundaries.Immediate),
-                WaitDurationMs = waitDurationMs.HasValue ? Math.Max(waitDurationMs.Value, 0) : null
+                WaitDurationMs = waitDurationMs.HasValue ? Math.Max(waitDurationMs.Value, 0) : null,
+                CommittedActiveTokenId = committedFocus?.ActiveTokenId,
+                CommittedActiveSentenceId = committedFocus?.ActiveSentenceId,
+                CommittedActiveBlockId = committedFocus?.ActiveBlockId
             }
         };
         var latestLayoutGuardrail = _liveReadingSession.LatestLayoutGuardrail;

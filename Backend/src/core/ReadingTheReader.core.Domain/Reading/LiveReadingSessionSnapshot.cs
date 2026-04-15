@@ -13,7 +13,8 @@ public sealed record LiveReadingSessionSnapshot(
     LayoutInterventionGuardrailSnapshot? LatestLayoutGuardrail,
     InterventionEventSnapshot? LatestIntervention,
     IReadOnlyList<InterventionEventSnapshot> RecentInterventions,
-    ReadingAttentionSummarySnapshot? AttentionSummary = null)
+    ReadingAttentionSummarySnapshot? AttentionSummary = null,
+    ReadingPresentationSnapshot? InitialPresentation = null)
 {
     public static LiveReadingSessionSnapshot Empty { get; } = new(
         null,
@@ -28,6 +29,7 @@ public sealed record LiveReadingSessionSnapshot(
         null,
         null,
         [],
+        null,
         null);
 
     public LiveReadingSessionSnapshot Copy()
@@ -45,6 +47,7 @@ public sealed record LiveReadingSessionSnapshot(
             LatestLayoutGuardrail?.Copy(),
             LatestIntervention?.Copy(),
             RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())],
-            AttentionSummary?.Copy());
+            AttentionSummary?.Copy(),
+            InitialPresentation?.Copy());
     }
 }

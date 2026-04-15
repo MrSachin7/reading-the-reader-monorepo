@@ -226,6 +226,8 @@ export function ReadingPage() {
         interventionAppliedAtUnixMs={liveReadingSession?.latestIntervention?.appliedAtUnixMs ?? null}
         interventionAppliedBoundary={liveReadingSession?.latestIntervention?.appliedBoundary ?? null}
         interventionWaitDurationMs={liveReadingSession?.latestIntervention?.waitDurationMs ?? null}
+        initialPresentation={liveReadingSession?.initialPresentation ?? null}
+        interventionEvents={liveReadingSession?.recentInterventions ?? []}
       />
       {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
         <FullscreenGate

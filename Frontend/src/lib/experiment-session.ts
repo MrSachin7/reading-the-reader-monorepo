@@ -293,6 +293,9 @@ export type InterventionEventSnapshot = {
   appliedAppearance: ReaderAppearanceSnapshot
   moduleId: string | null
   parameters: InterventionParameterValues | null
+  committedActiveTokenId: string | null
+  committedActiveSentenceId: string | null
+  committedActiveBlockId: string | null
 }
 
 export type DecisionConfiguration = {
@@ -357,6 +360,7 @@ export type DecisionState = {
 export type LiveReadingSessionSnapshot = {
   content: ReadingContentSnapshot | null
   presentation: ReadingPresentationSnapshot
+  initialPresentation: ReadingPresentationSnapshot | null
   appearance: ReaderAppearanceSnapshot
   interventionPolicy: ReadingInterventionPolicySnapshot
   participantViewport: ParticipantViewportSnapshot
@@ -438,6 +442,7 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     letterSpacingEm: 0,
     editableByResearcher: true,
   },
+  initialPresentation: null,
   appearance: {
     themeMode: "light",
     palette: "default",
