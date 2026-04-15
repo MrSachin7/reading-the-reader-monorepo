@@ -552,40 +552,44 @@ public sealed class ExperimentSessionAuthorityTests
     }
 
     [Fact]
-    public async Task ApplyInterventionAsync_WhenManualLayoutChangeUsesDeferredPolicy_AppliesImmediately()
+    public async Task ApplyInterventionAsync_WhenManualLayoutChangeUsesSentenceBoundary_WaitsForSentenceEnd()
     {
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
         await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
-            ReadingInterventionCommitBoundaries.PageTurn,
             ReadingInterventionCommitBoundaries.SentenceEnd,
+            ReadingInterventionCommitBoundaries.Immediate,
             6000));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
-        var firstIntervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
             "manual",
             "researcher-ui",
             "Decrease font size",
             new ReadingPresentationPatch(null, 16, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
-        var secondIntervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            "manual",
-            "researcher-ui",
-            "Decrease font size again",
-            new ReadingPresentationPatch(null, 14, null, null, null, null),
-            new ReaderAppearancePatch(null, null, null)));
 
-        var snapshot = harness.SessionManager.GetCurrentSnapshot();
-        var readingSession = Assert.IsType<LiveReadingSessionSnapshot>(snapshot.ReadingSession);
+        var queuedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var queuedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(queuedSnapshot.ReadingSession);
+        var pending = Assert.IsType<PendingInterventionSnapshot>(queuedReadingSession.PendingIntervention);
 
-        Assert.NotNull(firstIntervention);
-        Assert.NotNull(secondIntervention);
-        Assert.Null(readingSession.PendingIntervention);
-        Assert.Equal(14, readingSession.Presentation.FontSizePx);
-        Assert.Equal(ReadingInterventionCommitBoundaries.Immediate, firstIntervention!.AppliedBoundary);
-        Assert.Equal(ReadingInterventionCommitBoundaries.Immediate, secondIntervention!.AppliedBoundary);
-        Assert.Null(firstIntervention.WaitDurationMs);
-        Assert.Null(secondIntervention.WaitDurationMs);
+        Assert.Null(intervention);
+        Assert.Equal(PendingInterventionStatuses.Queued, pending.Status);
+        Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, pending.RequestedBoundary);
+        Assert.Equal(18, queuedReadingSession.Presentation.FontSizePx);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.4, "token-2", "block-1", "sentence-2"));
+
+        var appliedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var appliedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(appliedSnapshot.ReadingSession);
+
+        Assert.Equal(16, appliedReadingSession.Presentation.FontSizePx);
+        Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
+        Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
     }
 
     [Fact]
@@ -602,8 +606,8 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
         var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size",
             new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
@@ -650,8 +654,8 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
         var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size",
             new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
@@ -691,8 +695,8 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
         await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size",
             new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
@@ -719,14 +723,14 @@ public sealed class ExperimentSessionAuthorityTests
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
         await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size to 20",
             new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
         await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size to 19",
             new ReadingPresentationPatch(null, 19, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));
@@ -780,8 +784,8 @@ public sealed class ExperimentSessionAuthorityTests
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
         await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
-            DecisionProviderIds.RuleBased,
-            "attention-summary",
+            "manual",
+            "researcher-ui",
             "Increase font size",
             new ReadingPresentationPatch(null, 20, null, null, null, null),
             new ReaderAppearancePatch(null, null, null)));

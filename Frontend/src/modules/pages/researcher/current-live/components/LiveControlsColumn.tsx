@@ -968,7 +968,7 @@ export function LiveControlsColumn({
                   <div>
                     <p className="text-sm font-medium">Timing policy</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Queue layout changes until a safer reading boundary, then fall back if the wait gets too long.
+                      Typography changes apply at the selected reading boundary, then fall back if the wait gets too long.
                     </p>
                   </div>
                   <Badge variant="outline">
@@ -1048,7 +1048,7 @@ export function LiveControlsColumn({
                       <p className="text-sm font-medium">Pending intervention</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
                         {pendingIntervention
-                          ? pendingIntervention.intervention.reason
+                          ? `Waiting for ${formatBoundaryLabel(pendingIntervention.requestedBoundary).toLowerCase()}: ${pendingIntervention.intervention.reason}`
                           : "No queued typography change right now."}
                       </p>
                     </div>
@@ -1137,9 +1137,8 @@ export function LiveControlsColumn({
                     <p className="text-sm font-medium">Test interventions from here</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       Use the controls below to queue a manual intervention. Appearance changes apply
-                      immediately. Typography changes follow the timing policy above, so with{" "}
-                      <span className="font-medium text-foreground">Page turn</span> selected you can
-                      either turn the page in the participant view or press <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
+                      immediately. Typography changes follow the selected commit boundary; press{" "}
+                      <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
                     </p>
                   </div>
                   {groupedInterventionModules.length > 0 ? (
