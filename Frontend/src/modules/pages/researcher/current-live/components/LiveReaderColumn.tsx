@@ -198,7 +198,8 @@ export function LiveReaderColumn({
                     highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
                     showToolbar={false}
                     showBackButton={false}
-                    showLixScores={false}
+                    showLixScores={readerOptions.showLixScores}
+                    useCompactLixOverlay
                     viewportActivePageIndex={readingSession.participantViewport.activePageIndex}
                     viewportPageCount={readingSession.participantViewport.pageCount}
                     viewportWidthPx={participantViewportWidth}
