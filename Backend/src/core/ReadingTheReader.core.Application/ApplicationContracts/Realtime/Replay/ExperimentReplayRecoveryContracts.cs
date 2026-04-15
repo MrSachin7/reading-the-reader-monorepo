@@ -23,5 +23,7 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
     IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
     IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
-    IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
-    IReadOnlyList<InterventionEventRecord> InterventionEvents);
+    IReadOnlyList<ReadingContextPreservationEventRecord>? ContextPreservationEvents = null,
+    IReadOnlyList<DecisionProposalEventRecord>? DecisionProposalEvents = null,
+    IReadOnlyList<ScheduledInterventionEventRecord>? ScheduledInterventionEvents = null,
+    IReadOnlyList<InterventionEventRecord>? InterventionEvents = null);

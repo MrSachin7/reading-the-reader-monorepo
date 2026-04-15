@@ -31,6 +31,10 @@ public sealed class DecisionContextFactoryTests
                 340,
                 1,
                 0));
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.Immediate,
+            ReadingInterventionCommitBoundaries.Immediate,
+            0));
 
         var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
             "manual",

@@ -5,6 +5,7 @@ export type Token = {
   id: string;
   text: string;
   kind: "word" | "space";
+  sentenceId: string | null;
 };
 
 export type TokenRun = {
@@ -34,12 +35,27 @@ function inlineNodesToText(inlines: InlineNode[]): string {
   return inlines.map((inline) => inline.text).join("");
 }
 
+type SentenceTracker = {
+  currentSentenceIndex: number;
+  sentenceKey: string;
+};
+
+function buildSentenceId(docId: string, sentenceKey: string, sentenceIndex: number) {
+  return `${docId}:${sentenceKey}:sentence:${sentenceIndex}`;
+}
+
+function tokenEndsSentence(part: string) {
+  return /[.!?]["')\]]*$/.test(part.trim());
+}
+
 function tokenizeText(
   text: string,
   docId: string,
   blockIndex: number,
+  sentenceKey: string,
   wordIndexRef: { current: number },
-  spaceIndexRef: { current: number }
+  spaceIndexRef: { current: number },
+  sentenceTracker: SentenceTracker
 ): Token[] {
   const parts = text.split(/(\s+)/);
   const tokens: Token[] = [];
@@ -54,6 +70,11 @@ function tokenizeText(
         id: `${docId}:${blockIndex}:space:${spaceIndexRef.current}`,
         text: part,
         kind: "space",
+        sentenceId: buildSentenceId(
+          docId,
+          sentenceKey,
+          sentenceTracker.currentSentenceIndex
+        ),
       });
       spaceIndexRef.current += 1;
       continue;
@@ -63,8 +84,17 @@ function tokenizeText(
       id: `${docId}:${blockIndex}:${wordIndexRef.current}`,
       text: part,
       kind: "word",
+      sentenceId: buildSentenceId(
+        docId,
+        sentenceKey,
+        sentenceTracker.currentSentenceIndex
+      ),
     });
     wordIndexRef.current += 1;
+
+    if (tokenEndsSentence(part)) {
+      sentenceTracker.currentSentenceIndex += 1;
+    }
   }
 
   return tokens;
@@ -74,17 +104,25 @@ function inlineNodesToRuns(
   inlines: InlineNode[],
   docId: string,
   blockIndex: number,
+  sentenceKey: string,
   wordIndexRef: { current: number },
   spaceIndexRef: { current: number }
 ): TokenRun[] {
+  const sentenceTracker: SentenceTracker = {
+    currentSentenceIndex: 0,
+    sentenceKey,
+  };
+
   return inlines.map((inline) => ({
     style: inline.type,
     tokens: tokenizeText(
       inline.text,
       docId,
       blockIndex,
+      sentenceKey,
       wordIndexRef,
-      spaceIndexRef
+      spaceIndexRef,
+      sentenceTracker
     ),
   }));
 }
@@ -98,11 +136,12 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
     return {
       type: "bullet_list",
       blockId,
-      items: block.items.map((item) => ({
+      items: block.items.map((item, itemIndex) => ({
         runs: inlineNodesToRuns(
           item.inlines,
           docId,
           blockIndex,
+          `${blockIndex}:item:${itemIndex}`,
           wordIndexRef,
           spaceIndexRef
         ),
@@ -118,6 +157,7 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
         block.inlines,
         docId,
         blockIndex,
+        `${blockIndex}`,
         wordIndexRef,
         spaceIndexRef
       ),
@@ -132,6 +172,7 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
       block.inlines,
       docId,
       blockIndex,
+      `${blockIndex}`,
       wordIndexRef,
       spaceIndexRef
     ),

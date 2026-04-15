@@ -18,6 +18,12 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
+    ValueTask<ReadingInterventionPolicySnapshot> UpdateInterventionPolicyAsync(
+        ReadingInterventionPolicySnapshot policy,
+        CancellationToken ct = default);
+
+    ValueTask<InterventionEventSnapshot?> ApplyPendingInterventionNowAsync(CancellationToken ct = default);
+
     ValueTask<DecisionRealtimeUpdateSnapshot> UpdateDecisionConfigurationAsync(
         DecisionConfigurationSnapshot configuration,
         bool automationPaused,

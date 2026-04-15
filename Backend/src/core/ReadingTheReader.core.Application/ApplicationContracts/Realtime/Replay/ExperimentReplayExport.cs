@@ -6,7 +6,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay
 public static class ExperimentReplayExportSchema
 {
     public const string Name = "rtr.experiment-export";
-    public const int Version = 2;
+    public const int Version = 3;
 }
 
 public sealed record ExperimentReplayExportManifest(
@@ -252,6 +252,38 @@ public sealed record ReadingAttentionEventRecord(
     }
 }
 
+public sealed record ReadingContextPreservationEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    long? ElapsedSinceStartMs,
+    ReadingContextPreservationEventSnapshot ContextPreservation)
+{
+    public ReadingContextPreservationEventRecord Copy()
+    {
+        return new ReadingContextPreservationEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            ElapsedSinceStartMs,
+            ContextPreservation.Copy());
+    }
+}
+
+public sealed record ScheduledInterventionEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    long? ElapsedSinceStartMs,
+    PendingInterventionSnapshot PendingIntervention)
+{
+    public ScheduledInterventionEventRecord Copy()
+    {
+        return new ScheduledInterventionEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            ElapsedSinceStartMs,
+            PendingIntervention.Copy());
+    }
+}
+
 public sealed record ReadingSessionStateRecord(
     long SequenceNumber,
     string Reason,
@@ -283,25 +315,29 @@ public sealed record ExperimentReplaySensing(
 public sealed record ExperimentReplayDerived(
     IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
     IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
-    IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents)
+    IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
+    IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents)
 {
     public ExperimentReplayDerived Copy()
     {
         return new ExperimentReplayDerived(
             ViewportEvents is null ? [] : [.. ViewportEvents.Select(item => item.Copy())],
             FocusEvents is null ? [] : [.. FocusEvents.Select(item => item.Copy())],
-            AttentionEvents is null ? [] : [.. AttentionEvents.Select(item => item.Copy())]);
+            AttentionEvents is null ? [] : [.. AttentionEvents.Select(item => item.Copy())],
+            ContextPreservationEvents is null ? [] : [.. ContextPreservationEvents.Select(item => item.Copy())]);
     }
 }
 
 public sealed record ExperimentReplayInterventions(
     IReadOnlyList<DecisionProposalEventRecord> DecisionProposals,
+    IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventions,
     IReadOnlyList<InterventionEventRecord> InterventionEvents)
 {
     public ExperimentReplayInterventions Copy()
     {
         return new ExperimentReplayInterventions(
             DecisionProposals is null ? [] : [.. DecisionProposals.Select(item => item.Copy())],
+            ScheduledInterventions is null ? [] : [.. ScheduledInterventions.Select(item => item.Copy())],
             InterventionEvents is null ? [] : [.. InterventionEvents.Select(item => item.Copy())]);
     }
 }

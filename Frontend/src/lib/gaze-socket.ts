@@ -141,6 +141,9 @@ type ClientEnvelope =
         viewportHeightPx: number;
         contentHeightPx: number;
         contentWidthPx: number;
+        activePageIndex: number;
+        pageCount: number;
+        lastPageTurnAtUnixMs: number | null;
       };
     }
   | {
@@ -151,6 +154,7 @@ type ClientEnvelope =
         normalizedContentY: number | null;
         activeTokenId: string | null;
         activeBlockId: string | null;
+        activeSentenceId: string | null;
       };
     }
   | {
@@ -223,6 +227,9 @@ type ParticipantViewportPayload = {
   viewportHeightPx: number;
   contentHeightPx: number;
   contentWidthPx: number;
+  activePageIndex: number;
+  pageCount: number;
+  lastPageTurnAtUnixMs: number | null;
 };
 type ReadingFocusPayload = {
   isInsideReadingArea: boolean;
@@ -230,6 +237,7 @@ type ReadingFocusPayload = {
   normalizedContentY: number | null;
   activeTokenId: string | null;
   activeBlockId: string | null;
+  activeSentenceId: string | null;
 };
 type ReadingGazeObservationPayload = ReadingGazeObservationSnapshot;
 type ReadingContextPreservationPayload = ReadingContextPreservationSnapshot;

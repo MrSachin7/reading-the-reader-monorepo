@@ -23,6 +23,7 @@ import { EMPTY_READING_ATTENTION_SUMMARY } from "@/lib/reading-attention-summary
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
+import type { ReadingInterventionCommitBoundary } from "@/lib/experiment-session"
 import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
@@ -43,7 +44,12 @@ import type {
   LiveReaderOptions,
 } from "@/modules/pages/researcher/current-live/types"
 import { getLiveMirrorTrustState } from "@/modules/pages/researcher/current-live/utils"
-import { useGetInterventionModulesQuery, useGetReaderShellSettingsQuery } from "@/redux"
+import {
+  useApplyPendingInterventionNowMutation,
+  useGetInterventionModulesQuery,
+  useGetReaderShellSettingsQuery,
+  useUpdateInterventionPolicyMutation,
+} from "@/redux"
 
 function EmptyState({
   title,
@@ -180,6 +186,8 @@ function ResearcherCurrentLiveBody({
 }: ResearcherCurrentLiveBodyProps) {
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const { data: interventionModules = [] } = useGetInterventionModulesQuery()
+  const [updateInterventionPolicy] = useUpdateInterventionPolicyMutation()
+  const [applyPendingInterventionNow] = useApplyPendingInterventionNowMutation()
   const effectiveInterventionModules =
     interventionModules.length > 0 ? interventionModules : FALLBACK_INTERVENTION_MODULES
   const readingSession = session.readingSession
@@ -318,6 +326,26 @@ function ResearcherCurrentLiveBody({
     })
   }, [])
 
+  const handleInterventionPolicyChange = useCallback(
+    async (patch: {
+      layoutCommitBoundary?: ReadingInterventionCommitBoundary
+      layoutFallbackBoundary?: ReadingInterventionCommitBoundary
+      layoutFallbackAfterMs?: number
+    }) => {
+      const currentPolicy = readingSession.interventionPolicy
+      await updateInterventionPolicy({
+        layoutCommitBoundary: patch.layoutCommitBoundary ?? currentPolicy.layoutCommitBoundary,
+        layoutFallbackBoundary: patch.layoutFallbackBoundary ?? currentPolicy.layoutFallbackBoundary,
+        layoutFallbackAfterMs: patch.layoutFallbackAfterMs ?? currentPolicy.layoutFallbackAfterMs,
+      }).unwrap()
+    },
+    [readingSession.interventionPolicy, updateInterventionPolicy]
+  )
+
+  const handleApplyPendingInterventionNow = useCallback(async () => {
+    await applyPendingInterventionNow().unwrap()
+  }, [applyPendingInterventionNow])
+
   const mirrorTrustState: LiveMirrorTrustState = getLiveMirrorTrustState({
     followParticipant,
     hasParticipantViewConnection: session.liveMonitoring.hasParticipantViewConnection,
@@ -373,10 +401,14 @@ function ResearcherCurrentLiveBody({
           skimmedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.skimmedTokenCount : 0}
           appearance={readerAppearance}
           presentation={presentation}
+          interventionPolicy={readingSession.interventionPolicy}
+          pendingIntervention={readingSession.pendingIntervention}
           readerOptions={readerOptions}
           onFollowParticipantChange={setFollowParticipant}
           onReaderOptionChange={setReaderOption}
           onCommitIntervention={commitIntervention}
+          onInterventionPolicyChange={handleInterventionPolicyChange}
+          onApplyPendingInterventionNow={handleApplyPendingInterventionNow}
           onApproveProposal={(proposalId) => approveDecisionProposal(proposalId)}
           onRejectProposal={(proposalId) => rejectDecisionProposal(proposalId)}
           onPauseAutomation={() => pauseDecisionAutomation()}
