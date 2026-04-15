@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Sheet,
@@ -744,9 +745,11 @@ export function LiveControlsColumn({
   return (
     <Sheet open={isReaderControlsOpen} onOpenChange={setIsReaderControlsOpen}>
       <div className="order-2 flex min-h-0 min-w-0 flex-col gap-4 overflow-hidden xl:order-1">
-        <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
+        <ScrollArea className="h-full">
+          <div className="space-y-4 pr-4">
+            <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
               <SectionLabel>Session operations</SectionLabel>
 
               <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
@@ -1123,54 +1126,56 @@ export function LiveControlsColumn({
                   value={readingDynamicsEnabled ? skimmedTokenCount : "-"}
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
-                <p className="text-sm font-medium">Test interventions from here</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Use the controls below to queue a manual intervention. Appearance changes apply
-                  immediately. Typography changes follow the timing policy above, so with{" "}
-                  <span className="font-medium text-foreground">Page turn</span> selected you can
-                  either turn the page in the participant view or press <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
-                </p>
-              </div>
-              {groupedInterventionModules.length > 0 ? (
-                groupedInterventionModules.map((group) => (
-                  <div key={group.key} className="space-y-4">
-                    <SectionLabel>{group.title}</SectionLabel>
-                    {group.modules.map((module) => renderModuleControl(module))}
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.1rem] border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-                  No intervention modules are registered for this session.
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <SectionLabel>ReaderShell controls</SectionLabel>
-                <p className="mt-2 text-sm font-medium">Press V to open</p>
-              </div>
-              <KbdGroup className="text-muted-foreground">
-                <Kbd>V</Kbd>
-                <span className="text-[10px] uppercase tracking-[0.18em]">open</span>
-                <Kbd>Esc</Kbd>
-                <span className="text-[10px] uppercase tracking-[0.18em]">hide</span>
-              </KbdGroup>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                    <p className="text-sm font-medium">Test interventions from here</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Use the controls below to queue a manual intervention. Appearance changes apply
+                      immediately. Typography changes follow the timing policy above, so with{" "}
+                      <span className="font-medium text-foreground">Page turn</span> selected you can
+                      either turn the page in the participant view or press <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
+                    </p>
+                  </div>
+                  {groupedInterventionModules.length > 0 ? (
+                    groupedInterventionModules.map((group) => (
+                      <div key={group.key} className="space-y-4">
+                        <SectionLabel>{group.title}</SectionLabel>
+                        {group.modules.map((module) => renderModuleControl(module))}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[1.1rem] border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                      No intervention modules are registered for this session.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <SectionLabel>ReaderShell controls</SectionLabel>
+                    <p className="mt-2 text-sm font-medium">Press V to open</p>
+                  </div>
+                  <KbdGroup className="text-muted-foreground">
+                    <Kbd>V</Kbd>
+                    <span className="text-[10px] uppercase tracking-[0.18em]">open</span>
+                    <Kbd>Esc</Kbd>
+                    <span className="text-[10px] uppercase tracking-[0.18em]">hide</span>
+                  </KbdGroup>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
 
         <SheetContent side="left" className="w-[22rem] sm:max-w-[22rem]">
           <SheetHeader className="border-b">
