@@ -2570,11 +2570,6 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
 
     private bool ShouldQueueIntervention(ApplyInterventionCommand command)
     {
-        if (IsManualIntervention(command))
-        {
-            return false;
-        }
-
         if (ReadingInterventionRuntime.GetRequestedLayoutProperties(command).Count == 0)
         {
             return false;
