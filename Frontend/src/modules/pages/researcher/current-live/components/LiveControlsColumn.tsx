@@ -287,6 +287,7 @@ export function LiveControlsColumn({
 }: LiveControlsColumnProps) {
   const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false)
   const [moduleDrafts, setModuleDrafts] = useState<Record<string, InterventionParameterValues>>({})
+  const isExactMirror = mirrorTrustState.kind === "exact"
   const groupedInterventionModules = useMemo(
     () => groupInterventionModules(interventionModules),
     [interventionModules]
@@ -1223,7 +1224,11 @@ export function LiveControlsColumn({
                 />
                 <ControlRow
                   label="Show LIX scores"
-                  description="Display readability badges inside the mirrored page."
+                  description={
+                    isExactMirror
+                      ? "Show tiny readability badges as an overlay in exact mirror mode to avoid reflow."
+                      : "Display readability badges inside the mirrored page."
+                  }
                   checked={readerOptions.showLixScores}
                   onCheckedChange={(checked) => onReaderOptionChange("showLixScores", checked)}
                 />
@@ -1238,15 +1243,24 @@ export function LiveControlsColumn({
               <ControlSection title="Reader chrome">
                 <ControlRow
                   label="Show toolbar"
-                  description="Reveal the reader toolbar in the mirrored page."
+                  description={
+                    isExactMirror
+                      ? "Unavailable in exact mirror mode because the toolbar changes the mirror height and line alignment."
+                      : "Reveal the reader toolbar in the mirrored page."
+                  }
                   checked={readerOptions.showToolbar}
+                  disabled={isExactMirror}
                   onCheckedChange={(checked) => onReaderOptionChange("showToolbar", checked)}
                 />
                 <ControlRow
                   label="Show back button"
-                  description="Only applies while the mirrored toolbar is visible."
+                  description={
+                    isExactMirror
+                      ? "Unavailable in exact mirror mode because the toolbar is disabled there."
+                      : "Only applies while the mirrored toolbar is visible."
+                  }
                   checked={readerOptions.showBackButton}
-                  disabled={!readerOptions.showToolbar}
+                  disabled={isExactMirror || !readerOptions.showToolbar}
                   onCheckedChange={(checked) => onReaderOptionChange("showBackButton", checked)}
                 />
               </ControlSection>

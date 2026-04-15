@@ -54,6 +54,7 @@ type ReaderShellProps = {
   showToolbar?: boolean;
   showBackButton?: boolean;
   showLixScores?: boolean;
+  useCompactLixOverlay?: boolean;
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
@@ -137,6 +138,7 @@ export function ReaderShell({
   showToolbar = false,
   showBackButton = true,
   showLixScores = true,
+  useCompactLixOverlay = false,
   onPresentationChange,
   onViewportMetricsChange,
   onFocusChange,
@@ -203,8 +205,8 @@ export function ReaderShell({
 
   useRemoteTokenAttentionHeatmap({
     containerRef,
-    attention: remoteTokenAttention ?? derivedRemoteTokenAttention,
-    enabled: Boolean(remoteTokenAttention ?? derivedRemoteTokenAttention),
+    attention: remoteTokenAttention,
+    enabled: Boolean(remoteTokenAttention),
   });
 
   useEffect(() => {
@@ -749,7 +751,11 @@ export function ReaderShell({
                 transition: isControlledPage ? "none" : "transform 220ms ease-out",
               }}
             >
-              <MarkdownReader blocks={tokenizedBlocks} showLixScores={showLixScores} />
+              <MarkdownReader
+                blocks={tokenizedBlocks}
+                showLixScores={showLixScores}
+                lixDisplayMode={useCompactLixOverlay ? "overlay" : "inline"}
+              />
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
               <div className="pointer-events-auto">{paginationFooter}</div>
