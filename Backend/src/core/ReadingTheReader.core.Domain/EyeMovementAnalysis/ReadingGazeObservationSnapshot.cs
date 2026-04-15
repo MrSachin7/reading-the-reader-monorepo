@@ -18,6 +18,8 @@ public sealed record ReadingGazeObservationSnapshot(
     double? NormalizedContentX,
     double? NormalizedContentY,
     string? TokenId,
+    string? TokenText,
+    string? TokenKind,
     string? BlockId,
     int? TokenIndex,
     int? LineIndex,
@@ -28,6 +30,8 @@ public sealed record ReadingGazeObservationSnapshot(
     public static ReadingGazeObservationSnapshot Empty { get; } = new(
         0,
         false,
+        null,
+        null,
         null,
         null,
         null,

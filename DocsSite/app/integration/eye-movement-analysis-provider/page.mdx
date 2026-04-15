@@ -245,6 +245,8 @@ Submit the authoritative analysis result for one observation window.
       "normalizedContentX": 0.42,
       "normalizedContentY": 0.31,
       "tokenId": "token-42",
+      "tokenText": "example",
+      "tokenKind": "word",
       "blockId": "block-3",
       "tokenIndex": 42,
       "lineIndex": 8,
@@ -347,6 +349,8 @@ This is the primary input for fixation and token-transition saccade analysis.
   "normalizedContentX": 0.42,
   "normalizedContentY": 0.31,
   "tokenId": "token-42",
+  "tokenText": "example",
+  "tokenKind": "word",
   "blockId": "block-3",
   "tokenIndex": 42,
   "lineIndex": 8,
@@ -355,6 +359,8 @@ This is the primary input for fixation and token-transition saccade analysis.
   "staleReason": "none"
 }
 ```
+
+`tokenText` is the exact rendered text from the participant browser token element. `tokenKind` comes from the rendered token metadata and is normally `word` in the current phase because fixation hit-testing targets word tokens. For stale, outside-area, and no-token-hit observations, both values are `null`.
 
 Allowed `staleReason` values:
 
@@ -402,6 +408,26 @@ Sent by the backend when a provider message is rejected.
 ```
 
 ## Snapshot Schemas
+
+### `ReadingGazeObservationSnapshot`
+
+```ts
+type ReadingGazeObservationSnapshot = {
+  observedAtUnixMs: number
+  isInsideReadingArea: boolean
+  normalizedContentX: number | null
+  normalizedContentY: number | null
+  tokenId: string | null
+  tokenText: string | null
+  tokenKind: string | null
+  blockId: string | null
+  tokenIndex: number | null
+  lineIndex: number | null
+  blockIndex: number | null
+  isStale: boolean
+  staleReason: "none" | "no-point" | "point-stale" | "outside-reading-area" | "no-token-hit"
+}
+```
 
 ### `FixationSnapshot`
 
