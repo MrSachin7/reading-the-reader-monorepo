@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
 import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   applyInterventionCommand,
   approveDecisionProposal,
@@ -28,7 +28,6 @@ import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
-import { calculateLix } from "@/modules/pages/reading/lib/readingMetrics"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import {
   DEFAULT_READING_PRESENTATION,
@@ -36,7 +35,6 @@ import {
 } from "@/modules/pages/reading/lib/readingPresentation"
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize"
 import { LiveControlsColumn } from "@/modules/pages/researcher/current-live/components/LiveControlsColumn"
-import { LiveMetadataColumn } from "@/modules/pages/researcher/current-live/components/LiveMetadataColumn"
 import { LiveReaderColumn } from "@/modules/pages/researcher/current-live/components/LiveReaderColumn"
 import type {
   ActiveLiveExperimentSession,
@@ -259,30 +257,6 @@ function ResearcherCurrentLiveBody({
       ? tokenTextLookup.get(readingSession.focus.activeTokenId) ?? null
       : readingSession.focus.activeTokenId
 
-  const activeBlock = tokenizedBlocks.find((block) => block.blockId === readingSession.focus.activeBlockId)
-  const activeBlockLix =
-    activeBlock && "lixScore" in activeBlock && typeof activeBlock.lixScore === "number"
-      ? activeBlock.lixScore
-      : null
-  const documentLix = calculateLix(content.markdown)
-  const topAttentionTokens = useMemo(() => {
-    return Object.entries(effectiveTokenAttention.tokenStats)
-      .filter(([, stats]) => stats.maxFixationMs > 0 || stats.skimCount > 0)
-      .sort((left, right) => {
-        if (right[1].maxFixationMs !== left[1].maxFixationMs) {
-          return right[1].maxFixationMs - left[1].maxFixationMs
-        }
-
-        return right[1].fixationMs - left[1].fixationMs
-      })
-      .slice(0, 5)
-      .map(([tokenId, stats]) => ({
-        tokenId,
-        tokenText: tokenTextLookup.get(tokenId) ?? tokenId,
-        ...stats,
-      }))
-  }, [effectiveTokenAttention.tokenStats, tokenTextLookup])
-
   useEffect(() => {
     latestTokenAttentionRef.current = effectiveTokenAttention
     lastSyncedAttentionKeyRef.current = JSON.stringify(effectiveTokenAttention)
@@ -430,20 +404,17 @@ function ResearcherCurrentLiveBody({
           onTokenAttentionChange={setTokenAttention}
         />
 
-        <LiveMetadataColumn
-          interventionModules={effectiveInterventionModules}
-          session={session}
-          readingSession={readingSession}
-          liveMonitoring={session.liveMonitoring}
-          mirrorTrustState={mirrorTrustState}
-          decisionConfiguration={session.decisionConfiguration}
-          decisionState={session.decisionState}
-          activeWord={activeWord}
-          activeBlockLix={activeBlockLix}
-          documentLix={documentLix}
-          followParticipant={followParticipant}
-          topAttentionTokens={topAttentionTokens}
-        />
+        <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
+          <Card className="h-full min-h-0 rounded-[1.6rem] bg-card/96 shadow-sm">
+            <CardContent className="pt-6">
+              <ExperimentCompletionActions
+                session={session}
+                source="researcher-live-view"
+                className="w-full items-stretch [&>div:first-child]:w-full [&>div:first-child]:flex-col [&>div:first-child]:items-stretch [&_button]:w-full"
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   )
