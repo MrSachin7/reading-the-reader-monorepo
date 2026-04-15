@@ -8,6 +8,7 @@ import {
   normalizeGazePoint,
   type GazePoint,
 } from "@/modules/pages/gaze/lib/gaze-helpers";
+import type { ReadingGazeObservationSnapshot } from "@/lib/experiment-session";
 
 type UseGazeTokenHighlightParams = {
   containerRef: RefObject<HTMLElement | null>;
@@ -15,10 +16,12 @@ type UseGazeTokenHighlightParams = {
   enabled?: boolean;
   highlightTokensBeingLookedAt?: boolean;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
 };
 
 type WordLayout = {
   blockId: string | null;
+  blockIndex: number;
   bottom: number;
   centerX: number;
   centerY: number;
@@ -55,6 +58,12 @@ export type GazeFocusState = {
   updatedAtUnixMs: number;
 };
 
+function normalizeObservationStaleReason(
+  staleReason: string
+): ReadingGazeObservationSnapshot["staleReason"] {
+  return staleReason
+}
+
 const FIXATION_INITIAL_MS = 90;
 const FIXATION_SAME_LINE_MS = 70;
 const FIXATION_NEW_LINE_MS = 135;
@@ -85,6 +94,10 @@ function getAxisDistance(position: number, start: number, end: number) {
 }
 
 function buildWordLayouts(container: HTMLElement) {
+  const blockOrder = Array.from(container.querySelectorAll<HTMLElement>("[data-block-id]"))
+    .map((block) => block.dataset.blockId)
+    .filter((blockId): blockId is string => Boolean(blockId))
+
   const elements = Array.from(
     container.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
   );
@@ -115,8 +128,11 @@ function buildWordLayouts(container: HTMLElement) {
       currentLineHeight = (currentLineHeight + rect.height) / 2;
     }
 
+    const blockId = element.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ?? null
+
     layouts.push({
-      blockId: element.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ?? null,
+      blockId,
+      blockIndex: blockId ? Math.max(blockOrder.indexOf(blockId), 0) : 0,
       bottom: rect.bottom,
       centerX: rect.left + rect.width / 2,
       centerY,
@@ -280,6 +296,7 @@ export function useGazeTokenHighlight({
   enabled = true,
   highlightTokensBeingLookedAt = true,
   onFocusChange,
+  onObservationChange,
 }: UseGazeTokenHighlightParams) {
   const wordLayoutsRef = useRef<WordLayout[]>([]);
   const activeWordIndexRef = useRef<number | null>(null);
@@ -290,6 +307,8 @@ export function useGazeTokenHighlight({
   const lastValidPointAtRef = useRef(0);
   const lastFocusSignatureRef = useRef<string | null>(null);
   const lastFocusReportedAtRef = useRef(0);
+  const lastObservationSignatureRef = useRef<string | null>(null);
+  const lastObservationReportedAtRef = useRef(0);
 
   useEffect(() => {
     if (!enabled) {
@@ -334,6 +353,42 @@ export function useGazeTokenHighlight({
         updatedAtUnixMs: now,
       });
     };
+
+    const reportObservation = (
+      partial: Omit<ReadingGazeObservationSnapshot, "observedAtUnixMs">
+    ) => {
+      if (!onObservationChange) {
+        return
+      }
+
+      const signature = JSON.stringify([
+        partial.isInsideReadingArea,
+        partial.normalizedContentX?.toFixed(4) ?? null,
+        partial.normalizedContentY?.toFixed(4) ?? null,
+        partial.tokenId,
+        partial.blockId,
+        partial.tokenIndex,
+        partial.lineIndex,
+        partial.blockIndex,
+        partial.isStale,
+        partial.staleReason,
+      ])
+      const nowUnixMs = Date.now()
+
+      if (
+        signature === lastObservationSignatureRef.current &&
+        nowUnixMs - lastObservationReportedAtRef.current < 100
+      ) {
+        return
+      }
+
+      lastObservationSignatureRef.current = signature
+      lastObservationReportedAtRef.current = nowUnixMs
+      onObservationChange({
+        ...partial,
+        observedAtUnixMs: nowUnixMs,
+      })
+    }
 
     const setActiveWord = (nextIndex: number | null, force = false) => {
       if (!force && activeWordIndexRef.current === nextIndex) {
@@ -450,6 +505,18 @@ export function useGazeTokenHighlight({
       const latestPoint = latestPointRef.current;
       if (!latestPoint) {
         setActiveWord(null);
+        reportObservation({
+          isInsideReadingArea: false,
+          normalizedContentX: null,
+          normalizedContentY: null,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("no-point"),
+        })
         reportFocus({
           isInsideReadingArea: false,
           normalizedContentX: null,
@@ -466,6 +533,18 @@ export function useGazeTokenHighlight({
         normalizedPointRef.current = null;
         fixationCandidateRef.current = null;
         setActiveWord(null);
+        reportObservation({
+          isInsideReadingArea: false,
+          normalizedContentX: null,
+          normalizedContentY: null,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("point-stale"),
+        })
         reportFocus({
           isInsideReadingArea: false,
           normalizedContentX: null,
@@ -478,6 +557,18 @@ export function useGazeTokenHighlight({
       }
 
       if (pointAgeMs > POINT_STALE_AFTER_MS) {
+        reportObservation({
+          isInsideReadingArea: false,
+          normalizedContentX: null,
+          normalizedContentY: null,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("point-stale"),
+        })
         renderFrameId = window.requestAnimationFrame(render);
         return;
       }
@@ -490,6 +581,18 @@ export function useGazeTokenHighlight({
       const contentElement = contentRef?.current ?? container.firstElementChild;
 
       if (!(contentElement instanceof HTMLElement)) {
+        reportObservation({
+          isInsideReadingArea: false,
+          normalizedContentX: null,
+          normalizedContentY: null,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("no-point"),
+        })
         reportFocus({
           isInsideReadingArea: false,
           normalizedContentX: null,
@@ -513,6 +616,18 @@ export function useGazeTokenHighlight({
       if (!isInsideReadingArea) {
         setActiveWord(null);
         fixationCandidateRef.current = null;
+        reportObservation({
+          isInsideReadingArea: false,
+          normalizedContentX: null,
+          normalizedContentY: null,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("outside-reading-area"),
+        })
         reportFocus({
           isInsideReadingArea: false,
           normalizedContentX: null,
@@ -535,6 +650,18 @@ export function useGazeTokenHighlight({
       );
 
       if (candidateIndex === null) {
+        reportObservation({
+          isInsideReadingArea: true,
+          normalizedContentX,
+          normalizedContentY,
+          tokenId: null,
+          blockId: null,
+          tokenIndex: null,
+          lineIndex: null,
+          blockIndex: null,
+          isStale: true,
+          staleReason: normalizeObservationStaleReason("no-token-hit"),
+        })
         reportFocus({
           isInsideReadingArea: true,
           normalizedContentX,
@@ -552,6 +679,18 @@ export function useGazeTokenHighlight({
           activeWordIndexRef.current === null
             ? null
             : wordLayoutsRef.current[activeWordIndexRef.current] ?? null;
+        reportObservation({
+          isInsideReadingArea: true,
+          normalizedContentX,
+          normalizedContentY,
+          tokenId: activeLayout?.element.dataset.tokenId ?? null,
+          blockId: activeLayout?.blockId ?? null,
+          tokenIndex: activeLayout?.index ?? null,
+          lineIndex: activeLayout?.line ?? null,
+          blockIndex: activeLayout?.blockIndex ?? null,
+          isStale: false,
+          staleReason: normalizeObservationStaleReason("none"),
+        })
         reportFocus({
           isInsideReadingArea: true,
           normalizedContentX,
@@ -569,6 +708,19 @@ export function useGazeTokenHighlight({
           index: candidateIndex,
           startedAt: now,
         };
+        const candidateLayout = wordLayoutsRef.current[candidateIndex] ?? null
+        reportObservation({
+          isInsideReadingArea: true,
+          normalizedContentX,
+          normalizedContentY,
+          tokenId: candidateLayout?.element.dataset.tokenId ?? null,
+          blockId: candidateLayout?.blockId ?? null,
+          tokenIndex: candidateLayout?.index ?? null,
+          lineIndex: candidateLayout?.line ?? null,
+          blockIndex: candidateLayout?.blockIndex ?? null,
+          isStale: false,
+          staleReason: normalizeObservationStaleReason("none"),
+        })
         const activeLayout =
           activeWordIndexRef.current === null
             ? null
@@ -595,6 +747,19 @@ export function useGazeTokenHighlight({
         setActiveWord(candidateIndex);
       }
 
+      const candidateLayout = wordLayoutsRef.current[candidateIndex] ?? null
+      reportObservation({
+        isInsideReadingArea: true,
+        normalizedContentX,
+        normalizedContentY,
+        tokenId: candidateLayout?.element.dataset.tokenId ?? null,
+        blockId: candidateLayout?.blockId ?? null,
+        tokenIndex: candidateLayout?.index ?? null,
+        lineIndex: candidateLayout?.line ?? null,
+        blockIndex: candidateLayout?.blockIndex ?? null,
+        isStale: false,
+        staleReason: normalizeObservationStaleReason("none"),
+      })
       const activeLayout =
         activeWordIndexRef.current === null
           ? null
@@ -627,8 +792,10 @@ export function useGazeTokenHighlight({
       normalizedPointRef.current = null;
       lastFocusSignatureRef.current = null;
       lastFocusReportedAtRef.current = 0;
+      lastObservationSignatureRef.current = null;
+      lastObservationReportedAtRef.current = 0;
       setActiveWord(null, true);
       wordLayoutsRef.current = [];
     };
-  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt, onFocusChange]);
+  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt, onFocusChange, onObservationChange]);
 }

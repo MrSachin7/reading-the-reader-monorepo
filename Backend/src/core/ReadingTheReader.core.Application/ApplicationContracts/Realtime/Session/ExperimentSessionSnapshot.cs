@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Domain;
 
@@ -209,6 +210,31 @@ public sealed record ExternalProviderStatusSnapshot(
     }
 }
 
+public sealed record EyeMovementAnalysisProviderStatusSnapshot(
+    bool IsConnected,
+    string Status,
+    string? ProviderId,
+    string? DisplayName,
+    long? LastHeartbeatAtUnixMs)
+{
+    public static EyeMovementAnalysisProviderStatusSnapshot Disconnected { get; } = new(
+        false,
+        "disconnected",
+        null,
+        null,
+        null);
+
+    public EyeMovementAnalysisProviderStatusSnapshot Copy()
+    {
+        return new EyeMovementAnalysisProviderStatusSnapshot(
+            IsConnected,
+            Status,
+            ProviderId,
+            DisplayName,
+            LastHeartbeatAtUnixMs);
+    }
+}
+
 public sealed record ExperimentSessionSnapshot(
     Guid? SessionId,
     bool IsActive,
@@ -225,7 +251,10 @@ public sealed record ExperimentSessionSnapshot(
     ExternalProviderStatusSnapshot ExternalProviderStatus,
     LiveReadingSessionSnapshot? ReadingSession,
     DecisionConfigurationSnapshot DecisionConfiguration,
-    DecisionRuntimeStateSnapshot DecisionState
+    DecisionRuntimeStateSnapshot DecisionState,
+    EyeMovementAnalysisProviderStatusSnapshot? EyeMovementAnalysisProviderStatus = null,
+    EyeMovementAnalysisConfigurationSnapshot? EyeMovementAnalysisConfiguration = null,
+    EyeMovementAnalysisSnapshot? EyeMovementAnalysis = null
 )
 {
     public ExperimentSessionSnapshot Copy()
@@ -255,7 +284,10 @@ public sealed record ExperimentSessionSnapshot(
             ExternalProviderStatus?.Copy() ?? ExternalProviderStatusSnapshot.Disconnected.Copy(),
             ReadingSession?.Copy() ?? LiveReadingSessionSnapshot.Empty,
             DecisionConfiguration?.Copy() ?? DecisionConfigurationSnapshot.Default.Copy(),
-            DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy());
+            DecisionState?.Copy() ?? DecisionRuntimeStateSnapshot.Empty.Copy(),
+            EyeMovementAnalysisProviderStatus?.Copy() ?? EyeMovementAnalysisProviderStatusSnapshot.Disconnected.Copy(),
+            EyeMovementAnalysisConfiguration?.Copy() ?? EyeMovementAnalysisConfigurationSnapshot.Default.Copy(),
+            EyeMovementAnalysis?.Copy() ?? EyeMovementAnalysisSnapshot.Empty.Copy());
     }
 
     private static CalibrationSessionSnapshot CopyCalibration(CalibrationSessionSnapshot source)
