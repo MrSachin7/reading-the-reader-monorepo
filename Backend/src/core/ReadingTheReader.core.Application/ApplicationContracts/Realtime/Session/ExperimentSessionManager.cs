@@ -240,12 +240,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         CancellationToken ct = default)
     {
         ParticipantViewportSnapshot viewport;
+        LiveReadingSessionSnapshot? nextState = null;
+        InterventionEventSnapshot? interventionEvent = null;
 
         await _lifecycleGate.WaitAsync(ct);
         try
         {
             _participantViewConnections[connectionId] = 0;
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var previousViewport = _liveReadingSession.ParticipantViewport;
+            var normalizedPageCount = Math.Max(command.PageCount, 1);
+            var normalizedActivePageIndex = Math.Min(normalizedPageCount - 1, Math.Max(command.ActivePageIndex, 0));
+            var pageDidChange = normalizedActivePageIndex != previousViewport.ActivePageIndex;
             _liveReadingSession = _liveReadingSession with
             {
                 ParticipantViewport = new ParticipantViewportSnapshot(
@@ -256,10 +262,23 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                     Math.Max(command.ViewportHeightPx, 0),
                     Math.Max(command.ContentHeightPx, 0),
                     Math.Max(command.ContentWidthPx, 0),
-                    updatedAtUnixMs)
+                    updatedAtUnixMs,
+                    normalizedActivePageIndex,
+                    normalizedPageCount,
+                    pageDidChange
+                        ? Math.Max(command.LastPageTurnAtUnixMs ?? updatedAtUnixMs, 0)
+                        : previousViewport.LastPageTurnAtUnixMs)
             };
 
             viewport = _liveReadingSession.ParticipantViewport.Copy();
+            var appliedPending = TryApplyPendingInterventionForBoundary(
+                _liveReadingSession.Focus,
+                _liveReadingSession.Focus,
+                previousViewport,
+                viewport,
+                updatedAtUnixMs);
+            interventionEvent = appliedPending?.Copy();
+            nextState = appliedPending is null ? null : _liveReadingSession.Copy();
             RecordParticipantViewportEvent(updatedAtUnixMs, viewport);
             await SaveCurrentCheckpointAsync(ct);
         }
@@ -272,6 +291,18 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         if (ShouldPublishToExternalProvider())
         {
             await _externalProviderGateway.PublishViewportChangedAsync(GetCurrentSessionId(), viewport, ct);
+        }
+        if (nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
+            }
         }
         await EvaluateDecisionStrategiesAsync(ct);
         return viewport;
@@ -303,7 +334,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
             };
 
             focus = _liveReadingSession.Focus.Copy();
-            var appliedPending = TryApplyPendingInterventionForBoundary(previousFocus, focus, updatedAtUnixMs);
+            var appliedPending = TryApplyPendingInterventionForBoundary(
+                previousFocus,
+                focus,
+                _liveReadingSession.ParticipantViewport,
+                _liveReadingSession.ParticipantViewport,
+                updatedAtUnixMs);
             interventionEvent = appliedPending?.Copy();
             nextState = appliedPending is null ? null : _liveReadingSession.Copy();
             RecordReadingFocusEvent(updatedAtUnixMs, focus);
@@ -2150,6 +2186,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private InterventionEventSnapshot? TryApplyPendingInterventionForBoundary(
         ReadingFocusSnapshot previousFocus,
         ReadingFocusSnapshot currentFocus,
+        ParticipantViewportSnapshot previousViewport,
+        ParticipantViewportSnapshot currentViewport,
         long occurredAtUnixMs)
     {
         var pendingIntervention = _liveReadingSession.PendingIntervention;
@@ -2162,6 +2200,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 pendingIntervention!.RequestedBoundary,
                 previousFocus,
                 currentFocus,
+                previousViewport,
+                currentViewport,
                 occurredAtUnixMs,
                 pendingIntervention.QueuedAtUnixMs))
         {
@@ -2179,6 +2219,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 pendingIntervention.FallbackBoundary!,
                 previousFocus,
                 currentFocus,
+                previousViewport,
+                currentViewport,
                 occurredAtUnixMs,
                 pendingIntervention.QueuedAtUnixMs))
         {
@@ -2320,6 +2362,8 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
         string boundary,
         ReadingFocusSnapshot previousFocus,
         ReadingFocusSnapshot currentFocus,
+        ParticipantViewportSnapshot previousViewport,
+        ParticipantViewportSnapshot currentViewport,
         long occurredAtUnixMs,
         long queuedAtUnixMs)
     {
@@ -2338,6 +2382,12 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
                 !string.IsNullOrWhiteSpace(previousFocus.ActiveBlockId) &&
                 !string.IsNullOrWhiteSpace(currentFocus.ActiveBlockId) &&
                 !string.Equals(previousFocus.ActiveBlockId, currentFocus.ActiveBlockId, StringComparison.Ordinal),
+            ReadingInterventionCommitBoundaries.PageTurn =>
+                previousViewport.ActivePageIndex != currentViewport.ActivePageIndex &&
+                currentViewport.ActivePageIndex >= 0 &&
+                currentViewport.PageCount > 0 &&
+                currentViewport.LastPageTurnAtUnixMs.HasValue &&
+                currentViewport.LastPageTurnAtUnixMs.Value >= queuedAtUnixMs,
             ReadingInterventionCommitBoundaries.Immediate => true,
             _ => false
         };
@@ -2346,21 +2396,17 @@ public sealed class ExperimentSessionManager : IExperimentSessionManager, IExper
     private static ReadingInterventionPolicySnapshot NormalizeInterventionPolicy(ReadingInterventionPolicySnapshot? policy)
     {
         var candidate = policy?.Copy() ?? ReadingInterventionPolicySnapshot.Default.Copy();
-        var commitBoundary = NormalizePhaseOneBoundary(candidate.LayoutCommitBoundary, ReadingInterventionPolicySnapshot.Default.LayoutCommitBoundary);
-        var fallbackBoundary = NormalizePhaseOneBoundary(candidate.LayoutFallbackBoundary, ReadingInterventionPolicySnapshot.Default.LayoutFallbackBoundary);
+        var commitBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
+            candidate.LayoutCommitBoundary,
+            ReadingInterventionPolicySnapshot.Default.LayoutCommitBoundary);
+        var fallbackBoundary = ReadingInterventionPolicySnapshot.NormalizeBoundary(
+            candidate.LayoutFallbackBoundary,
+            ReadingInterventionPolicySnapshot.Default.LayoutFallbackBoundary);
 
         return new ReadingInterventionPolicySnapshot(
             commitBoundary,
             fallbackBoundary,
             ReadingInterventionPolicySnapshot.NormalizeFallbackAfterMs(candidate.LayoutFallbackAfterMs));
-    }
-
-    private static string NormalizePhaseOneBoundary(string? boundary, string fallback)
-    {
-        var normalized = ReadingInterventionPolicySnapshot.NormalizeBoundary(boundary, fallback);
-        return string.Equals(normalized, ReadingInterventionCommitBoundaries.PageTurn, StringComparison.Ordinal)
-            ? fallback
-            : normalized;
     }
 
     private InterventionApplicationOutcome ApplyInterventionCore(

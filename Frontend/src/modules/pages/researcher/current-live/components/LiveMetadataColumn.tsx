@@ -180,6 +180,11 @@ export function LiveMetadataColumn({
                     value={`${Math.round(readingSession.participantViewport.viewportWidthPx)}×${Math.round(readingSession.participantViewport.viewportHeightPx)}`}
                     mono
                   />
+                  <MetricTile
+                    label="Page"
+                    value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
+                    mono
+                  />
                   <MetricTile label="Doc LIX" value={formatNumeric(documentLix, 1)} mono />
                   <MetricTile label="Block LIX" value={formatNumeric(activeBlockLix, 1)} mono />
                 </div>
@@ -216,6 +221,15 @@ export function LiveMetadataColumn({
                       value={
                         liveMonitoring.hasReadingFocusSignal ? "Live" : "Waiting"
                       }
+                    />
+                    <MetricTile
+                      label="Last turn"
+                      value={
+                        readingSession.participantViewport.lastPageTurnAtUnixMs
+                          ? formatAbsoluteTime(readingSession.participantViewport.lastPageTurnAtUnixMs)
+                          : "-"
+                      }
+                      mono
                     />
                   </div>
                 </div>

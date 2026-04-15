@@ -8,7 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { formatReplayClock, type ReplayFrame, type ReplayKeyEvent } from "@/lib/experiment-replay"
 import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
-import { formatAbsoluteTime, formatEventKind, formatNumeric, getEventTone } from "@/modules/pages/replay/utils"
+import {
+  formatAbsoluteTime,
+  formatEventKind,
+  formatNumeric,
+  getEventTone,
+} from "@/modules/pages/replay/utils"
 
 function MetadataRow({
   label,
@@ -81,6 +86,10 @@ export function ReplayMetadataColumn({
                     label="Presentation"
                     value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
                   />
+                  <MetadataRow
+                    label="Page"
+                    value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
+                  />
                   <MetadataRow label="Eyetracker" value={frame.session.eyeTrackerDevice?.name ?? "-"} />
                   <MetadataRow label="Samples" value={frame.session.receivedGazeSamples.toLocaleString()} />
                 </dl>
@@ -131,6 +140,9 @@ export function ReplayMetadataColumn({
                         {readingSession.latestContextPreservation.commitBoundary}
                         {readingSession.latestContextPreservation.waitDurationMs !== null
                           ? ` · waited ${readingSession.latestContextPreservation.waitDurationMs} ms`
+                          : ""}
+                        {readingSession.participantViewport.lastPageTurnAtUnixMs
+                          ? ` · last turn ${formatAbsoluteTime(readingSession.participantViewport.lastPageTurnAtUnixMs)}`
                           : ""}
                         {readingSession.latestContextPreservation.reason
                           ? ` · ${readingSession.latestContextPreservation.reason}`

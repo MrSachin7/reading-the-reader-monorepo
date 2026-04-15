@@ -989,6 +989,7 @@ export function LiveControlsColumn({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="page-turn">Page turn</SelectItem>
                         <SelectItem value="sentence-end">Sentence end</SelectItem>
                         <SelectItem value="paragraph-end">Paragraph end</SelectItem>
                       </SelectContent>
@@ -1010,6 +1011,7 @@ export function LiveControlsColumn({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="page-turn">Page turn</SelectItem>
                         <SelectItem value="sentence-end">Sentence end</SelectItem>
                         <SelectItem value="paragraph-end">Paragraph end</SelectItem>
                       </SelectContent>
@@ -1128,6 +1130,15 @@ export function LiveControlsColumn({
         <Card className="rounded-[1.6rem] bg-card/96 shadow-sm">
           <CardContent className="pt-6">
             <div className="space-y-4">
+              <div className="rounded-[1.1rem] border bg-background/80 px-4 py-3">
+                <p className="text-sm font-medium">Test interventions from here</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Use the controls below to queue a manual intervention. Appearance changes apply
+                  immediately. Typography changes follow the timing policy above, so with{" "}
+                  <span className="font-medium text-foreground">Page turn</span> selected you can
+                  either turn the page in the participant view or press <span className="font-medium text-foreground">Apply now</span> in the pending card to force the change.
+                </p>
+              </div>
               {groupedInterventionModules.length > 0 ? (
                 groupedInterventionModules.map((group) => (
                   <div key={group.key} className="space-y-4">

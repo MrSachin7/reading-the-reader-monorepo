@@ -132,6 +132,9 @@ export type ParticipantViewportSnapshot = {
   contentHeightPx: number
   contentWidthPx: number
   updatedAtUnixMs: number
+  activePageIndex: number
+  pageCount: number
+  lastPageTurnAtUnixMs: number | null
 }
 
 export type ReadingFocusSnapshot = {
@@ -363,7 +366,7 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     appFont: "geist",
   },
   interventionPolicy: {
-    layoutCommitBoundary: "paragraph-end",
+    layoutCommitBoundary: "page-turn",
     layoutFallbackBoundary: "sentence-end",
     layoutFallbackAfterMs: 6000,
   },
@@ -376,6 +379,9 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     contentHeightPx: 0,
     contentWidthPx: 0,
     updatedAtUnixMs: 0,
+    activePageIndex: 0,
+    pageCount: 1,
+    lastPageTurnAtUnixMs: null,
   },
   focus: {
     isInsideReadingArea: false,

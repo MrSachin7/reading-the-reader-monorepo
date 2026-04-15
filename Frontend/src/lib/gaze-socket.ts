@@ -131,6 +131,9 @@ type ClientEnvelope =
         viewportHeightPx: number;
         contentHeightPx: number;
         contentWidthPx: number;
+        activePageIndex: number;
+        pageCount: number;
+        lastPageTurnAtUnixMs: number | null;
       };
     }
   | {
@@ -210,6 +213,9 @@ type ParticipantViewportPayload = {
   viewportHeightPx: number;
   contentHeightPx: number;
   contentWidthPx: number;
+  activePageIndex: number;
+  pageCount: number;
+  lastPageTurnAtUnixMs: number | null;
 };
 type ReadingFocusPayload = {
   isInsideReadingArea: boolean;

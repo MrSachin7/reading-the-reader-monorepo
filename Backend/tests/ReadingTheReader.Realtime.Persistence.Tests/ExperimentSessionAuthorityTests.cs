@@ -557,6 +557,10 @@ public sealed class ExperimentSessionAuthorityTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            ReadingInterventionCommitBoundaries.SentenceEnd,
+            6000));
         await harness.SessionManager.UpdateReadingFocusAsync(
             new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
 
@@ -593,6 +597,47 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(PendingInterventionStatuses.Applied, appliedPending.Status);
         Assert.Equal(ReadingInterventionCommitBoundaries.ParagraphEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
         Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenLayoutChangeIsQueued_AppliesOnPageTurnBoundaryByDefault()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.RegisterParticipantViewAsync("participant-1");
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0, 0, 900, 1200, 1200, 900, 0, 4, null));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        var queuedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var queuedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(queuedSnapshot.ReadingSession);
+
+        Assert.Null(intervention);
+        Assert.Equal(18, queuedReadingSession.Presentation.FontSizePx);
+        Assert.NotNull(queuedReadingSession.PendingIntervention);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateParticipantViewportAsync(
+            "participant-1",
+            new UpdateParticipantViewportCommand(0.33, 1200, 900, 1200, 4800, 900, 1, 4, null));
+
+        var appliedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var appliedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(appliedSnapshot.ReadingSession);
+
+        Assert.Equal(20, appliedReadingSession.Presentation.FontSizePx);
+        Assert.Equal(ReadingInterventionCommitBoundaries.PageTurn, appliedReadingSession.LatestIntervention!.AppliedBoundary);
+        Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
+        Assert.Equal(1, appliedReadingSession.ParticipantViewport.ActivePageIndex);
     }
 
     [Fact]

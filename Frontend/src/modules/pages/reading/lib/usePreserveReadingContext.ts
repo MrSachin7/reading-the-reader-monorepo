@@ -17,6 +17,9 @@ type UsePreserveReadingContextParams = {
   interventionAppliedAtUnixMs?: number | null
   interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null
   interventionWaitDurationMs?: number | null
+  currentPageIndex?: number
+  pageWidthPx?: number
+  setActivePageIndex?: (pageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => void
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void
 }
 
@@ -60,6 +63,15 @@ function getContainerRect(container: HTMLElement) {
   return container.getBoundingClientRect()
 }
 
+function intersectsViewport(rect: DOMRect, viewportRect: DOMRect) {
+  return (
+    rect.right >= viewportRect.left &&
+    rect.left <= viewportRect.right &&
+    rect.bottom >= viewportRect.top &&
+    rect.top <= viewportRect.bottom
+  )
+}
+
 function getFirstVisibleWord(content: HTMLElement, containerRect: DOMRect) {
   const tokens = Array.from(
     content.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
@@ -74,7 +86,7 @@ function getFirstVisibleWord(content: HTMLElement, containerRect: DOMRect) {
       continue
     }
 
-    if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
+    if (!intersectsViewport(rect, containerRect)) {
       continue
     }
 
@@ -92,7 +104,11 @@ function measureAnchor(
   content: HTMLElement
 ): AnchorSnapshot | null {
   const containerRect = getContainerRect(container)
-  const activeToken = content.querySelector<HTMLElement>("[data-gaze-active='true'][data-token-id]")
+  const activeTokenCandidate = content.querySelector<HTMLElement>("[data-gaze-active='true'][data-token-id]")
+  const activeToken =
+    activeTokenCandidate && intersectsViewport(activeTokenCandidate.getBoundingClientRect(), containerRect)
+      ? activeTokenCandidate
+      : null
   const visibleToken = activeToken ?? getFirstVisibleWord(content, containerRect)
   const anchorBlockId =
     visibleToken?.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ??
@@ -114,7 +130,7 @@ function measureAnchor(
 
   const visibleBlock = Array.from(content.querySelectorAll<HTMLElement>("[data-block-id]")).find((element) => {
     const rect = element.getBoundingClientRect()
-    return rect.bottom >= containerRect.top && rect.top <= containerRect.bottom
+    return intersectsViewport(rect, containerRect)
   })
 
   if (!visibleBlock) {
@@ -196,6 +212,10 @@ function highlightAnchor(elements: HTMLElement[]) {
     element,
     backgroundColor: element.style.backgroundColor,
     boxShadow: element.style.boxShadow,
+    borderRadius: element.style.borderRadius,
+    boxDecorationBreak: (element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak ?? "",
+    webkitBoxDecorationBreak: (element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak ?? "",
+    paddingInline: element.style.paddingInline,
     transition: element.style.transition,
   }))
 
@@ -203,6 +223,10 @@ function highlightAnchor(elements: HTMLElement[]) {
     element.style.transition = "none"
     element.style.backgroundColor = HIGHLIGHT_BACKGROUND
     element.style.boxShadow = HIGHLIGHT_RING
+    element.style.borderRadius = "0.35rem"
+    element.style.paddingInline = "0.08em"
+    ;(element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = "clone"
+    ;(element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = "clone"
   }
 
   timers.push(
@@ -220,6 +244,10 @@ function highlightAnchor(elements: HTMLElement[]) {
       for (const item of previous) {
         item.element.style.backgroundColor = item.backgroundColor
         item.element.style.boxShadow = item.boxShadow
+        item.element.style.borderRadius = item.borderRadius
+        item.element.style.paddingInline = item.paddingInline
+        ;(item.element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = item.boxDecorationBreak
+        ;(item.element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = item.webkitBoxDecorationBreak
         item.element.style.transition = item.transition
       }
     }, HIGHLIGHT_HOLD_MS + HIGHLIGHT_FADE_MS + 60)
@@ -233,9 +261,28 @@ function highlightAnchor(elements: HTMLElement[]) {
     for (const item of previous) {
       item.element.style.backgroundColor = item.backgroundColor
       item.element.style.boxShadow = item.boxShadow
+      item.element.style.borderRadius = item.borderRadius
+      item.element.style.paddingInline = item.paddingInline
+      ;(item.element.style as CSSStyleDeclaration & { boxDecorationBreak?: string }).boxDecorationBreak = item.boxDecorationBreak
+      ;(item.element.style as CSSStyleDeclaration & { webkitBoxDecorationBreak?: string }).webkitBoxDecorationBreak = item.webkitBoxDecorationBreak
       item.element.style.transition = item.transition
     }
   }
+}
+
+function resolveAnchorPageIndex(
+  primaryElement: HTMLElement,
+  containerRect: DOMRect,
+  currentPageIndex: number,
+  pageWidthPx: number
+) {
+  if (!Number.isFinite(pageWidthPx) || pageWidthPx <= 0) {
+    return currentPageIndex
+  }
+
+  const rect = primaryElement.getBoundingClientRect()
+  const pageDelta = Math.round((rect.left - containerRect.left) / pageWidthPx)
+  return Math.max(0, currentPageIndex + pageDelta)
 }
 
 export function usePreserveReadingContext({
@@ -248,6 +295,9 @@ export function usePreserveReadingContext({
   interventionAppliedAtUnixMs = null,
   interventionAppliedBoundary = null,
   interventionWaitDurationMs = null,
+  currentPageIndex = 0,
+  pageWidthPx,
+  setActivePageIndex,
   onContextPreservationChange,
 }: UsePreserveReadingContextParams) {
   const latestAnchorRef = useRef<AnchorSnapshot | null>(null)
@@ -373,40 +423,67 @@ export function usePreserveReadingContext({
         return
       }
 
-      const containerRect = getContainerRect(container)
-      const beforeScrollTop = container.scrollTop
-      const currentTop = located.primaryElement.getBoundingClientRect().top - containerRect.top
-      container.scrollTop += currentTop - anchor.anchorViewportOffsetPx
+      const applyFinalAlignment = (viewportDeltaPx: number | null) => {
+        const finalContainerRect = getContainerRect(container)
+        const beforeScrollTop = container.scrollTop
+        const currentTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
+        container.scrollTop += currentTop - anchor.anchorViewportOffsetPx
 
-      const finalTop = located.primaryElement.getBoundingClientRect().top - containerRect.top
-      const anchorErrorPx = Math.abs(finalTop - anchor.anchorViewportOffsetPx)
-      const viewportDeltaPx = Math.abs(container.scrollTop - beforeScrollTop)
-      const status =
-        located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48
-          ? "preserved"
-          : anchorErrorPx > 120 || located.anchorSource === "block-anchor"
-            ? "degraded"
-            : "preserved"
+        const finalTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
+        const anchorErrorPx = Math.abs(finalTop - anchor.anchorViewportOffsetPx)
+        const scrollDeltaPx = Math.abs(container.scrollTop - beforeScrollTop)
+        const effectiveViewportDeltaPx =
+          viewportDeltaPx === null ? scrollDeltaPx : Math.max(viewportDeltaPx, scrollDeltaPx)
+        const status =
+          located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48
+            ? "preserved"
+            : anchorErrorPx > 120 || located.anchorSource === "block-anchor"
+              ? "degraded"
+              : "preserved"
 
-      if (highlightContext) {
-        highlightCleanupRef.current?.()
-        highlightCleanupRef.current = highlightAnchor(located.anchorElements)
+        if (highlightContext) {
+          highlightCleanupRef.current?.()
+          highlightCleanupRef.current = highlightAnchor(located.anchorElements)
+        }
+
+        onContextPreservationChange?.({
+          status,
+          anchorSource: located.anchorSource,
+          anchorSentenceId: anchor.anchorSentenceId,
+          anchorTokenId: anchor.anchorTokenId,
+          anchorBlockId: anchor.anchorBlockId,
+          anchorErrorPx,
+          viewportDeltaPx: effectiveViewportDeltaPx,
+          commitBoundary: effectiveBoundary,
+          waitDurationMs: interventionWaitDurationMs,
+          interventionAppliedAtUnixMs: effectiveAppliedAt,
+          measuredAtUnixMs: Date.now(),
+          reason: located.reason,
+        })
       }
 
-      onContextPreservationChange?.({
-        status,
-        anchorSource: located.anchorSource,
-        anchorSentenceId: anchor.anchorSentenceId,
-        anchorTokenId: anchor.anchorTokenId,
-        anchorBlockId: anchor.anchorBlockId,
-        anchorErrorPx,
-        viewportDeltaPx,
-        commitBoundary: effectiveBoundary,
-        waitDurationMs: interventionWaitDurationMs,
-        interventionAppliedAtUnixMs: effectiveAppliedAt,
-        measuredAtUnixMs: Date.now(),
-        reason: located.reason,
-      })
+      if (setActivePageIndex && pageWidthPx && pageWidthPx > 0) {
+        const containerRect = getContainerRect(container)
+        const targetPageIndex = resolveAnchorPageIndex(
+          located.primaryElement,
+          containerRect,
+          currentPageIndex,
+          pageWidthPx
+        )
+        const viewportDeltaPx = Math.abs(targetPageIndex - currentPageIndex) * pageWidthPx
+
+        setActivePageIndex(targetPageIndex, { persist: false, markTurn: false })
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            if (!cancelled) {
+              applyFinalAlignment(viewportDeltaPx)
+            }
+          })
+        })
+        return
+      }
+
+      applyFinalAlignment(null)
     }
 
     frameId = window.requestAnimationFrame(() => {
@@ -428,7 +505,10 @@ export function usePreserveReadingContext({
     interventionAppliedBoundary,
     interventionKey,
     interventionWaitDurationMs,
+    currentPageIndex,
     onContextPreservationChange,
+    pageWidthPx,
+    setActivePageIndex,
   ])
 
   useEffect(() => {

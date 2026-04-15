@@ -16,7 +16,7 @@ public sealed record ReadingInterventionPolicySnapshot(
     long LayoutFallbackAfterMs)
 {
     public static ReadingInterventionPolicySnapshot Default { get; } = new(
-        ReadingInterventionCommitBoundaries.ParagraphEnd,
+        ReadingInterventionCommitBoundaries.PageTurn,
         ReadingInterventionCommitBoundaries.SentenceEnd,
         6_000);
 

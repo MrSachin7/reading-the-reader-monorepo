@@ -30,4 +30,9 @@
       <Folder Include="data\reading-material-setups\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\satish-0761a1f54c8246a8bb51c84e0eba433b\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\satish-0761a1f54c8246a8bb51c84e0eba433b\session-meta.json" />
+    </ItemGroup>
+
 </Project>

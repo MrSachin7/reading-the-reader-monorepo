@@ -16,7 +16,10 @@ public sealed record UpdateParticipantViewportCommand(
     double ViewportWidthPx,
     double ViewportHeightPx,
     double ContentHeightPx,
-    double ContentWidthPx);
+    double ContentWidthPx,
+    int ActivePageIndex = 0,
+    int PageCount = 1,
+    long? LastPageTurnAtUnixMs = null);
 
 public sealed record UpdateReadingFocusCommand(
     bool IsInsideReadingArea,

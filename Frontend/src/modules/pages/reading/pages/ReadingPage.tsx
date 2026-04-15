@@ -203,6 +203,7 @@ export function ReadingPage() {
         />
       </div>
       <ReaderShell
+        key={liveContent.documentId}
         docId={liveContent.documentId}
         markdown={liveContent.markdown}
         presentation={presentation}

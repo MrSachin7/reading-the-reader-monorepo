@@ -183,6 +183,29 @@ Current default storage layout:
 - `data/latest/experiment-session-export.json` for the latest finished export
 - `data/saved-exports/` for named finished exports saved from the UI
 
+## Reading Pagination And Boundary-Aware Interventions
+- The participant reader is now paginated. Frontends should treat `participantViewport.activePageIndex` and `participantViewport.pageCount` as the canonical reading position instead of deriving position from vertical scroll alone.
+- `participantViewport.lastPageTurnAtUnixMs` records the latest observed participant page turn and is mirrored to researcher live view and replay frames.
+- Layout-changing interventions now default to `page-turn` commit timing. The backend queues the intervention, waits for the next page turn, and only then commits the presentation change.
+- If a queued layout change cannot wait indefinitely, the backend still supports a fallback boundary such as `sentence-end`.
+- Replay exports now include paginated viewport state and scheduled intervention events in schema version `3`.
+
+Example participant viewport payload:
+
+```json
+{
+  "scrollProgress": 0.33,
+  "scrollTopPx": 1200,
+  "viewportWidthPx": 900,
+  "viewportHeightPx": 1200,
+  "contentHeightPx": 4800,
+  "contentWidthPx": 900,
+  "activePageIndex": 1,
+  "pageCount": 4,
+  "lastPageTurnAtUnixMs": 1740000004321
+}
+```
+
 ## Message Reference
 ### Client -> Server (`/ws`)
 ```mermaid

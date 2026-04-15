@@ -32,6 +32,7 @@ export function ReplayReaderColumn({
 
       <div className="h-full overflow-hidden rounded-xl border bg-card shadow-sm">
         <ReaderShell
+          key={content.documentId}
           docId={content.documentId}
           markdown={content.markdown}
           presentation={presentation}
@@ -45,8 +46,8 @@ export function ReplayReaderColumn({
           showToolbar={readerOptions.showToolbar}
           showBackButton={readerOptions.showBackButton}
           showLixScores={readerOptions.showLixScores}
-          viewportScrollProgress={readingSession.participantViewport.scrollProgress}
-          viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
+          viewportActivePageIndex={readingSession.participantViewport.activePageIndex}
+          viewportPageCount={readingSession.participantViewport.pageCount}
           remoteFocus={{
             isInsideReadingArea: readingSession.focus.isInsideReadingArea,
             normalizedContentX: readingSession.focus.normalizedContentX,

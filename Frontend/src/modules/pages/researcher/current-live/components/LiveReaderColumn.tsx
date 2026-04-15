@@ -115,21 +115,30 @@ export function LiveReaderColumn({
 
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
-      <div className="relative h-full overflow-hidden rounded-xl border bg-card shadow-sm">
-        <div className="pointer-events-none absolute left-4 top-4 z-10">
-          <span
-            className={cn(
-              "inline-flex rounded-full border px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm backdrop-blur",
-              mirrorTrustState.tone === "positive"
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
-                : mirrorTrustState.tone === "warning"
-                  ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-                  : "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-200"
-            )}
-          >
-            {mirrorTrustState.label}
-          </span>
-        </div>
+      <div
+        className={cn(
+          "relative h-full overflow-hidden",
+          exactMirrorEnabled
+            ? "bg-transparent"
+            : "rounded-xl border bg-card shadow-sm"
+        )}
+      >
+        {mirrorTrustState.kind !== "exact" ? (
+          <div className="pointer-events-none absolute left-4 top-4 z-10">
+            <span
+              className={cn(
+                "inline-flex rounded-full border px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm backdrop-blur",
+                mirrorTrustState.tone === "positive"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                  : mirrorTrustState.tone === "warning"
+                    ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                    : "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-200"
+              )}
+            >
+              {mirrorTrustState.label}
+            </span>
+          </div>
+        ) : null}
         {showReadingDynamics ? (
           <div className="pointer-events-none absolute right-4 top-4 z-10">
             <span
@@ -154,13 +163,14 @@ export function LiveReaderColumn({
           <div
             ref={stageHostRef}
             className={cn(
-              "flex h-full w-full items-center justify-center overflow-hidden bg-muted/10 p-3",
+              "flex h-full w-full items-center justify-center overflow-hidden bg-muted/10",
+              !exactMirrorEnabled && "p-3",
               mirrorTrustState.kind === "approximate" && "pt-32"
             )}
           >
             {showExactMirror ? (
               <div
-                className="relative overflow-hidden rounded-xl border bg-card shadow-sm"
+                className="relative overflow-hidden"
                 style={{
                   width: `${scaledStageWidth}px`,
                   height: `${scaledStageHeight}px`,
@@ -175,6 +185,7 @@ export function LiveReaderColumn({
                   }}
                 >
                   <ReaderShell
+                    key={content.documentId}
                     docId={content.documentId}
                     markdown={content.markdown}
                     presentation={presentation}
@@ -188,8 +199,10 @@ export function LiveReaderColumn({
                     showToolbar={false}
                     showBackButton={false}
                     showLixScores={false}
-                    viewportScrollProgress={readingSession.participantViewport.scrollProgress}
-                    viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
+                    viewportActivePageIndex={readingSession.participantViewport.activePageIndex}
+                    viewportPageCount={readingSession.participantViewport.pageCount}
+                    viewportWidthPx={participantViewportWidth}
+                    viewportHeightPx={participantViewportHeight}
                     remoteFocus={{
                       isInsideReadingArea: readingSession.focus.isInsideReadingArea,
                       normalizedContentX: readingSession.focus.normalizedContentX,
@@ -222,6 +235,7 @@ export function LiveReaderColumn({
         ) : (
           <div className={cn("h-full overflow-auto", mirrorTrustState.kind === "approximate" && "pt-28")}>
             <ReaderShell
+              key={content.documentId}
               docId={content.documentId}
               markdown={content.markdown}
               presentation={presentation}
@@ -235,11 +249,11 @@ export function LiveReaderColumn({
               showToolbar={readerOptions.showToolbar}
               showBackButton={readerOptions.showBackButton}
               showLixScores={readerOptions.showLixScores}
-              viewportScrollProgress={
-                followParticipant ? readingSession.participantViewport.scrollProgress : null
+              viewportActivePageIndex={
+                followParticipant ? readingSession.participantViewport.activePageIndex : null
               }
-              viewportScrollTopPx={
-                followParticipant ? readingSession.participantViewport.scrollTopPx : null
+              viewportPageCount={
+                followParticipant ? readingSession.participantViewport.pageCount : null
               }
               remoteFocus={{
                 isInsideReadingArea: readingSession.focus.isInsideReadingArea,

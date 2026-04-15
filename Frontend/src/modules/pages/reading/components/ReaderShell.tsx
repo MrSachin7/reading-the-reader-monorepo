@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from "react";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { LiveGazeOverlay } from "@/modules/pages/gaze/components/LiveGazeOverlay";
 import type { GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers";
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader";
@@ -11,7 +13,6 @@ import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/re
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
-import { useReadingProgress } from "@/modules/pages/reading/lib/useReadingProgress";
 import { useRemoteFocusTokenAttention } from "@/modules/pages/reading/lib/useRemoteFocusTokenAttention";
 import {
   useRemoteTokenAttentionHeatmap,
@@ -33,6 +34,9 @@ type ReaderViewportMetrics = {
   viewportHeightPx: number;
   contentHeightPx: number;
   contentWidthPx: number;
+  activePageIndex: number;
+  pageCount: number;
+  lastPageTurnAtUnixMs: number | null;
 };
 
 type ReaderShellProps = {
@@ -53,8 +57,10 @@ type ReaderShellProps = {
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
-  viewportScrollProgress?: number | null;
-  viewportScrollTopPx?: number | null;
+  viewportActivePageIndex?: number | null;
+  viewportPageCount?: number | null;
+  viewportWidthPx?: number | null;
+  viewportHeightPx?: number | null;
   remoteFocus?: {
     isInsideReadingArea: boolean;
     normalizedContentX: number | null;
@@ -83,6 +89,9 @@ const FONT_FAMILY_STYLES = {
   merriweather: "var(--font-merriweather)",
 } as const;
 
+const PAGE_STORAGE_PREFIX = "reading:lastPage:";
+const PAGINATION_OVERLAY_HEIGHT_PX = 56;
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -98,13 +107,18 @@ function getFontFamilyStyle(fontFamily: string) {
   ];
 }
 
-function buildScrollProgress(container: HTMLElement) {
-  const scrollableHeight = Math.max(container.scrollHeight - container.clientHeight, 0);
-  if (scrollableHeight === 0) {
+function clampPageIndex(nextPageIndex: number, pageCount: number) {
+  if (!Number.isFinite(nextPageIndex)) {
     return 0;
   }
 
-  return Math.min(1, Math.max(0, container.scrollTop / scrollableHeight));
+  return Math.max(0, Math.min(Math.round(nextPageIndex), Math.max(pageCount - 1, 0)));
+}
+
+function readStoredPageIndex(docId: string) {
+  const raw = window.localStorage.getItem(`${PAGE_STORAGE_PREFIX}${docId}`);
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
 }
 
 export function ReaderShell({
@@ -125,8 +139,10 @@ export function ReaderShell({
   onViewportMetricsChange,
   onFocusChange,
   onContextPreservationChange,
-  viewportScrollProgress = null,
-  viewportScrollTopPx = null,
+  viewportActivePageIndex = null,
+  viewportPageCount = null,
+  viewportWidthPx = null,
+  viewportHeightPx = null,
   remoteFocus = null,
   remoteTokenAttention = null,
   onRemoteTokenAttentionChange,
@@ -140,11 +156,25 @@ export function ReaderShell({
   interventionAppliedBoundary = null,
   interventionWaitDurationMs = null,
 }: ReaderShellProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const escHoldTimerRef = useRef<number | null>(null);
+  const wheelLockRef = useRef(false);
+  const didRestoreStoredPageRef = useRef(false);
+  const lastPageTurnAtRef = useRef<number | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const { resetToTop } = useReadingProgress({ containerRef, docId });
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [pageWidthPx, setPageWidthPx] = useState(Math.max(presentation.lineWidthPx, 1));
+  const [pageHeightPx, setPageHeightPx] = useState(0);
+  const isControlledPage = viewportActivePageIndex !== null;
+  const hasControlledViewportSize =
+    (viewportWidthPx ?? 0) > 0 && (viewportHeightPx ?? 0) > 0;
+  const displayPageCount =
+    isControlledPage && viewportPageCount !== null
+      ? Math.max(viewportPageCount, 1)
+      : Math.max(pageCount, 1);
 
   useGazeTokenHighlight({
     containerRef,
@@ -186,6 +216,36 @@ export function ReaderShell({
 
   const words = useMemo(() => countWords(markdown), [markdown]);
   const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
+  const effectivePageIndex = clampPageIndex(
+    isControlledPage ? viewportActivePageIndex : pageIndex,
+    displayPageCount
+  );
+
+  const setActivePageIndex = useCallback(
+    (nextPageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => {
+      const next = clampPageIndex(nextPageIndex, displayPageCount);
+      const persist = options?.persist ?? !isControlledPage;
+      const markTurn = options?.markTurn ?? !isControlledPage;
+
+      if (!isControlledPage) {
+        setPageIndex((current) => (current === next ? current : next));
+      }
+
+      if (persist) {
+        window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(next));
+      }
+
+      if (markTurn && next !== effectivePageIndex) {
+        lastPageTurnAtRef.current = Date.now();
+      }
+    },
+    [displayPageCount, docId, effectivePageIndex, isControlledPage]
+  );
+
+  const resetToTop = useCallback(() => {
+    setActivePageIndex(0, { persist: true, markTurn: false });
+  }, [setActivePageIndex]);
+
   const { captureContextAnchor } = usePreserveReadingContext({
     containerRef,
     contentRef,
@@ -196,6 +256,9 @@ export function ReaderShell({
     interventionAppliedAtUnixMs,
     interventionAppliedBoundary,
     interventionWaitDurationMs,
+    currentPageIndex: effectivePageIndex,
+    pageWidthPx,
+    setActivePageIndex,
     onContextPreservationChange,
   });
 
@@ -210,7 +273,166 @@ export function ReaderShell({
     },
     [captureContextAnchor, onPresentationChange, presentation]
   );
+
   const canAdjustPresentation = Boolean(onPresentationChange) && presentation.editableByExperimenter;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.dispatchEvent(new Event("scroll"));
+  }, [effectivePageIndex, pageWidthPx, pageHeightPx]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!host || !container || !content) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const measure = () => {
+      const nextWidth = hasControlledViewportSize
+        ? Math.max(1, Math.round(viewportWidthPx ?? 0))
+        : Math.max(1, Math.min(host.clientWidth, Math.round(presentation.lineWidthPx)));
+      const nextHeight = hasControlledViewportSize
+        ? Math.max(1, Math.round(viewportHeightPx ?? 0))
+        : Math.max(host.clientHeight, 1);
+      const rawPageCount = nextWidth <= 0 ? 1 : Math.ceil(content.scrollWidth / nextWidth);
+      const normalizedPageCount =
+        isControlledPage && viewportPageCount !== null
+          ? Math.max(viewportPageCount, 1)
+          : Math.max(rawPageCount, 1);
+
+      setPageWidthPx((current) => (current === nextWidth ? current : nextWidth));
+      setPageHeightPx((current) => (current === nextHeight ? current : nextHeight));
+      setPageCount((current) => (current === normalizedPageCount ? current : normalizedPageCount));
+
+      const clampedPageIndex = clampPageIndex(
+        isControlledPage ? viewportActivePageIndex : readStoredPageIndex(docId),
+        normalizedPageCount
+      );
+
+      if (isControlledPage) {
+        setPageIndex(clampedPageIndex);
+      } else if (!didRestoreStoredPageRef.current) {
+        didRestoreStoredPageRef.current = true;
+        setPageIndex(clampedPageIndex);
+      } else {
+        setPageIndex((current) => clampPageIndex(current, normalizedPageCount));
+      }
+    };
+
+    const scheduleMeasure = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        measure();
+      });
+    };
+
+    measure();
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    resizeObserver.observe(host);
+    resizeObserver.observe(container);
+    resizeObserver.observe(content);
+    window.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [
+    docId,
+    hasControlledViewportSize,
+    isControlledPage,
+    pageCount,
+    presentation.lineWidthPx,
+    viewportActivePageIndex,
+    viewportHeightPx,
+    viewportPageCount,
+    viewportWidthPx,
+  ]);
+
+  useEffect(() => {
+    const nextEffectivePage = clampPageIndex(effectivePageIndex, displayPageCount);
+    if (!isControlledPage) {
+      window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(nextEffectivePage));
+    }
+  }, [displayPageCount, docId, effectivePageIndex, isControlledPage]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !onViewportMetricsChange) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const emitMetrics = () => {
+      const normalizedPageIndex = clampPageIndex(effectivePageIndex, displayPageCount);
+      onViewportMetricsChange({
+        scrollProgress:
+          displayPageCount <= 1 ? 0 : normalizedPageIndex / Math.max(displayPageCount - 1, 1),
+        scrollTopPx: normalizedPageIndex * Math.max(pageHeightPx, 0),
+        viewportWidthPx: Math.max(pageWidthPx, 0),
+        viewportHeightPx: Math.max(pageHeightPx, 0),
+        contentHeightPx: Math.max(displayPageCount * pageHeightPx, pageHeightPx),
+        contentWidthPx: Math.max(pageWidthPx, 0),
+        activePageIndex: normalizedPageIndex,
+        pageCount: displayPageCount,
+        lastPageTurnAtUnixMs: lastPageTurnAtRef.current,
+      });
+    };
+
+    const scheduleMetrics = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        emitMetrics();
+      });
+    };
+
+    emitMetrics();
+
+    const resizeObserver = new ResizeObserver(scheduleMetrics);
+    resizeObserver.observe(container);
+    if (contentRef.current) {
+      resizeObserver.observe(contentRef.current);
+    }
+    window.addEventListener("resize", scheduleMetrics);
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", scheduleMetrics);
+    };
+  }, [displayPageCount, effectivePageIndex, onViewportMetricsChange, pageHeightPx, pageWidthPx]);
+
+  const moveByPages = useCallback(
+    (delta: number, options?: { persist?: boolean; markTurn?: boolean }) => {
+      setActivePageIndex(effectivePageIndex + delta, options);
+    },
+    [effectivePageIndex, setActivePageIndex]
+  );
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -231,6 +453,30 @@ export function ReaderShell({
       }
 
       if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === "PageDown" || event.key === "ArrowRight" || event.key === " ") {
+        event.preventDefault();
+        moveByPages(1);
+        return;
+      }
+
+      if (event.key === "PageUp" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveByPages(-1);
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        setActivePageIndex(0);
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        setActivePageIndex(displayPageCount - 1);
         return;
       }
 
@@ -272,7 +518,17 @@ export function ReaderShell({
         resetToTop();
       }
     },
-    [canAdjustPresentation, isFocusMode, presentation.fontSizePx, presentation.lineWidthPx, resetToTop, updatePresentation]
+    [
+      canAdjustPresentation,
+      isFocusMode,
+      moveByPages,
+      displayPageCount,
+      presentation.fontSizePx,
+      presentation.lineWidthPx,
+      resetToTop,
+      setActivePageIndex,
+      updatePresentation,
+    ]
   );
 
   useEffect(() => {
@@ -303,78 +559,71 @@ export function ReaderShell({
     };
   }, []);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    const content = contentRef.current;
-
-    if (!container || !content || !onViewportMetricsChange) {
-      return;
-    }
-
-    let frameId = 0;
-
-    const emitMetrics = () => {
-      onViewportMetricsChange({
-        scrollProgress: buildScrollProgress(container),
-        scrollTopPx: container.scrollTop,
-        viewportWidthPx: container.clientWidth,
-        viewportHeightPx: container.clientHeight,
-        contentHeightPx: content.scrollHeight,
-        contentWidthPx: content.clientWidth,
-      });
-    };
-
-    const scheduleMetrics = () => {
-      if (frameId !== 0) {
+  const handleWheel = useCallback(
+    (event: WheelEvent<HTMLDivElement>) => {
+      if (isControlledPage || displayPageCount <= 1) {
         return;
       }
 
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        emitMetrics();
-      });
-    };
-
-    emitMetrics();
-
-    const resizeObserver = new ResizeObserver(scheduleMetrics);
-    resizeObserver.observe(container);
-    resizeObserver.observe(content);
-    container.addEventListener("scroll", scheduleMetrics, { passive: true });
-    window.addEventListener("resize", scheduleMetrics);
-
-    return () => {
-      if (frameId !== 0) {
-        window.cancelAnimationFrame(frameId);
+      const verticalIntent = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
+      const delta = verticalIntent ? event.deltaY : event.deltaX;
+      if (Math.abs(delta) < 18) {
+        return;
       }
-      resizeObserver.disconnect();
-      container.removeEventListener("scroll", scheduleMetrics);
-      window.removeEventListener("resize", scheduleMetrics);
-    };
-  }, [onViewportMetricsChange]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
+      event.preventDefault();
+      if (wheelLockRef.current) {
+        return;
+      }
 
-    const scrollableHeight = Math.max(container.scrollHeight - container.clientHeight, 0);
-    if (scrollableHeight <= 0) {
-      return;
-    }
+      wheelLockRef.current = true;
+      moveByPages(delta > 0 ? 1 : -1);
 
-    if (viewportScrollTopPx !== null) {
-      container.scrollTop = Math.min(scrollableHeight, Math.max(0, viewportScrollTopPx));
-      return;
-    }
+      window.setTimeout(() => {
+        wheelLockRef.current = false;
+      }, 220);
+    },
+    [displayPageCount, isControlledPage, moveByPages]
+  );
 
-    if (viewportScrollProgress === null) {
-      return;
-    }
+  const canGoPreviousPage = !isControlledPage && effectivePageIndex > 0;
+  const canGoNextPage = !isControlledPage && effectivePageIndex < displayPageCount - 1;
+  const useMeasuredViewportSurface = embedded && isControlledPage;
 
-    container.scrollTop = scrollableHeight * Math.min(1, Math.max(0, viewportScrollProgress));
-  }, [viewportScrollProgress, viewportScrollTopPx]);
+  const paginationFooter = (
+    <div
+      className="flex items-center justify-between gap-3 px-4 py-3 md:px-6"
+      style={{ minHeight: `${PAGINATION_OVERLAY_HEIGHT_PX}px` }}
+    >
+      <p className="text-xs font-medium tabular-nums text-muted-foreground">
+        Page {effectivePageIndex + 1} / {displayPageCount}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full border-border/40 bg-background/20 backdrop-blur-[1px]"
+          disabled={!canGoPreviousPage}
+          onClick={() => moveByPages(-1)}
+        >
+          <ChevronLeft className="size-4" />
+          <span className="sr-only">Previous page</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full border-border/40 bg-background/20 backdrop-blur-[1px]"
+          disabled={!canGoNextPage}
+          onClick={() => moveByPages(1)}
+        >
+          <ChevronRight className="size-4" />
+          <span className="sr-only">Next page</span>
+        </Button>
+      </div>
+    </div>
+  );
 
   const remoteFocusMarker =
     showRemoteFocusMarker &&
@@ -451,28 +700,56 @@ export function ReaderShell({
         ) : null}
 
         <div
-          ref={containerRef}
+          ref={hostRef}
           className={
             isFocusMode
-              ? "flex-1 overflow-y-auto px-5 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-10 md:py-10"
-              : "flex-1 overflow-y-auto px-4 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8 md:py-8"
+              ? "flex flex-1 items-stretch justify-center overflow-hidden px-5 py-8 md:px-10 md:py-10"
+              : useMeasuredViewportSurface
+                ? "flex flex-1 items-stretch justify-center overflow-hidden"
+                : "flex flex-1 items-stretch justify-center overflow-hidden px-4 pt-6 md:px-8 md:pt-8"
           }
-          style={{ msOverflowStyle: "none" }}
         >
           <div
-            ref={contentRef}
-            data-reader-content="true"
-            className="relative mx-auto w-full"
+            ref={containerRef}
+            className="relative h-full w-full overflow-hidden rounded-[1.5rem] bg-background/40"
             style={{
-              maxWidth: `${presentation.lineWidthPx}px`,
-              fontSize: `${presentation.fontSizePx}px`,
-              lineHeight: presentation.lineHeight,
-              letterSpacing: `${presentation.letterSpacingEm}em`,
-              fontFamily: getFontFamilyStyle(presentation.fontFamily),
+              width: `${pageWidthPx}px`,
+              maxWidth: "100%",
             }}
+            onWheel={handleWheel}
           >
+            {isControlledPage ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+                <div className="pointer-events-auto">{paginationFooter}</div>
+              </div>
+            ) : null}
+
             {remoteFocusMarker}
-            <MarkdownReader blocks={tokenizedBlocks} showLixScores={showLixScores} />
+
+            <div
+              ref={contentRef}
+              data-reader-content="true"
+              className="relative h-full will-change-transform"
+              style={{
+                width: `${pageWidthPx}px`,
+                height: `${Math.max(pageHeightPx, 1)}px`,
+                paddingBottom: `${PAGINATION_OVERLAY_HEIGHT_PX}px`,
+                columnWidth: `${pageWidthPx}px`,
+                columnGap: "0px",
+                columnFill: "auto",
+                fontSize: `${presentation.fontSizePx}px`,
+                lineHeight: presentation.lineHeight,
+                letterSpacing: `${presentation.letterSpacingEm}em`,
+                fontFamily: getFontFamilyStyle(presentation.fontFamily),
+                transform: `translate3d(-${effectivePageIndex * pageWidthPx}px, 0, 0)`,
+                transition: isControlledPage ? "none" : "transform 220ms ease-out",
+              }}
+            >
+              <MarkdownReader blocks={tokenizedBlocks} showLixScores={showLixScores} />
+            </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
+              <div className="pointer-events-auto">{paginationFooter}</div>
+            </div>
           </div>
         </div>
       </section>

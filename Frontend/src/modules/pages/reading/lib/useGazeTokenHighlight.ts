@@ -85,10 +85,20 @@ function getAxisDistance(position: number, start: number, end: number) {
   return 0;
 }
 
+function intersectsViewport(rect: DOMRect, viewportRect: DOMRect) {
+  return (
+    rect.right >= viewportRect.left &&
+    rect.left <= viewportRect.right &&
+    rect.bottom >= viewportRect.top &&
+    rect.top <= viewportRect.bottom
+  );
+}
+
 function buildWordLayouts(container: HTMLElement) {
   const elements = Array.from(
     container.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
   );
+  const viewportRect = container.getBoundingClientRect();
 
   const layouts: WordLayout[] = [];
   let currentLine = -1;
@@ -98,6 +108,10 @@ function buildWordLayouts(container: HTMLElement) {
   for (const element of elements) {
     const rect = element.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
+      continue;
+    }
+
+     if (!intersectsViewport(rect, viewportRect)) {
       continue;
     }
 
@@ -284,6 +298,7 @@ export function useGazeTokenHighlight({
 }: UseGazeTokenHighlightParams) {
   const wordLayoutsRef = useRef<WordLayout[]>([]);
   const activeWordIndexRef = useRef<number | null>(null);
+  const activeTokenIdRef = useRef<string | null>(null);
   const highlightedElementsRef = useRef<Map<HTMLElement, HighlightVariant>>(new Map());
   const fixationCandidateRef = useRef<FixationCandidate | null>(null);
   const latestPointRef = useRef<GazePoint | null>(null);
@@ -387,14 +402,22 @@ export function useGazeTokenHighlight({
 
       highlightedElementsRef.current = nextHighlights;
       activeWordIndexRef.current = nextIndex;
+      activeTokenIdRef.current =
+        nextIndex === null
+          ? null
+          : wordLayoutsRef.current[nextIndex]?.element.dataset.tokenId ?? null;
     };
 
     const refreshLayouts = () => {
       wordLayoutsRef.current = buildWordLayouts(container);
 
-      if (activeWordIndexRef.current !== null) {
-        if (wordLayoutsRef.current[activeWordIndexRef.current]) {
-          setActiveWord(activeWordIndexRef.current, true);
+      if (activeTokenIdRef.current) {
+        const nextIndex = wordLayoutsRef.current.findIndex(
+          (layout) => layout.element.dataset.tokenId === activeTokenIdRef.current
+        );
+
+        if (nextIndex >= 0) {
+          setActiveWord(nextIndex, true);
         } else {
           fixationCandidateRef.current = null;
           setActiveWord(null, true);
@@ -491,7 +514,8 @@ export function useGazeTokenHighlight({
 
       const x = clamp(normalizedPoint.x * window.innerWidth, 0, window.innerWidth);
       const y = clamp(normalizedPoint.y * window.innerHeight, 0, window.innerHeight);
-      const contentElement = contentRef?.current ?? container.firstElementChild;
+      const contentElement =
+        contentRef?.current ?? container.querySelector<HTMLElement>("[data-reader-content='true']");
 
       if (!(contentElement instanceof HTMLElement)) {
         reportFocus({
@@ -506,14 +530,14 @@ export function useGazeTokenHighlight({
         return;
       }
 
-      const contentRect = contentElement.getBoundingClientRect();
+      const readingAreaRect = container.getBoundingClientRect();
       const isInsideReadingArea =
-        x >= contentRect.left &&
-        x <= contentRect.right &&
-        y >= contentRect.top &&
-        y <= contentRect.bottom &&
-        contentRect.width > 0 &&
-        contentRect.height > 0;
+        x >= readingAreaRect.left &&
+        x <= readingAreaRect.right &&
+        y >= readingAreaRect.top &&
+        y <= readingAreaRect.bottom &&
+        readingAreaRect.width > 0 &&
+        readingAreaRect.height > 0;
 
       if (!isInsideReadingArea) {
         setActiveWord(null);
@@ -530,8 +554,8 @@ export function useGazeTokenHighlight({
         return;
       }
 
-      const normalizedContentX = clamp((x - contentRect.left) / contentRect.width, 0, 1);
-      const normalizedContentY = clamp((y - contentRect.top) / contentRect.height, 0, 1);
+      const normalizedContentX = clamp((x - readingAreaRect.left) / readingAreaRect.width, 0, 1);
+      const normalizedContentY = clamp((y - readingAreaRect.top) / readingAreaRect.height, 0, 1);
 
       const candidateIndex = pickWordIndex(
         wordLayoutsRef.current,
@@ -635,6 +659,7 @@ export function useGazeTokenHighlight({
       window.removeEventListener("resize", onResize);
       fixationCandidateRef.current = null;
       normalizedPointRef.current = null;
+      activeTokenIdRef.current = null;
       lastFocusSignatureRef.current = null;
       lastFocusReportedAtRef.current = 0;
       setActiveWord(null, true);

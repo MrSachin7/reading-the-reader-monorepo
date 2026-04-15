@@ -457,7 +457,7 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     presentation: buildReadingPresentation(replay.replay.baseline.presentation),
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     interventionPolicy: buildReadingInterventionPolicy(null),
-    participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0 },
+    participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0, activePageIndex: 0, pageCount: 1, lastPageTurnAtUnixMs: null },
     focus: { isInsideReadingArea: false, normalizedContentX: null, normalizedContentY: null, activeTokenId: null, activeBlockId: null, activeSentenceId: null, updatedAtUnixMs: 0 },
     pendingIntervention: null,
     latestContextPreservation: null,
