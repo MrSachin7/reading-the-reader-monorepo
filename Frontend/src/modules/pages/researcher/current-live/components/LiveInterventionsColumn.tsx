@@ -36,7 +36,6 @@ import {
   formatParameterHint,
   formatPendingBoundaryCue,
   getOptionLabel,
-  summarizeInterventionChange,
 } from "@/modules/pages/researcher/current-live/lib/intervention-helpers"
 import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
 
@@ -81,14 +80,8 @@ export function LiveInterventionsColumn({
     [interventionModules]
   )
 
-  const pendingBoundaryLabel = pendingIntervention
-    ? formatBoundaryLabel(pendingIntervention.requestedBoundary)
-    : formatBoundaryLabel(interventionPolicy.layoutCommitBoundary)
   const pendingBoundaryCue = pendingIntervention
     ? formatPendingBoundaryCue(pendingIntervention.requestedBoundary)
-    : formatBoundaryCue(interventionPolicy.layoutCommitBoundary)
-  const pendingChangeSummary = pendingIntervention
-    ? summarizeInterventionChange(pendingIntervention.intervention, presentation, appearance)
     : null
 
   function getCurrentParameterValue(
@@ -316,28 +309,48 @@ export function LiveInterventionsColumn({
     const visibleValue = hasPendingValue ? pendingValue! : currentValue
     const min = parameter.minValue ?? currentValue
     const max = parameter.maxValue ?? currentValue
+    const range = max - min
+    const currentPercent = range > 0 ? ((currentValue - min) / range) * 100 : 0
 
     return (
       <Field key={module.moduleId}>
         <div className="flex items-center justify-between">
           <FieldLabel>{parameter.displayName}</FieldLabel>
-          <span
-            className={cn(
-              "text-xs font-mono tabular-nums",
-              hasPendingValue ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"
+          <span className="font-mono text-xs tabular-nums">
+            {hasPendingValue ? (
+              <>
+                <span className="text-muted-foreground">{formattedValue}</span>
+                <span className="mx-1 text-amber-600 dark:text-amber-400">→</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-300">
+                  {formatValue(visibleValue)}
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{formattedValue}</span>
             )}
-          >
-            {hasPendingValue ? `→ ${formatValue(visibleValue)}` : formattedValue}
           </span>
         </div>
-        <Slider
-          className="mt-2"
-          min={min}
-          max={max}
-          step={parameter.step ?? 1}
-          value={[visibleValue]}
-          onValueChange={(value) => onValueChange(value[0] ?? visibleValue)}
-        />
+        <div className="relative mt-3 py-1.5">
+          <Slider
+            min={min}
+            max={max}
+            step={parameter.step ?? 1}
+            value={[visibleValue]}
+            onValueChange={(value) => onValueChange(value[0] ?? visibleValue)}
+            className={cn(
+              hasPendingValue &&
+                "[&_[data-slot=slider-range]]:bg-amber-500 [&_[data-slot=slider-thumb]]:border-amber-500 [&_[data-slot=slider-thumb]]:ring-amber-500/30"
+            )}
+          />
+          {hasPendingValue ? (
+            <span
+              aria-hidden
+              title={`Current: ${formattedValue}`}
+              className="pointer-events-none absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-muted-foreground/70 bg-background shadow-sm"
+              style={{ left: `${currentPercent}%` }}
+            />
+          ) : null}
+        </div>
       </Field>
     )
   }
@@ -616,26 +629,15 @@ export function LiveInterventionsColumn({
                 </p>
 
                 {pendingIntervention ? (
-                  <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
-                        {pendingBoundaryCue}
-                      </p>
-                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-                        {pendingIntervention.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-sm font-medium text-foreground">{pendingChangeSummary}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {pendingIntervention.intervention.reason}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {pendingBoundaryLabel} is only a trigger point — it will not move the participant.
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2">
+                    <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-amber-500" />
+                    <p className="min-w-0 flex-1 truncate text-xs text-amber-950 dark:text-amber-100">
+                      {pendingBoundaryCue}
                     </p>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-3 w-full"
+                      className="h-7 shrink-0 border-amber-500/50 bg-background px-2 text-xs"
                       disabled={pendingIntervention.status !== "queued"}
                       onClick={() => void onApplyPendingInterventionNow()}
                     >
