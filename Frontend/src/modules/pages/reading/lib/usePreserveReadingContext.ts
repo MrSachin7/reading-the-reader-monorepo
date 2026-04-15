@@ -373,6 +373,30 @@ export function usePreserveReadingContext({
     const effectiveBoundary = interventionAppliedBoundary ?? "immediate"
     const effectiveAppliedAt = interventionAppliedAtUnixMs ?? Date.now()
 
+    // Non-immediate boundaries (sentence-end, paragraph-end, page-turn) are
+    // handled by segment-based layout: the intervention creates a new segment
+    // starting at the next block boundary, so blocks above the split never
+    // reflow and no anchor restore is needed. Only immediate swaps (which
+    // restyle the live segment in place) still require anchor restoration.
+    if (effectiveBoundary !== "immediate") {
+      const anchorForReport = latestAnchorRef.current
+      onContextPreservationChange?.({
+        status: "preserved",
+        anchorSource: "scroll-only",
+        anchorSentenceId: anchorForReport?.anchorSentenceId ?? null,
+        anchorTokenId: anchorForReport?.anchorTokenId ?? null,
+        anchorBlockId: anchorForReport?.anchorBlockId ?? null,
+        anchorErrorPx: 0,
+        viewportDeltaPx: 0,
+        commitBoundary: effectiveBoundary,
+        waitDurationMs: interventionWaitDurationMs,
+        interventionAppliedAtUnixMs: effectiveAppliedAt,
+        measuredAtUnixMs: Date.now(),
+        reason: "Segment-based layout preserves position; anchor restore skipped.",
+      })
+      return
+    }
+
     const commitFailure = (reason: string) => {
       onContextPreservationChange?.({
         status: "failed",

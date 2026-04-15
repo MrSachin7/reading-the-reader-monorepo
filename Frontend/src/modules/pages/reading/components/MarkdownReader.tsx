@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
 
 import type { Token, TokenRun, TokenizedBlock } from "@/modules/pages/reading/lib/tokenize";
 
@@ -8,6 +8,13 @@ type MarkdownReaderProps = {
   blocks: TokenizedBlock[];
   showLixScores?: boolean;
   lixDisplayMode?: "inline" | "overlay";
+  /**
+   * Per-block typography overrides keyed by `blockId`. When provided, each
+   * block's top-level element receives these inline styles, allowing a reader
+   * surface to host multiple "typography segments" in one flowing document
+   * without reflowing earlier (frozen) segments when a later one changes.
+   */
+  blockStyleOverrides?: Map<string, CSSProperties>;
 };
 
 function formatLixScore(score: number) {
@@ -91,7 +98,17 @@ export function MarkdownReader({
   blocks,
   showLixScores = true,
   lixDisplayMode = "inline",
+  blockStyleOverrides,
 }: MarkdownReaderProps) {
+  const styleFor = (blockId: string, baseStyle?: CSSProperties): CSSProperties | undefined => {
+    const override = blockStyleOverrides?.get(blockId);
+    if (!override && !baseStyle) {
+      return undefined;
+    }
+
+    return { ...(baseStyle ?? {}), ...(override ?? {}) };
+  };
+
   return (
     <article className="text-foreground">
       {blocks.map((block) => {
@@ -102,6 +119,7 @@ export function MarkdownReader({
                 key={block.blockId}
                 data-block-id={block.blockId}
                 className="mb-8 text-3xl leading-tight font-bold"
+                style={styleFor(block.blockId)}
               >
                 {block.runs.map(renderRun)}
               </h1>
@@ -112,6 +130,7 @@ export function MarkdownReader({
                 key={block.blockId}
                 data-block-id={block.blockId}
                 className="mt-10 mb-4 text-2xl leading-tight font-semibold"
+                style={styleFor(block.blockId)}
               >
                 {block.runs.map(renderRun)}
               </h2>
@@ -122,7 +141,7 @@ export function MarkdownReader({
                 key={block.blockId}
                 data-block-id={block.blockId}
                 className="relative mb-5"
-                style={{ lineHeight: "inherit" }}
+                style={styleFor(block.blockId, { lineHeight: "inherit" })}
               >
                 {block.runs.map(renderRun)}
                 {showLixScores && block.lixScore !== null ? (
@@ -144,7 +163,7 @@ export function MarkdownReader({
                 key={block.blockId}
                 data-block-id={block.blockId}
                 className="mb-6 list-disc space-y-2 pl-8"
-                style={{ lineHeight: "inherit" }}
+                style={styleFor(block.blockId, { lineHeight: "inherit" })}
               >
                 {block.items.map((item, itemIndex) => (
                   <li key={`${block.blockId}:item:${itemIndex}`}>

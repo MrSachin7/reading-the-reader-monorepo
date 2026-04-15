@@ -11,7 +11,10 @@ public sealed record InterventionEventSnapshot(
     ReadingPresentationSnapshot AppliedPresentation,
     ReaderAppearanceSnapshot AppliedAppearance,
     string? ModuleId = null,
-    IReadOnlyDictionary<string, string?>? Parameters = null)
+    IReadOnlyDictionary<string, string?>? Parameters = null,
+    string? CommittedActiveTokenId = null,
+    string? CommittedActiveSentenceId = null,
+    string? CommittedActiveBlockId = null)
 {
     public InterventionEventSnapshot Copy()
     {
@@ -28,6 +31,9 @@ public sealed record InterventionEventSnapshot(
             AppliedPresentation.Copy(),
             AppliedAppearance.Copy(),
             DomainText.NormalizeOptional(ModuleId),
-            DomainText.CloneParameters(Parameters));
+            DomainText.CloneParameters(Parameters),
+            DomainText.NormalizeOptional(CommittedActiveTokenId),
+            DomainText.NormalizeOptional(CommittedActiveSentenceId),
+            DomainText.NormalizeOptional(CommittedActiveBlockId));
     }
 }

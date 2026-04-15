@@ -11,6 +11,8 @@ import { ReadingToolbar } from "@/modules/pages/reading/components/ReadingToolba
 import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/readingMetrics";
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation";
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
+import { deriveReadingSegments, type ReadingSegment } from "@/modules/pages/reading/lib/reading-segments";
+import type { InterventionEventSnapshot, ReadingPresentationSnapshot } from "@/lib/experiment-session";
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
 import { useRemoteFocusTokenAttention } from "@/modules/pages/reading/lib/useRemoteFocusTokenAttention";
@@ -83,6 +85,20 @@ type ReaderShellProps = {
   interventionAppliedAtUnixMs?: number | null;
   interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null;
   interventionWaitDurationMs?: number | null;
+  /**
+   * Initial presentation snapshot (before any interventions were applied). Used
+   * together with `interventionEvents` to derive the frozen-segment timeline.
+   * When omitted, the reader treats `presentation` as both initial and current
+   * (no segmentation — single segment spanning the whole document).
+   */
+  initialPresentation?: ReadingPresentationSnapshot | null;
+  /**
+   * Chronological intervention history used to derive reading segments. The
+   * last segment in the derived list is the "live" segment whose presentation
+   * is replaced by `presentation` (so the live segment always reflects the
+   * current researcher-facing typography).
+   */
+  interventionEvents?: InterventionEventSnapshot[];
 };
 
 const FONT_FAMILY_STYLES = {
@@ -160,6 +176,8 @@ export function ReaderShell({
   interventionAppliedAtUnixMs = null,
   interventionAppliedBoundary = null,
   interventionWaitDurationMs = null,
+  initialPresentation = null,
+  interventionEvents,
 }: ReaderShellProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -219,6 +237,52 @@ export function ReaderShell({
 
   const parsedDoc = useMemo(() => parseMinimalMarkdown(markdown), [markdown]);
   const tokenizedBlocks = useMemo(() => tokenizeDocument(parsedDoc, docId), [docId, parsedDoc]);
+
+  const livePresentationSnapshot = useMemo<ReadingPresentationSnapshot>(
+    () => ({
+      fontFamily: presentation.fontFamily,
+      fontSizePx: presentation.fontSizePx,
+      lineWidthPx: presentation.lineWidthPx,
+      lineHeight: presentation.lineHeight,
+      letterSpacingEm: presentation.letterSpacingEm,
+      editableByResearcher: presentation.editableByExperimenter,
+    }),
+    [
+      presentation.fontFamily,
+      presentation.fontSizePx,
+      presentation.lineWidthPx,
+      presentation.lineHeight,
+      presentation.letterSpacingEm,
+      presentation.editableByExperimenter,
+    ]
+  );
+
+  const readingSegments = useMemo<ReadingSegment[]>(
+    () =>
+      deriveReadingSegments({
+        tokenizedBlocks,
+        initialPresentation: initialPresentation ?? livePresentationSnapshot,
+        livePresentation: livePresentationSnapshot,
+        interventionEvents: interventionEvents ?? [],
+      }),
+    [tokenizedBlocks, initialPresentation, livePresentationSnapshot, interventionEvents]
+  );
+
+  const blockStyleOverrides = useMemo(() => {
+    const map = new Map<string, CSSProperties>();
+    for (const segment of readingSegments) {
+      const segmentStyle: CSSProperties = {
+        fontFamily: getFontFamilyStyle(segment.presentation.fontFamily),
+        fontSize: `${segment.presentation.fontSizePx}px`,
+        lineHeight: segment.presentation.lineHeight,
+        letterSpacing: `${segment.presentation.letterSpacingEm}em`,
+      };
+      for (const block of segment.blocks) {
+        map.set(block.blockId, segmentStyle);
+      }
+    }
+    return map;
+  }, [readingSegments]);
 
   const words = useMemo(() => countWords(markdown), [markdown]);
   const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
@@ -743,10 +807,6 @@ export function ReaderShell({
                 columnWidth: `${pageWidthPx}px`,
                 columnGap: "0px",
                 columnFill: "auto",
-                fontSize: `${presentation.fontSizePx}px`,
-                lineHeight: presentation.lineHeight,
-                letterSpacing: `${presentation.letterSpacingEm}em`,
-                fontFamily: getFontFamilyStyle(presentation.fontFamily),
                 transform: `translate3d(-${effectivePageIndex * pageWidthPx}px, 0, 0)`,
                 transition: isControlledPage ? "none" : "transform 220ms ease-out",
               }}
@@ -755,6 +815,7 @@ export function ReaderShell({
                 blocks={tokenizedBlocks}
                 showLixScores={showLixScores}
                 lixDisplayMode={useCompactLixOverlay ? "overlay" : "inline"}
+                blockStyleOverrides={blockStyleOverrides}
               />
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">

@@ -455,6 +455,7 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
   return {
     content: buildReadingContent(replay.content),
     presentation: buildReadingPresentation(replay.replay.baseline.presentation),
+    initialPresentation: buildReadingPresentation(replay.replay.baseline.presentation),
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     interventionPolicy: buildReadingInterventionPolicy(null),
     participantViewport: { isConnected: false, scrollProgress: 0, scrollTopPx: 0, viewportWidthPx: 0, viewportHeightPx: 0, contentHeightPx: 0, contentWidthPx: 0, updatedAtUnixMs: 0, activePageIndex: 0, pageCount: 1, lastPageTurnAtUnixMs: null },
