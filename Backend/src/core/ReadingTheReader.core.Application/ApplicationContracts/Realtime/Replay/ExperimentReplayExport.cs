@@ -1,12 +1,13 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 
 public static class ExperimentReplayExportSchema
 {
     public const string Name = "rtr.experiment-export";
-    public const int Version = 3;
+    public const int Version = 4;
 }
 
 public sealed record ExperimentReplayExportManifest(
@@ -68,6 +69,34 @@ public sealed record ExperimentReplayDevice(
     }
 }
 
+public sealed record ExperimentReplayScreen(
+    int ScreenWidthPx,
+    int ScreenHeightPx,
+    int AvailableScreenWidthPx,
+    int AvailableScreenHeightPx,
+    int PhysicalScreenWidthPx,
+    int PhysicalScreenHeightPx,
+    double DevicePixelRatio)
+{
+    public ExperimentReplayScreen Copy()
+    {
+        return this with { };
+    }
+
+    public static ExperimentReplayScreen FromSnapshot(ParticipantScreenSnapshot screen)
+    {
+        var safeScreen = screen.Copy();
+        return new ExperimentReplayScreen(
+            safeScreen.ScreenWidthPx,
+            safeScreen.ScreenHeightPx,
+            safeScreen.AvailableScreenWidthPx,
+            safeScreen.AvailableScreenHeightPx,
+            safeScreen.PhysicalScreenWidthPx,
+            safeScreen.PhysicalScreenHeightPx,
+            safeScreen.DevicePixelRatio);
+    }
+}
+
 public sealed record ExperimentReplayCalibrationSummary(
     string? Pattern,
     bool Applied,
@@ -91,6 +120,7 @@ public sealed record ExperimentReplayContext(
     DecisionConfigurationSnapshot Condition,
     ExperimentReplayParticipant? Participant,
     ExperimentReplayDevice? Device,
+    ExperimentReplayScreen? Screen,
     ExperimentReplayCalibrationSummary Calibration,
     IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents)
 {
@@ -104,6 +134,7 @@ public sealed record ExperimentReplayContext(
             Condition.Copy(),
             Participant?.Copy(),
             Device?.Copy(),
+            Screen?.Copy(),
             Calibration.Copy(),
             LifecycleEvents is null ? [] : [.. LifecycleEvents.Select(item => item.Copy())]);
     }

@@ -23,7 +23,11 @@ import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
-import type { ReadingContextPreservationSnapshot, ReadingGazeObservationSnapshot } from "@/lib/experiment-session"
+import type {
+  ParticipantScreenSnapshot,
+  ReadingContextPreservationSnapshot,
+  ReadingGazeObservationSnapshot,
+} from "@/lib/experiment-session"
 import { useGetReaderShellSettingsQuery } from "@/redux"
 
 function FullscreenGate({
@@ -90,7 +94,10 @@ export function ReadingPage() {
   }, [liveSession?.isActive])
 
   const handleViewportMetricsChange = useCallback((metrics: ReaderViewportMetrics) => {
-    updateParticipantViewport(metrics)
+    updateParticipantViewport({
+      ...metrics,
+      screen: getParticipantScreenSnapshot(),
+    })
   }, [])
 
   const handleFocusChange = useCallback((focus: GazeFocusState) => {
@@ -281,4 +288,28 @@ export function ReadingPage() {
       ) : null}
     </div>
   )
+}
+
+function getParticipantScreenSnapshot(): ParticipantScreenSnapshot | null {
+  if (typeof window === "undefined" || typeof window.screen === "undefined") {
+    return null
+  }
+
+  const devicePixelRatio = Number.isFinite(window.devicePixelRatio)
+    ? Math.max(window.devicePixelRatio, 1)
+    : 1
+  const screenWidthPx = Math.max(Math.round(window.screen.width), 0)
+  const screenHeightPx = Math.max(Math.round(window.screen.height), 0)
+  const availableScreenWidthPx = Math.max(Math.round(window.screen.availWidth), 0)
+  const availableScreenHeightPx = Math.max(Math.round(window.screen.availHeight), 0)
+
+  return {
+    screenWidthPx,
+    screenHeightPx,
+    availableScreenWidthPx,
+    availableScreenHeightPx,
+    physicalScreenWidthPx: Math.round(screenWidthPx * devicePixelRatio),
+    physicalScreenHeightPx: Math.round(screenHeightPx * devicePixelRatio),
+    devicePixelRatio,
+  }
 }

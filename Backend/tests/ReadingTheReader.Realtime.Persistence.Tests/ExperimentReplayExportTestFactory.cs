@@ -14,7 +14,8 @@ internal static class ExperimentReplayExportTestFactory
         var sessionId = Guid.Parse("9d0f4abc-6b53-4e54-a8fa-8f57c1a8cd11");
         var presentation = new ReadingPresentationSnapshot("merriweather", 18, 680, 1.8, 0, true);
         var appearance = new ReaderAppearanceSnapshot("dark", "sepia", "inter");
-        var viewport = new ParticipantViewportSnapshot(true, 0.35, 420, 1280, 720, 2400, 900, 1_710_000_001_500);
+        var screen = new ParticipantScreenSnapshot(1536, 864, 1536, 824, 1920, 1080, 1.25);
+        var viewport = new ParticipantViewportSnapshot(true, 0.35, 420, 1280, 720, 2400, 900, 1_710_000_001_500, Screen: screen);
         var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", "sentence-1", 1_710_000_001_600);
         var attentionSummary = new ReadingAttentionSummarySnapshot(
             1_710_000_001_900,
@@ -113,7 +114,7 @@ internal static class ExperimentReplayExportTestFactory
                     "reading-the-reader",
                     "Tobii.Research.x64",
                     "1.11.0.1334",
-                    "3"),
+                    ExperimentReplayExportSchema.Version.ToString()),
                 "Sample export"),
             new ExperimentReplayContext(
                 sessionId,
@@ -126,6 +127,7 @@ internal static class ExperimentReplayExportTestFactory
                     DecisionExecutionModes.Advisory),
                 new ExperimentReplayParticipant("Participant 1", 29, "female", "none", "advanced"),
                 new ExperimentReplayDevice("Tobii Pro Nano", "Nano", "nano-001", true),
+                ExperimentReplayScreen.FromSnapshot(screen),
                 new ExperimentReplayCalibrationSummary(
                     CalibrationPatterns.ScreenBasedNinePoint,
                     true,
