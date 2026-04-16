@@ -6,6 +6,7 @@ export type Eyetracker = {
   model: string
   serialNumber: string
   hasSavedLicence: boolean
+  requiresLicence: boolean
   isSelected: boolean
 }
 
@@ -20,6 +21,7 @@ type EyeTrackerApiResponse = {
   model?: string
   serialNumber?: string
   hasSavedLicence?: boolean
+  requiresLicence?: boolean
   isSelected?: boolean
 }
 
@@ -33,12 +35,19 @@ type SelectEyetrackerApiResponse = {
   setup?: ExperimentSetupSnapshot
 }
 
+function isProEyeTrackerModel(model: string | undefined) {
+  return model?.toLowerCase().includes("pro fusion") ?? false
+}
+
 function mapEyetracker(item: EyeTrackerApiResponse): Eyetracker {
+  const model = item.model ?? ""
+
   return {
     name: item.name ?? "",
-    model: item.model ?? "",
+    model,
     serialNumber: item.serialNumber ?? "",
     hasSavedLicence: Boolean(item.hasSavedLicence),
+    requiresLicence: item.requiresLicence ?? !isProEyeTrackerModel(model),
     isSelected: Boolean(item.isSelected),
   }
 }

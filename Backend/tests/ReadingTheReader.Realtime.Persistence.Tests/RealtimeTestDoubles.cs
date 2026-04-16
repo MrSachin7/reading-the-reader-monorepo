@@ -491,10 +491,10 @@ public sealed class RealtimeTestDoubles
             return Task.FromResult(_connectedEyeTrackers.Select(device => device.Copy()).ToList());
         }
 
-        public Task SelectEyeTracker(string serialNumber, byte[] licenseFileBytes, CancellationToken ct = default)
+        public Task SelectEyeTracker(string serialNumber, byte[]? licenseFileBytes, CancellationToken ct = default)
         {
             SelectedSerialNumber = serialNumber;
-            SelectedLicenceBytes = licenseFileBytes.ToArray();
+            SelectedLicenceBytes = licenseFileBytes?.ToArray();
             return Task.CompletedTask;
         }
 

@@ -186,15 +186,16 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
 
         var hasSelectedEyeTracker = session.EyeTrackerDevice is not null &&
                                     !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
+        var requiresEyeTrackerLicence = EyeTrackerLicencePolicy.RequiresLicence(session.EyeTrackerDevice);
         var hasAppliedLicence = hasSelectedEyeTracker;
-        var hasSavedLicence = session.EyeTrackerDevice?.HasSavedLicence == true;
+        var hasSavedLicence = requiresEyeTrackerLicence && session.EyeTrackerDevice?.HasSavedLicence == true;
         var eyeTrackerReady = _experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence);
         var eyeTracker = new EyeTrackerSetupReadinessSnapshot(
             eyeTrackerReady,
             hasSelectedEyeTracker,
             hasAppliedLicence,
             hasSavedLicence,
-            hasSelectedEyeTracker && !hasSavedLicence,
+            requiresEyeTrackerLicence && hasSelectedEyeTracker && !hasSavedLicence,
             NormalizeNullableText(session.EyeTrackerDevice?.SerialNumber),
             NormalizeNullableText(session.EyeTrackerDevice?.Name),
             eyeTrackerReady ? null : eyeTrackerBlockReason);
