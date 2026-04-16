@@ -9,6 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
+  sendMouseGazeSample,
   unregisterParticipantView,
   updateReadingGazeObservation,
   updateReadingContextPreservation,
@@ -64,8 +65,11 @@ function FullscreenGate({
 
 export function ReadingPage() {
   const liveSession = useLiveExperimentSession()
-  const hasActiveEyeTracker = Boolean(liveSession?.isActive && liveSession?.eyeTrackerDevice)
-  const liveGaze = useLiveGazeStream({ enabled: hasActiveEyeTracker })
+  const hasActiveGazeSource = Boolean(
+    liveSession?.isActive &&
+      (liveSession.sensingMode === "mouse" || liveSession.eyeTrackerDevice)
+  )
+  const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
@@ -116,6 +120,45 @@ export function ReadingPage() {
     liveSession?.isActive ? normalizeReaderAppearance(liveReadingSession?.appearance) : null
 
   useReaderAppearanceSync(liveReaderAppearance)
+
+  useEffect(() => {
+    if (!liveSession?.isActive || liveSession.sensingMode !== "mouse") {
+      return
+    }
+
+    let lastSentAt = 0
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const now = performance.now()
+      if (now - lastSentAt < 33) {
+        return
+      }
+
+      lastSentAt = now
+      const viewportWidth = Math.max(window.innerWidth, 1)
+      const viewportHeight = Math.max(window.innerHeight, 1)
+      const x = Math.min(1, Math.max(0, event.clientX / viewportWidth))
+      const y = Math.min(1, Math.max(0, event.clientY / viewportHeight))
+      const timestamp = Date.now()
+
+      sendMouseGazeSample({
+        deviceTimeStamp: timestamp,
+        systemTimeStamp: timestamp,
+        leftEyeX: x,
+        leftEyeY: y,
+        leftEyeValidity: "Valid",
+        rightEyeX: x,
+        rightEyeY: y,
+        rightEyeValidity: "Valid",
+      })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+    }
+  }, [liveSession?.isActive, liveSession?.sensingMode])
 
   if (liveSession === null) {
     return (

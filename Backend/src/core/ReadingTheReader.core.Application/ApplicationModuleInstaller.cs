@@ -58,6 +58,7 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton<IAnalysisProviderConnectionRegistry, AnalysisProviderConnectionRegistry>();
         collection.AddSingleton<IAnalysisProviderIngressService, AnalysisProviderIngressService>();
         collection.AddSingleton<ISensingOperations, SensingOperations>();
+        collection.AddSingleton<ISensingModeSettingsService, SensingModeSettingsService>();
         collection.AddSingleton<IEyeTrackerService, EyeTrackerService>();
         collection.AddSingleton<ICalibrationService, CalibrationService>();
         collection.AddSingleton<IReaderShellSettingsService, ReaderShellSettingsService>();

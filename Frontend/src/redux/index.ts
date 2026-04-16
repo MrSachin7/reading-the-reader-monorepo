@@ -7,6 +7,7 @@ export {
   participantApi,
   readerShellSettingsApi,
   readingMaterialApi,
+  sensingModeApi,
   useApplyPendingInterventionNowMutation,
   useCancelCalibrationMutation,
   useCollectCalibrationPointMutation,
@@ -28,6 +29,7 @@ export {
   useStopExperimentSessionMutation,
   useGetReadingMaterialSetupsQuery,
   useGetReaderShellSettingsQuery,
+  useGetSensingModeSettingsQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
   useSelectEyetrackerMutation,
   useSaveParticipantMutation,
@@ -41,6 +43,7 @@ export {
   useUpdateInterventionPolicyMutation,
   useUpdateCalibrationSettingsMutation,
   useUpdateReaderShellSettingsMutation,
+  useUpdateSensingModeSettingsMutation,
   useUpdateReadingMaterialSetupMutation,
 } from "./api"
 export type {
@@ -55,6 +58,7 @@ export type {
   UpsertReadingSessionPayload,
   ReadingMaterialSetup,
   SelectEyetrackerPayload,
+  SensingModeSettings,
   SaveParticipantPayload,
   UpdateReadingMaterialSetupRequest,
 } from "./api"

@@ -2,6 +2,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisionin
 using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -242,6 +243,7 @@ public sealed record ExperimentSessionSnapshot(
     long? StoppedAtUnixMs,
     Participant? Participant,
     EyeTrackerDevice? EyeTrackerDevice,
+    string SensingMode,
     CalibrationSessionSnapshot Calibration,
     ExperimentSetupSnapshot Setup,
     long ReceivedGazeSamples,
@@ -266,6 +268,7 @@ public sealed record ExperimentSessionSnapshot(
             StoppedAtUnixMs,
             Participant?.Copy(),
             EyeTrackerDevice?.Copy(),
+            string.IsNullOrWhiteSpace(SensingMode) ? SensingModes.EyeTracker : SensingMode,
             Calibration is null ? CalibrationSessionSnapshots.CreateIdle() : CopyCalibration(Calibration),
             Setup is null
                 ? new ExperimentSetupSnapshot(

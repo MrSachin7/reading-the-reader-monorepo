@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 
@@ -18,6 +19,10 @@ public sealed record StopExperimentRealtimeCommand(string ConnectionId) : IRealt
 public sealed record SubscribeGazeDataRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
 public sealed record UnsubscribeGazeDataRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
+
+public sealed record MouseGazeSampleRealtimeCommand(
+    string ConnectionId,
+    GazeData Payload) : IRealtimeIngressCommand;
 
 public sealed record GetExperimentStateRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
@@ -91,6 +96,11 @@ public static class RealtimeIngressCommandFactory
             MessageTypes.StopExperiment => new StopExperimentRealtimeCommand(connectionId),
             MessageTypes.SubscribeGazeData => new SubscribeGazeDataRealtimeCommand(connectionId),
             MessageTypes.UnsubscribeGazeData => new UnsubscribeGazeDataRealtimeCommand(connectionId),
+            MessageTypes.MouseGazeSample => Deserialize<GazeData>(
+                payload,
+                connectionId,
+                "Mouse gaze sample payload is invalid.",
+                parsed => new MouseGazeSampleRealtimeCommand(connectionId, parsed)),
             MessageTypes.GetExperimentState => new GetExperimentStateRealtimeCommand(connectionId),
             MessageTypes.RegisterParticipantView => new RegisterParticipantViewRealtimeCommand(connectionId),
             MessageTypes.UnregisterParticipantView => new UnregisterParticipantViewRealtimeCommand(connectionId),

@@ -1,5 +1,6 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Domain;
 using Xunit;
 
@@ -218,6 +219,47 @@ public sealed class ExperimentSetupWorkflowTests
         Assert.False(snapshot.Setup.ReadingMaterial.IsPresentationLocked);
         Assert.True(snapshot.LiveMonitoring.CanStartSession);
         Assert.False(snapshot.LiveMonitoring.CanFinishSession);
+    }
+
+    [Fact]
+    public async Task GetCurrentSnapshot_WhenMouseModeIsActive_SkipsEyeTrackerAndCalibrationReadiness()
+    {
+        var sensingMode = new RealtimeTestDoubles.InMemorySensingModeSettingsService();
+        await sensingMode.UpdateModeAsync(SensingModes.Mouse);
+        var harness = RealtimeTestDoubles.CreateHarness(sensingModeSettingsService: sensingMode);
+
+        var emptySnapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.Equal(SensingModes.Mouse, emptySnapshot.SensingMode);
+        Assert.True(emptySnapshot.Setup.EyeTracker.IsReady);
+        Assert.False(emptySnapshot.Setup.EyeTracker.HasSelectedEyeTracker);
+        Assert.True(emptySnapshot.Setup.Calibration.IsReady);
+        Assert.Equal("skipped", emptySnapshot.Setup.Calibration.Status);
+        Assert.Equal("skipped", emptySnapshot.Setup.Calibration.ValidationStatus);
+        Assert.Equal(1, emptySnapshot.Setup.CurrentStepIndex);
+        Assert.Equal("participant", emptySnapshot.Setup.CurrentBlocker!.StepKey);
+
+        await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+        {
+            Name = "Participant 1",
+            Age = 29,
+            Sex = "female",
+            ExistingEyeCondition = "none",
+            ReadingProficiency = "advanced"
+        });
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "doc-1",
+            "Sample document",
+            "# Hello reader",
+            null,
+            ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default));
+
+        var readySnapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(readySnapshot.Setup.IsReadyForSessionStart);
+        Assert.Null(readySnapshot.EyeTrackerDevice);
+        Assert.Null(readySnapshot.Setup.CurrentBlocker);
     }
 
     [Fact]

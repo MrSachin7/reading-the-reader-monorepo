@@ -3,7 +3,7 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
-import { BookOpen, Crosshair, FileText, Plus, ScanEye } from "lucide-react"
+import { BookOpen, Crosshair, FileText, MousePointer2, Plus, ScanEye } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
@@ -21,6 +21,7 @@ import {
   type EyeMovementAnalysisConfiguration,
   type EyeMovementAnalysisProviderStatusSnapshot,
   type ExternalProviderStatusSnapshot,
+  type SensingMode,
 } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
@@ -367,6 +368,57 @@ function PluginStatusPanel({
         </div>
       ) : null}
     </div>
+  )
+}
+
+function MouseModeSetupStep({
+  onCompletionChange,
+  onSubmitRequestChange,
+  onSubmittingChange,
+}: {
+  onCompletionChange?: (isComplete: boolean) => void
+  onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
+  onSubmittingChange?: (isSubmitting: boolean) => void
+}) {
+  React.useEffect(() => {
+    onCompletionChange?.(true)
+  }, [onCompletionChange])
+
+  React.useEffect(() => {
+    onSubmitRequestChange?.(null)
+    return () => onSubmitRequestChange?.(null)
+  }, [onSubmitRequestChange])
+
+  React.useEffect(() => {
+    onSubmittingChange?.(false)
+    return () => onSubmittingChange?.(false)
+  }, [onSubmittingChange])
+
+  return (
+    <Card>
+      <CardHeader className="border-b pb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">Step 1</Badge>
+          <Badge variant="outline">Mouse mode</Badge>
+        </div>
+        <CardTitle className="mt-3 text-3xl tracking-tight">Mouse input is active.</CardTitle>
+        <CardDescription className="max-w-3xl text-base leading-7">
+          The setup flow will skip eyetracker selection, licence upload, and hardware checks.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="flex items-start gap-3 rounded-[1.5rem] border bg-muted/20 p-4">
+          <MousePointer2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">Ready for demo input</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Start the participant view and move the mouse over the reading area to send synthetic
+              gaze samples.
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -1183,9 +1235,10 @@ export function ExperimentStepper() {
   const stepSubmitHandlerRef = React.useRef<(() => Promise<boolean>) | null>(null)
 
   const setup = experimentSession?.setup ?? EMPTY_EXPERIMENT_SETUP
+  const sensingMode: SensingMode = experimentSession?.sensingMode ?? "eyeTracker"
   const workflowStepStates = React.useMemo(
-    () => getAuthoritativeWorkflowStepStates(setup),
-    [setup]
+    () => getAuthoritativeWorkflowStepStates(setup, sensingMode),
+    [setup, sensingMode]
   )
   const authoritativeCurrentStepIndex = Math.min(
     Math.max(setup.currentStepIndex, 0),
@@ -1407,12 +1460,20 @@ export function ExperimentStepper() {
 
       <section className="space-y-6">
         {step === 0 ? (
-          <EyetrackerSetup
-            setup={setup.eyeTracker}
-            onCompletionChange={handleStepZeroCompletionChange}
-            onSubmittingChange={handleStepSubmittingChange}
-            onSubmitRequestChange={handleStepSubmitterChange}
-          />
+          sensingMode === "mouse" ? (
+            <MouseModeSetupStep
+              onCompletionChange={handleStepZeroCompletionChange}
+              onSubmittingChange={handleStepSubmittingChange}
+              onSubmitRequestChange={handleStepSubmitterChange}
+            />
+          ) : (
+            <EyetrackerSetup
+              setup={setup.eyeTracker}
+              onCompletionChange={handleStepZeroCompletionChange}
+              onSubmittingChange={handleStepSubmittingChange}
+              onSubmitRequestChange={handleStepSubmitterChange}
+            />
+          )
         ) : step === 1 ? (
           <ParticipantInformationForm
             onCompletionChange={handleStepOneCompletionChange}
@@ -1423,6 +1484,7 @@ export function ExperimentStepper() {
           <CalibrationStep
             setup={setup.calibration}
             calibration={experimentSession?.calibration}
+            sensingMode={sensingMode}
             onCompletionChange={handleStepTwoCompletionChange}
             onSubmittingChange={handleStepSubmittingChange}
             onSubmitRequestChange={handleStepSubmitterChange}
