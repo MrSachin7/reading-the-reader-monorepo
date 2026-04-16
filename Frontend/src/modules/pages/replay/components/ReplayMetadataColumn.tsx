@@ -47,6 +47,10 @@ export function ReplayMetadataColumn({
   activeEventIndex,
   onSeek,
 }: ReplayMetadataColumnProps) {
+  const screenResolution = frame.session.screen
+    ? `${frame.session.screen.physicalScreenWidthPx} x ${frame.session.screen.physicalScreenHeightPx} (DPR ${formatNumeric(frame.session.screen.devicePixelRatio, 2)})`
+    : "-"
+
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
       <Card className="h-full min-h-0 rounded-[1.6rem] bg-card/96 shadow-sm">
@@ -90,6 +94,7 @@ export function ReplayMetadataColumn({
                     label="Page"
                     value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
                   />
+                  <MetadataRow label="Screen" value={screenResolution} />
                   <MetadataRow label="Eyetracker" value={frame.session.eyeTrackerDevice?.name ?? "-"} />
                   <MetadataRow label="Samples" value={frame.session.receivedGazeSamples.toLocaleString()} />
                 </dl>

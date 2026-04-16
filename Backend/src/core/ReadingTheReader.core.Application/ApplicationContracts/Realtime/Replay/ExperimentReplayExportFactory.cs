@@ -63,6 +63,13 @@ public static class ExperimentReplayExportFactory
             finalSnapshot.ReadingSession?.Appearance?.Copy() ??
             ReaderAppearanceSnapshot.Default.Copy();
         var validationResult = finalSnapshot.Calibration.Validation.Result ?? finalSnapshot.Calibration.Result?.Validation;
+        var participantScreen =
+            finalSnapshot.ReadingSession?.ParticipantViewport?.Screen ??
+            initialSnapshot.ReadingSession?.ParticipantViewport?.Screen ??
+            participantViewportEvents
+                .LastOrDefault(item => item.Viewport.Screen is not null)?
+                .Viewport
+                .Screen;
 
         return new ExperimentReplayExport(
             new ExperimentReplayExportManifest(
@@ -98,6 +105,9 @@ public static class ExperimentReplayExportFactory
                         finalSnapshot.EyeTrackerDevice.Model,
                         finalSnapshot.EyeTrackerDevice.SerialNumber,
                         finalSnapshot.EyeTrackerDevice.HasSavedLicence),
+                participantScreen is null
+                    ? null
+                    : ExperimentReplayScreen.FromSnapshot(participantScreen),
                 new ExperimentReplayCalibrationSummary(
                     NormalizeNullableText(finalSnapshot.Calibration.Pattern),
                     CalibrationSessionSnapshots.IsApplied(finalSnapshot.Calibration),

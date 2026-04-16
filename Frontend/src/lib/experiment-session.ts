@@ -124,6 +124,16 @@ export type ReadingPresentationSnapshot = {
 
 export type ReaderAppearanceSnapshot = ReaderAppearanceSettings
 
+export type ParticipantScreenSnapshot = {
+  screenWidthPx: number
+  screenHeightPx: number
+  availableScreenWidthPx: number
+  availableScreenHeightPx: number
+  physicalScreenWidthPx: number
+  physicalScreenHeightPx: number
+  devicePixelRatio: number
+}
+
 export type ReadingContentSnapshot = {
   documentId: string
   title: string
@@ -145,6 +155,7 @@ export type ParticipantViewportSnapshot = {
   activePageIndex: number
   pageCount: number
   lastPageTurnAtUnixMs: number | null
+  screen: ParticipantScreenSnapshot | null
 }
 
 export type ReadingFocusSnapshot = {
@@ -468,6 +479,7 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     activePageIndex: 0,
     pageCount: 1,
     lastPageTurnAtUnixMs: null,
+    screen: null,
   },
   focus: {
     isInsideReadingArea: false,

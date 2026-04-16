@@ -14,6 +14,7 @@ import {
   type ExperimentLiveMonitoringSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
+  type ParticipantScreenSnapshot,
   type ParticipantViewportSnapshot,
   type ReadingGazeObservationSnapshot,
   type ReadingContextPreservationSnapshot,
@@ -145,6 +146,7 @@ type ClientEnvelope =
         activePageIndex: number;
         pageCount: number;
         lastPageTurnAtUnixMs: number | null;
+        screen: ParticipantScreenSnapshot | null;
       };
     }
   | {
@@ -231,6 +233,7 @@ type ParticipantViewportPayload = {
   activePageIndex: number;
   pageCount: number;
   lastPageTurnAtUnixMs: number | null;
+  screen: ParticipantScreenSnapshot | null;
 };
 type ReadingFocusPayload = {
   isInsideReadingArea: boolean;

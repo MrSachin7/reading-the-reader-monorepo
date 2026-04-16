@@ -86,6 +86,21 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
                 Source = exportDocument.Manifest.CompletionSource,
                 Details = exportDocument.Content.Title,
                 Notes = exportDocument.Manifest.ExportProfile
+            },
+            new()
+            {
+                RowType = "experiment-metadata",
+                SessionId = sessionId,
+                OccurredAtUnixMs = exportDocument.Manifest.ExportedAtUnixMs,
+                EventType = "screen-resolution",
+                PhysicalScreenWidthPx = exportDocument.Experiment.Screen?.PhysicalScreenWidthPx,
+                PhysicalScreenHeightPx = exportDocument.Experiment.Screen?.PhysicalScreenHeightPx,
+                ScreenWidthPx = exportDocument.Experiment.Screen?.ScreenWidthPx,
+                ScreenHeightPx = exportDocument.Experiment.Screen?.ScreenHeightPx,
+                DevicePixelRatio = exportDocument.Experiment.Screen?.DevicePixelRatio,
+                Details = exportDocument.Experiment.Screen is null
+                    ? null
+                    : $"{exportDocument.Experiment.Screen.PhysicalScreenWidthPx}x{exportDocument.Experiment.Screen.PhysicalScreenHeightPx}"
             }
         };
 
@@ -214,5 +229,10 @@ public sealed class ExperimentReplayCsvRow
     public double? ViewportTopPx { get; init; }
     public double? ViewportHeightPx { get; init; }
     public double? MetricValue { get; init; }
+    public int? ScreenWidthPx { get; init; }
+    public int? ScreenHeightPx { get; init; }
+    public int? PhysicalScreenWidthPx { get; init; }
+    public int? PhysicalScreenHeightPx { get; init; }
+    public double? DevicePixelRatio { get; init; }
     public string? Notes { get; init; }
 }
