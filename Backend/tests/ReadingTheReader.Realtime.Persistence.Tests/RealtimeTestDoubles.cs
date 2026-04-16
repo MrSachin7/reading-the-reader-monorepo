@@ -7,6 +7,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
@@ -17,7 +18,8 @@ public sealed class RealtimeTestDoubles
 {
     public static RuntimeHarness CreateHarness(
         CalibrationOptions? calibrationOptions = null,
-        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null)
+        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null,
+        ISensingModeSettingsService? sensingModeSettingsService = null)
     {
         return CreateHarness(
             new FakeEyeTrackerAdapter(),
@@ -25,7 +27,8 @@ public sealed class RealtimeTestDoubles
             new FakeExperimentStateStoreAdapter(),
             new FakeExperimentReplayExportStoreAdapter(),
             calibrationOptions,
-            experimentSetupTestingOptions);
+            experimentSetupTestingOptions,
+            sensingModeSettingsService);
     }
 
     public static RuntimeHarness CreateHarness(
@@ -34,11 +37,13 @@ public sealed class RealtimeTestDoubles
         FakeExperimentStateStoreAdapter stateStore,
         FakeExperimentReplayExportStoreAdapter replayExportStore,
         CalibrationOptions? calibrationOptions = null,
-        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null)
+        ExperimentSetupTestingOptions? experimentSetupTestingOptions = null,
+        ISensingModeSettingsService? sensingModeSettingsService = null)
     {
         var replayRecoveryStore = new FakeExperimentReplayRecoveryStoreAdapter();
         calibrationOptions ??= new CalibrationOptions();
         experimentSetupTestingOptions ??= new ExperimentSetupTestingOptions();
+        sensingModeSettingsService ??= new InMemorySensingModeSettingsService();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
         var externalProviderOptions = new ExternalProviderOptions
@@ -86,7 +91,8 @@ public sealed class RealtimeTestDoubles
             analysisProviderGateway,
             externalProviderGateway,
             analysisProviderRegistry,
-            providerRegistry);
+            providerRegistry,
+            sensingModeSettingsService);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
             sessionManager,
@@ -112,6 +118,31 @@ public sealed class RealtimeTestDoubles
             providerRegistry,
             externalProviderTransport,
             externalProviderOptions);
+    }
+
+    public sealed class InMemorySensingModeSettingsService : ISensingModeSettingsService
+    {
+        public string CurrentMode { get; private set; } = SensingModes.EyeTracker;
+
+        public SensingModeSettingsSnapshot GetSettings(bool canChangeMode = true, string? blockReason = null)
+        {
+            return SensingModeSettingsSnapshot.Create(CurrentMode, canChangeMode, blockReason);
+        }
+
+        public Task<SensingModeSettingsSnapshot> UpdateModeAsync(
+            string mode,
+            bool canChangeMode = true,
+            string? blockReason = null,
+            CancellationToken ct = default)
+        {
+            if (!canChangeMode)
+            {
+                throw new InvalidOperationException(blockReason ?? "Sensing mode cannot be changed right now.");
+            }
+
+            CurrentMode = SensingModes.Normalize(mode);
+            return Task.FromResult(GetSettings(canChangeMode, blockReason));
+        }
     }
 
     public sealed record RuntimeHarness(
@@ -491,10 +522,10 @@ public sealed class RealtimeTestDoubles
             return Task.FromResult(_connectedEyeTrackers.Select(device => device.Copy()).ToList());
         }
 
-        public Task SelectEyeTracker(string serialNumber, byte[] licenseFileBytes, CancellationToken ct = default)
+        public Task SelectEyeTracker(string serialNumber, byte[]? licenseFileBytes, CancellationToken ct = default)
         {
             SelectedSerialNumber = serialNumber;
-            SelectedLicenceBytes = licenseFileBytes.ToArray();
+            SelectedLicenceBytes = licenseFileBytes?.ToArray();
             return Task.CompletedTask;
         }
 

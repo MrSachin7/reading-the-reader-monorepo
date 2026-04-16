@@ -2,6 +2,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 using Xunit;
@@ -356,6 +357,41 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.True(snapshot.IsActive);
         Assert.True(snapshot.Setup.IsReadyForSessionStart);
         Assert.Null(snapshot.Setup.CurrentBlocker);
+    }
+
+    [Fact]
+    public async Task StartSessionAsync_WhenMouseModeIsReady_StartsWithoutEyeTrackerOrCalibration()
+    {
+        var sensingMode = new RealtimeTestDoubles.InMemorySensingModeSettingsService();
+        await sensingMode.UpdateModeAsync(SensingModes.Mouse);
+        var harness = RealtimeTestDoubles.CreateHarness(sensingModeSettingsService: sensingMode);
+
+        await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+        {
+            Name = "Participant 1",
+            Age = 29,
+            Sex = "female",
+            ExistingEyeCondition = "none",
+            ReadingProficiency = "advanced"
+        });
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "doc-1",
+            "Sample document",
+            "# Hello reader",
+            null,
+            ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default));
+
+        var started = await harness.SessionManager.StartSessionAsync();
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(started);
+        Assert.True(snapshot.IsActive);
+        Assert.Equal(SensingModes.Mouse, snapshot.SensingMode);
+        Assert.Null(snapshot.EyeTrackerDevice);
+        Assert.True(snapshot.Setup.EyeTracker.IsReady);
+        Assert.True(snapshot.Setup.Calibration.IsReady);
+        Assert.Equal(0, harness.EyeTrackerAdapter.StartCalls);
     }
 
     [Fact]

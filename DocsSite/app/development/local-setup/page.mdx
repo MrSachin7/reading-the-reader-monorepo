@@ -80,3 +80,19 @@ bun run build
 3. If you are validating the external provider seam, start the mock decision-maker.
 4. Open the frontend and run the experiment workflow.
 5. Use the docs site separately when updating or reviewing documentation.
+
+## Mouse-Mode Demo Flow
+
+Mouse mode lets the frontend demo run without a connected Tobii tracker.
+
+1. Start the backend and frontend.
+2. Open Settings and choose Input mode.
+3. Select Use mouse mode and save.
+4. Save participant information.
+5. Save or select reading material.
+6. Start the experiment session.
+7. Move the mouse over the participant reading page.
+
+In mouse mode, the setup flow skips eyetracker discovery, Tobii licence handling, calibration, and validation. The participant reading page sends normalized pointer coordinates as synthetic gaze samples through the normal `/ws` gaze pipeline. Sending is throttled to one sample every `33ms`, or about `30.3` samples per second, and only occurs while the pointer moves.
+
+Use this for demos and local frontend work. Use `eyeTracker` mode for Tobii-backed experiment runs.

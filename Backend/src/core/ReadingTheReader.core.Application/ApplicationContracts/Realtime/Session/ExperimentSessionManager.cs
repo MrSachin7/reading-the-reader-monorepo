@@ -9,6 +9,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.EyeMovementAnalysis;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -32,6 +33,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private readonly IExternalProviderGateway _externalProviderGateway;
     private readonly IAnalysisProviderConnectionRegistry _analysisProviderConnectionRegistry;
     private readonly IProviderConnectionRegistry _providerConnectionRegistry;
+    private readonly ISensingModeSettingsService _sensingModeSettingsService;
     private readonly CalibrationOptions _calibrationOptions;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly ConcurrentDictionary<string, byte> _gazeSubscribers = new();
@@ -80,7 +82,8 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         IAnalysisProviderGateway analysisProviderGateway,
         IExternalProviderGateway externalProviderGateway,
         IAnalysisProviderConnectionRegistry analysisProviderConnectionRegistry,
-        IProviderConnectionRegistry providerConnectionRegistry)
+        IProviderConnectionRegistry providerConnectionRegistry,
+        ISensingModeSettingsService sensingModeSettingsService)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
         _clientBroadcasterAdapter = clientBroadcasterAdapter;
@@ -97,6 +100,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         _externalProviderGateway = externalProviderGateway;
         _analysisProviderConnectionRegistry = analysisProviderConnectionRegistry;
         _providerConnectionRegistry = providerConnectionRegistry;
+        _sensingModeSettingsService = sensingModeSettingsService;
     }
 
     private sealed record InterventionApplicationOutcome(
@@ -108,12 +112,15 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     {
         var session = Volatile.Read(ref _session);
         var latest = Volatile.Read(ref _latestGazeSample);
+        var sensingMode = _sensingModeSettingsService.CurrentMode;
         var setup = BuildSetupSnapshot(session, _calibrationSnapshot, _liveReadingSession);
         var liveMonitoring = BuildLiveMonitoringSnapshot(
             session,
             setup,
             _liveReadingSession,
-            Volatile.Read(ref _isHardwareTracking) == 1,
+            string.Equals(sensingMode, SensingModes.Mouse, StringComparison.Ordinal)
+                ? session.IsActive && (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider() || ShouldPublishToExternalAnalysisProvider())
+                : Volatile.Read(ref _isHardwareTracking) == 1,
             _gazeSubscribers.Count);
         var externalProviderStatus = BuildExternalProviderStatusSnapshot(_providerConnectionRegistry);
         var eyeMovementAnalysisProviderStatus = BuildEyeMovementAnalysisProviderStatusSnapshot(_analysisProviderConnectionRegistry);
@@ -127,6 +134,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
             session.StoppedAtUnixMs,
             session.Participant?.Copy(),
             session.EyeTrackerDevice?.Copy(),
+            sensingMode,
             _calibrationSnapshot,
             setup,
             Interlocked.Read(ref _receivedGazeSamples),
@@ -184,18 +192,20 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         const string participantBlockReason = "Save the participant information before starting the session.";
         const string calibrationBlockReason = "Calibration validation must pass before the session can start.";
         const string readingMaterialBlockReason = "Choose the reading material before starting the session.";
+        var isMouseMode = string.Equals(_sensingModeSettingsService.CurrentMode, SensingModes.Mouse, StringComparison.Ordinal);
 
         var hasSelectedEyeTracker = session.EyeTrackerDevice is not null &&
                                     !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
+        var requiresEyeTrackerLicence = EyeTrackerLicencePolicy.RequiresLicence(session.EyeTrackerDevice);
         var hasAppliedLicence = hasSelectedEyeTracker;
-        var hasSavedLicence = session.EyeTrackerDevice?.HasSavedLicence == true;
-        var eyeTrackerReady = _experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence);
+        var hasSavedLicence = requiresEyeTrackerLicence && session.EyeTrackerDevice?.HasSavedLicence == true;
+        var eyeTrackerReady = isMouseMode || (_experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence));
         var eyeTracker = new EyeTrackerSetupReadinessSnapshot(
             eyeTrackerReady,
             hasSelectedEyeTracker,
             hasAppliedLicence,
             hasSavedLicence,
-            hasSelectedEyeTracker && !hasSavedLicence,
+            requiresEyeTrackerLicence && hasSelectedEyeTracker && !hasSavedLicence,
             NormalizeNullableText(session.EyeTrackerDevice?.SerialNumber),
             NormalizeNullableText(session.EyeTrackerDevice?.Name),
             eyeTrackerReady ? null : eyeTrackerBlockReason);
@@ -215,14 +225,14 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         var hasCalibrationSession = calibrationSnapshot.SessionId.HasValue;
         var calibrationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status;
         var validationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status;
-        var calibrationReady = _experimentSetupTestingOptions.ForceCalibrationReady ?? (isCalibrationApplied && isValidationPassed);
+        var calibrationReady = isMouseMode || (_experimentSetupTestingOptions.ForceCalibrationReady ?? (isCalibrationApplied && isValidationPassed));
         var calibration = new CalibrationSetupReadinessSnapshot(
             calibrationReady,
             hasCalibrationSession,
             isCalibrationApplied,
             isValidationPassed,
-            calibrationStatus,
-            validationStatus,
+            isMouseMode ? "skipped" : calibrationStatus,
+            isMouseMode ? "skipped" : validationStatus,
             NormalizeNullableText(validationResult?.Quality),
             validationResult?.AverageAccuracyDegrees,
             validationResult?.AveragePrecisionDegrees,

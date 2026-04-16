@@ -37,6 +37,7 @@ public static class BuiltInReadingInterventionModules
             ReadingPresentationSnapshot.Default.FontFamily,
             Options:
             [
+                new("roboto-flex", "Roboto Flex"),
                 new("geist", "Geist"),
                 new("inter", "Inter"),
                 new("space-grotesk", "Space Grotesk"),
@@ -266,8 +267,8 @@ public static class BuiltInReadingInterventionModules
 
         return normalized switch
         {
-            "geist" or "inter" or "space-grotesk" or "merriweather" => ParameterParseResult<string>.Success(normalized, normalized),
-            _ => ParameterParseResult<string>.Failure("Font family must be one of: geist, inter, space-grotesk, merriweather.")
+            "roboto-flex" or "geist" or "inter" or "space-grotesk" or "merriweather" => ParameterParseResult<string>.Success(normalized, normalized),
+            _ => ParameterParseResult<string>.Failure("Font family must be one of: roboto-flex, geist, inter, space-grotesk, merriweather.")
         };
     }
 

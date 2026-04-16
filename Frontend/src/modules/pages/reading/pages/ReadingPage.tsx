@@ -9,6 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
+  sendMouseGazeSample,
   unregisterParticipantView,
   updateReadingGazeObservation,
   updateReadingContextPreservation,
@@ -22,7 +23,11 @@ import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
-import type { ReadingContextPreservationSnapshot, ReadingGazeObservationSnapshot } from "@/lib/experiment-session"
+import type {
+  ParticipantScreenSnapshot,
+  ReadingContextPreservationSnapshot,
+  ReadingGazeObservationSnapshot,
+} from "@/lib/experiment-session"
 import { useGetReaderShellSettingsQuery } from "@/redux"
 
 function FullscreenGate({
@@ -64,8 +69,11 @@ function FullscreenGate({
 
 export function ReadingPage() {
   const liveSession = useLiveExperimentSession()
-  const hasActiveEyeTracker = Boolean(liveSession?.isActive && liveSession?.eyeTrackerDevice)
-  const liveGaze = useLiveGazeStream({ enabled: hasActiveEyeTracker })
+  const hasActiveGazeSource = Boolean(
+    liveSession?.isActive &&
+      (liveSession.sensingMode === "mouse" || liveSession.eyeTrackerDevice)
+  )
+  const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
@@ -86,7 +94,10 @@ export function ReadingPage() {
   }, [liveSession?.isActive])
 
   const handleViewportMetricsChange = useCallback((metrics: ReaderViewportMetrics) => {
-    updateParticipantViewport(metrics)
+    updateParticipantViewport({
+      ...metrics,
+      screen: getParticipantScreenSnapshot(),
+    })
   }, [])
 
   const handleFocusChange = useCallback((focus: GazeFocusState) => {
@@ -116,6 +127,45 @@ export function ReadingPage() {
     liveSession?.isActive ? normalizeReaderAppearance(liveReadingSession?.appearance) : null
 
   useReaderAppearanceSync(liveReaderAppearance)
+
+  useEffect(() => {
+    if (!liveSession?.isActive || liveSession.sensingMode !== "mouse") {
+      return
+    }
+
+    let lastSentAt = 0
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const now = performance.now()
+      if (now - lastSentAt < 33) {
+        return
+      }
+
+      lastSentAt = now
+      const viewportWidth = Math.max(window.innerWidth, 1)
+      const viewportHeight = Math.max(window.innerHeight, 1)
+      const x = Math.min(1, Math.max(0, event.clientX / viewportWidth))
+      const y = Math.min(1, Math.max(0, event.clientY / viewportHeight))
+      const timestamp = Date.now()
+
+      sendMouseGazeSample({
+        deviceTimeStamp: timestamp,
+        systemTimeStamp: timestamp,
+        leftEyeX: x,
+        leftEyeY: y,
+        leftEyeValidity: "Valid",
+        rightEyeX: x,
+        rightEyeY: y,
+        rightEyeValidity: "Valid",
+      })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true })
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+    }
+  }, [liveSession?.isActive, liveSession?.sensingMode])
 
   if (liveSession === null) {
     return (
@@ -235,4 +285,28 @@ export function ReadingPage() {
       ) : null}
     </div>
   )
+}
+
+function getParticipantScreenSnapshot(): ParticipantScreenSnapshot | null {
+  if (typeof window === "undefined" || typeof window.screen === "undefined") {
+    return null
+  }
+
+  const devicePixelRatio = Number.isFinite(window.devicePixelRatio)
+    ? Math.max(window.devicePixelRatio, 1)
+    : 1
+  const screenWidthPx = Math.max(Math.round(window.screen.width), 0)
+  const screenHeightPx = Math.max(Math.round(window.screen.height), 0)
+  const availableScreenWidthPx = Math.max(Math.round(window.screen.availWidth), 0)
+  const availableScreenHeightPx = Math.max(Math.round(window.screen.availHeight), 0)
+
+  return {
+    screenWidthPx,
+    screenHeightPx,
+    availableScreenWidthPx,
+    availableScreenHeightPx,
+    physicalScreenWidthPx: Math.round(screenWidthPx * devicePixelRatio),
+    physicalScreenHeightPx: Math.round(screenHeightPx * devicePixelRatio),
+    devicePixelRatio,
+  }
 }

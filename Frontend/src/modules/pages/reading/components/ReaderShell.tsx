@@ -99,6 +99,7 @@ type ReaderShellProps = {
 };
 
 const FONT_FAMILY_STYLES = {
+  "roboto-flex": "var(--font-roboto-flex)",
   geist: "var(--font-geist-sans)",
   inter: "var(--font-inter)",
   "space-grotesk": "var(--font-space-grotesk)",

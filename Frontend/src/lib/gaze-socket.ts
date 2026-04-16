@@ -14,6 +14,7 @@ import {
   type ExperimentLiveMonitoringSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
+  type ParticipantScreenSnapshot,
   type ParticipantViewportSnapshot,
   type ReadingGazeObservationSnapshot,
   type ReadingContextPreservationSnapshot,
@@ -130,6 +131,7 @@ type ClientEnvelope =
   | { type: "getExperimentState"; payload: Record<string, never> }
   | { type: "subscribeGazeData"; payload: Record<string, never> }
   | { type: "unsubscribeGazeData"; payload: Record<string, never> }
+  | { type: "mouseGazeSample"; payload: GazeData }
   | { type: "registerParticipantView"; payload: Record<string, never> }
   | { type: "unregisterParticipantView"; payload: Record<string, never> }
   | {
@@ -144,6 +146,7 @@ type ClientEnvelope =
         activePageIndex: number;
         pageCount: number;
         lastPageTurnAtUnixMs: number | null;
+        screen: ParticipantScreenSnapshot | null;
       };
     }
   | {
@@ -230,6 +233,7 @@ type ParticipantViewportPayload = {
   activePageIndex: number;
   pageCount: number;
   lastPageTurnAtUnixMs: number | null;
+  screen: ParticipantScreenSnapshot | null;
 };
 type ReadingFocusPayload = {
   isInsideReadingArea: boolean;
@@ -501,6 +505,7 @@ function handleMessage(raw: MessageEvent<string>) {
       latestReadingSession = message.payload.readingSession ?? latestReadingSession ?? EMPTY_READING_SESSION;
       latestExperimentSession = {
         ...message.payload,
+        sensingMode: message.payload.sensingMode ?? "eyeTracker",
         liveMonitoring: deriveLiveMonitoringSnapshot(
           message.payload.liveMonitoring ?? EMPTY_LIVE_MONITORING,
           message.payload.isActive,
@@ -782,6 +787,14 @@ export function updateReadingAttentionSummary(payload: ReadingAttentionSummaryPa
     type: "readingAttentionSummaryUpdated",
     payload,
   });
+}
+
+export function sendMouseGazeSample(payload: GazeData) {
+  connect()
+  send({
+    type: "mouseGazeSample",
+    payload,
+  })
 }
 
 export function approveDecisionProposal(proposalId: string) {

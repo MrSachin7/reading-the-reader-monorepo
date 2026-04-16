@@ -8,7 +8,7 @@ public sealed record ReaderAppearanceSnapshot(
     public static ReaderAppearanceSnapshot Default { get; } = new(
         "light",
         "default",
-        "geist");
+        "roboto-flex");
 
     public ReaderAppearanceSnapshot Copy()
     {

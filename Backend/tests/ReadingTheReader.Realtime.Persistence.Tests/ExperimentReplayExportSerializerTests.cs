@@ -42,5 +42,9 @@ public sealed class ExperimentReplayExportSerializerTests
         Assert.Equal(321, gaze.SystemTimeStampUs);
         Assert.Equal(3.2f, gaze.Left!.Pupil!.DiameterMm);
         Assert.Equal("Valid", gaze.Right!.GazePoint2D.Validity);
+        Assert.NotNull(roundTripped.Experiment.Screen);
+        Assert.Equal(1920, roundTripped.Experiment.Screen!.PhysicalScreenWidthPx);
+        Assert.Equal(1080, roundTripped.Experiment.Screen.PhysicalScreenHeightPx);
+        Assert.Equal(1.25, roundTripped.Experiment.Screen.DevicePixelRatio);
     }
 }

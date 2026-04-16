@@ -4,6 +4,7 @@ import {
   Geist_Mono,
   Inter,
   Merriweather,
+  Roboto_Flex,
   Space_Grotesk,
 } from "next/font/google";
 
@@ -23,6 +24,11 @@ const geistMono = Geist_Mono({
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const robotoFlex = Roboto_Flex({
+  variable: "--font-roboto-flex",
   subsets: ["latin"],
 });
 
@@ -51,7 +57,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${spaceGrotesk.variable} ${merriweather.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${robotoFlex.variable} ${spaceGrotesk.variable} ${merriweather.variable}`}
     >
       <head>
         <script
@@ -59,12 +65,12 @@ export default function RootLayout({
             __html: `
               try {
                 const palette = localStorage.getItem("app-palette") || "default";
-                const font = localStorage.getItem("app-font") || "geist";
+                const font = localStorage.getItem("app-font") || "roboto-flex";
                 document.documentElement.setAttribute("data-palette", palette);
                 document.documentElement.setAttribute("data-font", font);
               } catch (_) {
                 document.documentElement.setAttribute("data-palette", "default");
-                document.documentElement.setAttribute("data-font", "geist");
+                document.documentElement.setAttribute("data-font", "roboto-flex");
               }
             `,
           }}

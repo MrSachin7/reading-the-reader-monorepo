@@ -1,0 +1,95 @@
+# Eyetrackers Endpoints
+
+All routes below are exposed through FastEndpoints with the global `/api` prefix.  
+Example: `Get("/eyetrackers")` is available as `GET /api/eyetrackers`.
+
+## `GET /api/eyetrackers`
+
+### What It Does
+
+Returns all currently connected eyetrackers and marks which one is currently selected in the authoritative experiment state.
+
+### Request Type
+
+No request body.
+
+### Response Type
+
+`200 OK` with `EyeTrackerSummaryResponse[]`
+
+```ts
+type EyeTrackerSummaryResponse = {
+  name: string
+  model: string
+  serialNumber: string
+  hasSavedLicence: boolean
+  requiresLicence: boolean
+  isSelected: boolean
+}
+```
+
+## `POST /api/eyetrackers/select`
+
+### What It Does
+
+Selects a specific eyetracker by serial number, optionally applies a licence file, and updates setup readiness projection.
+
+### Request Type
+
+`SelectEyeTrackerRequest` as `multipart/form-data`
+
+```ts
+type SelectEyeTrackerRequest = {
+  serialNumber: string
+  saveLicence: boolean
+  licenceFile?: File
+}
+```
+
+### Response Type
+
+`200 OK` with `SelectEyeTrackerResponse`
+
+```ts
+type SelectEyeTrackerResponse = {
+  selectedTracker: EyeTrackerSummaryResponse
+  setup: ExperimentSetupSnapshot
+}
+```
+
+Error responses:
+
+- `400 Bad Request` when serial number is missing or selection/licence validation fails.
+- `500 Internal Server Error` if selection succeeded but authoritative device projection was not available.
+
+## `POST /api/eyetrackers/start`
+
+### What It Does
+
+Starts eyetracker tracking in the sensing service.
+
+### Request Type
+
+No request body.
+
+### Response Type
+
+`200 OK` with empty body.
+
+Error responses:
+
+- `400 Bad Request` when tracking cannot be started (for example invalid runtime state or missing prerequisites).
+
+## `POST /api/eyetrackers/stop`
+
+### What It Does
+
+Stops eyetracker tracking in the sensing service.
+
+### Request Type
+
+No request body.
+
+### Response Type
+
+`200 OK` with empty body.

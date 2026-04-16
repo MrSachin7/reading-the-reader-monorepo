@@ -4,7 +4,7 @@
 
 The backend exposes two integration surfaces:
 
-- **REST endpoints** (FastEndpoints under `/api`) for eye-tracker discovery and explicit start/stop.
+- **REST endpoints** (FastEndpoints under `/api`) for eye-tracker discovery, input mode settings, and explicit start/stop.
 - **Realtime WebSocket channel** (`/ws`) for low-latency session control and gaze sample streaming to frontend clients.
 
 The architecture is organized into:
@@ -21,6 +21,7 @@ The architecture is organized into:
 ```mermaid
 flowchart LR
     FE[Frontend App] -->|HTTP /api/eyetrackers| API[Web API]
+    FE -->|HTTP /api/sensing-mode/settings| API
     FE -->|HTTP /api/eyetrackers/start| API
     FE -->|HTTP /api/eyetrackers/stop| API
     FE <-->|WebSocket /ws| WS[WebSocket Endpoint]
@@ -29,6 +30,7 @@ flowchart LR
     PUB --> SESS[IExperimentSessionManager]
     WS --> SESS
 
+    SESS --> MODE[ISensingModeSettingsService]
     SESS --> EYE[IEyeTrackerManager]
     EYE --> TOBII[TobiiEyeTrackerManager]
     TOBII --> SDK[Tobii SDK / Device]
@@ -88,6 +90,40 @@ Data collection is driven by `TobiiEyeTrackerManager`:
 - `rightEyeX`, `rightEyeY`, `rightEyeValidity`
 
 On **non-Windows** environments, the manager is a mock implementation (device discovery mock + no real Tobii stream).
+
+## Sensing Modes
+
+The backend owns the active sensing mode. Supported values are:
+
+- `eyeTracker`: normal Tobii-backed operation. Eyetracker discovery, licence handling, calibration, and validation remain required before session start.
+- `mouse`: demo mode for running the frontend without Tobii hardware. Eyetracker and calibration readiness gates are skipped, `eyeTrackerDevice` remains nullable, and the participant reading page sends pointer coordinates as synthetic gaze samples.
+
+Mode settings are exposed through:
+
+- `GET /api/sensing-mode/settings`
+- `PUT /api/sensing-mode/settings`
+
+The settings response shape is:
+
+```json
+{
+  "mode": "mouse",
+  "canChangeMode": true,
+  "blockReason": null
+}
+```
+
+The update request uses the backend request casing:
+
+```json
+{
+  "Mode": "mouse"
+}
+```
+
+Mode changes are blocked while an experiment session is active. In that case, the update endpoint returns `409 Conflict` and the settings response reports `canChangeMode: false` with a block reason. This prevents mixing Tobii-backed and mouse-backed samples inside one session export.
+
+Mouse samples enter the same gaze pipeline as hardware samples. The frontend sends `mouseGazeSample` frames only in mouse mode and only while the pointer moves. The current participant reading page throttles sending to one sample every `33ms`, or about `30.3` samples per second. Coordinates are normalized against the browser viewport and copied into both eyes with `leftEyeValidity` and `rightEyeValidity` set to `Valid`.
 
 ## Session Lifecycle and Realtime Routing
 
@@ -150,6 +186,7 @@ Supported inbound `type` values include:
 - `startExperiment`
 - `stopExperiment`
 - `getExperimentState`
+- `mouseGazeSample`
 - `researcherCommand` (`payload.command` can be start/stop)
 
 Common outbound `type` values include:
@@ -185,5 +222,7 @@ If the backend stops unexpectedly, startup does not restore the unfinished run i
 
 - WebSocket is required for realtime gaze ingestion on frontend.
 - REST `start/stop` and WebSocket `startExperiment/stopExperiment` both control the same session manager.
-- If there is no Tobii device on Windows, start will fail.
+- If there is no Tobii device on Windows, start will fail in `eyeTracker` mode.
+- In `mouse` mode, session start does not require Tobii hardware, licence upload, calibration, or validation.
+- Mouse mode sends synthetic gaze only while pointer movement events occur, so the effective sample rate can be lower than 30 Hz when the mouse is still or the browser throttles the tab.
 - If running on non-Windows, you will not receive real Tobii gaze samples.

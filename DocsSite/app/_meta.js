@@ -11,6 +11,9 @@ export default {
   backend: {
     title: 'Backend'
   },
+  endpoints: {
+    title: 'Endpoints'
+  },
   integration: {
     title: 'External AI Integration'
   },

@@ -11,7 +11,8 @@ public sealed record ParticipantViewportSnapshot(
     long UpdatedAtUnixMs,
     int ActivePageIndex = 0,
     int PageCount = 1,
-    long? LastPageTurnAtUnixMs = null)
+    long? LastPageTurnAtUnixMs = null,
+    ParticipantScreenSnapshot? Screen = null)
 {
     public static ParticipantViewportSnapshot Disconnected { get; } = new(false, 0, 0, 0, 0, 0, 0, 0, 0, 1, null);
 
@@ -21,7 +22,8 @@ public sealed record ParticipantViewportSnapshot(
         {
             ActivePageIndex = Math.Max(ActivePageIndex, 0),
             PageCount = Math.Max(PageCount, 1),
-            LastPageTurnAtUnixMs = LastPageTurnAtUnixMs.HasValue ? Math.Max(LastPageTurnAtUnixMs.Value, 0) : null
+            LastPageTurnAtUnixMs = LastPageTurnAtUnixMs.HasValue ? Math.Max(LastPageTurnAtUnixMs.Value, 0) : null,
+            Screen = Screen?.Copy()
         };
     }
 }

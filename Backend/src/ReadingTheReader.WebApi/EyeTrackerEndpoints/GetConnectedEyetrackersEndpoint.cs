@@ -11,6 +11,7 @@ public sealed record EyeTrackerSummaryResponse(
     string Model,
     string SerialNumber,
     bool HasSavedLicence,
+    bool RequiresLicence,
     bool IsSelected);
 
 public class GetConnectedEyetrackersEndpoint : EndpointWithoutRequest<List<EyeTrackerSummaryResponse>>
@@ -50,6 +51,7 @@ public class GetConnectedEyetrackersEndpoint : EndpointWithoutRequest<List<EyeTr
             tracker.Model,
             tracker.SerialNumber,
             tracker.HasSavedLicence,
+            EyeTrackerLicencePolicy.RequiresLicence(tracker),
             !string.IsNullOrWhiteSpace(selectedSerialNumber) &&
             tracker.SerialNumber.Equals(selectedSerialNumber, StringComparison.OrdinalIgnoreCase));
     }

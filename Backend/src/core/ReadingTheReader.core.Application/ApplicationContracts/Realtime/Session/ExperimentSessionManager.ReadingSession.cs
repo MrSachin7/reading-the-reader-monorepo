@@ -145,7 +145,8 @@ public sealed partial class ExperimentSessionManager
                     normalizedPageCount,
                     pageDidChange
                         ? Math.Max(command.LastPageTurnAtUnixMs ?? updatedAtUnixMs, 0)
-                        : previousViewport.LastPageTurnAtUnixMs)
+                        : previousViewport.LastPageTurnAtUnixMs,
+                    command.Screen?.Copy())
             };
 
             viewport = _liveReadingSession.ParticipantViewport.Copy();

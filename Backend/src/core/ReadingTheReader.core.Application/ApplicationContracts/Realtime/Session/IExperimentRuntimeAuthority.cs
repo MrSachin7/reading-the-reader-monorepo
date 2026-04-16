@@ -81,6 +81,8 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask UnsubscribeGazeDataAsync(string connectionId, CancellationToken ct = default);
 
+    ValueTask SubmitMouseGazeSampleAsync(string connectionId, GazeData gazeData, CancellationToken ct = default);
+
     ValueTask PauseGazeStreamingAsync(CancellationToken ct = default);
 
     ValueTask ResumeGazeStreamingAsync(CancellationToken ct = default);
