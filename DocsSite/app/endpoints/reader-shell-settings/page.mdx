@@ -1,0 +1,63 @@
+# Reader Shell Settings Endpoints
+
+All routes below are exposed through FastEndpoints with the global `/api` prefix.  
+Example: `Get("/reader-shell/settings")` is available as `GET /api/reader-shell/settings`.
+
+## `GET /api/reader-shell/settings`
+
+### What It Does
+
+Returns current shell settings for the participant reading view, researcher mirror view, and replay view.
+
+### Request Type
+
+No request body.
+
+### Response Type
+
+`200 OK` with `ReaderShellSettingsSnapshot`
+
+```ts
+type ReaderShellViewSettings = {
+  preserveContextOnIntervention: boolean
+  highlightContext: boolean
+  displayGazePosition: boolean
+  highlightTokensBeingLookedAt: boolean
+  showFixationHeatmap: boolean
+  showToolbar: boolean
+  showBackButton: boolean
+  showLixScores: boolean
+}
+
+type ReaderShellSettingsSnapshot = {
+  reading: ReaderShellViewSettings
+  researcherMirror: ReaderShellViewSettings
+  replay: ReaderShellViewSettings
+}
+```
+
+## `PUT /api/reader-shell/settings`
+
+### What It Does
+
+Updates shell settings for `reading`, `researcherMirror`, and `replay` view presets as one snapshot.
+
+### Request Type
+
+`UpdateReaderShellSettingsRequest` as JSON
+
+```ts
+type UpdateReaderShellSettingsRequest = {
+  reading: ReaderShellViewSettings
+  researcherMirror: ReaderShellViewSettings
+  replay: ReaderShellViewSettings
+}
+```
+
+### Response Type
+
+`200 OK` with updated `ReaderShellSettingsSnapshot`.
+
+Error responses:
+
+- `400 Bad Request` when `reading`, `researcherMirror`, or `replay` is missing.
