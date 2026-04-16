@@ -97,8 +97,9 @@ export function EyetrackerSetup({
   const selectedEyetracker = eyetrackers.find(
     (item) => item.serialNumber === selectedSerialNumber
   )
+  const requiresLicence = selectedEyetracker?.requiresLicence ?? true
   const hasSavedLicence = Boolean(selectedEyetracker?.hasSavedLicence)
-  const canUploadNewLicense = !hasSavedLicence || overwriteExistingLicence
+  const canUploadNewLicense = requiresLicence && (!hasSavedLicence || overwriteExistingLicence)
   const displayedLicenceFileName = licenceFile?.name ?? stepOneDraft.licenceFileName
   const currentFingerprint = JSON.stringify({
     serialNumber: selectedSerialNumber ?? "",
@@ -111,7 +112,9 @@ export function EyetrackerSetup({
     stepOneDraft.lastSyncedFingerprint !== currentFingerprint
   const isComplete = Boolean(
     selectedSerialNumber &&
-      (displayedLicenceFileName || (hasSavedLicence && !overwriteExistingLicence))
+      (!requiresLicence ||
+        displayedLicenceFileName ||
+        (hasSavedLicence && !overwriteExistingLicence))
   )
 
   React.useEffect(() => {
@@ -216,7 +219,7 @@ export function EyetrackerSetup({
       return true
     }
 
-    if (!currentValues.licenceFile) {
+    if (requiresLicence && !currentValues.licenceFile) {
       if (!hasSavedLicence || currentValues.overwriteExistingLicence) {
         form.setError("licenceFile", { message: "Please upload a license file." })
         return false
@@ -226,8 +229,8 @@ export function EyetrackerSetup({
     try {
       const selection = await selectEyetracker({
         serialNumber: currentValues.serialNumber,
-        saveLicence: currentValues.saveLicence,
-        licenceFile: currentValues.licenceFile,
+        saveLicence: requiresLicence && currentValues.saveLicence,
+        licenceFile: requiresLicence ? currentValues.licenceFile : null,
       }).unwrap()
       dispatch(setStepOneLastSyncedFingerprint(nextFingerprint))
       dispatch(setStepOneSelectionConfirmed(selection.setup.eyeTracker.isReady))
@@ -240,6 +243,7 @@ export function EyetrackerSetup({
     dispatch,
     form,
     hasSavedLicence,
+    requiresLicence,
     selectEyetracker,
     stepOneDraft.lastSyncedFingerprint,
     stepOneDraft.licenceFileName,
@@ -406,13 +410,26 @@ export function EyetrackerSetup({
             {selectedSerialNumber ? (
               <section className="space-y-3 rounded-lg border bg-card p-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-semibold">Upload license</h3>
+                  <h3 className="text-sm font-semibold">License status</h3>
                   <p className="text-xs text-muted-foreground">
-                    Upload a valid license file for {selectedEyetrackerLabel}.
+                    {requiresLicence
+                      ? `Upload a valid license file for ${selectedEyetrackerLabel}.`
+                      : `${selectedEyetrackerLabel} is a Pro eyetracker and does not need a license file.`}
                   </p>
                 </div>
 
-                {hasSavedLicence ? (
+                {!requiresLicence ? (
+                  <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
+                    <Info />
+                    <AlertTitle>License not required</AlertTitle>
+                    <AlertDescription>
+                      Tobii Pro Fusion eyetrackers can be selected without uploading or saving a
+                      license.
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                {requiresLicence && hasSavedLicence ? (
                   <Alert className="border-amber-400/60 bg-amber-50/60 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
                     <Info />
                     <AlertTitle>Existing license detected</AlertTitle>
@@ -424,7 +441,7 @@ export function EyetrackerSetup({
                   </Alert>
                 ) : null}
 
-                {hasSavedLicence ? (
+                {requiresLicence && hasSavedLicence ? (
                   <div className="rounded-md border bg-muted/20 p-3">
                     <div className="flex items-start gap-2">
                       <Checkbox
@@ -458,14 +475,16 @@ export function EyetrackerSetup({
                   </div>
                 ) : null}
 
-                <FormField
-                  control={form.control}
-                  name="licenceFile"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel htmlFor="license-file">License file</FormLabel>
-                      <FormControl>
-                        <div
+                {requiresLicence ? (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="licenceFile"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel htmlFor="license-file">License file</FormLabel>
+                          <FormControl>
+                            <div
                           role="button"
                           tabIndex={displayedLicenceFileName || !canUploadNewLicense ? -1 : 0}
                           aria-disabled={Boolean(displayedLicenceFileName || !canUploadNewLicense)}
@@ -521,93 +540,95 @@ export function EyetrackerSetup({
                             !canUploadNewLicense &&
                               "cursor-not-allowed border-amber-400/60 bg-amber-50/30 opacity-80 hover:border-amber-400/60 hover:bg-amber-50/30 dark:border-amber-700 dark:bg-amber-950/20"
                           )}
-                        >
-                          <Upload className="mb-3 h-7 w-7 text-muted-foreground transition-colors group-hover:text-primary" />
-                          <p className="text-sm font-medium text-foreground">
-                            {displayedLicenceFileName
-                              ? "License file uploaded"
-                              : !canUploadNewLicense
-                                ? "Upload is locked"
-                                : "Drag and drop your license file"}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {displayedLicenceFileName
-                              ? "Only one file is allowed. Remove it to upload another."
-                              : !canUploadNewLicense
-                                ? "Enable overwrite above to upload a replacement license."
-                                : hasSavedLicence
-                                  ? "Upload a new file to overwrite the saved license."
-                                : "or click to browse"}
-                          </p>
-                          <input
-                            id="license-file"
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            disabled={Boolean(displayedLicenceFileName || !canUploadNewLicense)}
-                            onChange={(event) => {
-                              const nextFile = event.target.files?.[0] ?? null
-                              setSubmitError(null)
-                              form.setValue("licenceFile", nextFile, {
-                                shouldDirty: true,
-                                shouldValidate: true,
-                              })
-                              dispatch(setStepOneLicenceFileName(nextFile?.name ?? null))
-                            }}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {displayedLicenceFileName ? (
-                  <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FileCheck2 className="h-4 w-4 shrink-0 text-primary" />
-                      <Badge variant="secondary">Uploaded</Badge>
-                      <span className="truncate font-medium">{displayedLicenceFileName}</span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRemoveLicense}
-                      className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      Remove
-                    </Button>
-                  </div>
-                ) : null}
-
-                <div className="rounded-md border bg-muted/20 p-3">
-                  <div className="flex items-start gap-2">
-                      <Checkbox
-                        id="save-license-for-later"
-                        checked={saveLicence}
-                      onCheckedChange={(checked) => {
-                        setSubmitError(null)
-                        form.setValue("saveLicence", Boolean(checked), {
-                          shouldDirty: true,
-                          shouldValidate: false,
-                        })
-                      }}
-                      disabled={!displayedLicenceFileName}
-                      className="mt-0.5"
+                            >
+                              <Upload className="mb-3 h-7 w-7 text-muted-foreground transition-colors group-hover:text-primary" />
+                              <p className="text-sm font-medium text-foreground">
+                                {displayedLicenceFileName
+                                  ? "License file uploaded"
+                                  : !canUploadNewLicense
+                                    ? "Upload is locked"
+                                    : "Drag and drop your license file"}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {displayedLicenceFileName
+                                  ? "Only one file is allowed. Remove it to upload another."
+                                  : !canUploadNewLicense
+                                    ? "Enable overwrite above to upload a replacement license."
+                                    : hasSavedLicence
+                                      ? "Upload a new file to overwrite the saved license."
+                                      : "or click to browse"}
+                              </p>
+                              <input
+                                id="license-file"
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                disabled={Boolean(displayedLicenceFileName || !canUploadNewLicense)}
+                                onChange={(event) => {
+                                  const nextFile = event.target.files?.[0] ?? null
+                                  setSubmitError(null)
+                                  form.setValue("licenceFile", nextFile, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  })
+                                  dispatch(setStepOneLicenceFileName(nextFile?.name ?? null))
+                                }}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <div className="space-y-1">
-                      <Label htmlFor="save-license-for-later" className="cursor-pointer">
-                        Save this license for future use
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Next time you select this eyetracker, you will not need to upload the
-                        license again.
-                      </p>
+
+                    {displayedLicenceFileName ? (
+                      <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <FileCheck2 className="h-4 w-4 shrink-0 text-primary" />
+                          <Badge variant="secondary">Uploaded</Badge>
+                          <span className="truncate font-medium">{displayedLicenceFileName}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveLicense}
+                          className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-md border bg-muted/20 p-3">
+                      <div className="flex items-start gap-2">
+                        <Checkbox
+                          id="save-license-for-later"
+                          checked={saveLicence}
+                          onCheckedChange={(checked) => {
+                            setSubmitError(null)
+                            form.setValue("saveLicence", Boolean(checked), {
+                              shouldDirty: true,
+                              shouldValidate: false,
+                            })
+                          }}
+                          disabled={!displayedLicenceFileName}
+                          className="mt-0.5"
+                        />
+                        <div className="space-y-1">
+                          <Label htmlFor="save-license-for-later" className="cursor-pointer">
+                            Save this license for future use
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Next time you select this eyetracker, you will not need to upload the
+                            license again.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                ) : null}
               </section>
             ) : null}
           </form>

@@ -38,16 +38,11 @@ public class TobiiEyeTrackerAdapter : IEyeTrackerAdapter
         return Task.FromResult(devices);
     }
 
-    public Task SelectEyeTracker(string serialNumber, byte[] licenseFileBytes, CancellationToken ct = default)
+    public Task SelectEyeTracker(string serialNumber, byte[]? licenseFileBytes, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(serialNumber))
         {
             throw new ArgumentException("A serial number is required.", nameof(serialNumber));
-        }
-
-        if (licenseFileBytes.Length == 0)
-        {
-            throw new ArgumentException("A non-empty license file is required.", nameof(licenseFileBytes));
         }
 
         var found = EyeTrackingOperations.FindAllEyeTrackers();
@@ -59,27 +54,35 @@ public class TobiiEyeTrackerAdapter : IEyeTrackerAdapter
             throw new ArgumentException($"No eye tracker found with serial number '{serialNumber}'.", nameof(serialNumber));
         }
 
-        try
+        if (EyeTrackerLicencePolicy.RequiresLicence(selected.Model))
         {
-            var licenseKey = new LicenseKey(licenseFileBytes);
-            var licenseCollection = new LicenseCollection([licenseKey]);
-            selected.TryApplyLicenses(licenseCollection, out var result);
-
-            var hasInvalidLicense = result is not null &&
-                                    result.Any(r => r.ValidationResult != LicenseValidationResult.Ok);
-
-            if (hasInvalidLicense)
+            if (licenseFileBytes is not { Length: > 0 })
             {
-                throw new ArgumentException("The provided license is not valid for the selected eye tracker.");
+                throw new ArgumentException("A non-empty license file is required.", nameof(licenseFileBytes));
             }
-        }
-        catch (ArgumentException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            throw new ArgumentException("The provided license is not valid for the selected eye tracker.", ex);
+
+            try
+            {
+                var licenseKey = new LicenseKey(licenseFileBytes);
+                var licenseCollection = new LicenseCollection([licenseKey]);
+                selected.TryApplyLicenses(licenseCollection, out var result);
+
+                var hasInvalidLicense = result is not null &&
+                                        result.Any(r => r.ValidationResult != LicenseValidationResult.Ok);
+
+                if (hasInvalidLicense)
+                {
+                    throw new ArgumentException("The provided license is not valid for the selected eye tracker.");
+                }
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException("The provided license is not valid for the selected eye tracker.", ex);
+            }
         }
 
         _selectedTracker = selected;
@@ -665,14 +668,14 @@ public class TobiiEyeTrackerAdapter : IEyeTrackerAdapter
         });
     }
 
-    public Task SelectEyeTracker(string serialNumber, byte[] licenseFileBytes, CancellationToken ct = default)
+    public Task SelectEyeTracker(string serialNumber, byte[]? licenseFileBytes, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(serialNumber))
         {
             throw new ArgumentException("A serial number is required.", nameof(serialNumber));
         }
 
-        if (licenseFileBytes.Length == 0)
+        if (licenseFileBytes is not { Length: > 0 })
         {
             throw new ArgumentException("A non-empty license file is required.", nameof(licenseFileBytes));
         }

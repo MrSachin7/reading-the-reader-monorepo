@@ -9,7 +9,7 @@ public interface IEyeTrackerAdapter
 
     Task<List<EyeTrackerDevice>> GetAllConnectedEyeTrackers();
     
-    Task SelectEyeTracker(string serialNumber, byte[] licenseFileBytes, CancellationToken ct = default);
+    Task SelectEyeTracker(string serialNumber, byte[]? licenseFileBytes, CancellationToken ct = default);
 
     Task StartEyeTracking();
 

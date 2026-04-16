@@ -2,6 +2,7 @@ using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.WebApi.EyeTrackerEndpoints;
 
@@ -78,6 +79,7 @@ public sealed class SelectEyeTrackerEndpoint : Endpoint<SelectEyeTrackerRequest>
                 selectedTracker.Model,
                 selectedTracker.SerialNumber,
                 selectedTracker.HasSavedLicence,
+                EyeTrackerLicencePolicy.RequiresLicence(selectedTracker),
                 true),
             snapshot.Setup);
 

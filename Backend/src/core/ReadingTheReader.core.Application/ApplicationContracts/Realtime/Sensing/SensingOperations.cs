@@ -21,7 +21,8 @@ public sealed class SensingOperations : ISensingOperations
         var trackers = await _eyeTrackerAdapter.GetAllConnectedEyeTrackers();
         foreach (var tracker in trackers)
         {
-            tracker.HasSavedLicence = await _licenseStoreAdapter.HasLicenseAsync(tracker.SerialNumber, ct);
+            tracker.HasSavedLicence = EyeTrackerLicencePolicy.RequiresLicence(tracker) &&
+                                      await _licenseStoreAdapter.HasLicenseAsync(tracker.SerialNumber, ct);
         }
 
         return trackers;
@@ -38,38 +39,46 @@ public sealed class SensingOperations : ISensingOperations
             throw new ArgumentException("serialNumber is required.", nameof(serialNumber));
         }
 
+        var trackers = await _eyeTrackerAdapter.GetAllConnectedEyeTrackers();
+        var selectedTracker = trackers.FirstOrDefault(t =>
+            t.SerialNumber.Equals(serialNumber, StringComparison.OrdinalIgnoreCase));
+        var requiresLicence = selectedTracker is null || EyeTrackerLicencePolicy.RequiresLicence(selectedTracker);
         var hasUploadedLicense = licenseFileBytes is { Length: > 0 };
-        byte[] effectiveLicenseBytes;
+        byte[]? effectiveLicenseBytes = null;
 
-        if (hasUploadedLicense)
+        if (requiresLicence)
         {
-            effectiveLicenseBytes = licenseFileBytes!;
-        }
-        else
-        {
-            var storedLicense = await _licenseStoreAdapter.GetLicenseAsync(serialNumber, ct);
-            if (storedLicense is null || storedLicense.Length == 0)
+            if (hasUploadedLicense)
             {
-                throw new ArgumentException("licenceFile is required when no saved licence exists for this eye tracker.");
+                effectiveLicenseBytes = licenseFileBytes!;
             }
+            else
+            {
+                var storedLicense = await _licenseStoreAdapter.GetLicenseAsync(serialNumber, ct);
+                if (storedLicense is null || storedLicense.Length == 0)
+                {
+                    throw new ArgumentException("licenceFile is required when no saved licence exists for this eye tracker.");
+                }
 
-            effectiveLicenseBytes = storedLicense;
+                effectiveLicenseBytes = storedLicense;
+            }
         }
 
         await _eyeTrackerAdapter.SelectEyeTracker(serialNumber, effectiveLicenseBytes, ct);
 
-        if (saveLicence && hasUploadedLicense)
+        if (requiresLicence && saveLicence && hasUploadedLicense)
         {
-            await _licenseStoreAdapter.SaveLicenseAsync(serialNumber, effectiveLicenseBytes, ct);
+            await _licenseStoreAdapter.SaveLicenseAsync(serialNumber, effectiveLicenseBytes!, ct);
         }
 
-        var trackers = await _eyeTrackerAdapter.GetAllConnectedEyeTrackers();
+        trackers = await _eyeTrackerAdapter.GetAllConnectedEyeTrackers();
         var selected = trackers.FirstOrDefault(t =>
             t.SerialNumber.Equals(serialNumber, StringComparison.OrdinalIgnoreCase));
 
         if (selected is not null)
         {
-            selected.HasSavedLicence = await _licenseStoreAdapter.HasLicenseAsync(selected.SerialNumber, ct);
+            selected.HasSavedLicence = EyeTrackerLicencePolicy.RequiresLicence(selected) &&
+                                       await _licenseStoreAdapter.HasLicenseAsync(selected.SerialNumber, ct);
             return selected;
         }
 

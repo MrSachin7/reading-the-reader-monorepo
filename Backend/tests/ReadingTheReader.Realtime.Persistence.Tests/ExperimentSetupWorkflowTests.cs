@@ -60,6 +60,29 @@ public sealed class ExperimentSetupWorkflowTests
     }
 
     [Fact]
+    public async Task GetCurrentSnapshot_WhenTrackerIsProFusion_DoesNotReflectSavedLicenceGap()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+
+        await harness.SessionManager.SetCurrentEyeTrackerAsync(new EyeTrackerDevice
+        {
+            Name = "Tobii Pro Fusion",
+            Model = "Tobii Pro Fusion",
+            SerialNumber = "fusion-001",
+            HasSavedLicence = false
+        });
+
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+
+        Assert.True(snapshot.Setup.EyeTracker.IsReady);
+        Assert.True(snapshot.Setup.EyeTracker.HasSelectedEyeTracker);
+        Assert.True(snapshot.Setup.EyeTracker.HasAppliedLicence);
+        Assert.False(snapshot.Setup.EyeTracker.HasSavedLicence);
+        Assert.False(snapshot.Setup.EyeTracker.SavedLicenceMissing);
+        Assert.Equal("fusion-001", snapshot.Setup.EyeTracker.SelectedTrackerSerialNumber);
+    }
+
+    [Fact]
     public async Task GetCurrentSnapshot_WhenValidationFails_ProjectsCalibrationQualityAndBlockReason()
     {
         var harness = RealtimeTestDoubles.CreateHarness();
