@@ -82,12 +82,15 @@ function EmptyState({
 
 export default function ResearcherCurrentLivePage() {
   const session = useLiveExperimentSession()
-  const hasActiveEyeTracker = Boolean(session?.isActive && session?.eyeTrackerDevice)
-  const liveGaze = useLiveGazeStream({ enabled: hasActiveEyeTracker })
+  const hasActiveGazeSource = Boolean(
+    session?.isActive &&
+      (session.sensingMode === "mouse" || session.eyeTrackerDevice)
+  )
+  const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const [validityRate, setValidityRate] = useState(0)
 
   useEffect(() => {
-    if (!hasActiveEyeTracker) {
+    if (!hasActiveGazeSource) {
       return
     }
 
@@ -111,9 +114,9 @@ export default function ResearcherCurrentLivePage() {
       unsubscribe()
       window.clearInterval(timer)
     }
-  }, [hasActiveEyeTracker])
+  }, [hasActiveGazeSource])
 
-  const displayedValidityRate = hasActiveEyeTracker ? validityRate : 0
+  const displayedValidityRate = hasActiveGazeSource ? validityRate : 0
 
   if (!session) {
     return (

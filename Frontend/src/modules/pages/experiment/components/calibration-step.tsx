@@ -5,7 +5,7 @@ import Link from "next/link"
 import { AlertCircle, CheckCircle2, ScanEye } from "lucide-react"
 
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
-import type { CalibrationSetupReadinessSnapshot } from "@/lib/experiment-session"
+import type { CalibrationSetupReadinessSnapshot, SensingMode } from "@/lib/experiment-session"
 import {
   setStepThreeInternalCalibrationStatus,
   setStepThreeUseLocalCalibration,
@@ -24,11 +24,13 @@ import {
 type AuthoritativeCalibrationStepProps = CalibrationStepProps & {
   setup: CalibrationSetupReadinessSnapshot
   calibration?: CalibrationSessionSnapshot
+  sensingMode?: SensingMode
 }
 
 export function CalibrationStep({
   setup,
   calibration,
+  sensingMode = "eyeTracker",
   onCompletionChange,
   onSubmitRequestChange,
   onSubmittingChange,
@@ -51,6 +53,8 @@ export function CalibrationStep({
     setup.blockReason ??
     "The last attempt did not complete with acceptable validation quality."
 
+  const isMouseMode = sensingMode === "mouse"
+
   React.useEffect(() => {
     onCompletionChange?.(isStepComplete)
   }, [isStepComplete, onCompletionChange])
@@ -68,6 +72,36 @@ export function CalibrationStep({
   const handleReset = () => {
     dispatch(setStepThreeInternalCalibrationStatus("pending"))
     dispatch(setStepThreeUseLocalCalibration(false))
+  }
+
+  if (isMouseMode) {
+    return (
+      <Card className="overflow-hidden rounded-[2rem] border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+        <CardHeader className="border-b pb-8">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Step 3</Badge>
+            <Badge variant="outline">Mouse mode</Badge>
+          </div>
+          <CardTitle className="mt-3 text-3xl tracking-tight">
+            Calibration is skipped in mouse mode.
+          </CardTitle>
+          <CardDescription className="max-w-3xl text-base leading-7">
+            The participant mouse position will be used as the gaze source for this demo session.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-8">
+          <div className="flex items-start gap-3 rounded-[1.5rem] border bg-muted/20 p-4">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Ready for mouse input</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                No Tobii calibration or validation is required while mouse mode is active.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

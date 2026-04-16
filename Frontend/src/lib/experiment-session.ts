@@ -3,6 +3,8 @@ import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
+export type SensingMode = "eyeTracker" | "mouse"
+
 export type ExperimentSetupBlockerSnapshot = {
   stepKey: string
   stepLabel: string
@@ -381,6 +383,7 @@ export type ExperimentSessionSnapshot = {
   stoppedAtUnixMs: number | null
   participant: ExperimentParticipantSnapshot | null
   eyeTrackerDevice: ExperimentEyeTrackerSnapshot | null
+  sensingMode: SensingMode
   calibration: CalibrationSessionSnapshot
   setup: ExperimentSetupSnapshot
   receivedGazeSamples: number

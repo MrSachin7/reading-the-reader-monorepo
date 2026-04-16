@@ -47,6 +47,13 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 await _runtimeAuthority.UnsubscribeGazeDataAsync(unsubscribe.ConnectionId, ct);
                 return;
 
+            case MouseGazeSampleRealtimeCommand mouseGazeSample:
+                await _runtimeAuthority.SubmitMouseGazeSampleAsync(
+                    mouseGazeSample.ConnectionId,
+                    mouseGazeSample.Payload,
+                    ct);
+                return;
+
             case GetExperimentStateRealtimeCommand getState:
                 await _clientBroadcasterAdapter.SendToClientAsync(
                     getState.ConnectionId,

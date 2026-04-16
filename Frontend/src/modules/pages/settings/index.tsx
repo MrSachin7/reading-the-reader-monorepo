@@ -4,13 +4,14 @@ import * as React from "react"
 import { Settings2 } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   SETTINGS_SECTIONS,
   normalizeSettingsTab,
 } from "@/modules/pages/settings/lib/settings-tabs"
 import { CalibrationSettingsSection } from "@/modules/pages/settings/sections/CalibrationSettingsSection"
+import { InputModeSettingsSection } from "@/modules/pages/settings/sections/InputModeSettingsSection"
 import { ReaderShellSettingsSection } from "@/modules/pages/settings/sections/ReaderShellSettingsSection"
 
 function SettingsSectionNav() {
@@ -72,6 +73,10 @@ export default function SettingsPage() {
       className="gap-6 xl:grid xl:grid-cols-[280px_minmax(0,1fr)]"
     >
       <SettingsSectionNav />
+
+      <TabsContent value="inputmode">
+        <InputModeSettingsSection />
+      </TabsContent>
 
       <TabsContent value="calibration">
         <CalibrationSettingsSection />

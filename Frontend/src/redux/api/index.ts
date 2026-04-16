@@ -18,6 +18,12 @@ export {
   useUpdateReaderShellSettingsMutation,
 } from "./reader-shell-settings-api"
 export {
+  sensingModeApi,
+  useGetSensingModeSettingsQuery,
+  useUpdateSensingModeSettingsMutation,
+} from "./sensing-mode-api"
+export type { SensingModeSettings } from "./sensing-mode-api"
+export {
   interventionModulesApi,
   useGetInterventionModulesQuery,
 } from "./intervention-modules-api"

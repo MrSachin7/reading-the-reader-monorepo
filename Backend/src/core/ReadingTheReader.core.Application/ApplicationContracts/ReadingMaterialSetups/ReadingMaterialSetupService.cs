@@ -38,6 +38,7 @@ public sealed class ReadingMaterialSetupService : IReadingMaterialSetupService
         }
 
         return item;
+        
     }
 
     public async ValueTask<ReadingMaterialSetup> UpdateAsync(UpdateReadingMaterialSetupCommand command, CancellationToken ct = default)

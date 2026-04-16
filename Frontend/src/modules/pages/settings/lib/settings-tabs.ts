@@ -1,14 +1,19 @@
 "use client"
 
-export type SettingsTabValue = "calibration" | "readershell"
+export type SettingsTabValue = "inputmode" | "calibration" | "readershell"
 
-export const DEFAULT_SETTINGS_TAB: SettingsTabValue = "calibration"
+export const DEFAULT_SETTINGS_TAB: SettingsTabValue = "inputmode"
 
 export const SETTINGS_SECTIONS: Array<{
   value: SettingsTabValue
   label: string
   description: string
 }> = [
+  {
+    value: "inputmode",
+    label: "Input mode",
+    description: "Choose eyetracker or mouse input.",
+  },
   {
     value: "calibration",
     label: "Calibration",
@@ -22,6 +27,10 @@ export const SETTINGS_SECTIONS: Array<{
 ]
 
 export function normalizeSettingsTab(value: string | null | undefined): SettingsTabValue {
+  if (value === "inputmode" || value === "input-mode") {
+    return "inputmode"
+  }
+
   if (value === "calibration") {
     return "calibration"
   }
