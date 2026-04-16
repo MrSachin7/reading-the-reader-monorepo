@@ -41,6 +41,7 @@ import {
 type DraftState = CreateReadingMaterialSetupRequest
 
 const FONT_LABELS: Record<FontTheme, string> = {
+  "roboto-flex": "Roboto Flex",
   geist: "Geist",
   inter: "Inter",
   "space-grotesk": "Space Grotesk",
@@ -48,6 +49,7 @@ const FONT_LABELS: Record<FontTheme, string> = {
 }
 
 const FONT_FAMILY_STYLES: Record<FontTheme, string> = {
+  "roboto-flex": "var(--font-roboto-flex)",
   geist: "var(--font-geist-sans)",
   inter: "var(--font-inter)",
   "space-grotesk": "var(--font-space-grotesk)",
@@ -119,6 +121,7 @@ function normalizeReadingMaterialSetup(
         ? setup.researcherQuestions
         : fallback.researcherQuestions,
     fontFamily:
+      setup.fontFamily === "roboto-flex" ||
       setup.fontFamily === "geist" ||
       setup.fontFamily === "inter" ||
       setup.fontFamily === "space-grotesk" ||

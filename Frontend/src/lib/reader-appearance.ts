@@ -18,7 +18,7 @@ type ReaderAppearanceInput = {
 export const DEFAULT_READER_APPEARANCE: ReaderAppearanceSettings = {
   themeMode: "light",
   palette: "default",
-  appFont: "geist",
+  appFont: "roboto-flex",
 }
 
 export function normalizeReaderThemeMode(value: string | null | undefined): ReaderThemeMode {
@@ -41,6 +41,6 @@ export function normalizeReaderAppearance(
   return {
     themeMode: normalizeReaderThemeMode(input?.themeMode),
     palette: normalizeReaderPalette(input?.palette),
-    appFont: normalizeFontTheme(input?.appFont),
+    appFont: normalizeFontTheme(input?.appFont, DEFAULT_READER_APPEARANCE.appFont),
   }
 }

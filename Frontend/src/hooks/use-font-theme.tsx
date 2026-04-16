@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-export const FONTS = ["geist", "inter", "space-grotesk", "merriweather"] as const;
+export const FONTS = ["roboto-flex", "geist", "inter", "space-grotesk", "merriweather"] as const;
 export type FontTheme = (typeof FONTS)[number];
 
 type FontThemeContextValue = {
@@ -23,7 +23,7 @@ export function FontThemeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [font, setFont] = React.useState<FontTheme>("geist");
+  const [font, setFont] = React.useState<FontTheme>("roboto-flex");
 
   React.useEffect(() => {
     const stored = window.localStorage.getItem(FONT_STORAGE_KEY);

@@ -11,6 +11,7 @@ import { type FontTheme, FONTS } from "@/hooks/use-font-theme";
 import { useReadingSettings } from "@/modules/pages/reading/lib/useReadingSettings";
 
 const FONT_LABELS: Record<FontTheme, string> = {
+  "roboto-flex": "Roboto Flex",
   geist: "Geist",
   inter: "Inter",
   "space-grotesk": "Space Grotesk",

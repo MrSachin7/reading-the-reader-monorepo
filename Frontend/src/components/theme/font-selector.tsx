@@ -12,6 +12,7 @@ import {
 import { FONTS, type FontTheme, useFontTheme } from "@/hooks/use-font-theme";
 
 const FONT_LABELS: Record<FontTheme, string> = {
+  "roboto-flex": "Roboto Flex",
   geist: "Geist",
   inter: "Inter",
   "space-grotesk": "Space Grotesk",
@@ -34,7 +35,7 @@ export function FontSelector({ className, value, onValueChange }: FontSelectorPr
 
   return (
     <Select
-      value={mounted ? value ?? font : "geist"}
+      value={mounted ? value ?? font : "roboto-flex"}
       onValueChange={(value) => {
         const nextFont = value as FontTheme
         setFont(nextFont)

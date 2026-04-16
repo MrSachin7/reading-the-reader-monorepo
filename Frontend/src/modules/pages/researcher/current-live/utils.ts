@@ -2,6 +2,7 @@ import type { FontTheme } from "@/hooks/use-font-theme"
 import type { LiveMirrorTrustState } from "@/modules/pages/researcher/current-live/types"
 
 export const PRESENTATION_FONT_LABELS: Record<FontTheme, string> = {
+  "roboto-flex": "Roboto Flex",
   geist: "Geist",
   inter: "Inter",
   "space-grotesk": "Space Grotesk",
