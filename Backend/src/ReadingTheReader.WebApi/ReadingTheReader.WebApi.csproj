@@ -50,6 +50,8 @@
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sda-a4a4f0bc50534bb58b547e628caf42ec\session-meta.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sdsa-a4713458f62b40859404db0d089e57fa\participant-replay-recovery.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sdsa-a4713458f62b40859404db0d089e57fa\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\asfas-ad30652052354bb1852c1ec4dea11d5b\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\asfas-ad30652052354bb1852c1ec4dea11d5b\session-meta.json" />
     </ItemGroup>
 
 </Project>
