@@ -7,6 +7,7 @@ This page summarizes what the repository currently supports at a product level.
 ### Experiment setup and control
 
 - eye tracker discovery through the backend
+- backend-authoritative input mode selection: Tobii eyetracker or mouse mode
 - guided researcher setup flow
 - participant registration and experiment-session setup
 - calibration inside the application
@@ -20,6 +21,7 @@ This page summarizes what the repository currently supports at a product level.
 - appearance controls for theme mode and palette
 - full-screen participant reading surface
 - researcher-controlled presentation locking
+- mouse-mode demo input that sends participant pointer coordinates as synthetic gaze samples at about 30 Hz while the mouse moves
 
 ### Researcher workflow
 
@@ -61,6 +63,7 @@ This page summarizes what the repository currently supports at a product level.
 - Markdown content is supported; PDF is not part of the intended thesis scope.
 - External AI is supported as a contract boundary; a real AI system is not implemented in this repository.
 - The system is optimized for researcher-operated experiments rather than participant self-service.
+- Mouse mode is for demos and frontend development without Tobii hardware. It reuses the gaze pipeline, replay, and live mirror behavior, but it is not a replacement for Tobii-backed experiment validity.
 
 ## Important Current Limitations
 

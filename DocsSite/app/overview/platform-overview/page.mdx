@@ -2,6 +2,8 @@
 
 Reading the Reader is a researcher-operated adaptive reading platform. It is built to run controlled reading experiments with Tobii eye tracking, a participant-facing reading surface, a researcher-facing live view, and modular intervention and decision seams that future teams can extend.
 
+The normal experiment path is Tobii-backed. For demos and local frontend development, the platform also supports mouse mode, where participant pointer coordinates are sent as synthetic gaze samples through the same realtime pipeline.
+
 ## Core Idea
 
 The project is not primarily a generic reading app and it is not primarily an AI product.
@@ -9,6 +11,7 @@ The project is not primarily a generic reading app and it is not primarily an AI
 The thesis value is the combination of:
 
 - real hardware-backed reading experiments
+- a demo input mode for exercising the frontend without Tobii hardware
 - a backend-owned authoritative runtime
 - interchangeable decision strategies
 - interchangeable intervention modules
