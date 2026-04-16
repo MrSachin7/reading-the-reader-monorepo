@@ -8,6 +8,7 @@ type MarkdownReaderProps = {
   blocks: TokenizedBlock[];
   showLixScores?: boolean;
   lixDisplayMode?: "inline" | "overlay";
+  visibleSentenceIds?: Set<string> | null;
   /**
    * Per-block typography overrides keyed by `blockId`. When provided, each
    * block's top-level element receives these inline styles, allowing a reader
@@ -53,6 +54,7 @@ function renderToken(token: Token) {
 function renderRun(
   run: TokenRun,
   index: number,
+  visibleSentenceIds?: Set<string> | null,
   sentenceStyleOverrides?: Map<string, CSSProperties>
 ) {
   const sentenceGroups = run.tokens.reduce<Array<{ sentenceId: string | null; tokens: Token[] }>>(
@@ -72,7 +74,15 @@ function renderRun(
     []
   )
 
-  const content = sentenceGroups.map((group, groupIndex) => {
+  const filteredGroups = visibleSentenceIds
+    ? sentenceGroups.filter((group) => group.sentenceId && visibleSentenceIds.has(group.sentenceId))
+    : sentenceGroups
+
+  if (filteredGroups.length === 0) {
+    return null
+  }
+
+  const content = filteredGroups.map((group, groupIndex) => {
     const tokens = group.tokens.map(renderToken)
     if (!group.sentenceId) {
       return <Fragment key={`run-${index}-group-${groupIndex}`}>{tokens}</Fragment>
@@ -104,6 +114,7 @@ export function MarkdownReader({
   blocks,
   showLixScores = true,
   lixDisplayMode = "inline",
+  visibleSentenceIds = null,
   blockStyleOverrides,
   sentenceStyleOverrides,
 }: MarkdownReaderProps) {
@@ -121,64 +132,111 @@ export function MarkdownReader({
       {blocks.map((block) => {
         switch (block.type) {
           case "h1":
-            return (
-              <h1
-                key={block.blockId}
-                data-block-id={block.blockId}
-                className="mb-8 text-3xl leading-tight font-bold"
-                style={styleFor(block.blockId)}
-              >
-                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
-              </h1>
-            );
+            {
+              const content = block.runs
+                .map((run, index) => renderRun(run, index, visibleSentenceIds, sentenceStyleOverrides))
+                .filter(Boolean)
+              if (content.length === 0) {
+                return null
+              }
+
+              return (
+                <h1
+                  key={block.blockId}
+                  data-block-id={block.blockId}
+                  className="mb-8 text-3xl leading-tight font-bold"
+                  style={styleFor(block.blockId)}
+                >
+                  {content}
+                </h1>
+              );
+            }
           case "h2":
-            return (
-              <h2
-                key={block.blockId}
-                data-block-id={block.blockId}
-                className="mt-10 mb-4 text-2xl leading-tight font-semibold"
-                style={styleFor(block.blockId)}
-              >
-                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
-              </h2>
-            );
+            {
+              const content = block.runs
+                .map((run, index) => renderRun(run, index, visibleSentenceIds, sentenceStyleOverrides))
+                .filter(Boolean)
+              if (content.length === 0) {
+                return null
+              }
+
+              return (
+                <h2
+                  key={block.blockId}
+                  data-block-id={block.blockId}
+                  className="mt-10 mb-4 text-2xl leading-tight font-semibold"
+                  style={styleFor(block.blockId)}
+                >
+                  {content}
+                </h2>
+              );
+            }
           case "paragraph":
-            return (
-              <p
-                key={block.blockId}
-                data-block-id={block.blockId}
-                className="relative mb-5"
-                style={styleFor(block.blockId, { lineHeight: "inherit" })}
-              >
-                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
-                {showLixScores && block.lixScore !== null ? (
-                  lixDisplayMode === "overlay" ? (
-                    <span className="pointer-events-none absolute right-0 bottom-0 z-10 inline-flex rounded-full border border-border/50 bg-background/72 px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-[0.01em] text-muted-foreground shadow-[0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-[1px]">
-                      {formatLixScore(block.lixScore)}
-                    </span>
-                  ) : (
-                    <span className="ml-3 inline-flex rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs font-medium tracking-[0.02em] text-muted-foreground">
-                      LIX {formatLixScore(block.lixScore)}
-                    </span>
-                  )
-                ) : null}
-              </p>
-            );
+            {
+              const content = block.runs
+                .map((run, index) => renderRun(run, index, visibleSentenceIds, sentenceStyleOverrides))
+                .filter(Boolean)
+              if (content.length === 0) {
+                return null
+              }
+
+              return (
+                <p
+                  key={block.blockId}
+                  data-block-id={block.blockId}
+                  className="relative mb-5"
+                  style={styleFor(block.blockId, { lineHeight: "inherit" })}
+                >
+                  {content}
+                  {showLixScores && block.lixScore !== null ? (
+                    lixDisplayMode === "overlay" ? (
+                      <span className="pointer-events-none absolute right-0 bottom-0 z-10 inline-flex rounded-full border border-border/50 bg-background/72 px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-[0.01em] text-muted-foreground shadow-[0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-[1px]">
+                        {formatLixScore(block.lixScore)}
+                      </span>
+                    ) : (
+                      <span className="ml-3 inline-flex rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-xs font-medium tracking-[0.02em] text-muted-foreground">
+                        LIX {formatLixScore(block.lixScore)}
+                      </span>
+                    )
+                  ) : null}
+                </p>
+              );
+            }
           case "bullet_list":
-            return (
-              <ul
-                key={block.blockId}
-                data-block-id={block.blockId}
-                className="mb-6 list-disc space-y-2 pl-8"
-                style={styleFor(block.blockId, { lineHeight: "inherit" })}
-              >
-                {block.items.map((item, itemIndex) => (
-                  <li key={`${block.blockId}:item:${itemIndex}`}>
-                    {item.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
-                  </li>
-                ))}
-              </ul>
-            );
+            {
+              const items = block.items
+                .map((item, itemIndex) => {
+                  const content = item.runs
+                    .map((run, index) => renderRun(run, index, visibleSentenceIds, sentenceStyleOverrides))
+                    .filter(Boolean)
+
+                  if (content.length === 0) {
+                    return null
+                  }
+
+                  return (
+                    <li key={`${block.blockId}:item:${itemIndex}`}>
+                      {content}
+                    </li>
+                  )
+                })
+                .filter(Boolean)
+
+              if (items.length === 0) {
+                return null
+              }
+
+              return (
+                <ul
+                  key={block.blockId}
+                  data-block-id={block.blockId}
+                  className="mb-6 list-disc space-y-2 pl-8"
+                  style={styleFor(block.blockId, { lineHeight: "inherit" })}
+                >
+                  {items}
+                </ul>
+              );
+            }
           default:
             return null;
         }

@@ -48,6 +48,7 @@ export function ReplayReaderColumn({
           showLixScores={readerOptions.showLixScores}
           viewportActivePageIndex={readingSession.participantViewport.activePageIndex}
           viewportPageCount={readingSession.participantViewport.pageCount}
+          viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
           remoteFocus={{
             isInsideReadingArea: readingSession.focus.isInsideReadingArea,
             normalizedContentX: readingSession.focus.normalizedContentX,
@@ -59,7 +60,6 @@ export function ReplayReaderColumn({
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}
           initialPresentation={readingSession.initialPresentation ?? null}
-          interventionEvents={readingSession.recentInterventions}
           frameClassName="mx-auto rounded-none border-0 shadow-none"
           frameStyle={{
             width: "100%",

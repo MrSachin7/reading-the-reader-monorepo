@@ -225,7 +225,6 @@ export function ReadingPage() {
         onContextPreservationChange={handleContextPreservationChange}
         latestIntervention={liveReadingSession?.latestIntervention ?? null}
         initialPresentation={liveReadingSession?.initialPresentation ?? null}
-        interventionEvents={liveReadingSession?.recentInterventions ?? []}
       />
       {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
         <FullscreenGate

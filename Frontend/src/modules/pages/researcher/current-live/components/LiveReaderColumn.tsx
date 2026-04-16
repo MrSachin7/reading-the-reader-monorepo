@@ -202,6 +202,7 @@ export function LiveReaderColumn({
                     useCompactLixOverlay
                     viewportActivePageIndex={readingSession.participantViewport.activePageIndex}
                     viewportPageCount={readingSession.participantViewport.pageCount}
+                    viewportScrollTopPx={readingSession.participantViewport.scrollTopPx}
                     viewportWidthPx={participantViewportWidth}
                     viewportHeightPx={participantViewportHeight}
                     remoteFocus={{
@@ -218,7 +219,6 @@ export function LiveReaderColumn({
                     embedded
                     latestIntervention={readingSession.latestIntervention ?? null}
                     initialPresentation={readingSession.initialPresentation ?? null}
-                    interventionEvents={readingSession.recentInterventions}
                     frameClassName="h-full rounded-none border-0 shadow-none"
                     frameStyle={{
                       width: `${participantViewportWidth}px`,
@@ -234,7 +234,7 @@ export function LiveReaderColumn({
             )}
           </div>
         ) : (
-          <div className={cn("h-full overflow-auto", mirrorTrustState.kind === "approximate" && "pt-28")}>
+          <div className={cn("h-full overflow-hidden", mirrorTrustState.kind === "approximate" && "pt-28")}>
             <ReaderShell
               key={content.documentId}
               docId={content.documentId}
@@ -256,6 +256,9 @@ export function LiveReaderColumn({
               viewportPageCount={
                 followParticipant ? readingSession.participantViewport.pageCount : null
               }
+              viewportScrollTopPx={
+                followParticipant ? readingSession.participantViewport.scrollTopPx : null
+              }
               remoteFocus={{
                 isInsideReadingArea: readingSession.focus.isInsideReadingArea,
                 normalizedContentX: readingSession.focus.normalizedContentX,
@@ -270,7 +273,6 @@ export function LiveReaderColumn({
               embedded
               latestIntervention={readingSession.latestIntervention ?? null}
               initialPresentation={readingSession.initialPresentation ?? null}
-              interventionEvents={readingSession.recentInterventions}
               frameClassName="mx-auto rounded-none border-0 shadow-none"
               frameStyle={{
                 width: "100%",

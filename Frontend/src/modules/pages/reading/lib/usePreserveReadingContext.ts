@@ -15,9 +15,6 @@ type UsePreserveReadingContextParams = {
   contentKey: string
   interventionKey: string
   latestIntervention?: InterventionEventSnapshot | null
-  currentPageIndex?: number
-  pageWidthPx?: number
-  setActivePageIndex?: (pageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => void
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void
 }
 
@@ -319,21 +316,6 @@ function highlightAnchor(elements: HTMLElement[]) {
   }
 }
 
-function resolveAnchorPageIndex(
-  primaryElement: HTMLElement,
-  containerRect: DOMRect,
-  currentPageIndex: number,
-  pageWidthPx: number
-) {
-  if (!Number.isFinite(pageWidthPx) || pageWidthPx <= 0) {
-    return currentPageIndex
-  }
-
-  const rect = primaryElement.getBoundingClientRect()
-  const pageDelta = Math.round((rect.left - containerRect.left) / pageWidthPx)
-  return Math.max(0, currentPageIndex + pageDelta)
-}
-
 export function usePreserveReadingContext({
   containerRef,
   contentRef,
@@ -342,9 +324,6 @@ export function usePreserveReadingContext({
   contentKey,
   interventionKey,
   latestIntervention = null,
-  currentPageIndex = 0,
-  pageWidthPx,
-  setActivePageIndex,
   onContextPreservationChange,
 }: UsePreserveReadingContextParams) {
   const currentSignature =
@@ -559,27 +538,6 @@ export function usePreserveReadingContext({
         })
       }
 
-      if (setActivePageIndex && pageWidthPx && pageWidthPx > 0) {
-        const containerRect = getContainerRect(container)
-        const targetPageIndex = resolveAnchorPageIndex(
-          located.primaryElement,
-          containerRect,
-          currentPageIndex,
-          pageWidthPx
-        )
-        const viewportDeltaPx = Math.abs(targetPageIndex - currentPageIndex) * pageWidthPx
-
-        setActivePageIndex(targetPageIndex, { persist: false, markTurn: false })
-        window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            if (!cancelled) {
-              applyFinalAlignment(viewportDeltaPx)
-            }
-          })
-        })
-        return
-      }
-
       applyFinalAlignment(null)
     }
 
@@ -601,10 +559,7 @@ export function usePreserveReadingContext({
     interventionKey,
     currentSignature,
     latestIntervention,
-    currentPageIndex,
     onContextPreservationChange,
-    pageWidthPx,
-    setActivePageIndex,
   ])
 
   useEffect(() => {

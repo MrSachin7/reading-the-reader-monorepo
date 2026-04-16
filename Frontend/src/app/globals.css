@@ -269,6 +269,34 @@
   --sidebar-ring: oklch(0.67 0.05 75);
 }
 
+.reader-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.reader-scrollbar::-webkit-scrollbar {
+  width: 0.8rem;
+}
+
+.reader-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.reader-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.reader-scrollbar[data-scrollbar-visible="true"] {
+  scrollbar-color: color-mix(in oklch, var(--foreground) 24%, transparent) transparent;
+}
+
+.reader-scrollbar[data-scrollbar-visible="true"]::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 24%, transparent);
+}
+
 :root[data-palette="high-contrast"] {
   --background: oklch(1 0 0);
   --foreground: oklch(0 0 0);
