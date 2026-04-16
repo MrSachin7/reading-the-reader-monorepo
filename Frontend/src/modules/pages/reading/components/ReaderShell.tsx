@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { ReadingToolbar } from "@/modules/pages/reading/components/ReadingToolba
 import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/readingMetrics";
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation";
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
-import { deriveReadingSegments, type ReadingSegment } from "@/modules/pages/reading/lib/reading-segments";
 import type { InterventionEventSnapshot, ReadingPresentationSnapshot } from "@/lib/experiment-session";
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
@@ -25,7 +24,6 @@ import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdow
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
 import type {
   ReadingContextPreservationSnapshot,
-  ReadingInterventionCommitBoundary,
   ReadingGazeObservationSnapshot,
 } from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
@@ -64,6 +62,7 @@ type ReaderShellProps = {
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
   viewportActivePageIndex?: number | null;
   viewportPageCount?: number | null;
+  viewportScrollTopPx?: number | null;
   viewportWidthPx?: number | null;
   viewportHeightPx?: number | null;
   remoteFocus?: {
@@ -82,9 +81,8 @@ type ReaderShellProps = {
   frameClassName?: string;
   frameStyle?: CSSProperties;
   embedded?: boolean;
-  interventionAppliedAtUnixMs?: number | null;
-  interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null;
-  interventionWaitDurationMs?: number | null;
+  embeddedSurfaceStyle?: "card" | "bare";
+  latestIntervention?: InterventionEventSnapshot | null;
   /**
    * Initial presentation snapshot (before any interventions were applied). Used
    * together with `interventionEvents` to derive the frozen-segment timeline.
@@ -98,7 +96,6 @@ type ReaderShellProps = {
    * is replaced by `presentation` (so the live segment always reflects the
    * current researcher-facing typography).
    */
-  interventionEvents?: InterventionEventSnapshot[];
 };
 
 const FONT_FAMILY_STYLES = {
@@ -109,8 +106,10 @@ const FONT_FAMILY_STYLES = {
   merriweather: "var(--font-merriweather)",
 } as const;
 
-const PAGE_STORAGE_PREFIX = "reading:lastPage:";
 const PAGINATION_OVERLAY_HEIGHT_PX = 56;
+const EMPTY_VISIBLE_SENTENCE_IDS = new Set<string>();
+const SCROLLBAR_IDLE_HIDE_MS = 900;
+const SCROLL_OVERFLOW_TOLERANCE_PX = 2;
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -135,10 +134,39 @@ function clampPageIndex(nextPageIndex: number, pageCount: number) {
   return Math.max(0, Math.min(Math.round(nextPageIndex), Math.max(pageCount - 1, 0)));
 }
 
-function readStoredPageIndex(docId: string) {
-  const raw = window.localStorage.getItem(`${PAGE_STORAGE_PREFIX}${docId}`);
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+function collectSentenceIdsFromBlocks(blocks: ReturnType<typeof tokenizeDocument>) {
+  const sentenceIds = new Set<string>()
+
+  for (const block of blocks) {
+    switch (block.type) {
+      case "paragraph":
+      case "h1":
+      case "h2":
+        for (const run of block.runs) {
+          for (const token of run.tokens) {
+            if (token.sentenceId) {
+              sentenceIds.add(token.sentenceId)
+            }
+          }
+        }
+        break
+      case "bullet_list":
+        for (const item of block.items) {
+          for (const run of item.runs) {
+            for (const token of run.tokens) {
+              if (token.sentenceId) {
+                sentenceIds.add(token.sentenceId)
+              }
+            }
+          }
+        }
+        break
+      default:
+        break
+    }
+  }
+
+  return sentenceIds
 }
 
 export function ReaderShell({
@@ -163,6 +191,7 @@ export function ReaderShell({
   onContextPreservationChange,
   viewportActivePageIndex = null,
   viewportPageCount = null,
+  viewportScrollTopPx = null,
   viewportWidthPx = null,
   viewportHeightPx = null,
   remoteFocus = null,
@@ -174,31 +203,34 @@ export function ReaderShell({
   frameClassName,
   frameStyle,
   embedded = false,
-  interventionAppliedAtUnixMs = null,
-  interventionAppliedBoundary = null,
-  interventionWaitDurationMs = null,
+  embeddedSurfaceStyle = "card",
+  latestIntervention = null,
   initialPresentation = null,
-  interventionEvents,
 }: ReaderShellProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const measurementRef = useRef<HTMLDivElement>(null);
   const escHoldTimerRef = useRef<number | null>(null);
-  const wheelLockRef = useRef(false);
-  const didRestoreStoredPageRef = useRef(false);
+  const scrollbarHideTimerRef = useRef<number | null>(null);
   const lastPageTurnAtRef = useRef<number | null>(null);
+  const pageScrollTopByIndexRef = useRef(new Map<number, number>());
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isScrollbarVisible, setIsScrollbarVisible] = useState(false);
+  const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
+  const [measuredPageCount, setMeasuredPageCount] = useState(1);
   const [pageWidthPx, setPageWidthPx] = useState(Math.max(presentation.lineWidthPx, 1));
   const [pageHeightPx, setPageHeightPx] = useState(0);
+  const [currentPageScrollTop, setCurrentPageScrollTop] = useState(0);
+  const [sentencePageAssignments, setSentencePageAssignments] = useState<Map<string, number>>(new Map());
   const isControlledPage = viewportActivePageIndex !== null;
   const hasControlledViewportSize =
     (viewportWidthPx ?? 0) > 0 && (viewportHeightPx ?? 0) > 0;
   const displayPageCount =
     isControlledPage && viewportPageCount !== null
       ? Math.max(viewportPageCount, 1)
-      : Math.max(pageCount, 1);
+      : Math.max(measuredPageCount, 1);
 
   useGazeTokenHighlight({
     containerRef,
@@ -257,60 +289,86 @@ export function ReaderShell({
       presentation.editableByExperimenter,
     ]
   );
-
-  const readingSegments = useMemo<ReadingSegment[]>(
-    () =>
-      deriveReadingSegments({
-        tokenizedBlocks,
-        initialPresentation: initialPresentation ?? livePresentationSnapshot,
-        livePresentation: livePresentationSnapshot,
-        interventionEvents: interventionEvents ?? [],
-      }),
-    [tokenizedBlocks, initialPresentation, livePresentationSnapshot, interventionEvents]
-  );
-
-  const blockStyleOverrides = useMemo(() => {
+  const baselinePresentationSnapshot = initialPresentation ?? livePresentationSnapshot;
+  const liveBlockStyleOverrides = useMemo(() => {
     const map = new Map<string, CSSProperties>();
-    for (const segment of readingSegments) {
-      const segmentStyle: CSSProperties = {
-        fontFamily: getFontFamilyStyle(segment.presentation.fontFamily),
-        fontSize: `${segment.presentation.fontSizePx}px`,
-        lineHeight: segment.presentation.lineHeight,
-        letterSpacing: `${segment.presentation.letterSpacingEm}em`,
-      };
-      for (const block of segment.blocks) {
-        map.set(block.blockId, segmentStyle);
-      }
-    }
-    return map;
-  }, [readingSegments]);
+    const style: CSSProperties = {
+      fontFamily: getFontFamilyStyle(presentation.fontFamily),
+      fontSize: `${presentation.fontSizePx}px`,
+      lineHeight: presentation.lineHeight,
+      letterSpacing: `${presentation.letterSpacingEm}em`,
+    };
 
-  const words = useMemo(() => countWords(markdown), [markdown]);
-  const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
+    for (const block of tokenizedBlocks) {
+      map.set(block.blockId, style);
+    }
+
+    return map;
+  }, [
+    presentation.fontFamily,
+    presentation.fontSizePx,
+    presentation.lineHeight,
+    presentation.letterSpacingEm,
+    tokenizedBlocks,
+  ]);
+  const baselineBlockStyleOverrides = useMemo(() => {
+    const map = new Map<string, CSSProperties>();
+    const style: CSSProperties = {
+      fontFamily: getFontFamilyStyle(baselinePresentationSnapshot.fontFamily),
+      fontSize: `${baselinePresentationSnapshot.fontSizePx}px`,
+      lineHeight: baselinePresentationSnapshot.lineHeight,
+      letterSpacing: `${baselinePresentationSnapshot.letterSpacingEm}em`,
+    };
+
+    for (const block of tokenizedBlocks) {
+      map.set(block.blockId, style);
+    }
+
+    return map;
+  }, [
+    baselinePresentationSnapshot.fontFamily,
+    baselinePresentationSnapshot.fontSizePx,
+    baselinePresentationSnapshot.lineHeight,
+    baselinePresentationSnapshot.letterSpacingEm,
+    tokenizedBlocks,
+  ]);
   const effectivePageIndex = clampPageIndex(
     isControlledPage ? viewportActivePageIndex : pageIndex,
     displayPageCount
   );
+  const arePageAssignmentsReady = sentencePageAssignments.size > 0;
+  const visibleSentenceIds = useMemo(() => {
+    if (!arePageAssignmentsReady) {
+      return EMPTY_VISIBLE_SENTENCE_IDS;
+    }
+
+    const sentenceIds = new Set<string>();
+    for (const [sentenceId, assignedPageIndex] of sentencePageAssignments) {
+      if (assignedPageIndex === effectivePageIndex) {
+        sentenceIds.add(sentenceId);
+      }
+    }
+
+    return sentenceIds;
+  }, [arePageAssignmentsReady, effectivePageIndex, sentencePageAssignments]);
+
+  const words = useMemo(() => countWords(markdown), [markdown]);
+  const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
 
   const setActivePageIndex = useCallback(
     (nextPageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => {
       const next = clampPageIndex(nextPageIndex, displayPageCount);
-      const persist = options?.persist ?? !isControlledPage;
       const markTurn = options?.markTurn ?? !isControlledPage;
 
       if (!isControlledPage) {
         setPageIndex((current) => (current === next ? current : next));
       }
 
-      if (persist) {
-        window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(next));
-      }
-
       if (markTurn && next !== effectivePageIndex) {
         lastPageTurnAtRef.current = Date.now();
       }
     },
-    [displayPageCount, docId, effectivePageIndex, isControlledPage]
+    [displayPageCount, effectivePageIndex, isControlledPage]
   );
 
   const resetToTop = useCallback(() => {
@@ -324,14 +382,42 @@ export function ReaderShell({
     highlightContext,
     contentKey: `${docId}:${markdown}`,
     interventionKey: `${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}:${presentation.fontFamily}`,
-    interventionAppliedAtUnixMs,
-    interventionAppliedBoundary,
-    interventionWaitDurationMs,
-    currentPageIndex: effectivePageIndex,
-    pageWidthPx,
-    setActivePageIndex,
+    latestIntervention,
     onContextPreservationChange,
   });
+
+  useEffect(() => {
+    if (!preserveContextOnIntervention) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      captureContextAnchor();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [captureContextAnchor, effectivePageIndex, preserveContextOnIntervention]);
+
+  useEffect(() => {
+    if (isControlledPage) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setPageIndex(0);
+      setCurrentPageScrollTop(0);
+      setSentencePageAssignments(new Map());
+      setMeasuredPageCount(1);
+    });
+    pageScrollTopByIndexRef.current.clear();
+    lastPageTurnAtRef.current = null;
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [docId, isControlledPage, markdown]);
 
   const updatePresentation = useCallback(
     (patch: Partial<ReadingPresentationSettings>) => {
@@ -348,19 +434,8 @@ export function ReaderShell({
   const canAdjustPresentation = Boolean(onPresentationChange) && presentation.editableByExperimenter;
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
-    container.dispatchEvent(new Event("scroll"));
-  }, [effectivePageIndex, pageWidthPx, pageHeightPx]);
-
-  useEffect(() => {
     const host = hostRef.current;
-    const container = containerRef.current;
-    const content = contentRef.current;
-    if (!host || !container || !content) {
+    if (!host) {
       return;
     }
 
@@ -373,29 +448,9 @@ export function ReaderShell({
       const nextHeight = hasControlledViewportSize
         ? Math.max(1, Math.round(viewportHeightPx ?? 0))
         : Math.max(host.clientHeight, 1);
-      const rawPageCount = nextWidth <= 0 ? 1 : Math.ceil(content.scrollWidth / nextWidth);
-      const normalizedPageCount =
-        isControlledPage && viewportPageCount !== null
-          ? Math.max(viewportPageCount, 1)
-          : Math.max(rawPageCount, 1);
 
       setPageWidthPx((current) => (current === nextWidth ? current : nextWidth));
       setPageHeightPx((current) => (current === nextHeight ? current : nextHeight));
-      setPageCount((current) => (current === normalizedPageCount ? current : normalizedPageCount));
-
-      const clampedPageIndex = clampPageIndex(
-        isControlledPage ? viewportActivePageIndex : readStoredPageIndex(docId),
-        normalizedPageCount
-      );
-
-      if (isControlledPage) {
-        setPageIndex(clampedPageIndex);
-      } else if (!didRestoreStoredPageRef.current) {
-        didRestoreStoredPageRef.current = true;
-        setPageIndex(clampedPageIndex);
-      } else {
-        setPageIndex((current) => clampPageIndex(current, normalizedPageCount));
-      }
     };
 
     const scheduleMeasure = () => {
@@ -413,8 +468,6 @@ export function ReaderShell({
 
     const resizeObserver = new ResizeObserver(scheduleMeasure);
     resizeObserver.observe(host);
-    resizeObserver.observe(container);
-    resizeObserver.observe(content);
     window.addEventListener("resize", scheduleMeasure);
 
     return () => {
@@ -426,23 +479,186 @@ export function ReaderShell({
       window.removeEventListener("resize", scheduleMeasure);
     };
   }, [
-    docId,
     hasControlledViewportSize,
-    isControlledPage,
-    pageCount,
     presentation.lineWidthPx,
-    viewportActivePageIndex,
     viewportHeightPx,
-    viewportPageCount,
     viewportWidthPx,
   ]);
 
   useEffect(() => {
-    const nextEffectivePage = clampPageIndex(effectivePageIndex, displayPageCount);
-    if (!isControlledPage) {
-      window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(nextEffectivePage));
+    const measurement = measurementRef.current;
+    if (!measurement || pageWidthPx <= 0 || pageHeightPx <= 0) {
+      return;
     }
-  }, [displayPageCount, docId, effectivePageIndex, isControlledPage]);
+
+    let frameId = 0;
+
+    const measureAssignments = () => {
+      const sentenceElements = Array.from(
+        measurement.querySelectorAll<HTMLElement>("[data-sentence-id]:not([data-token-id])")
+      );
+      const nextAssignments = new Map<string, number>();
+      const measurementRect = measurement.getBoundingClientRect();
+      let highestPageIndex = 0;
+
+      for (const element of sentenceElements) {
+        const sentenceId = element.dataset.sentenceId;
+        if (!sentenceId) {
+          continue;
+        }
+
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const rawPageIndex = Math.floor((centerX - measurementRect.left) / Math.max(pageWidthPx, 1));
+        const pageAssignment = Math.max(rawPageIndex, 0);
+        nextAssignments.set(sentenceId, pageAssignment);
+        highestPageIndex = Math.max(highestPageIndex, pageAssignment);
+      }
+
+      if (nextAssignments.size === 0) {
+        const fallbackSentenceIds = collectSentenceIdsFromBlocks(tokenizedBlocks);
+        for (const sentenceId of fallbackSentenceIds) {
+          nextAssignments.set(sentenceId, 0);
+        }
+      }
+
+      setSentencePageAssignments(nextAssignments);
+      setMeasuredPageCount(Math.max(highestPageIndex + 1, 1));
+    };
+
+    frameId = window.requestAnimationFrame(() => {
+      frameId = window.requestAnimationFrame(measureAssignments);
+    });
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [
+    baselinePresentationSnapshot.fontFamily,
+    baselinePresentationSnapshot.fontSizePx,
+    baselinePresentationSnapshot.lineHeight,
+    baselinePresentationSnapshot.letterSpacingEm,
+    docId,
+    markdown,
+    pageHeightPx,
+    pageWidthPx,
+    tokenizedBlocks,
+  ]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const restoreScrollTop =
+      isControlledPage && viewportScrollTopPx !== null
+        ? Math.max(viewportScrollTopPx, 0)
+        : pageScrollTopByIndexRef.current.get(effectivePageIndex) ?? 0;
+
+    const frameId = window.requestAnimationFrame(() => {
+      container.scrollTop = restoreScrollTop;
+      setCurrentPageScrollTop(container.scrollTop);
+      container.dispatchEvent(new Event("scroll"));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [effectivePageIndex, isControlledPage, viewportScrollTopPx]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const measureOverflow = () => {
+      const nextHasOverflow =
+        container.scrollHeight - container.clientHeight > SCROLL_OVERFLOW_TOLERANCE_PX;
+      setHasVerticalOverflow((current) => (current === nextHasOverflow ? current : nextHasOverflow));
+      if (!nextHasOverflow) {
+        setIsScrollbarVisible(false);
+      }
+    };
+
+    const scheduleMeasure = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        measureOverflow();
+      });
+    };
+
+    measureOverflow();
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    resizeObserver.observe(container);
+    resizeObserver.observe(content);
+    container.addEventListener("scroll", scheduleMeasure, { passive: true });
+    window.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+      resizeObserver.disconnect();
+      container.removeEventListener("scroll", scheduleMeasure);
+      window.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [
+    effectivePageIndex,
+    pageHeightPx,
+    pageWidthPx,
+    presentation.fontSizePx,
+    presentation.lineHeight,
+    presentation.letterSpacingEm,
+    visibleSentenceIds,
+  ]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const handleScroll = () => {
+      const nextScrollTop = Math.max(container.scrollTop, 0);
+      pageScrollTopByIndexRef.current.set(effectivePageIndex, nextScrollTop);
+      setCurrentPageScrollTop(nextScrollTop);
+    };
+
+    const scheduleScroll = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        handleScroll();
+      });
+    };
+
+    handleScroll();
+    container.addEventListener("scroll", scheduleScroll, { passive: true });
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+      container.removeEventListener("scroll", scheduleScroll);
+    };
+  }, [effectivePageIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -456,11 +672,17 @@ export function ReaderShell({
       const normalizedPageIndex = clampPageIndex(effectivePageIndex, displayPageCount);
       onViewportMetricsChange({
         scrollProgress:
-          displayPageCount <= 1 ? 0 : normalizedPageIndex / Math.max(displayPageCount - 1, 1),
-        scrollTopPx: normalizedPageIndex * Math.max(pageHeightPx, 0),
+          displayPageCount <= 1
+            ? 0
+            : (normalizedPageIndex +
+                (container.scrollHeight > container.clientHeight
+                  ? container.scrollTop / Math.max(container.scrollHeight - container.clientHeight, 1)
+                  : 0)) /
+              Math.max(displayPageCount - 1, 1),
+        scrollTopPx: Math.max(container.scrollTop, 0),
         viewportWidthPx: Math.max(pageWidthPx, 0),
         viewportHeightPx: Math.max(pageHeightPx, 0),
-        contentHeightPx: Math.max(displayPageCount * pageHeightPx, pageHeightPx),
+        contentHeightPx: Math.max(container.scrollHeight, pageHeightPx),
         contentWidthPx: Math.max(pageWidthPx, 0),
         activePageIndex: normalizedPageIndex,
         pageCount: displayPageCount,
@@ -486,6 +708,7 @@ export function ReaderShell({
     if (contentRef.current) {
       resizeObserver.observe(contentRef.current);
     }
+    container.addEventListener("scroll", scheduleMetrics, { passive: true });
     window.addEventListener("resize", scheduleMetrics);
 
     return () => {
@@ -494,9 +717,10 @@ export function ReaderShell({
       }
 
       resizeObserver.disconnect();
+      container.removeEventListener("scroll", scheduleMetrics);
       window.removeEventListener("resize", scheduleMetrics);
     };
-  }, [displayPageCount, effectivePageIndex, onViewportMetricsChange, pageHeightPx, pageWidthPx]);
+  }, [displayPageCount, effectivePageIndex, onViewportMetricsChange, pageHeightPx, pageWidthPx, currentPageScrollTop]);
 
   const moveByPages = useCallback(
     (delta: number, options?: { persist?: boolean; markTurn?: boolean }) => {
@@ -607,6 +831,24 @@ export function ReaderShell({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onKeyDown]);
 
+  const revealScrollbarTemporarily = useCallback(() => {
+    if (!hasVerticalOverflow) {
+      setIsScrollbarVisible(false);
+      return;
+    }
+
+    setIsScrollbarVisible(true);
+
+    if (scrollbarHideTimerRef.current !== null) {
+      window.clearTimeout(scrollbarHideTimerRef.current);
+    }
+
+    scrollbarHideTimerRef.current = window.setTimeout(() => {
+      setIsScrollbarVisible(false);
+      scrollbarHideTimerRef.current = null;
+    }, SCROLLBAR_IDLE_HIDE_MS);
+  }, [hasVerticalOverflow]);
+
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key !== "Escape") {
@@ -630,32 +872,14 @@ export function ReaderShell({
     };
   }, []);
 
-  const handleWheel = useCallback(
-    (event: WheelEvent<HTMLDivElement>) => {
-      if (isControlledPage || displayPageCount <= 1) {
-        return;
+  useEffect(() => {
+    return () => {
+      if (scrollbarHideTimerRef.current !== null) {
+        window.clearTimeout(scrollbarHideTimerRef.current);
+        scrollbarHideTimerRef.current = null;
       }
-
-      const verticalIntent = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
-      const delta = verticalIntent ? event.deltaY : event.deltaX;
-      if (Math.abs(delta) < 18) {
-        return;
-      }
-
-      event.preventDefault();
-      if (wheelLockRef.current) {
-        return;
-      }
-
-      wheelLockRef.current = true;
-      moveByPages(delta > 0 ? 1 : -1);
-
-      window.setTimeout(() => {
-        wheelLockRef.current = false;
-      }, 220);
-    },
-    [displayPageCount, isControlledPage, moveByPages]
-  );
+    };
+  }, []);
 
   const canGoPreviousPage = !isControlledPage && effectivePageIndex > 0;
   const canGoNextPage = !isControlledPage && effectivePageIndex < displayPageCount - 1;
@@ -736,7 +960,9 @@ export function ReaderShell({
           isFocusMode
             ? "mx-auto flex h-screen w-full max-w-6xl flex-col overflow-hidden bg-background"
             : embedded
-              ? "flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm"
+              ? embeddedSurfaceStyle === "bare"
+                ? "flex h-full w-full flex-col overflow-hidden bg-transparent"
+                : "flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm"
               : "mx-auto flex h-[calc(100vh-2.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border bg-card shadow-sm md:h-[calc(100vh-4rem)]",
           frameClassName
         )}
@@ -782,47 +1008,86 @@ export function ReaderShell({
         >
           <div
             ref={containerRef}
-            className="relative h-full w-full overflow-hidden rounded-[1.5rem] bg-background/40"
+            className={cn(
+              "reader-scrollbar relative h-full w-full overflow-y-auto overflow-x-hidden",
+              embeddedSurfaceStyle === "bare" ? "bg-transparent" : "bg-background/40"
+            )}
+            data-scrollbar-enabled={hasVerticalOverflow ? "true" : "false"}
+            data-scrollbar-visible={hasVerticalOverflow && isScrollbarVisible ? "true" : "false"}
             style={{
-              width: `${pageWidthPx}px`,
+              width: "100%",
               maxWidth: "100%",
             }}
-            onWheel={handleWheel}
+            onPointerEnter={revealScrollbarTemporarily}
+            onScroll={revealScrollbarTemporarily}
           >
-            {isControlledPage ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
-                <div className="pointer-events-auto">{paginationFooter}</div>
-              </div>
-            ) : null}
-
             {remoteFocusMarker}
 
             <div
               ref={contentRef}
               data-reader-content="true"
-              className="relative h-full will-change-transform"
+              className="relative min-h-full"
               style={{
                 width: `${pageWidthPx}px`,
-                height: `${Math.max(pageHeightPx, 1)}px`,
-                paddingBottom: `${PAGINATION_OVERLAY_HEIGHT_PX}px`,
-                columnWidth: `${pageWidthPx}px`,
-                columnGap: "0px",
-                columnFill: "auto",
-                transform: `translate3d(-${effectivePageIndex * pageWidthPx}px, 0, 0)`,
-                transition: isControlledPage ? "none" : "transform 220ms ease-out",
+                maxWidth: "100%",
+                marginInline: "auto",
+                minHeight: `${Math.max(pageHeightPx, 1)}px`,
+                paddingBottom: "1.5rem",
+                visibility: arePageAssignmentsReady ? "visible" : "hidden",
+                fontFamily: getFontFamilyStyle(presentation.fontFamily),
+                fontSize: `${presentation.fontSizePx}px`,
+                lineHeight: presentation.lineHeight,
+                letterSpacing: `${presentation.letterSpacingEm}em`,
               }}
             >
               <MarkdownReader
                 blocks={tokenizedBlocks}
                 showLixScores={showLixScores}
                 lixDisplayMode={useCompactLixOverlay ? "overlay" : "inline"}
-                blockStyleOverrides={blockStyleOverrides}
+                visibleSentenceIds={visibleSentenceIds}
+                blockStyleOverrides={liveBlockStyleOverrides}
               />
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
-              <div className="pointer-events-auto">{paginationFooter}</div>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 -z-10 opacity-0"
+              style={{
+                width: `${pageWidthPx}px`,
+                height: `${Math.max(pageHeightPx, 1)}px`,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                ref={measurementRef}
+                className="relative h-full"
+                style={{
+                  width: `${pageWidthPx}px`,
+                  height: `${Math.max(pageHeightPx, 1)}px`,
+                  columnWidth: `${pageWidthPx}px`,
+                  columnGap: "0px",
+                  columnFill: "auto",
+                  fontFamily: getFontFamilyStyle(baselinePresentationSnapshot.fontFamily),
+                  fontSize: `${baselinePresentationSnapshot.fontSizePx}px`,
+                  lineHeight: baselinePresentationSnapshot.lineHeight,
+                  letterSpacing: `${baselinePresentationSnapshot.letterSpacingEm}em`,
+                }}
+              >
+                <MarkdownReader
+                  blocks={tokenizedBlocks}
+                  showLixScores={false}
+                  blockStyleOverrides={baselineBlockStyleOverrides}
+                />
+              </div>
             </div>
           </div>
+        </div>
+        <div
+          className={cn(
+            "shrink-0",
+            embeddedSurfaceStyle === "bare" ? "bg-transparent" : "border-t border-border/50 bg-background/80"
+          )}
+        >
+          {paginationFooter}
         </div>
       </section>
     </div>

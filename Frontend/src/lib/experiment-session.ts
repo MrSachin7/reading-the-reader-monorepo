@@ -286,10 +286,17 @@ export type ReadingContextPreservationSnapshot = {
   reason: string | null
 }
 
+export type AffectedPresentationProperty =
+  | "font-family"
+  | "font-size"
+  | "line-width"
+  | "line-height"
+  | "letter-spacing"
+
 export type LayoutInterventionGuardrailSnapshot = {
   status: "applied" | "suppressed"
   reason: "cooldown-active" | "change-too-large" | "no-op-layout-change" | null
-  affectedProperties: Array<"font-family" | "font-size" | "line-width" | "line-height" | "letter-spacing">
+  affectedProperties: AffectedPresentationProperty[]
   evaluatedAtUnixMs: number
   cooldownUntilUnixMs: number | null
 }
@@ -306,6 +313,7 @@ export type InterventionEventSnapshot = {
   appliedAppearance: ReaderAppearanceSnapshot
   moduleId: string | null
   parameters: InterventionParameterValues | null
+  affectedPresentationProperties: AffectedPresentationProperty[]
   committedActiveTokenId: string | null
   committedActiveSentenceId: string | null
   committedActiveBlockId: string | null

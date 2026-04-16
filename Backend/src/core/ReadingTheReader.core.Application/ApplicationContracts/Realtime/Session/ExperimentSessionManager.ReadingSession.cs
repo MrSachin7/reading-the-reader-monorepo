@@ -57,6 +57,7 @@ public sealed partial class ExperimentSessionManager
                 LatestLayoutGuardrail = null,
                 AttentionSummary = null,
             };
+            _lastMeaningfulReadingFocus = ReadingFocusSnapshot.Empty;
             _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
             _lastLayoutInterventionAppliedAtUnixMs = 0;
 
@@ -152,6 +153,8 @@ public sealed partial class ExperimentSessionManager
             var appliedPending = TryApplyPendingInterventionForBoundary(
                 _liveReadingSession.Focus,
                 _liveReadingSession.Focus,
+                _lastMeaningfulReadingFocus,
+                _lastMeaningfulReadingFocus,
                 previousViewport,
                 viewport,
                 updatedAtUnixMs);
@@ -203,6 +206,7 @@ public sealed partial class ExperimentSessionManager
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var previousFocus = _liveReadingSession.Focus;
+            var previousMeaningfulFocus = _lastMeaningfulReadingFocus;
             _liveReadingSession = _liveReadingSession with
             {
                 Focus = new ReadingFocusSnapshot(
@@ -216,9 +220,13 @@ public sealed partial class ExperimentSessionManager
             };
 
             focus = _liveReadingSession.Focus.Copy();
+            var currentMeaningfulFocus = SelectMeaningfulReadingFocus(previousMeaningfulFocus, focus);
+            _lastMeaningfulReadingFocus = currentMeaningfulFocus.Copy();
             var appliedPending = TryApplyPendingInterventionForBoundary(
                 previousFocus,
                 focus,
+                previousMeaningfulFocus,
+                currentMeaningfulFocus,
                 _liveReadingSession.ParticipantViewport,
                 _liveReadingSession.ParticipantViewport,
                 updatedAtUnixMs);
@@ -253,6 +261,25 @@ public sealed partial class ExperimentSessionManager
         return focus;
     }
 
+    private static ReadingFocusSnapshot SelectMeaningfulReadingFocus(
+        ReadingFocusSnapshot previousMeaningfulFocus,
+        ReadingFocusSnapshot currentFocus)
+    {
+        if (!currentFocus.IsInsideReadingArea)
+        {
+            return previousMeaningfulFocus.Copy();
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentFocus.ActiveTokenId) ||
+            !string.IsNullOrWhiteSpace(currentFocus.ActiveBlockId) ||
+            !string.IsNullOrWhiteSpace(currentFocus.ActiveSentenceId))
+        {
+            return currentFocus.Copy();
+        }
+
+        return previousMeaningfulFocus.Copy();
+    }
+
     public async ValueTask DisconnectParticipantViewAsync(string connectionId, CancellationToken ct = default)
     {
         ParticipantViewportSnapshot? viewport = null;
@@ -280,6 +307,7 @@ public sealed partial class ExperimentSessionManager
                         UpdatedAtUnixMs = updatedAtUnixMs
                     }
                 };
+                _lastMeaningfulReadingFocus = ReadingFocusSnapshot.Empty;
 
                 viewport = _liveReadingSession.ParticipantViewport.Copy();
                 focus = _liveReadingSession.Focus.Copy();
