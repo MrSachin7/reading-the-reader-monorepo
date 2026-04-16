@@ -12,6 +12,7 @@ public sealed record InterventionEventSnapshot(
     ReaderAppearanceSnapshot AppliedAppearance,
     string? ModuleId = null,
     IReadOnlyDictionary<string, string?>? Parameters = null,
+    IReadOnlyList<string>? AffectedPresentationProperties = null,
     string? CommittedActiveTokenId = null,
     string? CommittedActiveSentenceId = null,
     string? CommittedActiveBlockId = null)
@@ -32,6 +33,11 @@ public sealed record InterventionEventSnapshot(
             AppliedAppearance.Copy(),
             DomainText.NormalizeOptional(ModuleId),
             DomainText.CloneParameters(Parameters),
+            AffectedPresentationProperties is null
+                ? []
+                : [.. AffectedPresentationProperties
+                    .Select(LayoutInterventionGuardrailSnapshot.NormalizeAffectedProperty)
+                    .Distinct(StringComparer.Ordinal)],
             DomainText.NormalizeOptional(CommittedActiveTokenId),
             DomainText.NormalizeOptional(CommittedActiveSentenceId),
             DomainText.NormalizeOptional(CommittedActiveBlockId));

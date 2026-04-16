@@ -15,6 +15,7 @@ type MarkdownReaderProps = {
    * without reflowing earlier (frozen) segments when a later one changes.
    */
   blockStyleOverrides?: Map<string, CSSProperties>;
+  sentenceStyleOverrides?: Map<string, CSSProperties>;
 };
 
 function formatLixScore(score: number) {
@@ -49,7 +50,11 @@ function renderToken(token: Token) {
   );
 }
 
-function renderRun(run: TokenRun, index: number) {
+function renderRun(
+  run: TokenRun,
+  index: number,
+  sentenceStyleOverrides?: Map<string, CSSProperties>
+) {
   const sentenceGroups = run.tokens.reduce<Array<{ sentenceId: string | null; tokens: Token[] }>>(
     (groups, token) => {
       const previousGroup = groups[groups.length - 1]
@@ -77,6 +82,7 @@ function renderRun(run: TokenRun, index: number) {
       <span
         key={`run-${index}-group-${groupIndex}`}
         data-sentence-id={group.sentenceId}
+        style={group.sentenceId ? sentenceStyleOverrides?.get(group.sentenceId) : undefined}
       >
         {tokens}
       </span>
@@ -99,6 +105,7 @@ export function MarkdownReader({
   showLixScores = true,
   lixDisplayMode = "inline",
   blockStyleOverrides,
+  sentenceStyleOverrides,
 }: MarkdownReaderProps) {
   const styleFor = (blockId: string, baseStyle?: CSSProperties): CSSProperties | undefined => {
     const override = blockStyleOverrides?.get(blockId);
@@ -121,7 +128,7 @@ export function MarkdownReader({
                 className="mb-8 text-3xl leading-tight font-bold"
                 style={styleFor(block.blockId)}
               >
-                {block.runs.map(renderRun)}
+                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
               </h1>
             );
           case "h2":
@@ -132,7 +139,7 @@ export function MarkdownReader({
                 className="mt-10 mb-4 text-2xl leading-tight font-semibold"
                 style={styleFor(block.blockId)}
               >
-                {block.runs.map(renderRun)}
+                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
               </h2>
             );
           case "paragraph":
@@ -143,7 +150,7 @@ export function MarkdownReader({
                 className="relative mb-5"
                 style={styleFor(block.blockId, { lineHeight: "inherit" })}
               >
-                {block.runs.map(renderRun)}
+                {block.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
                 {showLixScores && block.lixScore !== null ? (
                   lixDisplayMode === "overlay" ? (
                     <span className="pointer-events-none absolute right-0 bottom-0 z-10 inline-flex rounded-full border border-border/50 bg-background/72 px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-[0.01em] text-muted-foreground shadow-[0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-[1px]">
@@ -167,7 +174,7 @@ export function MarkdownReader({
               >
                 {block.items.map((item, itemIndex) => (
                   <li key={`${block.blockId}:item:${itemIndex}`}>
-                    {item.runs.map(renderRun)}
+                    {item.runs.map((run, index) => renderRun(run, index, sentenceStyleOverrides))}
                   </li>
                 ))}
               </ul>

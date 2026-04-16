@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { ReadingToolbar } from "@/modules/pages/reading/components/ReadingToolba
 import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/readingMetrics";
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation";
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
-import { deriveReadingSegments, type ReadingSegment } from "@/modules/pages/reading/lib/reading-segments";
+import { deriveReadingPresentationOverrides } from "@/modules/pages/reading/lib/reading-segments";
 import type { InterventionEventSnapshot, ReadingPresentationSnapshot } from "@/lib/experiment-session";
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
@@ -25,7 +25,6 @@ import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdow
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
 import type {
   ReadingContextPreservationSnapshot,
-  ReadingInterventionCommitBoundary,
   ReadingGazeObservationSnapshot,
 } from "@/lib/experiment-session";
 import { cn } from "@/lib/utils";
@@ -82,9 +81,7 @@ type ReaderShellProps = {
   frameClassName?: string;
   frameStyle?: CSSProperties;
   embedded?: boolean;
-  interventionAppliedAtUnixMs?: number | null;
-  interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null;
-  interventionWaitDurationMs?: number | null;
+  latestIntervention?: InterventionEventSnapshot | null;
   /**
    * Initial presentation snapshot (before any interventions were applied). Used
    * together with `interventionEvents` to derive the frozen-segment timeline.
@@ -108,7 +105,6 @@ const FONT_FAMILY_STYLES = {
   merriweather: "var(--font-merriweather)",
 } as const;
 
-const PAGE_STORAGE_PREFIX = "reading:lastPage:";
 const PAGINATION_OVERLAY_HEIGHT_PX = 56;
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -132,12 +128,6 @@ function clampPageIndex(nextPageIndex: number, pageCount: number) {
   }
 
   return Math.max(0, Math.min(Math.round(nextPageIndex), Math.max(pageCount - 1, 0)));
-}
-
-function readStoredPageIndex(docId: string) {
-  const raw = window.localStorage.getItem(`${PAGE_STORAGE_PREFIX}${docId}`);
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
 }
 
 export function ReaderShell({
@@ -173,9 +163,7 @@ export function ReaderShell({
   frameClassName,
   frameStyle,
   embedded = false,
-  interventionAppliedAtUnixMs = null,
-  interventionAppliedBoundary = null,
-  interventionWaitDurationMs = null,
+  latestIntervention = null,
   initialPresentation = null,
   interventionEvents,
 }: ReaderShellProps) {
@@ -183,8 +171,6 @@ export function ReaderShell({
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const escHoldTimerRef = useRef<number | null>(null);
-  const wheelLockRef = useRef(false);
-  const didRestoreStoredPageRef = useRef(false);
   const lastPageTurnAtRef = useRef<number | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -257,9 +243,9 @@ export function ReaderShell({
     ]
   );
 
-  const readingSegments = useMemo<ReadingSegment[]>(
+  const presentationOverrides = useMemo(
     () =>
-      deriveReadingSegments({
+      deriveReadingPresentationOverrides({
         tokenizedBlocks,
         initialPresentation: initialPresentation ?? livePresentationSnapshot,
         livePresentation: livePresentationSnapshot,
@@ -270,19 +256,29 @@ export function ReaderShell({
 
   const blockStyleOverrides = useMemo(() => {
     const map = new Map<string, CSSProperties>();
-    for (const segment of readingSegments) {
-      const segmentStyle: CSSProperties = {
-        fontFamily: getFontFamilyStyle(segment.presentation.fontFamily),
-        fontSize: `${segment.presentation.fontSizePx}px`,
-        lineHeight: segment.presentation.lineHeight,
-        letterSpacing: `${segment.presentation.letterSpacingEm}em`,
-      };
-      for (const block of segment.blocks) {
-        map.set(block.blockId, segmentStyle);
-      }
+    for (const [blockId, override] of presentationOverrides.blockPresentations) {
+      map.set(blockId, {
+        fontFamily: getFontFamilyStyle(override.fontFamily),
+        fontSize: `${override.fontSizePx}px`,
+        lineHeight: override.lineHeight,
+        letterSpacing: `${override.letterSpacingEm}em`,
+      });
     }
     return map;
-  }, [readingSegments]);
+  }, [presentationOverrides.blockPresentations]);
+
+  const sentenceStyleOverrides = useMemo(() => {
+    const map = new Map<string, CSSProperties>();
+    for (const [sentenceId, override] of presentationOverrides.sentencePresentations) {
+      map.set(sentenceId, {
+        fontFamily: getFontFamilyStyle(override.fontFamily),
+        fontSize: `${override.fontSizePx}px`,
+        lineHeight: override.lineHeight,
+        letterSpacing: `${override.letterSpacingEm}em`,
+      });
+    }
+    return map;
+  }, [presentationOverrides.sentencePresentations]);
 
   const words = useMemo(() => countWords(markdown), [markdown]);
   const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
@@ -294,22 +290,17 @@ export function ReaderShell({
   const setActivePageIndex = useCallback(
     (nextPageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => {
       const next = clampPageIndex(nextPageIndex, displayPageCount);
-      const persist = options?.persist ?? !isControlledPage;
       const markTurn = options?.markTurn ?? !isControlledPage;
 
       if (!isControlledPage) {
         setPageIndex((current) => (current === next ? current : next));
       }
 
-      if (persist) {
-        window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(next));
-      }
-
       if (markTurn && next !== effectivePageIndex) {
         lastPageTurnAtRef.current = Date.now();
       }
     },
-    [displayPageCount, docId, effectivePageIndex, isControlledPage]
+    [displayPageCount, effectivePageIndex, isControlledPage]
   );
 
   const resetToTop = useCallback(() => {
@@ -323,14 +314,41 @@ export function ReaderShell({
     highlightContext,
     contentKey: `${docId}:${markdown}`,
     interventionKey: `${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}:${presentation.fontFamily}`,
-    interventionAppliedAtUnixMs,
-    interventionAppliedBoundary,
-    interventionWaitDurationMs,
+    latestIntervention,
     currentPageIndex: effectivePageIndex,
     pageWidthPx,
     setActivePageIndex,
     onContextPreservationChange,
   });
+
+  useEffect(() => {
+    if (!preserveContextOnIntervention) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      captureContextAnchor();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [captureContextAnchor, effectivePageIndex, preserveContextOnIntervention]);
+
+  useEffect(() => {
+    if (isControlledPage) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setPageIndex(0);
+    });
+    lastPageTurnAtRef.current = null;
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [docId, isControlledPage, markdown]);
 
   const updatePresentation = useCallback(
     (patch: Partial<ReadingPresentationSettings>) => {
@@ -383,14 +401,11 @@ export function ReaderShell({
       setPageCount((current) => (current === normalizedPageCount ? current : normalizedPageCount));
 
       const clampedPageIndex = clampPageIndex(
-        isControlledPage ? viewportActivePageIndex : readStoredPageIndex(docId),
+        isControlledPage ? viewportActivePageIndex : pageIndex,
         normalizedPageCount
       );
 
       if (isControlledPage) {
-        setPageIndex(clampedPageIndex);
-      } else if (!didRestoreStoredPageRef.current) {
-        didRestoreStoredPageRef.current = true;
         setPageIndex(clampedPageIndex);
       } else {
         setPageIndex((current) => clampPageIndex(current, normalizedPageCount));
@@ -425,23 +440,16 @@ export function ReaderShell({
       window.removeEventListener("resize", scheduleMeasure);
     };
   }, [
-    docId,
     hasControlledViewportSize,
     isControlledPage,
     pageCount,
+    pageIndex,
     presentation.lineWidthPx,
     viewportActivePageIndex,
     viewportHeightPx,
     viewportPageCount,
     viewportWidthPx,
   ]);
-
-  useEffect(() => {
-    const nextEffectivePage = clampPageIndex(effectivePageIndex, displayPageCount);
-    if (!isControlledPage) {
-      window.localStorage.setItem(`${PAGE_STORAGE_PREFIX}${docId}`, String(nextEffectivePage));
-    }
-  }, [displayPageCount, docId, effectivePageIndex, isControlledPage]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -629,33 +637,6 @@ export function ReaderShell({
     };
   }, []);
 
-  const handleWheel = useCallback(
-    (event: WheelEvent<HTMLDivElement>) => {
-      if (isControlledPage || displayPageCount <= 1) {
-        return;
-      }
-
-      const verticalIntent = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
-      const delta = verticalIntent ? event.deltaY : event.deltaX;
-      if (Math.abs(delta) < 18) {
-        return;
-      }
-
-      event.preventDefault();
-      if (wheelLockRef.current) {
-        return;
-      }
-
-      wheelLockRef.current = true;
-      moveByPages(delta > 0 ? 1 : -1);
-
-      window.setTimeout(() => {
-        wheelLockRef.current = false;
-      }, 220);
-    },
-    [displayPageCount, isControlledPage, moveByPages]
-  );
-
   const canGoPreviousPage = !isControlledPage && effectivePageIndex > 0;
   const canGoNextPage = !isControlledPage && effectivePageIndex < displayPageCount - 1;
   const useMeasuredViewportSurface = embedded && isControlledPage;
@@ -786,7 +767,6 @@ export function ReaderShell({
               width: `${pageWidthPx}px`,
               maxWidth: "100%",
             }}
-            onWheel={handleWheel}
           >
             {isControlledPage ? (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
@@ -807,6 +787,10 @@ export function ReaderShell({
                 columnWidth: `${pageWidthPx}px`,
                 columnGap: "0px",
                 columnFill: "auto",
+                fontFamily: getFontFamilyStyle(presentation.fontFamily),
+                fontSize: `${presentation.fontSizePx}px`,
+                lineHeight: presentation.lineHeight,
+                letterSpacing: `${presentation.letterSpacingEm}em`,
                 transform: `translate3d(-${effectivePageIndex * pageWidthPx}px, 0, 0)`,
                 transition: isControlledPage ? "none" : "transform 220ms ease-out",
               }}
@@ -816,6 +800,7 @@ export function ReaderShell({
                 showLixScores={showLixScores}
                 lixDisplayMode={useCompactLixOverlay ? "overlay" : "inline"}
                 blockStyleOverrides={blockStyleOverrides}
+                sentenceStyleOverrides={sentenceStyleOverrides}
               />
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">

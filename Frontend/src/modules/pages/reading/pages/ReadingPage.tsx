@@ -223,9 +223,7 @@ export function ReadingPage() {
         onFocusChange={handleFocusChange}
         onObservationChange={handleObservationChange}
         onContextPreservationChange={handleContextPreservationChange}
-        interventionAppliedAtUnixMs={liveReadingSession?.latestIntervention?.appliedAtUnixMs ?? null}
-        interventionAppliedBoundary={liveReadingSession?.latestIntervention?.appliedBoundary ?? null}
-        interventionWaitDurationMs={liveReadingSession?.latestIntervention?.waitDurationMs ?? null}
+        latestIntervention={liveReadingSession?.latestIntervention ?? null}
         initialPresentation={liveReadingSession?.initialPresentation ?? null}
         interventionEvents={liveReadingSession?.recentInterventions ?? []}
       />

@@ -57,9 +57,7 @@ export function ReplayReaderColumn({
           }}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
           embedded
-          interventionAppliedAtUnixMs={readingSession.latestIntervention?.appliedAtUnixMs ?? null}
-          interventionAppliedBoundary={readingSession.latestIntervention?.appliedBoundary ?? null}
-          interventionWaitDurationMs={readingSession.latestIntervention?.waitDurationMs ?? null}
+          latestIntervention={readingSession.latestIntervention ?? null}
           initialPresentation={readingSession.initialPresentation ?? null}
           interventionEvents={readingSession.recentInterventions}
           frameClassName="mx-auto rounded-none border-0 shadow-none"

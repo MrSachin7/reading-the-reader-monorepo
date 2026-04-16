@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react"
 
 import type {
+  InterventionEventSnapshot,
   ReadingContextPreservationSnapshot,
-  ReadingInterventionCommitBoundary,
 } from "@/lib/experiment-session"
 
 type UsePreserveReadingContextParams = {
@@ -14,9 +14,7 @@ type UsePreserveReadingContextParams = {
   highlightContext?: boolean
   contentKey: string
   interventionKey: string
-  interventionAppliedAtUnixMs?: number | null
-  interventionAppliedBoundary?: ReadingInterventionCommitBoundary | null
-  interventionWaitDurationMs?: number | null
+  latestIntervention?: InterventionEventSnapshot | null
   currentPageIndex?: number
   pageWidthPx?: number
   setActivePageIndex?: (pageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => void
@@ -40,9 +38,12 @@ type LocatedAnchor =
       anchorSource: ReadingContextPreservationSnapshot["anchorSource"]
       anchorElements: HTMLElement[]
       primaryElement: HTMLElement
+      anchorViewportOffsetPx: number
       reason: string | null
     }
   | null
+
+type RestoreMode = "offset-preserve" | "semantic-restart"
 
 const CAPTURE_REFRESH_MS = 120
 const ANCHOR_STALE_AFTER_MS = 15_000
@@ -167,6 +168,7 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
         anchorSource: "sentence-anchor",
         anchorElements: sentenceElements,
         primaryElement: sentenceElements[0]!,
+        anchorViewportOffsetPx: anchor.anchorViewportOffsetPx,
         reason: null,
       }
     }
@@ -181,6 +183,7 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
         anchorSource: anchor.source === "active-token" ? "active-token" : "fallback-token",
         anchorElements: [token],
         primaryElement: token,
+        anchorViewportOffsetPx: anchor.anchorViewportOffsetPx,
         reason: anchor.anchorSentenceId ? "Sentence anchor unavailable; restored token anchor instead." : null,
       }
     }
@@ -195,10 +198,56 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
         anchorSource: "block-anchor",
         anchorElements: [block],
         primaryElement: block,
+        anchorViewportOffsetPx: anchor.anchorViewportOffsetPx,
         reason:
           anchor.anchorSentenceId || anchor.anchorTokenId
             ? "Semantic anchors unavailable; restored block anchor instead."
             : null,
+      }
+    }
+  }
+
+  return null
+}
+
+function isLayoutAffectingIntervention(intervention: InterventionEventSnapshot | null | undefined) {
+  return (intervention?.affectedPresentationProperties?.length ?? 0) > 0
+}
+
+function locateSemanticRestartAnchor(
+  content: HTMLElement,
+  intervention: InterventionEventSnapshot | null | undefined
+): LocatedAnchor {
+  if (!intervention) {
+    return null
+  }
+
+  if (intervention.committedActiveSentenceId) {
+    const sentenceElements = findSentenceElements(content, intervention.committedActiveSentenceId)
+    if (sentenceElements.length > 0) {
+      return {
+        anchorSource: "sentence-anchor",
+        anchorElements: sentenceElements,
+        primaryElement: sentenceElements[0]!,
+        anchorViewportOffsetPx: 0,
+        reason: null,
+      }
+    }
+  }
+
+  if (intervention.committedActiveBlockId) {
+    const block = content.querySelector<HTMLElement>(
+      `[data-block-id="${escapeAttributeValue(intervention.committedActiveBlockId)}"]`
+    )
+    if (block) {
+      return {
+        anchorSource: "block-anchor",
+        anchorElements: [block],
+        primaryElement: block,
+        anchorViewportOffsetPx: 0,
+        reason: intervention.committedActiveSentenceId
+          ? "Sentence anchor unavailable; restarted from paragraph anchor instead."
+          : null,
       }
     }
   }
@@ -292,19 +341,18 @@ export function usePreserveReadingContext({
   highlightContext = false,
   contentKey,
   interventionKey,
-  interventionAppliedAtUnixMs = null,
-  interventionAppliedBoundary = null,
-  interventionWaitDurationMs = null,
+  latestIntervention = null,
   currentPageIndex = 0,
   pageWidthPx,
   setActivePageIndex,
   onContextPreservationChange,
 }: UsePreserveReadingContextParams) {
+  const currentSignature =
+    `${interventionKey}:${latestIntervention?.id ?? "none"}:${latestIntervention?.appliedAtUnixMs ?? "none"}`
   const latestAnchorRef = useRef<AnchorSnapshot | null>(null)
-  const latestInterventionKeyRef = useRef(interventionKey)
-  const latestAppliedAtRef = useRef<number | null>(interventionAppliedAtUnixMs)
   const highlightCleanupRef = useRef<(() => void) | null>(null)
-  const lastHandledSignatureRef = useRef<string | null>(null)
+  const latestSignatureRef = useRef(currentSignature)
+  const lastHandledSignatureRef = useRef<string>(currentSignature)
 
   const captureContextAnchor = useCallback(() => {
     const container = containerRef.current
@@ -318,10 +366,14 @@ export function usePreserveReadingContext({
   }, [containerRef, contentRef, enabled])
 
   useEffect(() => {
+    latestSignatureRef.current = currentSignature
+  }, [currentSignature])
+
+  useEffect(() => {
     latestAnchorRef.current = null
     highlightCleanupRef.current?.()
     highlightCleanupRef.current = null
-    lastHandledSignatureRef.current = null
+    lastHandledSignatureRef.current = latestSignatureRef.current
   }, [contentKey])
 
   useEffect(() => {
@@ -341,27 +393,16 @@ export function usePreserveReadingContext({
 
   useEffect(() => {
     if (!enabled) {
-      latestInterventionKeyRef.current = interventionKey
-      latestAppliedAtRef.current = interventionAppliedAtUnixMs
       return
     }
 
-    const keyChanged = latestInterventionKeyRef.current !== interventionKey
-    const appliedAtChanged = latestAppliedAtRef.current !== interventionAppliedAtUnixMs
-
-    latestInterventionKeyRef.current = interventionKey
-    latestAppliedAtRef.current = interventionAppliedAtUnixMs
-
-    if (!keyChanged && !appliedAtChanged) {
-      return
-    }
-
-    const signature = `${interventionKey}:${interventionAppliedAtUnixMs ?? "none"}`
+    const signature = currentSignature
     if (lastHandledSignatureRef.current === signature) {
       return
     }
 
     const anchor = latestAnchorRef.current
+    const hasFreshAnchor = anchor ? Date.now() - anchor.capturedAtUnixMs <= ANCHOR_STALE_AFTER_MS : false
     const container = containerRef.current
     const content = contentRef?.current ?? container?.querySelector<HTMLElement>("[data-reader-content='true']") ?? null
     if (!container || !content) {
@@ -370,15 +411,26 @@ export function usePreserveReadingContext({
 
     lastHandledSignatureRef.current = signature
 
-    const effectiveBoundary = interventionAppliedBoundary ?? "immediate"
-    const effectiveAppliedAt = interventionAppliedAtUnixMs ?? Date.now()
+    const restoreMode: RestoreMode = isLayoutAffectingIntervention(latestIntervention)
+      ? "semantic-restart"
+      : "offset-preserve"
+    const effectiveBoundary = latestIntervention?.appliedBoundary ?? "immediate"
+    const effectiveAppliedAt = latestIntervention?.appliedAtUnixMs ?? Date.now()
+    const effectiveWaitDurationMs = latestIntervention?.waitDurationMs ?? null
+    const reportedAnchorSentenceId =
+      latestIntervention?.committedActiveSentenceId ?? anchor?.anchorSentenceId ?? null
+    const reportedAnchorTokenId =
+      latestIntervention?.committedActiveTokenId ?? anchor?.anchorTokenId ?? null
+    const reportedAnchorBlockId =
+      latestIntervention?.committedActiveBlockId ?? anchor?.anchorBlockId ?? null
 
-    // Non-immediate boundaries (sentence-end, paragraph-end, page-turn) are
-    // handled by segment-based layout: the intervention creates a new segment
-    // starting at the next block boundary, so blocks above the split never
-    // reflow and no anchor restore is needed. Only immediate swaps (which
-    // restyle the live segment in place) still require anchor restoration.
-    if (effectiveBoundary !== "immediate") {
+    // Non-layout sentence/paragraph boundaries still use frozen segments, so
+    // there is no document-wide reflow to compensate for.
+    if (
+      restoreMode === "offset-preserve" &&
+      effectiveBoundary !== "immediate" &&
+      effectiveBoundary !== "page-turn"
+    ) {
       const anchorForReport = latestAnchorRef.current
       onContextPreservationChange?.({
         status: "preserved",
@@ -389,7 +441,7 @@ export function usePreserveReadingContext({
         anchorErrorPx: 0,
         viewportDeltaPx: 0,
         commitBoundary: effectiveBoundary,
-        waitDurationMs: interventionWaitDurationMs,
+        waitDurationMs: effectiveWaitDurationMs,
         interventionAppliedAtUnixMs: effectiveAppliedAt,
         measuredAtUnixMs: Date.now(),
         reason: "Segment-based layout preserves position; anchor restore skipped.",
@@ -401,20 +453,20 @@ export function usePreserveReadingContext({
       onContextPreservationChange?.({
         status: "failed",
         anchorSource: "scroll-only",
-        anchorSentenceId: anchor?.anchorSentenceId ?? null,
-        anchorTokenId: anchor?.anchorTokenId ?? null,
-        anchorBlockId: anchor?.anchorBlockId ?? null,
+        anchorSentenceId: reportedAnchorSentenceId,
+        anchorTokenId: reportedAnchorTokenId,
+        anchorBlockId: reportedAnchorBlockId,
         anchorErrorPx: null,
         viewportDeltaPx: null,
         commitBoundary: effectiveBoundary,
-        waitDurationMs: interventionWaitDurationMs,
+        waitDurationMs: effectiveWaitDurationMs,
         interventionAppliedAtUnixMs: effectiveAppliedAt,
         measuredAtUnixMs: Date.now(),
         reason,
       })
     }
 
-    if (!anchor || Date.now() - anchor.capturedAtUnixMs > ANCHOR_STALE_AFTER_MS) {
+    if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
       commitFailure("Anchor snapshot was unavailable or stale.")
       return
     }
@@ -427,22 +479,39 @@ export function usePreserveReadingContext({
         return
       }
 
-      const located = locateAnchor(content, anchor)
+      const located =
+        restoreMode === "semantic-restart"
+          ? locateSemanticRestartAnchor(content, latestIntervention)
+          : anchor
+            ? locateAnchor(content, anchor)
+            : null
       if (!located) {
+        if (!anchor || !hasFreshAnchor) {
+          commitFailure(
+            restoreMode === "semantic-restart"
+              ? "Semantic restart anchor was unavailable and no fresh fallback anchor existed."
+              : "Anchor snapshot was unavailable or stale."
+          )
+          return
+        }
+
         container.scrollTop = anchor.scrollTopPx
         onContextPreservationChange?.({
           status: "degraded",
           anchorSource: "scroll-only",
-          anchorSentenceId: anchor.anchorSentenceId,
-          anchorTokenId: anchor.anchorTokenId,
-          anchorBlockId: anchor.anchorBlockId,
+          anchorSentenceId: reportedAnchorSentenceId,
+          anchorTokenId: reportedAnchorTokenId,
+          anchorBlockId: reportedAnchorBlockId,
           anchorErrorPx: null,
           viewportDeltaPx: Math.abs(container.scrollTop - anchor.scrollTopPx),
           commitBoundary: effectiveBoundary,
-          waitDurationMs: interventionWaitDurationMs,
+          waitDurationMs: effectiveWaitDurationMs,
           interventionAppliedAtUnixMs: effectiveAppliedAt,
           measuredAtUnixMs: Date.now(),
-          reason: "Anchor elements were not found; restored scroll position only.",
+          reason:
+            restoreMode === "semantic-restart"
+              ? "Semantic anchor elements were not found; restored scroll position only."
+              : "Anchor elements were not found; restored scroll position only.",
         })
         return
       }
@@ -451,21 +520,25 @@ export function usePreserveReadingContext({
         const finalContainerRect = getContainerRect(container)
         const beforeScrollTop = container.scrollTop
         const currentTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
-        container.scrollTop += currentTop - anchor.anchorViewportOffsetPx
+        container.scrollTop += currentTop - located.anchorViewportOffsetPx
 
         const finalTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
-        const anchorErrorPx = Math.abs(finalTop - anchor.anchorViewportOffsetPx)
+        const anchorErrorPx = Math.abs(finalTop - located.anchorViewportOffsetPx)
         const scrollDeltaPx = Math.abs(container.scrollTop - beforeScrollTop)
         const effectiveViewportDeltaPx =
           viewportDeltaPx === null ? scrollDeltaPx : Math.max(viewportDeltaPx, scrollDeltaPx)
         const status =
-          located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48
-            ? "preserved"
-            : anchorErrorPx > 120 || located.anchorSource === "block-anchor"
-              ? "degraded"
-              : "preserved"
+          restoreMode === "semantic-restart"
+            ? anchorErrorPx <= 72
+              ? "preserved"
+              : "degraded"
+            : located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48
+              ? "preserved"
+              : anchorErrorPx > 120 || located.anchorSource === "block-anchor"
+                ? "degraded"
+                : "preserved"
 
-        if (highlightContext) {
+        if (highlightContext && restoreMode === "semantic-restart") {
           highlightCleanupRef.current?.()
           highlightCleanupRef.current = highlightAnchor(located.anchorElements)
         }
@@ -473,13 +546,13 @@ export function usePreserveReadingContext({
         onContextPreservationChange?.({
           status,
           anchorSource: located.anchorSource,
-          anchorSentenceId: anchor.anchorSentenceId,
-          anchorTokenId: anchor.anchorTokenId,
-          anchorBlockId: anchor.anchorBlockId,
+          anchorSentenceId: reportedAnchorSentenceId,
+          anchorTokenId: reportedAnchorTokenId,
+          anchorBlockId: reportedAnchorBlockId,
           anchorErrorPx,
           viewportDeltaPx: effectiveViewportDeltaPx,
           commitBoundary: effectiveBoundary,
-          waitDurationMs: interventionWaitDurationMs,
+          waitDurationMs: effectiveWaitDurationMs,
           interventionAppliedAtUnixMs: effectiveAppliedAt,
           measuredAtUnixMs: Date.now(),
           reason: located.reason,
@@ -525,10 +598,9 @@ export function usePreserveReadingContext({
     contentRef,
     enabled,
     highlightContext,
-    interventionAppliedAtUnixMs,
-    interventionAppliedBoundary,
     interventionKey,
-    interventionWaitDurationMs,
+    currentSignature,
+    latestIntervention,
     currentPageIndex,
     onContextPreservationChange,
     pageWidthPx,

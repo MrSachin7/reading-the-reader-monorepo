@@ -48,6 +48,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private CalibrationSessionSnapshot _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
     private ExperimentSession _session = ExperimentSession.Inactive;
     private LiveReadingSessionSnapshot _liveReadingSession = LiveReadingSessionSnapshot.Empty;
+    private ReadingFocusSnapshot _lastMeaningfulReadingFocus = ReadingFocusSnapshot.Empty;
     private EyeMovementAnalysisConfigurationSnapshot _eyeMovementAnalysisConfiguration = EyeMovementAnalysisConfigurationSnapshot.Default;
     private EyeMovementAnalysisRuntimeState _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
     private DecisionConfigurationSnapshot _decisionConfiguration = DecisionConfigurationSnapshot.Default;
