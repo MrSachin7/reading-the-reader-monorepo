@@ -1,0 +1,28 @@
+# Participant Endpoints
+
+All routes below are exposed through FastEndpoints with the global `/api` prefix.  
+Example: `Post("/participant")` is available as `POST /api/participant`.
+
+## `POST /api/participant`
+
+### What It Does
+
+Saves or replaces the current participant metadata in experiment state.
+
+### Request Type
+
+`SaveParticipantRequest` as JSON
+
+```ts
+type SaveParticipantRequest = {
+  name: string
+  age: number
+  sex: string
+  existingEyeCondition: string
+  readingProficiency: string
+}
+```
+
+### Response Type
+
+`200 OK` with empty body.

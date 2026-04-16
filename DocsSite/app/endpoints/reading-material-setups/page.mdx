@@ -1,0 +1,111 @@
+# Reading Material Setups Endpoints
+
+All routes below are exposed through FastEndpoints with the global `/api` prefix.  
+Example: `Post("/reading-material-setups")` is available as `POST /api/reading-material-setups`.
+
+## Shared Types
+
+```ts
+type ReadingMaterialSetupRequest = {
+  title: string
+  markdown: string
+  fontFamily: string
+  fontSizePx: number
+  lineWidthPx: number
+  lineHeight: number
+  letterSpacingEm: number
+  editableByExperimenter: boolean
+}
+
+type ReadingMaterialSetup = {
+  id: string
+  title: string
+  markdown: string
+  fileName: string
+  createdAtUnixMs: number
+  updatedAtUnixMs: number
+  fontFamily: string
+  fontSizePx: number
+  lineWidthPx: number
+  lineHeight: number
+  letterSpacingEm: number
+  editableByExperimenter: boolean
+}
+```
+
+## `POST /api/reading-material-setups`
+
+### What It Does
+
+Creates and stores a new reading material setup preset.
+
+### Request Type
+
+`CreateReadingMaterialSetupRequest` as JSON (`ReadingMaterialSetupRequest` shape).
+
+### Response Type
+
+`201 Created` with `ReadingMaterialSetup` and `Location` header pointing to `GET /api/reading-material-setups/{id}`.
+
+Error responses:
+
+- `400 Bad Request` when validation fails.
+- `500 Internal Server Error` when persistence fails.
+
+## `GET /api/reading-material-setups`
+
+### What It Does
+
+Returns all saved reading material setups.
+
+### Request Type
+
+No request body.
+
+### Response Type
+
+`200 OK` with `ReadingMaterialSetup[]`.
+
+Error responses:
+
+- `500 Internal Server Error` when persistence read fails.
+
+## `GET /api/reading-material-setups/{id}`
+
+### What It Does
+
+Returns one reading material setup by ID.
+
+### Request Type
+
+Route param: `id: string`.
+
+### Response Type
+
+`200 OK` with `ReadingMaterialSetup`.
+
+Error responses:
+
+- `400 Bad Request` when `id` is invalid.
+- `404 Not Found` when setup does not exist.
+- `500 Internal Server Error` when persistence read fails.
+
+## `PUT /api/reading-material-setups/{id}`
+
+### What It Does
+
+Updates an existing reading material setup by ID.
+
+### Request Type
+
+Route param: `id: string` and JSON body `UpdateReadingMaterialSetupRequest` (`ReadingMaterialSetupRequest` shape).
+
+### Response Type
+
+`200 OK` with updated `ReadingMaterialSetup`.
+
+Error responses:
+
+- `400 Bad Request` when validation fails.
+- `404 Not Found` when setup does not exist.
+- `500 Internal Server Error` when persistence write fails.
