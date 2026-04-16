@@ -406,6 +406,7 @@ function buildIntervention(intervention: InterventionEventSnapshot): Interventio
     ...intervention,
     appliedPresentation: buildReadingPresentation(intervention.appliedPresentation),
     appliedAppearance: buildReaderAppearance(intervention.appliedAppearance),
+    affectedPresentationProperties: intervention.affectedPresentationProperties ?? [],
     parameters: cloneInterventionParameters(intervention.parameters),
   }
 }

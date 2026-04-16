@@ -80,6 +80,8 @@ export function LiveInterventionsColumn({
     () => groupInterventionModules(interventionModules),
     [interventionModules]
   )
+  const queuedPendingIntervention =
+    pendingIntervention?.status === "queued" ? pendingIntervention : null
 
   function rememberSliderDraft(moduleId: string, value: number) {
     setSliderDrafts((previous) => ({ ...previous, [moduleId]: value }))
@@ -96,8 +98,8 @@ export function LiveInterventionsColumn({
     return drafted
   }
 
-  const pendingBoundaryCue = pendingIntervention
-    ? formatPendingBoundaryCue(pendingIntervention.requestedBoundary)
+  const pendingBoundaryCue = queuedPendingIntervention
+    ? formatPendingBoundaryCue(queuedPendingIntervention.requestedBoundary)
     : null
 
   function getCurrentParameterValue(
@@ -660,7 +662,7 @@ export function LiveInterventionsColumn({
                   {formatBoundaryCue(interventionPolicy.layoutCommitBoundary).toLowerCase()}.
                 </p>
 
-                {pendingIntervention ? (
+                {queuedPendingIntervention ? (
                   <div className="flex items-center gap-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2">
                     <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-amber-500" />
                     <p className="min-w-0 flex-1 truncate text-xs text-amber-950 dark:text-amber-100">
@@ -670,7 +672,6 @@ export function LiveInterventionsColumn({
                       size="sm"
                       variant="outline"
                       className="h-7 shrink-0 border-amber-500/50 bg-background px-2 text-xs"
-                      disabled={pendingIntervention.status !== "queued"}
                       onClick={() => void onApplyPendingInterventionNow()}
                     >
                       Apply now

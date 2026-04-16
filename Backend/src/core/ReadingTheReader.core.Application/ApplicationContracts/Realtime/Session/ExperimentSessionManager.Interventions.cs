@@ -195,6 +195,8 @@ public sealed partial class ExperimentSessionManager
     private InterventionEventSnapshot? TryApplyPendingInterventionForBoundary(
         ReadingFocusSnapshot previousFocus,
         ReadingFocusSnapshot currentFocus,
+        ReadingFocusSnapshot previousMeaningfulFocus,
+        ReadingFocusSnapshot currentMeaningfulFocus,
         ParticipantViewportSnapshot previousViewport,
         ParticipantViewportSnapshot currentViewport,
         long occurredAtUnixMs)
@@ -209,6 +211,8 @@ public sealed partial class ExperimentSessionManager
                 pendingIntervention!.RequestedBoundary,
                 previousFocus,
                 currentFocus,
+                previousMeaningfulFocus,
+                currentMeaningfulFocus,
                 previousViewport,
                 currentViewport,
                 occurredAtUnixMs,
@@ -348,6 +352,8 @@ public sealed partial class ExperimentSessionManager
         string boundary,
         ReadingFocusSnapshot previousFocus,
         ReadingFocusSnapshot currentFocus,
+        ReadingFocusSnapshot previousMeaningfulFocus,
+        ReadingFocusSnapshot currentMeaningfulFocus,
         ParticipantViewportSnapshot previousViewport,
         ParticipantViewportSnapshot currentViewport,
         long occurredAtUnixMs,
@@ -360,14 +366,12 @@ public sealed partial class ExperimentSessionManager
 
         return boundary switch
         {
-            ReadingInterventionCommitBoundaries.SentenceEnd =>
-                !string.IsNullOrWhiteSpace(previousFocus.ActiveSentenceId) &&
-                !string.IsNullOrWhiteSpace(currentFocus.ActiveSentenceId) &&
-                !string.Equals(previousFocus.ActiveSentenceId, currentFocus.ActiveSentenceId, StringComparison.Ordinal),
-            ReadingInterventionCommitBoundaries.ParagraphEnd =>
-                !string.IsNullOrWhiteSpace(previousFocus.ActiveBlockId) &&
-                !string.IsNullOrWhiteSpace(currentFocus.ActiveBlockId) &&
-                !string.Equals(previousFocus.ActiveBlockId, currentFocus.ActiveBlockId, StringComparison.Ordinal),
+            ReadingInterventionCommitBoundaries.SentenceEnd => DidMeaningfulFocusBoundaryChange(
+                previousMeaningfulFocus.ActiveSentenceId,
+                currentMeaningfulFocus.ActiveSentenceId),
+            ReadingInterventionCommitBoundaries.ParagraphEnd => DidMeaningfulFocusBoundaryChange(
+                previousMeaningfulFocus.ActiveBlockId,
+                currentMeaningfulFocus.ActiveBlockId),
             ReadingInterventionCommitBoundaries.PageTurn =>
                 previousViewport.ActivePageIndex != currentViewport.ActivePageIndex &&
                 currentViewport.ActivePageIndex >= 0 &&
@@ -377,6 +381,13 @@ public sealed partial class ExperimentSessionManager
             ReadingInterventionCommitBoundaries.Immediate => true,
             _ => false
         };
+    }
+
+    private static bool DidMeaningfulFocusBoundaryChange(string? previousBoundaryId, string? currentBoundaryId)
+    {
+        return !string.IsNullOrWhiteSpace(previousBoundaryId) &&
+               !string.IsNullOrWhiteSpace(currentBoundaryId) &&
+               !string.Equals(previousBoundaryId, currentBoundaryId, StringComparison.Ordinal);
     }
 
     private static ReadingInterventionPolicySnapshot NormalizeInterventionPolicy(ReadingInterventionPolicySnapshot? policy)
@@ -439,6 +450,7 @@ public sealed partial class ExperimentSessionManager
                     appliedBoundary,
                     ReadingInterventionCommitBoundaries.Immediate),
                 WaitDurationMs = waitDurationMs.HasValue ? Math.Max(waitDurationMs.Value, 0) : null,
+                AffectedPresentationProperties = layoutChange.ChangedProperties,
                 CommittedActiveTokenId = committedFocus?.ActiveTokenId,
                 CommittedActiveSentenceId = committedFocus?.ActiveSentenceId,
                 CommittedActiveBlockId = committedFocus?.ActiveBlockId

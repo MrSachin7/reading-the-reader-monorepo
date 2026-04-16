@@ -628,6 +628,7 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(16, appliedReadingSession.Presentation.FontSizePx);
         Assert.Equal(ReadingInterventionCommitBoundaries.SentenceEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
         Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
+        Assert.Equal(["font-size"], appliedReadingSession.LatestIntervention.AffectedPresentationProperties);
     }
 
     [Fact]
@@ -676,6 +677,49 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(PendingInterventionStatuses.Applied, appliedPending.Status);
         Assert.Equal(ReadingInterventionCommitBoundaries.ParagraphEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
         Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
+        Assert.Equal(["font-size"], appliedReadingSession.LatestIntervention.AffectedPresentationProperties);
+    }
+
+    [Fact]
+    public async Task ApplyInterventionAsync_WhenParagraphGapClearsFocus_StillAppliesOnNextParagraph()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        await harness.SessionManager.UpdateInterventionPolicyAsync(new ReadingInterventionPolicySnapshot(
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            ReadingInterventionCommitBoundaries.ParagraphEnd,
+            0));
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.35, "token-1", "block-1", "sentence-1"));
+
+        var intervention = await harness.SessionManager.ApplyInterventionAsync(new ApplyInterventionCommand(
+            "manual",
+            "researcher-ui",
+            "Increase font size after paragraph gap",
+            new ReadingPresentationPatch(null, 20, null, null, null, null),
+            new ReaderAppearancePatch(null, null, null)));
+
+        Assert.Null(intervention);
+        Assert.Equal(18, harness.SessionManager.GetCurrentSnapshot().ReadingSession!.Presentation.FontSizePx);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.4, null, null, null));
+
+        Assert.Equal(18, harness.SessionManager.GetCurrentSnapshot().ReadingSession!.Presentation.FontSizePx);
+
+        await Task.Delay(5);
+        await harness.SessionManager.UpdateReadingFocusAsync(
+            new UpdateReadingFocusCommand(true, 0.5, 0.45, "token-3", "block-2", "sentence-3"));
+
+        var appliedSnapshot = harness.SessionManager.GetCurrentSnapshot();
+        var appliedReadingSession = Assert.IsType<LiveReadingSessionSnapshot>(appliedSnapshot.ReadingSession);
+
+        Assert.Equal(20, appliedReadingSession.Presentation.FontSizePx);
+        Assert.Equal(ReadingInterventionCommitBoundaries.ParagraphEnd, appliedReadingSession.LatestIntervention!.AppliedBoundary);
+        Assert.Equal(PendingInterventionStatuses.Applied, appliedReadingSession.PendingIntervention!.Status);
+        Assert.Equal(["font-size"], appliedReadingSession.LatestIntervention.AffectedPresentationProperties);
     }
 
     [Fact]
@@ -718,6 +762,7 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Equal(ReadingInterventionCommitBoundaries.PageTurn, appliedReadingSession.LatestIntervention!.AppliedBoundary);
         Assert.NotNull(appliedReadingSession.LatestIntervention.WaitDurationMs);
         Assert.Equal(1, appliedReadingSession.ParticipantViewport.ActivePageIndex);
+        Assert.Equal(["font-size"], appliedReadingSession.LatestIntervention.AffectedPresentationProperties);
     }
 
     [Fact]
@@ -780,6 +825,7 @@ public sealed class ExperimentSessionAuthorityTests
         Assert.Null(readingSession.PendingIntervention);
         Assert.Equal("high-contrast", readingSession.Appearance.Palette);
         Assert.Equal(ReadingInterventionCommitBoundaries.Immediate, intervention!.AppliedBoundary);
+        Assert.Empty(intervention.AffectedPresentationProperties ?? []);
     }
 
     [Fact]
