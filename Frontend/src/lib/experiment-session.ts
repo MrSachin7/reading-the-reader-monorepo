@@ -446,7 +446,7 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   appearance: {
     themeMode: "light",
     palette: "default",
-    appFont: "geist",
+    appFont: "roboto-flex",
   },
   interventionPolicy: {
     layoutCommitBoundary: "page-turn",

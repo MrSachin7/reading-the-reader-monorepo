@@ -58,6 +58,7 @@ export const FALLBACK_INTERVENTION_MODULES: InterventionModuleDescriptor[] = [
         maxValue: null,
         step: null,
         options: [
+          { value: "roboto-flex", displayName: "Roboto Flex", description: null },
           { value: "geist", displayName: "Geist", description: null },
           { value: "inter", displayName: "Inter", description: null },
           { value: "space-grotesk", displayName: "Space Grotesk", description: null },

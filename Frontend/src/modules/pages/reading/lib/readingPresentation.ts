@@ -41,8 +41,12 @@ function clamp(value: number, min: number, max: number, fallback: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-export function normalizeFontTheme(value: string | null | undefined): FontTheme {
+export function normalizeFontTheme(
+  value: string | null | undefined,
+  fallback: FontTheme = DEFAULT_READING_PRESENTATION.fontFamily
+): FontTheme {
   if (
+    value === "roboto-flex" ||
     value === "geist" ||
     value === "inter" ||
     value === "space-grotesk" ||
@@ -51,7 +55,7 @@ export function normalizeFontTheme(value: string | null | undefined): FontTheme 
     return value
   }
 
-  return DEFAULT_READING_PRESENTATION.fontFamily
+  return fallback
 }
 
 export function normalizeReadingPresentation(
