@@ -61,6 +61,7 @@ export const baseApi = createApi({
     "ReadingMaterialSetup",
     "CalibrationSettings",
     "ReaderShellSettings",
+    "SensingModeSettings",
     "ReplayExport",
     "InterventionModule",
   ],

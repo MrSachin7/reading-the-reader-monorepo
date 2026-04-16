@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
@@ -101,9 +102,41 @@ public sealed partial class ExperimentSessionManager
         }
     }
 
+    public async ValueTask SubmitMouseGazeSampleAsync(string connectionId, GazeData gazeData, CancellationToken ct = default)
+    {
+        var session = Volatile.Read(ref _session);
+        if (!string.Equals(_sensingModeSettingsService.CurrentMode, SensingModes.Mouse, StringComparison.Ordinal))
+        {
+            await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.Error, new
+            {
+                message = "Mouse gaze samples are only accepted while mouse mode is active."
+            }, ct);
+            return;
+        }
+
+        if (!session.IsActive)
+        {
+            await _clientBroadcasterAdapter.SendToClientAsync(connectionId, MessageTypes.Error, new
+            {
+                message = "Mouse gaze samples are only accepted during an active experiment session."
+            }, ct);
+            return;
+        }
+
+        var shouldPublishToProvider = ShouldPublishToExternalProvider();
+        var shouldPublishToAnalysisProvider = ShouldPublishToExternalAnalysisProvider();
+        UpdateGazeSample(gazeData);
+        await BroadcastGazeSampleAsync(
+            _gazeSubscribers.Keys.ToArray(),
+            shouldPublishToProvider,
+            shouldPublishToAnalysisProvider,
+            gazeData);
+    }
+
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
     {
         var session = Volatile.Read(ref _session);
+        var isMouseMode = string.Equals(_sensingModeSettingsService.CurrentMode, SensingModes.Mouse, StringComparison.Ordinal);
         var bypassingEyeTrackerReadiness =
             _experimentSetupTestingOptions.ForceEyeTrackerReady == true &&
             (session.EyeTrackerDevice is null ||
@@ -115,6 +148,11 @@ public sealed partial class ExperimentSessionManager
 
         if (shouldStream)
         {
+            if (isMouseMode)
+            {
+                return;
+            }
+
             if (bypassingEyeTrackerReadiness)
             {
                 return;

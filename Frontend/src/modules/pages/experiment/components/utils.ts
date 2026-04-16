@@ -1,5 +1,5 @@
 import type { CalibrationQuality } from "@/lib/calibration"
-import type { ExperimentSetupSnapshot } from "@/lib/experiment-session"
+import type { ExperimentSetupSnapshot, SensingMode } from "@/lib/experiment-session"
 
 export type CalibrationStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
@@ -85,9 +85,11 @@ export function formatCalibrationMetric(value: number | null | undefined) {
 }
 
 export function getAuthoritativeWorkflowStepStates(
-  setup: ExperimentSetupSnapshot
+  setup: ExperimentSetupSnapshot,
+  sensingMode: SensingMode = "eyeTracker"
 ): AuthoritativeWorkflowStepState[] {
   const currentStepIndex = Math.min(Math.max(setup.currentStepIndex, 0), 3)
+  const isMouseMode = sensingMode === "mouse"
 
   return [
     {
@@ -95,7 +97,9 @@ export function getAuthoritativeWorkflowStepStates(
       isReady: setup.eyeTracker.isReady,
       isAvailable: currentStepIndex >= 0,
       blockReason: setup.eyeTracker.blockReason,
-      summary: setup.eyeTracker.isReady
+      summary: isMouseMode
+        ? "Mouse mode active. Eyetracker selection and licence upload are skipped."
+        : setup.eyeTracker.isReady
         ? `Using ${setup.eyeTracker.selectedTrackerName ?? "selected eyetracker"} with licence ready.`
         : setup.eyeTracker.blockReason ?? "Choose a connected eyetracker and provide a licence if required.",
     },
@@ -113,7 +117,9 @@ export function getAuthoritativeWorkflowStepStates(
       isReady: setup.calibration.isReady,
       isAvailable: currentStepIndex >= 2 || setup.calibration.isReady,
       blockReason: setup.calibration.blockReason,
-      summary: setup.calibration.isReady
+      summary: isMouseMode
+        ? "Mouse mode active. Calibration and validation are skipped."
+        : setup.calibration.isReady
         ? `Validation passed with ${formatCalibrationQualityLabel(setup.calibration.validationQuality)}.`
         : setup.calibration.blockReason ?? "Run calibration and validation before starting the session.",
     },
