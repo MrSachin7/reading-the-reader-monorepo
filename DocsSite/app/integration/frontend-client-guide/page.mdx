@@ -7,14 +7,16 @@ External decision providers should not use this contract. Provider clients will 
 ## Goal
 Connect a frontend client to the backend to:
 
-1. Discover available eye trackers.
-2. Start/stop an experiment session.
-3. Receive realtime gaze samples over WebSocket.
+1. Read or update the active sensing mode.
+2. Discover available eye trackers when using Tobii-backed input.
+3. Start/stop an experiment session.
+4. Receive realtime gaze samples over WebSocket.
 
 ## Prerequisites
 - Backend is running.
 - Frontend can reach backend host/port.
 - For real Tobii data: backend running on Windows with compatible Tobii device/SDK.
+- For mouse-mode demos: no Tobii hardware is required.
 
 ## Base URLs
 Adjust for your environment:
@@ -24,7 +26,43 @@ Adjust for your environment:
 
 If running locally without TLS, use `http://` and `ws://`.
 
-## Step 1: Discover Eye Trackers
+## Step 1: Read Or Update Sensing Mode
+
+The backend owns the active sensing mode. Supported values are:
+
+- `eyeTracker`: normal Tobii-backed operation.
+- `mouse`: demo mode that uses participant pointer coordinates as synthetic gaze.
+
+Read the current mode:
+
+```http
+GET /api/sensing-mode/settings
+```
+
+Example response:
+
+```json
+{
+  "mode": "mouse",
+  "canChangeMode": true,
+  "blockReason": null
+}
+```
+
+Update the mode:
+
+```http
+PUT /api/sensing-mode/settings
+Content-Type: application/json
+
+{
+  "Mode": "mouse"
+}
+```
+
+If a session is active, the backend rejects mode changes with `409 Conflict`. The settings response also reports `canChangeMode: false` and a `blockReason` so the UI can disable the mode control.
+
+## Step 2: Discover Eye Trackers
 Request:
 
 ```http
@@ -43,7 +81,9 @@ Example response:
 ]
 ```
 
-## Step 2: Open WebSocket Connection
+This step is only required for `eyeTracker` mode. In `mouse` mode, the setup flow can skip hardware discovery, licence handling, calibration, and validation.
+
+## Step 3: Open WebSocket Connection
 Create one persistent WebSocket connection and keep it alive for the session.
 
 Browser example:
@@ -102,7 +142,7 @@ ws.onerror = (err) => console.error("WS error", err);
 ws.onclose = () => console.log("WS closed");
 ```
 
-## Step 3: Start Tracking
+## Step 4: Start Tracking
 You can start through REST or WebSocket command.
 
 REST option:
@@ -125,7 +165,34 @@ When started successfully, clients receive:
 - `experimentStarted` snapshot
 - then continuous `gazeSample` messages while session is active
 
-## Step 4: Consume Gaze Data
+In `mouse` mode, start readiness only depends on participant information and reading material. Tobii device selection and calibration are bypassed.
+
+## Step 5: Send Mouse Gaze Samples
+
+Only browser clients should send mouse samples, and only when the active snapshot reports `sensingMode: "mouse"` and the experiment session is active.
+
+Client-to-server message:
+
+```json
+{
+  "type": "mouseGazeSample",
+  "payload": {
+    "deviceTimeStamp": 1740000000000,
+    "leftEyeX": 0.42,
+    "leftEyeY": 0.51,
+    "leftEyeValidity": "Valid",
+    "rightEyeX": 0.42,
+    "rightEyeY": 0.51,
+    "rightEyeValidity": "Valid"
+  }
+}
+```
+
+The current participant reading page normalizes `PointerEvent.clientX` and `PointerEvent.clientY` against the browser viewport. It sends at most one sample every `33ms`, which is about `30.3` samples per second. Samples are event-driven, so the actual rate is lower when the mouse is still or browser pointer events are throttled.
+
+The backend accepts `mouseGazeSample` only during an active mouse-mode session. Accepted samples are rebroadcast as normal server-side `gazeSample` messages, so live overlays, researcher mirror, replay persistence, export, analysis providers, and decision providers consume the same shape as Tobii samples.
+
+## Step 6: Consume Gaze Data
 Each realtime gaze message:
 
 ```json
@@ -150,8 +217,9 @@ Recommended client handling:
 - Buffer samples in memory by timestamp for charting.
 - Throttle heavy rendering (for example every 50-100ms) to keep UI smooth.
 - Keep raw stream in a store and compute derived metrics in selectors/workers.
+- Treat `mouse` mode samples as demo data, not Tobii-backed research measurements.
 
-## Step 5: Stop Tracking
+## Step 7: Stop Tracking
 REST option:
 
 ```http
@@ -192,6 +260,7 @@ flowchart TD
     E[stopExperiment] --> F[experimentStopped]
     G[getExperimentState] --> H[experimentState]
     I[researcherCommand] --> J[start/stop or error]
+    K[mouseGazeSample] --> L[gazeSample]
 ```
 
 Envelope shape:
@@ -230,14 +299,36 @@ sequenceDiagram
     WS-->>FE: experimentStopped
 ```
 
+## Minimal Mouse-Mode Demo Sequence
+```mermaid
+sequenceDiagram
+    participant FE as Frontend
+    participant API as Backend REST
+    participant WS as Backend WS
+
+    FE->>API: PUT /api/sensing-mode/settings { Mode: "mouse" }
+    FE->>API: Save participant and reading material
+    FE->>WS: Connect /ws
+    FE->>WS: startExperiment
+    WS-->>FE: experimentStarted with sensingMode = mouse
+    loop Pointer moves, throttled to about 30 Hz
+        FE->>WS: mouseGazeSample
+        WS-->>FE: gazeSample
+    end
+    FE->>WS: stopExperiment
+    WS-->>FE: experimentStopped
+```
+
 ## Troubleshooting
 - No gaze data but start succeeded:
   - Verify backend is on Windows with Tobii SDK/device.
   - Confirm frontend actually connected to `/ws` and receives non-gaze messages.
+  - In mouse mode, confirm the pointer is moving over the participant reading page.
 - WebSocket closes immediately:
   - Ensure URL uses correct scheme (`ws://` vs `wss://`) and host/port.
 - Start fails:
-  - Ensure at least one Tobii device is connected and discoverable.
+  - In `eyeTracker` mode, ensure at least one Tobii device is connected and discoverable.
+  - In `mouse` mode, ensure participant information and reading material are saved.
 - State looks stale:
   - Send `getExperimentState` over WebSocket to fetch latest snapshot.
 

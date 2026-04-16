@@ -2,6 +2,8 @@
 
 This guide explains why the system uses both calibration and validation before an experiment session starts, and how calibration quality is judged.
 
+Calibration and validation apply to `eyeTracker` mode. In `mouse` mode, the system is running in demo input mode and skips these gates because there is no Tobii gaze mapping to calibrate.
+
 ## Why There Are Two Steps
 
 Calibration and validation are not the same thing.
@@ -40,6 +42,8 @@ The session is only considered ready when:
 - validation passed
 
 This prevents starting an experiment with a weak or unstable gaze mapping.
+
+In `mouse` mode, session start does not depend on calibration or validation. The participant reading page sends normalized mouse coordinates as synthetic gaze samples at about 30 Hz while the pointer moves. This is useful for demos and frontend validation, but it should not be treated as research-valid eye-tracking data.
 
 ## How Validation Quality Is Measured
 
