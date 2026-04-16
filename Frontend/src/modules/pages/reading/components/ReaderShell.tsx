@@ -81,6 +81,7 @@ type ReaderShellProps = {
   frameClassName?: string;
   frameStyle?: CSSProperties;
   embedded?: boolean;
+  embeddedSurfaceStyle?: "card" | "bare";
   latestIntervention?: InterventionEventSnapshot | null;
   /**
    * Initial presentation snapshot (before any interventions were applied). Used
@@ -201,6 +202,7 @@ export function ReaderShell({
   frameClassName,
   frameStyle,
   embedded = false,
+  embeddedSurfaceStyle = "card",
   latestIntervention = null,
   initialPresentation = null,
 }: ReaderShellProps) {
@@ -957,7 +959,9 @@ export function ReaderShell({
           isFocusMode
             ? "mx-auto flex h-screen w-full max-w-6xl flex-col overflow-hidden bg-background"
             : embedded
-              ? "flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm"
+              ? embeddedSurfaceStyle === "bare"
+                ? "flex h-full w-full flex-col overflow-hidden bg-transparent"
+                : "flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm"
               : "mx-auto flex h-[calc(100vh-2.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border bg-card shadow-sm md:h-[calc(100vh-4rem)]",
           frameClassName
         )}
@@ -1003,7 +1007,10 @@ export function ReaderShell({
         >
           <div
             ref={containerRef}
-            className="reader-scrollbar relative h-full w-full overflow-y-auto overflow-x-hidden bg-background/40"
+            className={cn(
+              "reader-scrollbar relative h-full w-full overflow-y-auto overflow-x-hidden",
+              embeddedSurfaceStyle === "bare" ? "bg-transparent" : "bg-background/40"
+            )}
             data-scrollbar-enabled={hasVerticalOverflow ? "true" : "false"}
             data-scrollbar-visible={hasVerticalOverflow && isScrollbarVisible ? "true" : "false"}
             style={{
@@ -1073,7 +1080,12 @@ export function ReaderShell({
             </div>
           </div>
         </div>
-        <div className="shrink-0 border-t border-border/50 bg-background/80">
+        <div
+          className={cn(
+            "shrink-0",
+            embeddedSurfaceStyle === "bare" ? "bg-transparent" : "border-t border-border/50 bg-background/80"
+          )}
+        >
           {paginationFooter}
         </div>
       </section>
