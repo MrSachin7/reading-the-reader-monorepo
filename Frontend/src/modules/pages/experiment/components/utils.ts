@@ -88,14 +88,21 @@ export function getAuthoritativeWorkflowStepStates(
   setup: ExperimentSetupSnapshot,
   sensingMode: SensingMode = "eyeTracker"
 ): AuthoritativeWorkflowStepState[] {
-  const currentStepIndex = Math.min(Math.max(setup.currentStepIndex, 0), 3)
   const isMouseMode = sensingMode === "mouse"
+  const researcherPreparationReady = setup.eyeTracker.isReady && setup.readingMaterial.isReady
+  const calibrationRunning =
+    setup.calibration.status === "running" || setup.calibration.validationStatus === "running"
+  const calibrationFailed =
+    !setup.calibration.isReady &&
+    (setup.calibration.status === "failed" ||
+      setup.calibration.validationStatus === "failed" ||
+      (setup.calibration.hasCalibrationSession && setup.calibration.isValidationPassed === false))
 
   return [
     {
       index: 0,
       isReady: setup.eyeTracker.isReady,
-      isAvailable: currentStepIndex >= 0,
+      isAvailable: true,
       blockReason: setup.eyeTracker.blockReason,
       summary: isMouseMode
         ? "Mouse mode active. Eyetracker selection and licence upload are skipped."
@@ -105,32 +112,49 @@ export function getAuthoritativeWorkflowStepStates(
     },
     {
       index: 1,
-      isReady: setup.participant.isReady,
-      isAvailable: currentStepIndex >= 1 || setup.participant.isReady,
-      blockReason: setup.participant.blockReason,
-      summary: setup.participant.isReady
-        ? `Participant ${setup.participant.participantName ?? "details"} saved to the session.`
-        : setup.participant.blockReason ?? "Save participant details before continuing.",
+      isReady: setup.readingMaterial.isReady,
+      isAvailable: setup.eyeTracker.isReady,
+      blockReason: setup.eyeTracker.isReady
+        ? setup.readingMaterial.blockReason
+        : "Finish the eyetracker and licence step before preparing the reading baseline.",
+      summary: setup.readingMaterial.isReady
+        ? `${setup.readingMaterial.title ?? "Reading material"} is saved for session start.`
+        : setup.eyeTracker.isReady
+          ? setup.readingMaterial.blockReason ?? "Choose and save reading material before handing over to the participant."
+          : "Complete the eyetracker setup before preparing the reading baseline.",
     },
     {
       index: 2,
-      isReady: setup.calibration.isReady,
-      isAvailable: currentStepIndex >= 2 || setup.calibration.isReady,
-      blockReason: setup.calibration.blockReason,
-      summary: isMouseMode
-        ? "Mouse mode active. Calibration and validation are skipped."
-        : setup.calibration.isReady
-        ? `Validation passed with ${formatCalibrationQualityLabel(setup.calibration.validationQuality)}.`
-        : setup.calibration.blockReason ?? "Run calibration and validation before starting the session.",
+      isReady: setup.participant.isReady,
+      isAvailable: researcherPreparationReady,
+      blockReason: researcherPreparationReady
+        ? setup.participant.blockReason
+        : "The participant stepper unlocks after the researcher prepares the device and reading baseline.",
+      summary: setup.participant.isReady
+        ? `Participant ${setup.participant.participantName ?? "details"} saved to the session.`
+        : researcherPreparationReady
+          ? setup.participant.blockReason ?? "Save participant details before continuing."
+          : "Waiting for the researcher to finish preparation first.",
     },
     {
       index: 3,
-      isReady: setup.readingMaterial.isReady,
-      isAvailable: currentStepIndex >= 3 || setup.readingMaterial.isReady,
-      blockReason: setup.readingMaterial.blockReason,
-      summary: setup.readingMaterial.isReady
-        ? `${setup.readingMaterial.title ?? "Reading material"} is saved for session start.`
-        : setup.readingMaterial.blockReason ?? "Choose and save reading material before starting.",
+      isReady: setup.calibration.isReady,
+      isAvailable: researcherPreparationReady && setup.participant.isReady,
+      blockReason:
+        researcherPreparationReady && setup.participant.isReady
+          ? setup.calibration.blockReason
+          : "Save participant details after researcher preparation before starting calibration.",
+      summary: isMouseMode
+        ? "Mouse mode active. Calibration and validation are skipped."
+        : setup.calibration.isReady
+          ? `Validation passed with ${formatCalibrationQualityLabel(setup.calibration.validationQuality)}.`
+          : calibrationRunning
+            ? "Calibration is currently running."
+            : calibrationFailed
+              ? "Calibration needs to be rerun before the session can start."
+              : researcherPreparationReady && setup.participant.isReady
+                ? setup.calibration.blockReason ?? "Run calibration and validation before starting the session."
+                : "Waiting for participant information before calibration can begin.",
     },
   ]
 }

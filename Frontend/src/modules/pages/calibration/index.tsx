@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import type {
   CalibrationSessionSnapshot,
@@ -51,6 +51,7 @@ const READY_STATUS_MESSAGE =
 export default function CalibrationPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [phase, setPhase] = React.useState<CalibrationPhase>("ready")
   const [activePointIndex, setActivePointIndex] = React.useState(0)
   const [targetPhase, setTargetPhase] = React.useState<CalibrationTargetPhase>("move")
@@ -71,6 +72,14 @@ export default function CalibrationPage() {
   const [collectValidationPoint] = useCollectValidationPointMutation()
   const [finishValidation, { isLoading: isFinishingValidation }] = useFinishValidationMutation()
   const [cancelCalibration] = useCancelCalibrationMutation()
+  const requestedReturnTo = searchParams.get("returnTo")
+  const returnToPath =
+    requestedReturnTo === "/participant" ||
+    requestedReturnTo === "/researcher/experiment" ||
+    requestedReturnTo === "/experiment"
+      ? requestedReturnTo
+      : "/researcher/experiment"
+  const isParticipantMode = returnToPath === "/participant"
 
   const calibrationPoints = snapshot?.points ?? currentCalibration?.points ?? []
   const validationPoints = snapshot?.validation.points ?? currentCalibration?.validation.points ?? []
@@ -163,6 +172,30 @@ export default function CalibrationPage() {
   }, [cancelCalibration, currentCalibration, phase])
 
   React.useEffect(() => {
+    if (isParticipantMode || !currentCalibration || phase !== "ready") {
+      return
+    }
+
+    const hasCompletedValidation =
+      currentCalibration.validation.status === "completed" &&
+      currentCalibration.validation.result !== null
+
+    if (!hasCompletedValidation) {
+      return
+    }
+
+    setSnapshot(currentCalibration)
+    setPhase("review")
+    setStatusMessage("Validation complete. Review the quality metrics before starting the session.")
+    setErrorMessage(
+      currentCalibration.validation.result?.passed
+        ? null
+        : currentCalibration.validation.notes[0] ??
+            "Validation did not meet the required quality threshold."
+    )
+  }, [currentCalibration, isParticipantMode, phase])
+
+  React.useEffect(() => {
     if (phase !== "calibrating" && phase !== "validating") {
       return
     }
@@ -226,8 +259,8 @@ export default function CalibrationPage() {
     dispatch(setStepThreeLastCalibrationSessionId(snapshot.sessionId))
     dispatch(setStepThreeLastCalibrationStatus("Validation passed. Return to setup and continue with the next step."))
     dispatch(setStepThreeLastQuality(snapshot.validation.result.quality))
-    router.push("/experiment")
-  }, [dispatch, router, snapshot])
+    router.push(returnToPath)
+  }, [dispatch, returnToPath, router, snapshot])
 
   const handleReturnToExperiment = React.useCallback(async () => {
     if (phase === "calibrating" || phase === "validating") {
@@ -240,8 +273,8 @@ export default function CalibrationPage() {
       })
     }
 
-    router.push("/experiment")
-  }, [cancelCalibration, phase, router, setFailureState])
+    router.push(returnToPath)
+  }, [cancelCalibration, phase, returnToPath, router, setFailureState])
 
   const runValidationSequence = React.useCallback(
     async (runToken: number) => {
@@ -318,6 +351,12 @@ export default function CalibrationPage() {
       )
       dispatch(setStepThreeExternalCalibrationCompleted(finished.validation.result?.passed === true))
       dispatch(setStepThreeUseLocalCalibration(false))
+
+      if (isParticipantMode) {
+        router.push(returnToPath)
+        return
+      }
+
       setPhase("review")
       setStatusMessage("Validation complete. Review the quality metrics before starting the session.")
       setErrorMessage(
@@ -326,7 +365,16 @@ export default function CalibrationPage() {
           : finished.validation.notes[0] ?? "Validation did not meet the required quality threshold."
       )
     },
-    [collectValidationPoint, dispatch, finishValidation, setFailureState, startValidation]
+    [
+      collectValidationPoint,
+      dispatch,
+      finishValidation,
+      isParticipantMode,
+      returnToPath,
+      router,
+      setFailureState,
+      startValidation,
+    ]
   )
 
   const startRun = React.useCallback(async () => {
