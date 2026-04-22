@@ -264,9 +264,19 @@ public sealed partial class ExperimentSessionManager
 
     private void QueuePendingIntervention(ApplyInterventionCommand command, long queuedAtUnixMs)
     {
-        var queuedIntervention = BuildQueuedPendingIntervention(command, queuedAtUnixMs);
-        SupersedePendingInterventionIfQueued(queuedAtUnixMs, "superseded-by-new-queue");
+        var existingPending = _liveReadingSession.PendingIntervention;
 
+        if (CanApplyPendingIntervention(existingPending))
+        {
+            var mergedCommand = MergeInterventionCommands(existingPending!.Intervention, command);
+            var mergedPending = existingPending with { Intervention = mergedCommand.Copy() };
+            _liveReadingSession = _liveReadingSession with { PendingIntervention = mergedPending };
+            RecordScheduledInterventionEvent(queuedAtUnixMs, mergedPending);
+            RecordReadingSessionState("intervention-merged", queuedAtUnixMs, _liveReadingSession.Copy());
+            return;
+        }
+
+        var queuedIntervention = BuildQueuedPendingIntervention(command, queuedAtUnixMs);
         _liveReadingSession = _liveReadingSession with
         {
             PendingIntervention = queuedIntervention.Copy()
@@ -274,6 +284,34 @@ public sealed partial class ExperimentSessionManager
 
         RecordScheduledInterventionEvent(queuedAtUnixMs, queuedIntervention);
         RecordReadingSessionState("intervention-queued", queuedAtUnixMs, _liveReadingSession.Copy());
+    }
+
+    private static ApplyInterventionCommand MergeInterventionCommands(
+        ApplyInterventionCommand existing,
+        ApplyInterventionCommand incoming)
+    {
+        var isSameModule = !string.IsNullOrWhiteSpace(incoming.ModuleId) &&
+                           string.Equals(existing.ModuleId, incoming.ModuleId, StringComparison.Ordinal);
+
+        return incoming with
+        {
+            // When merging different modules, clear ModuleId so the runtime falls through
+            // to ApplyLegacyPatchCommand, which applies all patch fields instead of
+            // routing to a single module that would discard the others.
+            ModuleId = isSameModule ? incoming.ModuleId : null,
+            Parameters = isSameModule ? incoming.Parameters : null,
+            Presentation = new ReadingPresentationPatch(
+                incoming.Presentation.FontFamily ?? existing.Presentation.FontFamily,
+                incoming.Presentation.FontSizePx ?? existing.Presentation.FontSizePx,
+                incoming.Presentation.LineWidthPx ?? existing.Presentation.LineWidthPx,
+                incoming.Presentation.LineHeight ?? existing.Presentation.LineHeight,
+                incoming.Presentation.LetterSpacingEm ?? existing.Presentation.LetterSpacingEm,
+                incoming.Presentation.EditableByResearcher ?? existing.Presentation.EditableByResearcher),
+            Appearance = new ReaderAppearancePatch(
+                incoming.Appearance.ThemeMode ?? existing.Appearance.ThemeMode,
+                incoming.Appearance.Palette ?? existing.Appearance.Palette,
+                incoming.Appearance.AppFont ?? existing.Appearance.AppFont)
+        };
     }
 
     private void SupersedePendingInterventionIfQueued(long supersededAtUnixMs, string reason)

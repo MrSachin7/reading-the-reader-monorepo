@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/s243871/reading-the-reader-monorepo/Backend/src -type f -name \"*.cs\" -exec grep -l \"TryApplyPendingInterventionForBoundary\" {} \\\\;)",
+      "Bash(xargs grep *)"
+    ]
+  }
+}
