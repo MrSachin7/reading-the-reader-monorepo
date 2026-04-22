@@ -98,7 +98,7 @@ export function ExperimentCompletionActions({
       dispatch(resetReadingSessionState())
       resetReadingSettings()
       setSaveName("")
-      router.push("/experiment")
+      router.push("/researcher/experiment")
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not start a new experiment."))
     }

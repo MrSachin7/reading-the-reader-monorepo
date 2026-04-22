@@ -1,5 +1,5 @@
-import ExperimentPage from "@/modules/pages/experiment";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ExperimentPage />;
+  redirect("/researcher/experiment");
 }

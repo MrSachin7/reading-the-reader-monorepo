@@ -11,12 +11,12 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="text-2xl">Experiment flow</CardTitle>
             <CardDescription>
-              This is a demo of the experiment flow, showcasing the reading material setup and live gaze overlay features. Click the button below to start the experiment.
+              Start the experiment as the researcher, prepare the device and reading baseline, then hand over the participant information and calibration steps in the dedicated participant view.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild size="lg" variant="outline">
-              <Link href="/experiment">Start Experiment</Link>
+              <Link href="/researcher/experiment">Start Experiment</Link>
             </Button>
           </CardContent>
         </Card>

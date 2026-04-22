@@ -175,7 +175,7 @@ export function ReadingPage() {
             <CardHeader>
               <CardTitle>Loading reading session</CardTitle>
               <CardDescription>
-                Waiting for the authoritative experiment state before rendering the participant view.
+                Waiting for the authoritative experiment state before rendering the participant screen.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -190,15 +190,15 @@ export function ReadingPage() {
     return (
       <main className="min-h-screen bg-background px-4 py-10 md:px-8">
         <div className="mx-auto max-w-3xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>{isCompleted ? "Session complete" : "No active experiment"}</CardTitle>
-                <CardDescription>
-                  {isCompleted
-                    ? "Export or save the session."
-                    : "Start the reading session from the experiment setup flow before opening the participant view."}
-                </CardDescription>
-                <ExperimentCompletionActions
+          <Card>
+            <CardHeader>
+              <CardTitle>{isCompleted ? "Session complete" : "No active experiment"}</CardTitle>
+              <CardDescription>
+                {isCompleted
+                  ? "Export or save the session."
+                  : "Start the reading session from the experiment setup flow before opening the participant view."}
+              </CardDescription>
+              <ExperimentCompletionActions
                 session={liveSession}
                 source="participant-view"
                 className="pt-4"
@@ -222,7 +222,7 @@ export function ReadingPage() {
               <CardDescription>
                 The session is active, but the authoritative reading baseline has not been configured yet.
                 Return to the experiment setup flow and save the reading baseline before opening the
-                participant view.
+                participant reading view.
               </CardDescription>
               <ExperimentCompletionActions
                 session={liveSession}
