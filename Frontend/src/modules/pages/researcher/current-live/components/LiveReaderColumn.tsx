@@ -145,17 +145,6 @@ export function LiveReaderColumn({
             </span>
           </div>
         ) : null}
-        {mirrorTrustState.kind === "approximate" ? (
-          <div className="absolute inset-x-4 top-14 z-10 rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 shadow-sm backdrop-blur">
-            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
-              {mirrorTrustState.headline}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-amber-900/85 dark:text-amber-100/85">
-              {mirrorTrustState.detail}
-            </p>
-          </div>
-        ) : null}
-
         {canAttemptExactMirror ? (
           <div
             className={cn(
