@@ -398,7 +398,9 @@ export function EyetrackerSetup({
               ) : null}
 
               {!isLoading && !isError && eyetrackerOptions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No connected eyetrackers found.</p>
+                <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive">
+                  No connected eyetrackers found.
+                </p>
               ) : null}
               {!isLoading && eyetrackerOptions.some((item) => !item.isSelectable) ? (
                 <p className="text-xs text-muted-foreground">

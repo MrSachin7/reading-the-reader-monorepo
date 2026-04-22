@@ -438,9 +438,39 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Directory.CreateDirectory(directory);
         }
 
-        var tempPath = $"{path}.tmp";
-        await File.WriteAllTextAsync(tempPath, content, ct);
-        File.Move(tempPath, path, overwrite: true);
+        var tempPath = Path.Combine(
+            directory ?? Path.GetTempPath(),
+            $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, content, ct);
+            await ReplaceFileWithRetryAsync(tempPath, path, ct);
+        }
+        finally
+        {
+            DeleteFileIfExists(tempPath);
+        }
+    }
+
+    private static async ValueTask ReplaceFileWithRetryAsync(string tempPath, string destinationPath, CancellationToken ct)
+    {
+        const int maxAttempts = 5;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                File.Move(tempPath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && attempt < maxAttempts)
+            {
+                await Task.Delay(20, ct);
+            }
+        }
+
+        File.Move(tempPath, destinationPath, overwrite: true);
     }
 
     private static void DeleteFileIfExists(string path)
