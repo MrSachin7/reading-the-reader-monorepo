@@ -281,11 +281,7 @@ export function LiveInterventionsColumn({
   }
 
   function getPendingSliderValue(moduleId: string, parameterKey: string) {
-    if (
-      !pendingIntervention ||
-      pendingIntervention.status !== "queued" ||
-      pendingIntervention.intervention.moduleId !== moduleId
-    ) {
+    if (!pendingIntervention || pendingIntervention.status !== "queued") {
       return null
     }
 

@@ -144,7 +144,7 @@ public sealed partial class ExperimentSessionManager
                     normalizedActivePageIndex,
                     normalizedPageCount,
                     pageDidChange
-                        ? Math.Max(command.LastPageTurnAtUnixMs ?? updatedAtUnixMs, 0)
+                        ? updatedAtUnixMs
                         : previousViewport.LastPageTurnAtUnixMs,
                     command.Screen?.Copy())
             };

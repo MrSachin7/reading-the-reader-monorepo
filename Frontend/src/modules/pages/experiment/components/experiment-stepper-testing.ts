@@ -1,6 +1,6 @@
 export const experimentStepperTestingOverrides = {
   forceEyeTrackerReady: null,
   forceParticipantReady: null,
-  forceCalibrationReady: null,
+  forceCalibrationReady: true,
   forceReadingMaterialReady: null,
 } as const
