@@ -28,7 +28,8 @@ public sealed record UpdateReadingFocusCommand(
     double? NormalizedContentY,
     string? ActiveTokenId,
     string? ActiveBlockId,
-    string? ActiveSentenceId = null);
+    string? ActiveSentenceId = null,
+    string? ActiveTokenText = null);
 
 public sealed record UpdateReadingContextPreservationCommand(
     string Status,

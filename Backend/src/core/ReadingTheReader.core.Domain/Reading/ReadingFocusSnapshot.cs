@@ -7,7 +7,8 @@ public sealed record ReadingFocusSnapshot(
     string? ActiveTokenId,
     string? ActiveBlockId,
     string? ActiveSentenceId,
-    long UpdatedAtUnixMs)
+    long UpdatedAtUnixMs,
+    string? ActiveTokenText = null)
 {
     public static ReadingFocusSnapshot Empty { get; } = new(false, null, null, null, null, null, 0);
 

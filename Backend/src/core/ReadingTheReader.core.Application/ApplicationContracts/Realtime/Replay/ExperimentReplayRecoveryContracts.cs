@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 
@@ -26,4 +27,5 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     IReadOnlyList<ReadingContextPreservationEventRecord>? ContextPreservationEvents = null,
     IReadOnlyList<DecisionProposalEventRecord>? DecisionProposalEvents = null,
     IReadOnlyList<ScheduledInterventionEventRecord>? ScheduledInterventionEvents = null,
-    IReadOnlyList<InterventionEventRecord>? InterventionEvents = null);
+    IReadOnlyList<InterventionEventRecord>? InterventionEvents = null,
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats = null);

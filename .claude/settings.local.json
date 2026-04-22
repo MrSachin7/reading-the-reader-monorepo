@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(find /c/Users/s243871/reading-the-reader-monorepo/Backend/src -type f -name \"*.cs\" -exec grep -l \"TryApplyPendingInterventionForBoundary\" {} \\\\;)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(grep -n \"LatestSnapshot\\\\|InitialSnapshot\\\\|metadata\\\\\\\\.Latest\\\\|metadata\\\\\\\\.Initial\" \"C:\\\\Users\\\\s243871\\\\reading-the-reader-monorepo/Backend/src/infrastructure/ReadingTheReader.Realtime.Persistence/FileExperimentReplayRecoveryStoreAdapter.cs\")",
+      "Bash(dotnet build *)",
+      "Bash(bun tsc *)"
     ]
   }
 }

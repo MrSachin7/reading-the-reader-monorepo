@@ -9,6 +9,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.EyeMovementAnalysis;
+using ReadingTheReader.core.Domain.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
@@ -66,6 +67,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<DecisionProposalEventRecord> _pendingDecisionProposalEvents = [];
     private List<ScheduledInterventionEventRecord> _pendingScheduledInterventionEvents = [];
     private List<InterventionEventRecord> _pendingInterventionEvents = [];
+    private IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? _latestAttentionTokenStats;
 
     public ExperimentSessionManager(
         IEyeTrackerAdapter eyeTrackerAdapter,

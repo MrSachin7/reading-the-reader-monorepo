@@ -1,6 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.Realtime.Persistence;
 
@@ -29,7 +30,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
-                []);
+                [],
+                null);
         }
 
         return ValueTask.CompletedTask;
@@ -56,7 +58,10 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 ContextPreservationEvents = [.. session.ContextPreservationEvents, .. (batch.ContextPreservationEvents ?? []).Select(item => item.Copy())],
                 DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
                 ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
-                InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())]
+                InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())],
+                LatestTokenStats = batch.LatestTokenStats is null
+                    ? session.LatestTokenStats
+                    : batch.LatestTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())
             };
 
             _sessions[batch.SessionId] = session;
@@ -91,7 +96,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.ContextPreservationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
-                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.LatestTokenStats));
         }
     }
 
@@ -150,5 +156,6 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
-        IReadOnlyList<InterventionEventRecord> InterventionEvents);
+        IReadOnlyList<InterventionEventRecord> InterventionEvents,
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats);
 }

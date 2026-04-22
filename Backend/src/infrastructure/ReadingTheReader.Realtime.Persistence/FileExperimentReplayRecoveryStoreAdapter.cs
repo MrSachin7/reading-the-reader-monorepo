@@ -2,6 +2,7 @@ using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.Realtime.Persistence;
 
@@ -88,7 +89,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             batch.ContextPreservationEvents ?? [],
             batch.DecisionProposalEvents ?? [],
             batch.ScheduledInterventionEvents ?? [],
-            batch.InterventionEvents ?? []);
+            batch.InterventionEvents ?? [],
+            batch.LatestTokenStats ?? existingExport?.Derived?.FinalTokenStats);
 
         await WriteMetadataAsync(metadata, ct);
         await WriteRecoveryExportAsync(sessionDirectoryPath, recoveryExport, ct);
@@ -168,7 +170,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
-        IReadOnlyList<InterventionEventRecord> interventionEvents)
+        IReadOnlyList<InterventionEventRecord> interventionEvents,
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
     {
         return ExperimentReplayExportFactory.Create(
             metadata.InitialSnapshot,
@@ -183,7 +186,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             MergeAndSort(existingExport?.Derived.ContextPreservationEvents, contextPreservationEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Interventions.DecisionProposals, decisionProposalEvents, item => item.SequenceNumber),
             MergeAndSort(existingExport?.Interventions.ScheduledInterventions, scheduledInterventionEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Interventions.InterventionEvents, interventionEvents, item => item.SequenceNumber));
+            MergeAndSort(existingExport?.Interventions.InterventionEvents, interventionEvents, item => item.SequenceNumber),
+            finalTokenStats ?? existingExport?.Derived?.FinalTokenStats);
     }
 
     private static T[] MergeAndSort<T>(

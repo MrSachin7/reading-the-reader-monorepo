@@ -28,7 +28,8 @@ internal static class EyeMovementAnalysisProjector
                 previous.FixationCount,
                 previous.SkimCount,
                 Math.Max(previous.MaxFixationMs, currentTokenDurationMs.Value),
-                Math.Max(previous.LastFixationMs, currentTokenDurationMs.Value));
+                Math.Max(previous.LastFixationMs, currentTokenDurationMs.Value),
+                previous.Text);
         }
         else if (state.CandidateFixation is not null)
         {
@@ -47,7 +48,8 @@ internal static class EyeMovementAnalysisProjector
                     previous.FixationCount,
                     previous.SkimCount + (isFixation ? 0 : 1),
                     isFixation ? Math.Max(previous.MaxFixationMs, currentTokenDurationMs.Value) : previous.MaxFixationMs,
-                    isFixation ? Math.Max(previous.LastFixationMs, currentTokenDurationMs.Value) : previous.LastFixationMs);
+                    isFixation ? Math.Max(previous.LastFixationMs, currentTokenDurationMs.Value) : previous.LastFixationMs,
+                    state.CandidateFixation.TokenText ?? previous.Text);
             }
         }
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CsvHelper;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
@@ -13,7 +14,8 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
+        WriteIndented = false,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     public string Serialize(ExperimentReplayExport exportDocument, string format)
@@ -110,7 +112,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             EventType = item.EventType,
             Source = item.Source
         }));
@@ -121,7 +122,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.CapturedAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             LeftGazeX = item.Left?.GazePoint2D.X,
             LeftGazeY = item.Left?.GazePoint2D.Y,
             RightGazeX = item.Right?.GazePoint2D.X,
@@ -135,7 +135,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             ViewportTopPx = item.Viewport.ScrollTopPx,
             ViewportHeightPx = item.Viewport.ViewportHeightPx,
             Notes = item.Viewport.IsConnected ? "connected" : "disconnected"
@@ -147,7 +146,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             TokenId = item.Focus.ActiveTokenId,
             BlockId = item.Focus.ActiveBlockId,
             Notes = item.Focus.IsInsideReadingArea ? "inside-reading-area" : "outside-reading-area"
@@ -159,7 +157,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             TokenId = item.Summary.CurrentTokenId,
             MetricValue = item.Summary.CurrentTokenDurationMs,
             Details = $"fixated:{item.Summary.FixatedTokenCount}",
@@ -172,7 +169,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             EventType = item.Proposal.Status,
             Source = item.Proposal.ExecutionMode,
             Details = item.Proposal.ProviderId,
@@ -185,7 +181,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             EventType = item.Intervention.Trigger,
             Source = item.Intervention.Source,
             Details = item.Intervention.ModuleId,
@@ -198,7 +193,6 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             SessionId = sessionId,
             SequenceNumber = item.SequenceNumber,
             OccurredAtUnixMs = item.OccurredAtUnixMs,
-            ElapsedSinceStartMs = item.ElapsedSinceStartMs,
             EventType = item.Category,
             Source = item.Author,
             TokenId = item.TargetTokenId,
@@ -216,7 +210,6 @@ public sealed class ExperimentReplayCsvRow
     public string? SessionId { get; init; }
     public long? SequenceNumber { get; init; }
     public long? OccurredAtUnixMs { get; init; }
-    public long? ElapsedSinceStartMs { get; init; }
     public string? EventType { get; init; }
     public string? Source { get; init; }
     public string? Details { get; init; }
