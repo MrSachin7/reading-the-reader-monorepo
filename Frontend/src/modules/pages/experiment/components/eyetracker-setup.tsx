@@ -147,6 +147,20 @@ export function EyetrackerSetup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, stepOneDraft.lastSyncedFingerprint, stepOneDraft.selectionConfirmed])
 
+  React.useEffect(() => {
+    // Auto-select if exactly one eyetracker is available and nothing is selected
+    const selectableOptions = eyetrackerOptions.filter((opt) => opt.isSelectable)
+    if (
+      selectableOptions.length === 1 &&
+      !selectedSerialNumber
+    ) {
+      form.setValue("serialNumber", selectableOptions[0].value, {
+        shouldDirty: false,
+        shouldValidate: false,
+      })
+    }
+  }, [eyetrackerOptions, selectedSerialNumber, form])
+
   const handleReloadEyetrackers = () => {
     setIsReloadAnimating(true)
     void refetch()

@@ -7,7 +7,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay
 public static class ExperimentReplayExportSchema
 {
     public const string Name = "rtr.experiment-export";
-    public const int Version = 4;
+    public const int Version = 5;
 }
 
 public sealed record ExperimentReplayExportManifest(
@@ -248,7 +248,6 @@ public sealed record ReplayEyeSample(
 public sealed record RawGazeSampleRecord(
     long SequenceNumber,
     long CapturedAtUnixMs,
-    long? ElapsedSinceStartMs,
     long DeviceTimeStampUs,
     long? SystemTimeStampUs,
     ReplayEyeSample? Left,
@@ -259,7 +258,6 @@ public sealed record RawGazeSampleRecord(
         return new RawGazeSampleRecord(
             SequenceNumber,
             CapturedAtUnixMs,
-            ElapsedSinceStartMs,
             DeviceTimeStampUs,
             SystemTimeStampUs,
             Left?.Copy(),
@@ -267,18 +265,29 @@ public sealed record RawGazeSampleRecord(
     }
 }
 
+public sealed record ReadingAttentionEventSummary(
+    long UpdatedAtUnixMs,
+    string? CurrentTokenId,
+    long? CurrentTokenDurationMs,
+    int FixatedTokenCount,
+    int SkimmedTokenCount)
+{
+    public ReadingAttentionEventSummary Copy()
+    {
+        return this with { };
+    }
+}
+
 public sealed record ReadingAttentionEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
-    ReadingAttentionSummarySnapshot Summary)
+    ReadingAttentionEventSummary Summary)
 {
     public ReadingAttentionEventRecord Copy()
     {
         return new ReadingAttentionEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Summary.Copy());
     }
 }
@@ -286,7 +295,6 @@ public sealed record ReadingAttentionEventRecord(
 public sealed record ReadingContextPreservationEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     ReadingContextPreservationEventSnapshot ContextPreservation)
 {
     public ReadingContextPreservationEventRecord Copy()
@@ -294,7 +302,6 @@ public sealed record ReadingContextPreservationEventRecord(
         return new ReadingContextPreservationEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             ContextPreservation.Copy());
     }
 }
@@ -302,7 +309,6 @@ public sealed record ReadingContextPreservationEventRecord(
 public sealed record ScheduledInterventionEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     PendingInterventionSnapshot PendingIntervention)
 {
     public ScheduledInterventionEventRecord Copy()
@@ -310,7 +316,6 @@ public sealed record ScheduledInterventionEventRecord(
         return new ScheduledInterventionEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             PendingIntervention.Copy());
     }
 }
@@ -319,7 +324,6 @@ public sealed record ReadingSessionStateRecord(
     long SequenceNumber,
     string Reason,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     LiveReadingSessionSnapshot Session)
 {
     public ReadingSessionStateRecord Copy()
@@ -328,7 +332,6 @@ public sealed record ReadingSessionStateRecord(
             SequenceNumber,
             Reason,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Session.Copy());
     }
 }
@@ -347,7 +350,8 @@ public sealed record ExperimentReplayDerived(
     IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
     IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
     IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
-    IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents)
+    IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null)
 {
     public ExperimentReplayDerived Copy()
     {
@@ -355,7 +359,10 @@ public sealed record ExperimentReplayDerived(
             ViewportEvents is null ? [] : [.. ViewportEvents.Select(item => item.Copy())],
             FocusEvents is null ? [] : [.. FocusEvents.Select(item => item.Copy())],
             AttentionEvents is null ? [] : [.. AttentionEvents.Select(item => item.Copy())],
-            ContextPreservationEvents is null ? [] : [.. ContextPreservationEvents.Select(item => item.Copy())]);
+            ContextPreservationEvents is null ? [] : [.. ContextPreservationEvents.Select(item => item.Copy())],
+            FinalTokenStats is null
+                ? null
+                : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()));
     }
 }
 
@@ -398,7 +405,6 @@ public sealed record ExperimentReplayAnnotation(
     string Id,
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     string? Author,
     string? Category,
     string Note,
@@ -439,8 +445,7 @@ public sealed record ExperimentLifecycleEventRecord(
     long SequenceNumber,
     string EventType,
     string Source,
-    long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs)
+    long OccurredAtUnixMs)
 {
     public ExperimentLifecycleEventRecord Copy()
     {
@@ -451,7 +456,6 @@ public sealed record ExperimentLifecycleEventRecord(
 public sealed record ParticipantViewportEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     ParticipantViewportSnapshot Viewport)
 {
     public ParticipantViewportEventRecord Copy()
@@ -459,7 +463,6 @@ public sealed record ParticipantViewportEventRecord(
         return new ParticipantViewportEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Viewport.Copy());
     }
 }
@@ -467,7 +470,6 @@ public sealed record ParticipantViewportEventRecord(
 public sealed record ReadingFocusEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     ReadingFocusSnapshot Focus)
 {
     public ReadingFocusEventRecord Copy()
@@ -475,7 +477,6 @@ public sealed record ReadingFocusEventRecord(
         return new ReadingFocusEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Focus.Copy());
     }
 }
@@ -483,7 +484,6 @@ public sealed record ReadingFocusEventRecord(
 public sealed record DecisionProposalEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     DecisionProposalSnapshot Proposal)
 {
     public DecisionProposalEventRecord Copy()
@@ -491,7 +491,6 @@ public sealed record DecisionProposalEventRecord(
         return new DecisionProposalEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Proposal.Copy());
     }
 }
@@ -499,7 +498,6 @@ public sealed record DecisionProposalEventRecord(
 public sealed record InterventionEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    long? ElapsedSinceStartMs,
     InterventionEventSnapshot Intervention)
 {
     public InterventionEventRecord Copy()
@@ -507,7 +505,6 @@ public sealed record InterventionEventRecord(
         return new InterventionEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            ElapsedSinceStartMs,
             Intervention.Copy());
     }
 }

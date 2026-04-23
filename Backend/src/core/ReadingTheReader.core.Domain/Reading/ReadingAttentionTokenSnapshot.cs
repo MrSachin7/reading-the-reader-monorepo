@@ -5,7 +5,8 @@ public sealed record ReadingAttentionTokenSnapshot(
     int FixationCount,
     int SkimCount,
     long MaxFixationMs,
-    long LastFixationMs)
+    long LastFixationMs,
+    string? Text = null)
 {
     public ReadingAttentionTokenSnapshot Copy()
     {

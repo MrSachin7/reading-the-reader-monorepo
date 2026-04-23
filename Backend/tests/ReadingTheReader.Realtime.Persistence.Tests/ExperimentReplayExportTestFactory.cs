@@ -17,13 +17,8 @@ internal static class ExperimentReplayExportTestFactory
         var screen = new ParticipantScreenSnapshot(1536, 864, 1536, 824, 1920, 1080, 1.25);
         var viewport = new ParticipantViewportSnapshot(true, 0.35, 420, 1280, 720, 2400, 900, 1_710_000_001_500, Screen: screen);
         var focus = new ReadingFocusSnapshot(true, 0.5, 0.4, "token-1", "block-1", "sentence-1", 1_710_000_001_600);
-        var attentionSummary = new ReadingAttentionSummarySnapshot(
+        var attentionSummary = new ReadingAttentionEventSummary(
             1_710_000_001_900,
-            new Dictionary<string, ReadingAttentionTokenSnapshot>
-            {
-                ["token-1"] = new(340, 1, 0, 340, 340),
-                ["token-2"] = new(0, 0, 1, 0, 0)
-            },
             "token-1",
             340,
             1,
@@ -136,7 +131,7 @@ internal static class ExperimentReplayExportTestFactory
                     0.5,
                     0.2,
                     9),
-                [new ExperimentLifecycleEventRecord(1, "session-started", "system", 1_710_000_000_000, 0)]),
+                [new ExperimentLifecycleEventRecord(1, "session-started", "system", 1_710_000_000_000)]),
             new ExperimentReplayContent(
                 "doc-1",
                 "Sample",
@@ -150,7 +145,6 @@ internal static class ExperimentReplayExportTestFactory
                     new RawGazeSampleRecord(
                         2,
                         1_710_000_000_100,
-                        100,
                         123,
                         321,
                         new ReplayEyeSample(
@@ -167,14 +161,14 @@ internal static class ExperimentReplayExportTestFactory
                             new ReplayEyeTrackBoxPoint(0.4f, 0.5f, 0.6f)))
                 ]),
             new ExperimentReplayDerived(
-                [new ParticipantViewportEventRecord(3, 1_710_000_001_500, 1500, viewport)],
-                [new ReadingFocusEventRecord(4, 1_710_000_001_600, 1600, focus)],
-                [new ReadingAttentionEventRecord(5, 1_710_000_001_900, 1900, attentionSummary)],
-                [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, 2100, contextPreservation)]),
+                [new ParticipantViewportEventRecord(3, 1_710_000_001_500, viewport)],
+                [new ReadingFocusEventRecord(4, 1_710_000_001_600, focus)],
+                [new ReadingAttentionEventRecord(5, 1_710_000_001_900, attentionSummary)],
+                [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, contextPreservation)]),
             new ExperimentReplayInterventions(
-                [new DecisionProposalEventRecord(7, 1_710_000_002_000, 2000, proposal)],
-                [new ScheduledInterventionEventRecord(8, 1_710_000_001_700, 1700, scheduledIntervention)],
-                [new InterventionEventRecord(9, 1_710_000_002_000, 2000, intervention)]),
+                [new DecisionProposalEventRecord(7, 1_710_000_002_000, proposal)],
+                [new ScheduledInterventionEventRecord(8, 1_710_000_001_700, scheduledIntervention)],
+                [new InterventionEventRecord(9, 1_710_000_002_000, intervention)]),
             new ExperimentReplayData(
                 new ExperimentReplayBaseline(
                     presentation,

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 
@@ -19,7 +20,8 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
-        IReadOnlyList<InterventionEventRecord> interventionEvents)
+        IReadOnlyList<InterventionEventRecord> interventionEvents,
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
         var isLiveExport = latestSnapshot.IsActive &&
@@ -130,7 +132,10 @@ public static class ExperimentReplayExportFactory
                 participantViewportEvents.Select(item => item.Copy()).ToArray(),
                 readingFocusEvents.Select(item => item.Copy()).ToArray(),
                 attentionEvents.Select(item => item.Copy()).ToArray(),
-                contextPreservationEvents.Select(item => item.Copy()).ToArray()),
+                contextPreservationEvents.Select(item => item.Copy()).ToArray(),
+                finalTokenStats is null
+                    ? null
+                    : finalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())),
             new ExperimentReplayInterventions(
                 decisionProposalEvents.Select(item => item.Copy()).ToArray(),
                 scheduledInterventionEvents.Select(item => item.Copy()).ToArray(),

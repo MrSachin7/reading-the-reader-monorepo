@@ -27,10 +27,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="data\reading-material-setups\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\satish-0761a1f54c8246a8bb51c84e0eba433b\participant-replay-recovery.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\satish-0761a1f54c8246a8bb51c84e0eba433b\session-meta.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\asdwad-1767e263f3884269a8a6e76594e152b4\participant-replay-recovery.json" />
@@ -52,6 +48,29 @@
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sdsa-a4713458f62b40859404db0d089e57fa\session-meta.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\asfas-ad30652052354bb1852c1ec4dea11d5b\participant-replay-recovery.json" />
       <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\asfas-ad30652052354bb1852c1ec4dea11d5b\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\hello-a697cb323a5e4391ab8feb8831738fc0\completed-experiment.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\hello-bcd2f64d8fb74347b769d59d4bfa0936\completed-experiment.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-2e6a6f48575f446eac36f9d1c163dcc2\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-2e6a6f48575f446eac36f9d1c163dcc2\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-5c4e2d5b36284800b1f6baa113cdfbdd\completed-experiment.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-629ac8f3f53e46afa912f1f9628a5f9b\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-629ac8f3f53e46afa912f1f9628a5f9b\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-7bfe34d8512244c583b55820cc95b1a0\completed-experiment.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-ad1eb473b14f49378efa8654fe0ec3d4\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-ad1eb473b14f49378efa8654fe0ec3d4\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4a600c61567c4357824f7e65fb1369ed\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4a600c61567c4357824f7e65fb1369ed\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4c005a08898e4c1883a9819dc06e1693\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4c005a08898e4c1883a9819dc06e1693\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4eae61a107e34996aa4d1e509ad431ae\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-baral-4eae61a107e34996aa4d1e509ad431ae\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-e97496ca5bb743569dea6b0f009ec0da\participant-replay-recovery.json" />
+      <_ContentIncludedByDefault Remove="data\experiment-replay-recovery\sachin-e97496ca5bb743569dea6b0f009ec0da\session-meta.json" />
+      <_ContentIncludedByDefault Remove="data\live-experiments\2e6a6f48575f446eac36f9d1c163dcc2\experiment-session-live.json" />
+      <_ContentIncludedByDefault Remove="data\live-experiments\4a600c61567c4357824f7e65fb1369ed\experiment-session-live.json" />
+      <_ContentIncludedByDefault Remove="data\live-experiments\4c005a08898e4c1883a9819dc06e1693\experiment-session-live.json" />
+      <_ContentIncludedByDefault Remove="data\live-experiments\629ac8f3f53e46afa912f1f9628a5f9b\experiment-session-live.json" />
+      <_ContentIncludedByDefault Remove="data\live-experiments\ad1eb473b14f49378efa8654fe0ec3d4\experiment-session-live.json" />
     </ItemGroup>
 
 </Project>

@@ -9,7 +9,8 @@ public sealed record FixationCandidateState(
     int TokenIndex,
     int LineIndex,
     int BlockIndex,
-    long StartedAtUnixMs)
+    long StartedAtUnixMs,
+    string? TokenText = null)
 {
     public FixationCandidateState Copy()
     {

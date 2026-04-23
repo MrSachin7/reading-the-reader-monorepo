@@ -108,6 +108,7 @@ export function ReadingPage() {
       activeTokenId: focus.activeTokenId,
       activeBlockId: focus.activeBlockId,
       activeSentenceId: focus.activeSentenceId,
+      activeTokenText: focus.activeTokenText,
     })
   }, [])
 

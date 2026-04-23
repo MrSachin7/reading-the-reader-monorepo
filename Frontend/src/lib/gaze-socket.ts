@@ -242,6 +242,7 @@ type ReadingFocusPayload = {
   activeTokenId: string | null;
   activeBlockId: string | null;
   activeSentenceId: string | null;
+  activeTokenText?: string | null;
 };
 type ReadingGazeObservationPayload = ReadingGazeObservationSnapshot;
 type ReadingContextPreservationPayload = ReadingContextPreservationSnapshot;
