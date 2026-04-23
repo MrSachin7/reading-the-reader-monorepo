@@ -74,7 +74,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     runtimeState.CurrentFixation,
                     runtimeState.TokenStats,
                     runtimeState.RecentFixations,
-                    runtimeState.CandidateFixation.StartedAtUnixMs);
+                    runtimeState.CandidateFixation.StartedAtUnixMs,
+                    runtimeState.CurrentFixation?.TokenText);
                 var nextFixation = new FixationSnapshot(
                     runtimeState.CandidateFixation.TokenId,
                     runtimeState.CandidateFixation.BlockId,
@@ -84,7 +85,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     runtimeState.CandidateFixation.StartedAtUnixMs,
                     observation.ObservedAtUnixMs,
                     durationMs,
-                    null);
+                    null,
+                    runtimeState.CandidateFixation.TokenText);
 
                 return ValueTask.FromResult<EyeMovementAnalysisProcessingResult?>(
                     new EyeMovementAnalysisProcessingResult(runtimeState with
@@ -105,7 +107,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
             runtimeState.CurrentFixation,
             runtimeState.TokenStats,
             runtimeState.RecentFixations,
-            observation.ObservedAtUnixMs);
+            observation.ObservedAtUnixMs,
+            null);
 
         return ValueTask.FromResult<EyeMovementAnalysisProcessingResult?>(
             new EyeMovementAnalysisProcessingResult(runtimeState with
@@ -119,7 +122,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     observation.TokenIndex.Value,
                     observation.LineIndex.Value,
                     observation.BlockIndex.Value,
-                    observation.ObservedAtUnixMs)
+                    observation.ObservedAtUnixMs,
+                    NormalizeNullableText(observation.TokenText))
             }));
     }
 
@@ -161,7 +165,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
             runtimeState.CurrentFixation,
             runtimeState.TokenStats,
             runtimeState.RecentFixations,
-            observation.ObservedAtUnixMs);
+            observation.ObservedAtUnixMs,
+            runtimeState.CurrentFixation?.TokenText);
         return runtimeState with
         {
             CandidateFixation = null,
@@ -176,7 +181,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
             FixationSnapshot? currentFixation,
             IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot> tokenStats,
             IReadOnlyList<FixationSnapshot>? recentFixations,
-            long endedAtUnixMs)
+            long endedAtUnixMs,
+            string? tokenText)
     {
         var nextTokenStats = tokenStats is null
             ? new Dictionary<string, ReadingAttentionTokenSnapshot>(StringComparer.Ordinal)
@@ -200,13 +206,15 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
             ? currentStats
             : new ReadingAttentionTokenSnapshot(0, 0, 0, 0, 0);
         var isFixation = durationMs >= FixationThresholdMs;
+        var effectiveText = tokenText ?? previousStats.Text;
 
         nextTokenStats[currentFixation.TokenId] = new ReadingAttentionTokenSnapshot(
             previousStats.FixationMs + (isFixation ? durationMs : 0),
             previousStats.FixationCount + (isFixation ? 1 : 0),
             previousStats.SkimCount + (isFixation ? 0 : 1),
             isFixation ? Math.Max(previousStats.MaxFixationMs, durationMs) : previousStats.MaxFixationMs,
-            isFixation ? durationMs : previousStats.LastFixationMs);
+            isFixation ? durationMs : previousStats.LastFixationMs,
+            effectiveText);
 
         if (isFixation)
         {

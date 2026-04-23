@@ -63,7 +63,7 @@ export function ReplayUploadState({
           <Input
             id={inputId}
             type="file"
-            accept=".json,.csv,application/json,text/csv"
+            accept=".json,.json.gz,.csv,application/json,text/csv,application/gzip"
             className="sr-only"
             onChange={onInputChange}
           />

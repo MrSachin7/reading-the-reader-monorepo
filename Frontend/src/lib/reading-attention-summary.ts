@@ -6,6 +6,7 @@ export type ReadingAttentionTokenStats = {
   skimCount: number;
   maxFixationMs: number;
   lastFixationMs: number;
+  text?: string | null;
 };
 
 export type ReadingAttentionSummarySnapshot = {

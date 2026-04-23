@@ -216,7 +216,8 @@ public sealed partial class ExperimentSessionManager
                     command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveTokenId) : null,
                     command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveBlockId) : null,
                     command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveSentenceId) : null,
-                    updatedAtUnixMs)
+                    updatedAtUnixMs,
+                    command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveTokenText) : null)
             };
 
             focus = _liveReadingSession.Focus.Copy();

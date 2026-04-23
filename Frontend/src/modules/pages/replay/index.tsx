@@ -9,6 +9,7 @@ import {
   buildReplayKeyEvents,
   findReplayKeyEventIndex,
   parseExperimentReplayExport,
+  readExperimentReplayExportFile,
   resolveReplayDurationMs,
   type ExperimentReplayExport,
 } from "@/lib/experiment-replay"
@@ -162,8 +163,7 @@ export default function ReplayPage() {
 
   const handleImportedFile = useCallback(async (file: File) => {
     try {
-      const text = await file.text()
-      const parsed = parseExperimentReplayExport(text)
+      const parsed = await readExperimentReplayExportFile(file)
       setReplay(parsed)
       setCurrentTimeMs(0)
       setPlaybackSpeed(1)

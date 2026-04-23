@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventi
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -111,6 +112,7 @@ public sealed partial class ExperimentSessionManager
             _pendingDecisionProposalEvents = [];
             _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
+            _latestAttentionTokenStats = null;
         }
     }
 
@@ -127,8 +129,7 @@ public sealed partial class ExperimentSessionManager
                 NextSequenceNumber(),
                 eventType,
                 source,
-                occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs)));
+                occurredAtUnixMs));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -140,7 +141,6 @@ public sealed partial class ExperimentSessionManager
             _pendingGazeSamples.Add(new RawGazeSampleRecord(
                 NextSequenceNumber(),
                 capturedAtUnixMs,
-                CalculateElapsedSinceStart(capturedAtUnixMs),
                 gazeData.DeviceTimeStamp,
                 gazeData.SystemTimeStamp,
                 ToReplayEyeSample(
@@ -197,7 +197,6 @@ public sealed partial class ExperimentSessionManager
             _pendingParticipantViewportEvents.Add(new ParticipantViewportEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 viewport.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -210,7 +209,6 @@ public sealed partial class ExperimentSessionManager
             _pendingReadingFocusEvents.Add(new ReadingFocusEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 focus.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -220,11 +218,18 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
+            _latestAttentionTokenStats = summary.TokenStats is null
+                ? null
+                : summary.TokenStats.ToDictionary(e => e.Key, e => e.Value.Copy());
             _pendingAttentionEvents.Add(new ReadingAttentionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
-                summary.Copy()));
+                new ReadingAttentionEventSummary(
+                    summary.UpdatedAtUnixMs,
+                    summary.CurrentTokenId,
+                    summary.CurrentTokenDurationMs,
+                    summary.FixatedTokenCount,
+                    summary.SkimmedTokenCount)));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -238,7 +243,6 @@ public sealed partial class ExperimentSessionManager
             _pendingContextPreservationEvents.Add(new ReadingContextPreservationEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 contextPreservation.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -251,7 +255,6 @@ public sealed partial class ExperimentSessionManager
             _pendingDecisionProposalEvents.Add(new DecisionProposalEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 proposal.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -264,7 +267,6 @@ public sealed partial class ExperimentSessionManager
             _pendingScheduledInterventionEvents.Add(new ScheduledInterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 pendingIntervention.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -277,7 +279,6 @@ public sealed partial class ExperimentSessionManager
             _pendingInterventionEvents.Add(new InterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                CalculateElapsedSinceStart(occurredAtUnixMs),
                 intervention.Copy()));
             _hasPendingReplayPersistence = true;
         }
@@ -299,6 +300,7 @@ public sealed partial class ExperimentSessionManager
         DecisionProposalEventRecord[] decisionProposalEvents;
         ScheduledInterventionEventRecord[] scheduledInterventionEvents;
         InterventionEventRecord[] interventionEvents;
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? latestTokenStats;
 
         lock (_historyGate)
         {
@@ -319,6 +321,9 @@ public sealed partial class ExperimentSessionManager
             decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
             scheduledInterventionEvents = _pendingScheduledInterventionEvents.Select(item => item.Copy()).ToArray();
             interventionEvents = _pendingInterventionEvents.Select(item => item.Copy()).ToArray();
+            latestTokenStats = _latestAttentionTokenStats is null
+                ? null
+                : _latestAttentionTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy());
 
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
@@ -349,7 +354,8 @@ public sealed partial class ExperimentSessionManager
                     contextPreservationEvents,
                     decisionProposalEvents,
                     scheduledInterventionEvents,
-                    interventionEvents),
+                    interventionEvents,
+                    latestTokenStats),
                 ct);
         }
         catch
@@ -409,14 +415,5 @@ public sealed partial class ExperimentSessionManager
         return Interlocked.Increment(ref _eventSequenceNumber);
     }
 
-    private long? CalculateElapsedSinceStart(long occurredAtUnixMs)
-    {
-        var startedAtUnixMs = Volatile.Read(ref _session).StartedAtUnixMs;
-        if (startedAtUnixMs <= 0)
-        {
-            return null;
-        }
 
-        return Math.Max(0, occurredAtUnixMs - startedAtUnixMs);
-    }
 }

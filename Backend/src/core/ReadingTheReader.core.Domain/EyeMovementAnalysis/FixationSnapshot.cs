@@ -9,7 +9,8 @@ public sealed record FixationSnapshot(
     long StartedAtUnixMs,
     long LastObservedAtUnixMs,
     long DurationMs,
-    long? EndedAtUnixMs = null)
+    long? EndedAtUnixMs = null,
+    string? TokenText = null)
 {
     public FixationSnapshot Copy()
     {
