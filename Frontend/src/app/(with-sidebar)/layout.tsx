@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
+import { BookOpen, ExternalLink, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
 
 import { FontSelector } from "@/components/theme/font-selector";
 import { ModeToggle } from "@/components/theme/mode-toggle";
@@ -79,6 +79,14 @@ export default function WithSidebarLayout({
                     <Link href="/researcher/current-live">
                       <SquareDashedMousePointer />
                       <span>Researcher Live</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Open Participant View">
+                    <Link href="/participant" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink />
+                      <span>Open Participant View</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

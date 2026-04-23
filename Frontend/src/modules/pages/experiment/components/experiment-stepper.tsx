@@ -73,6 +73,7 @@ import { experimentStepperTestingOverrides } from "./experiment-stepper-testing"
 export type ExperimentStepperMode = "researcher" | "participant"
 const PARTICIPANT_CALIBRATION_RERUN_REQUEST_KEY = "participant-calibration-rerun-request"
 const PARTICIPANT_CALIBRATION_RERUN_HANDLED_KEY = "participant-calibration-rerun-handled"
+const PARTICIPANT_FLOW_STARTED_KEY = "participant-flow-started-v2"
 
 export type ExperimentStep = {
   value: number
@@ -1295,6 +1296,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
   const [isStepSubmitting, setIsStepSubmitting] = React.useState(false)
   const [startError, setStartError] = React.useState<string | null>(null)
   const [participantRerunNotice, setParticipantRerunNotice] = React.useState<string | null>(null)
+  const [participantFlowStarted, setParticipantFlowStarted] = React.useState(false)
   const [stepCompletion, setStepCompletion] = React.useState<Record<number, boolean>>({
     0: false,
     1: false,
@@ -1309,6 +1311,16 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     () => getAuthoritativeWorkflowStepStates(setup, sensingMode),
     [setup, sensingMode]
   )
+  const backendResearcherSetupStarted =
+    setup.eyeTracker.hasSelectedEyeTracker ||
+    setup.eyeTracker.hasAppliedLicence ||
+    setup.eyeTracker.isReady ||
+    setup.readingMaterial.hasReadingMaterial ||
+    setup.readingMaterial.isReady ||
+    setup.participant.hasParticipant ||
+    setup.calibration.hasCalibrationSession
+  const hasResearcherStartedSetup =
+    participantFlowStarted || backendResearcherSetupStarted
   const researcherPreparationReady =
     (workflowStepStates[0]?.isReady ?? false) && (workflowStepStates[1]?.isReady ?? false)
   const firstIncompleteStepIndex = workflowStepStates.findIndex((state) => !state.isReady)
@@ -1345,6 +1357,41 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     (isParticipantMode ? step === 2 : step < steps.length - 1)
   const canStartReadingSession =
     workflowStepStates.every((state) => state.isReady) && hasLocalReadingSelection
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !isParticipantMode) {
+      return
+    }
+
+    const syncFromStorage = () => {
+      setParticipantFlowStarted(Boolean(window.localStorage.getItem(PARTICIPANT_FLOW_STARTED_KEY)))
+    }
+
+    syncFromStorage()
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== PARTICIPANT_FLOW_STARTED_KEY) {
+        return
+      }
+
+      syncFromStorage()
+    }
+
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [isParticipantMode])
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !isParticipantMode) {
+      return
+    }
+
+    if (experimentSession?.isActive || backendResearcherSetupStarted) {
+      return
+    }
+
+    setParticipantFlowStarted(false)
+    window.localStorage.removeItem(PARTICIPANT_FLOW_STARTED_KEY)
+  }, [backendResearcherSetupStarted, experimentSession?.isActive, isParticipantMode])
 
   React.useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -1653,15 +1700,21 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
                 <Badge variant="outline">Waiting</Badge>
               </div>
               <CardTitle className="mt-3 text-3xl tracking-tight">
-                Your session is being prepared.
+                {hasResearcherStartedSetup
+                  ? "Your session is being prepared."
+                  : "Experiment has not started yet."}
               </CardTitle>
               <CardDescription className="max-w-3xl text-base leading-7">
-                The researcher is finishing setup. This page will unlock automatically when it is ready.
+                {hasResearcherStartedSetup
+                  ? "The researcher is finishing setup. This page will unlock automatically when it is ready."
+                  : "The researcher has not started experiment setup yet. This page will unlock after setup begins."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <p className="text-sm leading-6 text-muted-foreground">
-                Please wait here. Your participant steps will appear as soon as the researcher finishes preparation.
+                {hasResearcherStartedSetup
+                  ? "Please wait here. Your participant steps will appear as soon as the researcher finishes preparation."
+                  : "Please keep this page open. Once the researcher clicks Start Experiment and begins setup, your steps will appear automatically."}
               </p>
             </CardContent>
           </Card>
@@ -1742,7 +1795,9 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
           {isParticipantMode ? (
             !researcherPreparationReady ? (
               <p className="text-sm leading-6 text-muted-foreground">
-                Preparing your setup. Your steps will appear in a moment.
+                {hasResearcherStartedSetup
+                  ? "Preparing your setup. Your steps will appear in a moment."
+                  : "Waiting for the researcher to start the experiment setup."}
               </p>
             ) : step === 2 ? (
               <Button
