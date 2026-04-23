@@ -70,10 +70,16 @@ import {
 } from "./utils"
 import { experimentStepperTestingOverrides } from "./experiment-stepper-testing"
 
+export type ExperimentStepperMode = "researcher" | "participant"
+const PARTICIPANT_CALIBRATION_RERUN_REQUEST_KEY = "participant-calibration-rerun-request"
+const PARTICIPANT_CALIBRATION_RERUN_HANDLED_KEY = "participant-calibration-rerun-handled"
+const PARTICIPANT_FLOW_STARTED_KEY = "participant-flow-started-v2"
+
 export type ExperimentStep = {
   value: number
   name: string
   label: string
+  owner: "Researcher" | "Participant"
   description: string
   icon: LucideIcon
 }
@@ -83,6 +89,8 @@ type ExperimentStepNavigationProps = {
   onStepChange: (value: number) => void
   stepStates: AuthoritativeWorkflowStepState[]
   steps: ExperimentStep[]
+  mode: ExperimentStepperMode
+  selectableSteps: number[]
 }
 
 export function ExperimentStepNavigation({
@@ -90,12 +98,18 @@ export function ExperimentStepNavigation({
   onStepChange,
   stepStates,
   steps,
+  mode,
+  selectableSteps,
 }: ExperimentStepNavigationProps) {
   return (
     <div className="space-y-3">
       <div>
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Experiment flow</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">Set up, register, calibrate, choose content.</h2>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          {mode === "researcher"
+            ? "Researcher preparation first, participant setup second."
+            : "Follow the remaining participant steps once the researcher preparation is complete."}
+        </h2>
       </div>
       {steps.map((stepItem) => {
         const Icon = stepItem.icon
@@ -103,6 +117,8 @@ export function ExperimentStepNavigation({
         const isActive = step === stepItem.value
         const isCompleted = Boolean(stepState?.isReady)
         const isLocked = !(stepState?.isAvailable ?? stepItem.value === 0) && !isCompleted
+        const isReadOnly = !isLocked && !selectableSteps.includes(stepItem.value)
+        const isSelectable = !isLocked && selectableSteps.includes(stepItem.value)
         const stepStatus = isCompleted
           ? "Done"
           : isActive
@@ -115,9 +131,9 @@ export function ExperimentStepNavigation({
           <button
             key={stepItem.value}
             type="button"
-            disabled={isLocked}
+            disabled={!isSelectable}
             onClick={() => {
-              if (!isLocked) {
+              if (isSelectable) {
                 onStepChange(stepItem.value)
               }
             }}
@@ -145,6 +161,8 @@ export function ExperimentStepNavigation({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-base font-semibold">{stepItem.label}</p>
+                  <Badge variant="outline">{stepItem.owner}</Badge>
+                  {isReadOnly ? <Badge variant="outline">Read only</Badge> : null}
                   <Badge variant={isCompleted ? "secondary" : "outline"}>{stepStatus}</Badge>
                 </div>
                 <p className="mt-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -166,29 +184,33 @@ const steps: ExperimentStep[] = [
     value: 0,
     name: "step1",
     label: "Choose eyetracker",
+    owner: "Researcher",
     description: "Select the device and its licence so the session can talk to the tracker.",
     icon: Crosshair,
   },
   {
     value: 1,
     name: "step2",
-    label: "Participant info",
-    description: "Record the participant details.",
-    icon: FileText,
+    label: "Reading material",
+    owner: "Researcher",
+    description: "Choose the text, apply the baseline, and confirm runtime plugins.",
+    icon: BookOpen,
   },
   {
     value: 2,
     name: "step3",
-    label: "Calibration",
-    description: "Open the calibration page, complete it, and come back here when it is done.",
-    icon: ScanEye,
+    label: "Participant info",
+    owner: "Participant",
+    description: "Record the participant details after researcher preparation is complete.",
+    icon: FileText,
   },
   {
     value: 3,
     name: "step4",
-    label: "Reading material",
-    description: "Choose the reading text and apply an experiment setup before starting.",
-    icon: BookOpen,
+    label: "Calibration",
+    owner: "Participant",
+    description: "Open the calibration page, complete it, and come back here when it is done.",
+    icon: ScanEye,
   },
 ]
 
@@ -529,6 +551,7 @@ function ParticipantInformationForm({
   })
 
   const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const lastAppliedSyncedFingerprintRef = React.useRef<string | null>(null)
 
   const isComplete = participantFormSchema.safeParse({
     name: watchedName,
@@ -558,6 +581,30 @@ function ParticipantInformationForm({
     dispatch(setStepTwoReadingProficiency(watchedReadingProficiency ?? ""))
   }, [dispatch, watchedReadingProficiency])
 
+  React.useEffect(() => {
+    const syncedFingerprint = stepTwoDraft.lastSyncedFingerprint
+    if (!syncedFingerprint || lastAppliedSyncedFingerprintRef.current === syncedFingerprint) {
+      return
+    }
+
+    form.reset({
+      name: stepTwoDraft.name,
+      age: stepTwoDraft.age,
+      sex: stepTwoDraft.sex,
+      eyeCondition: stepTwoDraft.eyeCondition,
+      readingProficiency: stepTwoDraft.readingProficiency,
+    })
+    lastAppliedSyncedFingerprintRef.current = syncedFingerprint
+  }, [
+    form,
+    stepTwoDraft.age,
+    stepTwoDraft.eyeCondition,
+    stepTwoDraft.lastSyncedFingerprint,
+    stepTwoDraft.name,
+    stepTwoDraft.readingProficiency,
+    stepTwoDraft.sex,
+  ])
+
   const submitParticipantForm = React.useCallback(async () => {
     setSubmitError(null)
 
@@ -567,7 +614,13 @@ function ParticipantInformationForm({
     }
 
     const data = form.getValues()
-    const currentFingerprint = JSON.stringify(data)
+    const currentFingerprint = JSON.stringify({
+      name: data.name,
+      age: data.age,
+      sex: data.sex,
+      eyeCondition: data.eyeCondition,
+      readingProficiency: data.readingProficiency,
+    })
 
     if (stepTwoDraft.lastSyncedFingerprint === currentFingerprint) {
       return true
@@ -582,6 +635,7 @@ function ParticipantInformationForm({
         readingProficiency: data.readingProficiency,
       }).unwrap()
       dispatch(setStepTwoLastSyncedFingerprint(currentFingerprint))
+      lastAppliedSyncedFingerprintRef.current = currentFingerprint
       return true
     } catch (error) {
       setSubmitError(getErrorMessage(error, "Failed to save participant. Please try again."))
@@ -607,7 +661,7 @@ function ParticipantInformationForm({
     <Card>
       <CardHeader className="border-b pb-6">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Step 2</Badge>
+          <Badge variant="secondary">Step 3</Badge>
           <Badge variant="outline">Participant</Badge>
         </div>
         <CardTitle className="mt-3 text-3xl tracking-tight">Capture participant information.</CardTitle>
@@ -751,6 +805,8 @@ function ParticipantInformationForm({
 
 type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
+  onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
+  saveReadingSessionDraft?: () => Promise<boolean>
   currentDecisionConfiguration?: DecisionConfiguration
   currentEyeMovementAnalysisConfiguration?: EyeMovementAnalysisConfiguration
   externalProviderStatus?: ExternalProviderStatusSnapshot
@@ -760,6 +816,8 @@ type SessionContentStepProps = {
 
 function SessionContentStep({
   onCompletionChange,
+  onSubmitRequestChange,
+  saveReadingSessionDraft,
   currentDecisionConfiguration = EMPTY_DECISION_CONFIGURATION,
   currentEyeMovementAnalysisConfiguration = EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
   externalProviderStatus = EMPTY_EXTERNAL_PROVIDER_STATUS,
@@ -864,17 +922,23 @@ function SessionContentStep({
     setSelectedAnalysisProviderId(currentEyeMovementAnalysisConfiguration.providerId)
   }, [currentEyeMovementAnalysisConfiguration.providerId])
 
+  React.useEffect(() => {
+    onSubmitRequestChange?.(saveReadingSessionDraft ?? null)
+    return () => onSubmitRequestChange?.(null)
+  }, [onSubmitRequestChange, saveReadingSessionDraft])
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="border-b pb-6">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Step 4</Badge>
+            <Badge variant="secondary">Step 2</Badge>
+            <Badge variant="outline">Researcher</Badge>
             <Badge variant="outline">Reading material</Badge>
           </div>
-          <CardTitle className="mt-3 text-3xl tracking-tight">Choose the text and runtime plugins.</CardTitle>
+          <CardTitle className="mt-3 text-3xl tracking-tight">Prepare the reading baseline and runtime plugins.</CardTitle>
           <CardDescription className="max-w-3xl text-base leading-7">
-            Pick the reading material, decision plugin, and eye analyzer plugin.
+            Pick the reading material, apply it to the current experiment session, and confirm the runtime plugins before handing over to the participant.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -1199,7 +1263,11 @@ function SessionContentStep({
   )
 }
 
-export function ExperimentStepper() {
+type ExperimentStepperProps = {
+  mode?: ExperimentStepperMode
+}
+
+export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProps) {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { resolvedTheme } = useTheme()
@@ -1213,6 +1281,7 @@ export function ExperimentStepper() {
   } = experimentStepperTestingOverrides
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
   const { presentation, experimentSetupId } = useReadingSettings()
+  const isParticipantMode = mode === "participant"
   const { data: experimentSession } = useGetExperimentSessionQuery(undefined, {
     refetchOnMountOrArgChange: true,
     pollingInterval: 3_000,
@@ -1226,6 +1295,8 @@ export function ExperimentStepper() {
   const [step, setStep] = React.useState(0)
   const [isStepSubmitting, setIsStepSubmitting] = React.useState(false)
   const [startError, setStartError] = React.useState<string | null>(null)
+  const [participantRerunNotice, setParticipantRerunNotice] = React.useState<string | null>(null)
+  const [participantFlowStarted, setParticipantFlowStarted] = React.useState(false)
   const [stepCompletion, setStepCompletion] = React.useState<Record<number, boolean>>({
     0: false,
     1: false,
@@ -1240,9 +1311,21 @@ export function ExperimentStepper() {
     () => getAuthoritativeWorkflowStepStates(setup, sensingMode),
     [setup, sensingMode]
   )
-  const authoritativeCurrentStepIndex = Math.min(
-    Math.max(setup.currentStepIndex, 0),
-    steps.length - 1
+  const backendResearcherSetupStarted =
+    setup.eyeTracker.hasSelectedEyeTracker ||
+    setup.eyeTracker.hasAppliedLicence ||
+    setup.eyeTracker.isReady ||
+    setup.readingMaterial.hasReadingMaterial ||
+    setup.readingMaterial.isReady ||
+    setup.participant.hasParticipant ||
+    setup.calibration.hasCalibrationSession
+  const hasResearcherStartedSetup =
+    participantFlowStarted || backendResearcherSetupStarted
+  const researcherPreparationReady =
+    (workflowStepStates[0]?.isReady ?? false) && (workflowStepStates[1]?.isReady ?? false)
+  const firstIncompleteStepIndex = workflowStepStates.findIndex((state) => !state.isReady)
+  const firstParticipantIncompleteStepIndex = workflowStepStates.findIndex(
+    (state) => state.index >= 2 && !state.isReady
   )
   const readingTitle =
     readingSession.title.trim().length > 0
@@ -1261,12 +1344,54 @@ export function ExperimentStepper() {
       setup.readingMaterial.sourceSetupId !== readingSourceSetupId ||
       setup.readingMaterial.title !== readingTitle)
   const displayedWorkflowStepStates = workflowStepStates
+  const selectableSteps = React.useMemo(() => {
+    if (!isParticipantMode) {
+      return steps.map((stepItem) => stepItem.value)
+    }
+
+    return researcherPreparationReady ? [2, 3] : []
+  }, [isParticipantMode, researcherPreparationReady])
   const canAdvance =
-    step < steps.length - 1 &&
     !isStepSubmitting &&
-    ((displayedWorkflowStepStates[step]?.isReady ?? false) || (stepCompletion[step] ?? false))
+    ((displayedWorkflowStepStates[step]?.isReady ?? false) || (stepCompletion[step] ?? false)) &&
+    (isParticipantMode ? step === 2 : step < steps.length - 1)
   const canStartReadingSession =
-    workflowStepStates.slice(0, 3).every((state) => state.isReady) && hasLocalReadingSelection
+    workflowStepStates.every((state) => state.isReady) && hasLocalReadingSelection
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !isParticipantMode) {
+      return
+    }
+
+    const syncFromStorage = () => {
+      setParticipantFlowStarted(Boolean(window.localStorage.getItem(PARTICIPANT_FLOW_STARTED_KEY)))
+    }
+
+    syncFromStorage()
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== PARTICIPANT_FLOW_STARTED_KEY) {
+        return
+      }
+
+      syncFromStorage()
+    }
+
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [isParticipantMode])
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !isParticipantMode) {
+      return
+    }
+
+    if (experimentSession?.isActive || backendResearcherSetupStarted) {
+      return
+    }
+
+    setParticipantFlowStarted(false)
+    window.localStorage.removeItem(PARTICIPANT_FLOW_STARTED_KEY)
+  }, [backendResearcherSetupStarted, experimentSession?.isActive, isParticipantMode])
 
   React.useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -1342,7 +1467,7 @@ export function ExperimentStepper() {
   const handleStartReadingSession = React.useCallback(async () => {
     setStartError(null)
 
-    if (hasUnsavedReadingDraft || !(workflowStepStates[3]?.isReady ?? false)) {
+    if (hasUnsavedReadingDraft || !(workflowStepStates[1]?.isReady ?? false)) {
       const didSaveReadingSession = await saveReadingSessionDraft()
       if (!didSaveReadingSession) {
         return
@@ -1351,12 +1476,13 @@ export function ExperimentStepper() {
 
     try {
       await startExperimentSession().unwrap()
-      router.push("/reading")
+      router.push(isParticipantMode ? "/reading" : "/researcher/current-live")
     } catch (error) {
       setStartError(getErrorMessage(error, "Could not start the reading session."))
     }
   }, [
     hasUnsavedReadingDraft,
+    isParticipantMode,
     router,
     saveReadingSessionDraft,
     startExperimentSession,
@@ -1370,17 +1496,89 @@ export function ExperimentStepper() {
 
     dispatch(hydrateExperimentFromSession(experimentSession))
     setStep((currentStep) => {
-      if (currentStep < authoritativeCurrentStepIndex) {
-        return authoritativeCurrentStepIndex
-      }
+      const fallbackStep = isParticipantMode
+        ? !researcherPreparationReady
+          ? 0
+          : firstParticipantIncompleteStepIndex === -1
+            ? 3
+            : Math.max(firstParticipantIncompleteStepIndex, 2)
+        : firstIncompleteStepIndex === -1
+          ? steps.length - 1
+          : firstIncompleteStepIndex
 
-      if (!(displayedWorkflowStepStates[currentStep]?.isAvailable ?? false)) {
-        return authoritativeCurrentStepIndex
+      if (
+        (isParticipantMode && !selectableSteps.includes(currentStep)) ||
+        (!(displayedWorkflowStepStates[currentStep]?.isAvailable ?? false) &&
+        !(displayedWorkflowStepStates[currentStep]?.isReady ?? false)
+        )
+      ) {
+        return fallbackStep
       }
 
       return currentStep
     })
-  }, [authoritativeCurrentStepIndex, dispatch, displayedWorkflowStepStates, experimentSession])
+  }, [
+    dispatch,
+    displayedWorkflowStepStates,
+    experimentSession,
+    firstIncompleteStepIndex,
+    firstParticipantIncompleteStepIndex,
+    isParticipantMode,
+    researcherPreparationReady,
+    selectableSteps,
+  ])
+
+  React.useEffect(() => {
+    if (!isParticipantMode || !experimentSession?.isActive) {
+      return
+    }
+
+    router.push("/reading")
+  }, [experimentSession?.isActive, isParticipantMode, router])
+
+  React.useEffect(() => {
+    if (!isParticipantMode || typeof window === "undefined") {
+      return
+    }
+
+    const handleRequestToken = (token: string | null) => {
+      if (!token) {
+        return
+      }
+
+      const lastHandled = window.sessionStorage.getItem(PARTICIPANT_CALIBRATION_RERUN_HANDLED_KEY)
+      if (lastHandled === token) {
+        return
+      }
+
+      window.sessionStorage.setItem(PARTICIPANT_CALIBRATION_RERUN_HANDLED_KEY, token)
+      const requestKind = token.endsWith(":full") ? "full" : "validation"
+      setParticipantRerunNotice(
+        requestKind === "full"
+          ? "Researcher requested a full calibration rerun."
+          : "Researcher requested a validation rerun."
+      )
+
+      if (!setup.participant.isReady) {
+        return
+      }
+
+      router.push("/calibration?returnTo=/participant")
+    }
+
+    handleRequestToken(window.localStorage.getItem(PARTICIPANT_CALIBRATION_RERUN_REQUEST_KEY))
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== PARTICIPANT_CALIBRATION_RERUN_REQUEST_KEY) {
+        return
+      }
+
+      handleRequestToken(event.newValue)
+    }
+
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [isParticipantMode, router, setup.participant.isReady])
 
   const setStepComplete = React.useCallback((stepIndex: number, isComplete: boolean) => {
     setStepCompletion((prev) => {
@@ -1432,7 +1630,7 @@ export function ExperimentStepper() {
   )
 
   const handleNext = async () => {
-    if (step === steps.length - 1 || !canAdvance) {
+    if ((isParticipantMode && step !== 2) || (!isParticipantMode && step === steps.length - 1) || !canAdvance) {
       return
     }
 
@@ -1444,22 +1642,83 @@ export function ExperimentStepper() {
       }
     }
 
-    setStep((prev) => Math.min(prev + 1, steps.length - 1))
+    setStep((prev) => (isParticipantMode ? 3 : Math.min(prev + 1, steps.length - 1)))
   }
 
+  const nextButtonLabel = isParticipantMode
+    ? "Continue to calibration"
+    : step === 0
+      ? "Save researcher setup"
+      : step === 1
+        ? "Apply baseline & continue"
+      : step === 2
+          ? "Continue to calibration"
+          : "Next"
+  const participantSetupComplete = setup.participant.isReady && setup.calibration.isReady
+  const participantReturnPath = isParticipantMode ? "/participant" : "/researcher/experiment"
+  const canGoBack = isParticipantMode ? step > 2 : step > 0
+
   return (
-    <div className="grid gap-6 2xl:grid-cols-[320px_minmax(0,1fr)] 2xl:gap-8">
-      <aside className="2xl:sticky 2xl:top-24 2xl:self-start">
+    <div
+      className={cn(
+        "grid gap-6 2xl:gap-8",
+        isParticipantMode
+          ? "xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start"
+          : "2xl:grid-cols-[320px_minmax(0,1fr)]"
+      )}
+    >
+      <aside
+        className={cn(
+          isParticipantMode ? "xl:sticky xl:top-8 xl:self-start" : "2xl:sticky 2xl:top-24 2xl:self-start"
+        )}
+      >
         <ExperimentStepNavigation
           step={step}
           onStepChange={setStep}
           stepStates={displayedWorkflowStepStates}
           steps={steps}
+          mode={mode}
+          selectableSteps={selectableSteps}
         />
       </aside>
 
-      <section className="space-y-6">
-        {step === 0 ? (
+      <section className={cn("space-y-6", isParticipantMode && "space-y-7")}>
+        {isParticipantMode && participantRerunNotice ? (
+          <Alert>
+            <AlertTitle>Researcher request</AlertTitle>
+            <AlertDescription>
+              {participantRerunNotice} Continue with calibration from this screen.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {isParticipantMode && !researcherPreparationReady ? (
+          <Card>
+            <CardHeader className="border-b pb-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">Researcher preparation</Badge>
+                <Badge variant="outline">Waiting</Badge>
+              </div>
+              <CardTitle className="mt-3 text-3xl tracking-tight">
+                {hasResearcherStartedSetup
+                  ? "Your session is being prepared."
+                  : "Experiment has not started yet."}
+              </CardTitle>
+              <CardDescription className="max-w-3xl text-base leading-7">
+                {hasResearcherStartedSetup
+                  ? "The researcher is finishing setup. This page will unlock automatically when it is ready."
+                  : "The researcher has not started experiment setup yet. This page will unlock after setup begins."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-sm leading-6 text-muted-foreground">
+                {hasResearcherStartedSetup
+                  ? "Please wait here. Your participant steps will appear as soon as the researcher finishes preparation."
+                  : "Please keep this page open. Once the researcher clicks Start Experiment and begins setup, your steps will appear automatically."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : step === 0 ? (
           sensingMode === "mouse" ? (
             <MouseModeSetupStep
               onCompletionChange={handleStepZeroCompletionChange}
@@ -1475,23 +1734,10 @@ export function ExperimentStepper() {
             />
           )
         ) : step === 1 ? (
-          <ParticipantInformationForm
-            onCompletionChange={handleStepOneCompletionChange}
-            onSubmittingChange={handleStepSubmittingChange}
-            onSubmitRequestChange={handleStepSubmitterChange}
-          />
-        ) : step === 2 ? (
-          <CalibrationStep
-            setup={setup.calibration}
-            calibration={experimentSession?.calibration}
-            sensingMode={sensingMode}
-            onCompletionChange={handleStepTwoCompletionChange}
-            onSubmittingChange={handleStepSubmittingChange}
-            onSubmitRequestChange={handleStepSubmitterChange}
-          />
-        ) : (
           <SessionContentStep
-            onCompletionChange={handleStepThreeCompletionChange}
+            onCompletionChange={handleStepOneCompletionChange}
+            onSubmitRequestChange={handleStepSubmitterChange}
+            saveReadingSessionDraft={saveReadingSessionDraft}
             currentDecisionConfiguration={
               experimentSession?.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION
             }
@@ -1508,6 +1754,23 @@ export function ExperimentStepper() {
             }
             automationPaused={experimentSession?.decisionState?.automationPaused ?? false}
           />
+        ) : step === 2 ? (
+          <ParticipantInformationForm
+            onCompletionChange={handleStepTwoCompletionChange}
+            onSubmittingChange={handleStepSubmittingChange}
+            onSubmitRequestChange={handleStepSubmitterChange}
+          />
+        ) : (
+          <CalibrationStep
+            setup={setup.calibration}
+            calibration={experimentSession?.calibration}
+            sensingMode={sensingMode}
+            returnToPath={participantReturnPath}
+            isReadOnly={!isParticipantMode}
+            onCompletionChange={handleStepThreeCompletionChange}
+            onSubmittingChange={handleStepSubmittingChange}
+            onSubmitRequestChange={handleStepSubmitterChange}
+          />
         )}
 
         {startError ? (
@@ -1517,16 +1780,45 @@ export function ExperimentStepper() {
           </Alert>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border bg-card px-5 py-4">
-          <Button disabled={step === 0} onClick={() => setStep(step - 1)}>
+        <div
+          className={cn(
+            "flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border px-5 py-4",
+            "bg-card"
+          )}
+        >
+          <Button
+            disabled={!canGoBack}
+            onClick={() => setStep((currentStep) => (isParticipantMode ? 2 : currentStep - 1))}
+          >
             Previous
           </Button>
-          {step < steps.length - 1 ? (
+          {isParticipantMode ? (
+            !researcherPreparationReady ? (
+              <p className="text-sm leading-6 text-muted-foreground">
+                {hasResearcherStartedSetup
+                  ? "Preparing your setup. Your steps will appear in a moment."
+                  : "Waiting for the researcher to start the experiment setup."}
+              </p>
+            ) : step === 2 ? (
+              <Button
+                disabled={!canAdvance}
+                onClick={handleNext}
+              >
+                {nextButtonLabel}
+              </Button>
+            ) : (
+              <p className="text-sm leading-6 text-muted-foreground">
+                {participantSetupComplete
+                  ? "Participant setup is complete. Return to the researcher to start the reading session."
+                  : "Finish calibration on the full-screen calibration route, then return here."}
+              </p>
+            )
+          ) : step < steps.length - 1 ? (
             <Button
               disabled={step === steps.length - 1 || !canAdvance}
               onClick={handleNext}
             >
-              Next
+              {nextButtonLabel}
             </Button>
           ) : (
             <Button
@@ -1539,6 +1831,17 @@ export function ExperimentStepper() {
             </Button>
           )}
         </div>
+
+        {isParticipantMode && participantSetupComplete ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl tracking-tight">Waiting for the researcher to start the session</CardTitle>
+              <CardDescription className="text-sm leading-6">
+                Participant information and calibration are ready. The reading page will begin once the researcher starts the experiment session.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
       </section>
     </div>
   )
