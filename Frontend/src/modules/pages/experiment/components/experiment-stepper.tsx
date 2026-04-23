@@ -18,7 +18,6 @@ import {
   EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
   EMPTY_EXTERNAL_PROVIDER_STATUS,
   type DecisionConfiguration,
-  type ExperimentParticipantSnapshot,
   type EyeMovementAnalysisConfiguration,
   type EyeMovementAnalysisProviderStatusSnapshot,
   type ExternalProviderStatusSnapshot,
@@ -518,16 +517,12 @@ type ParticipantInformationFormProps = {
   onCompletionChange?: (isComplete: boolean) => void
   onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
   onSubmittingChange?: (isSubmitting: boolean) => void
-  isReadOnly?: boolean
-  participant?: ExperimentParticipantSnapshot | null
 }
 
 function ParticipantInformationForm({
   onCompletionChange,
   onSubmitRequestChange,
   onSubmittingChange,
-  isReadOnly = false,
-  participant = null,
 }: ParticipantInformationFormProps) {
   const dispatch = useAppDispatch()
   const stepTwoDraft = useAppSelector((state: RootState) => state.experiment.stepTwo)
@@ -555,6 +550,7 @@ function ParticipantInformationForm({
   })
 
   const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const lastAppliedSyncedFingerprintRef = React.useRef<string | null>(null)
 
   const isComplete = participantFormSchema.safeParse({
     name: watchedName,
@@ -584,6 +580,30 @@ function ParticipantInformationForm({
     dispatch(setStepTwoReadingProficiency(watchedReadingProficiency ?? ""))
   }, [dispatch, watchedReadingProficiency])
 
+  React.useEffect(() => {
+    const syncedFingerprint = stepTwoDraft.lastSyncedFingerprint
+    if (!syncedFingerprint || lastAppliedSyncedFingerprintRef.current === syncedFingerprint) {
+      return
+    }
+
+    form.reset({
+      name: stepTwoDraft.name,
+      age: stepTwoDraft.age,
+      sex: stepTwoDraft.sex,
+      eyeCondition: stepTwoDraft.eyeCondition,
+      readingProficiency: stepTwoDraft.readingProficiency,
+    })
+    lastAppliedSyncedFingerprintRef.current = syncedFingerprint
+  }, [
+    form,
+    stepTwoDraft.age,
+    stepTwoDraft.eyeCondition,
+    stepTwoDraft.lastSyncedFingerprint,
+    stepTwoDraft.name,
+    stepTwoDraft.readingProficiency,
+    stepTwoDraft.sex,
+  ])
+
   const submitParticipantForm = React.useCallback(async () => {
     setSubmitError(null)
 
@@ -593,7 +613,13 @@ function ParticipantInformationForm({
     }
 
     const data = form.getValues()
-    const currentFingerprint = JSON.stringify(data)
+    const currentFingerprint = JSON.stringify({
+      name: data.name,
+      age: data.age,
+      sex: data.sex,
+      eyeCondition: data.eyeCondition,
+      readingProficiency: data.readingProficiency,
+    })
 
     if (stepTwoDraft.lastSyncedFingerprint === currentFingerprint) {
       return true
@@ -608,6 +634,7 @@ function ParticipantInformationForm({
         readingProficiency: data.readingProficiency,
       }).unwrap()
       dispatch(setStepTwoLastSyncedFingerprint(currentFingerprint))
+      lastAppliedSyncedFingerprintRef.current = currentFingerprint
       return true
     } catch (error) {
       setSubmitError(getErrorMessage(error, "Failed to save participant. Please try again."))
@@ -616,104 +643,18 @@ function ParticipantInformationForm({
   }, [dispatch, form, saveParticipant, stepTwoDraft.lastSyncedFingerprint])
 
   React.useEffect(() => {
-    if (isReadOnly) {
-      return
-    }
-
     onCompletionChange?.(isComplete)
-  }, [isComplete, isReadOnly, onCompletionChange])
+  }, [isComplete, onCompletionChange])
 
   React.useEffect(() => {
-    if (isReadOnly) {
-      return
-    }
-
     onSubmittingChange?.(isSavingParticipant)
     return () => onSubmittingChange?.(false)
-  }, [isReadOnly, isSavingParticipant, onSubmittingChange])
+  }, [isSavingParticipant, onSubmittingChange])
 
   React.useEffect(() => {
-    if (isReadOnly) {
-      return
-    }
-
     onSubmitRequestChange?.(submitParticipantForm)
     return () => onSubmitRequestChange?.(null)
-  }, [isReadOnly, onSubmitRequestChange, submitParticipantForm])
-
-  React.useEffect(() => {
-    if (!isReadOnly) {
-      return
-    }
-
-    onCompletionChange?.(Boolean(participant))
-  }, [isReadOnly, onCompletionChange, participant])
-
-  React.useEffect(() => {
-    if (!isReadOnly) {
-      return
-    }
-
-    onSubmittingChange?.(false)
-    return () => onSubmittingChange?.(false)
-  }, [isReadOnly, onSubmittingChange])
-
-  React.useEffect(() => {
-    if (!isReadOnly) {
-      return
-    }
-
-    onSubmitRequestChange?.(null)
-    return () => onSubmitRequestChange?.(null)
-  }, [isReadOnly, onSubmitRequestChange])
-
-  if (isReadOnly) {
-    return (
-      <Card>
-        <CardHeader className="border-b pb-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Step 3</Badge>
-            <Badge variant="outline">Participant</Badge>
-            <Badge variant="outline">Read only</Badge>
-          </div>
-          <CardTitle className="mt-3 text-3xl tracking-tight">Participant information</CardTitle>
-          <CardDescription className="max-w-3xl text-base leading-7">
-            Information entered from the participant view will appear here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-6">
-          {participant ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-[1.35rem] border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Name</p>
-                <p className="mt-2 text-base font-semibold">{participant.name}</p>
-              </div>
-              <div className="rounded-[1.35rem] border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Age</p>
-                <p className="mt-2 text-base font-semibold">{participant.age}</p>
-              </div>
-              <div className="rounded-[1.35rem] border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Sex</p>
-                <p className="mt-2 text-base font-semibold">{participant.sex}</p>
-              </div>
-              <div className="rounded-[1.35rem] border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Eye condition</p>
-                <p className="mt-2 text-base font-semibold">{participant.existingEyeCondition}</p>
-              </div>
-              <div className="rounded-[1.35rem] border bg-muted/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Reading proficiency</p>
-                <p className="mt-2 text-base font-semibold">{participant.readingProficiency}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[1.5rem] border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-              No participant information has been submitted yet.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
+  }, [onSubmitRequestChange, submitParticipantForm])
 
   return (
     <Card>
@@ -1765,8 +1706,6 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
             onCompletionChange={handleStepTwoCompletionChange}
             onSubmittingChange={handleStepSubmittingChange}
             onSubmitRequestChange={handleStepSubmitterChange}
-            isReadOnly={!isParticipantMode}
-            participant={experimentSession?.participant ?? null}
           />
         ) : (
           <CalibrationStep
