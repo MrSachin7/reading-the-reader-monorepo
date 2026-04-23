@@ -1,4 +1,6 @@
+using System.IO.Compression;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
@@ -9,13 +11,20 @@ namespace ReadingTheReader.Realtime.Persistence;
 public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplayRecoveryStoreAdapter
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions ExportJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
     private const string SessionMetadataFileName = "session-meta.json";
-    private const string RecoveryExportFileName = "participant-replay-recovery.json";
-    private const string CompletedExportFileName = "completed-experiment.json";
+    private const string CompletedExportFileName = "completed-experiment.json.gz";
+    private const string ChunkFilePrefix = "chunk-";
+    private const string ChunkFileSuffix = ".json.gz";
 
     private readonly string _rootDirectoryPath;
     private readonly Dictionary<Guid, string> _sessionDirectoryPathsBySessionId = [];
+    private readonly Dictionary<Guid, int> _nextChunkNumberBySessionId = [];
     private readonly Lock _sessionDirectoryGate = new();
+    private readonly Lock _chunkNumberGate = new();
 
     public FileExperimentReplayRecoveryStoreAdapter(string rootDirectoryPath)
     {
@@ -44,23 +53,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             LatestSnapshot = seed.InitialSnapshot.Copy()
         };
 
-        var recoveryExport = ExperimentReplayExportFactory.Create(
-            metadata.InitialSnapshot,
-            metadata.LatestSnapshot,
-            ExperimentReplayRecoveryStatuses.Recording,
-            seed.CreatedAtUnixMs,
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            []);
-
         await WriteMetadataAsync(metadata, ct);
-        await WriteRecoveryExportAsync(sessionDirectoryPath, recoveryExport, ct);
     }
 
     public async ValueTask AppendChunkAsync(ExperimentReplayRecoveryChunkBatch batch, CancellationToken ct = default)
@@ -73,27 +66,16 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
 
         metadata.UpdatedAtUnixMs = batch.FlushedAtUnixMs;
         metadata.LatestSnapshot = batch.LatestSnapshot.Copy();
+        if (batch.LatestTokenStats is not null)
+        {
+            metadata.LatestTokenStats = batch.LatestTokenStats.ToDictionary(
+                e => e.Key, e => e.Value.Copy(), StringComparer.Ordinal);
+        }
 
         var sessionDirectoryPath = GetSessionDirectoryPath(batch.SessionId);
-        var existingExport = await ReadRecoveryExportAsync(sessionDirectoryPath, ct);
-        var recoveryExport = BuildMergedExport(
-            metadata,
-            existingExport,
-            ExperimentReplayRecoveryStatuses.Recording,
-            batch.FlushedAtUnixMs,
-            batch.LifecycleEvents,
-            batch.GazeSamples,
-            batch.ViewportEvents,
-            batch.FocusEvents,
-            batch.AttentionEvents,
-            batch.ContextPreservationEvents ?? [],
-            batch.DecisionProposalEvents ?? [],
-            batch.ScheduledInterventionEvents ?? [],
-            batch.InterventionEvents ?? [],
-            batch.LatestTokenStats ?? existingExport?.Derived?.FinalTokenStats);
-
+        var chunkNumber = GetNextChunkNumber(batch.SessionId, sessionDirectoryPath);
+        await WriteChunkFileAsync(sessionDirectoryPath, chunkNumber, batch, ct);
         await WriteMetadataAsync(metadata, ct);
-        await WriteRecoveryExportAsync(sessionDirectoryPath, recoveryExport, ct);
     }
 
     public async ValueTask<ExperimentReplayExport?> BuildExportAsync(
@@ -109,21 +91,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         }
 
         var sessionDirectoryPath = GetSessionDirectoryPath(sessionId);
-        var existingExport = await ReadRecoveryExportAsync(sessionDirectoryPath, ct);
-        return BuildMergedExport(
-            metadata,
-            existingExport,
-            completionSource,
-            exportedAtUnixMs,
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            []);
+        var chunks = await ReadAllChunksAsync(sessionDirectoryPath, ct);
+        return BuildMergedExportFromChunks(metadata, chunks, completionSource, exportedAtUnixMs);
     }
 
     public async ValueTask MarkCompletedAsync(
@@ -139,11 +108,15 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         }
 
         var sessionDirectoryPath = GetSessionDirectoryPath(sessionId);
-        await WriteContentAsync(
+        await WriteBytesAsync(
             Path.Combine(sessionDirectoryPath, CompletedExportFileName),
-            JsonSerializer.Serialize(completedExport, JsonOptions),
+            SerializeToGzip(completedExport),
             ct);
-        DeleteFileIfExists(Path.Combine(sessionDirectoryPath, RecoveryExportFileName));
+
+        foreach (var chunkPath in EnumerateChunkFiles(sessionDirectoryPath))
+        {
+            DeleteFileIfExists(chunkPath);
+        }
         DeleteFileIfExists(Path.Combine(sessionDirectoryPath, SessionMetadataFileName));
     }
 
@@ -157,71 +130,105 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         return Directory.EnumerateDirectories(_rootDirectoryPath, "*", SearchOption.TopDirectoryOnly);
     }
 
-    private ExperimentReplayExport BuildMergedExport(
-        RecoverySessionMetadata metadata,
-        ExperimentReplayExport? existingExport,
-        string completionSource,
-        long exportedAtUnixMs,
-        IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
-        IReadOnlyList<RawGazeSampleRecord> gazeSamples,
-        IReadOnlyList<ParticipantViewportEventRecord> viewportEvents,
-        IReadOnlyList<ReadingFocusEventRecord> focusEvents,
-        IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
-        IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
-        IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
-        IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
-        IReadOnlyList<InterventionEventRecord> interventionEvents,
-        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
+    private static IEnumerable<string> EnumerateChunkFiles(string sessionDirectoryPath)
     {
+        if (!Directory.Exists(sessionDirectoryPath))
+        {
+            return [];
+        }
+
+        return Directory.EnumerateFiles(sessionDirectoryPath, $"{ChunkFilePrefix}*{ChunkFileSuffix}");
+    }
+
+    private ExperimentReplayExport BuildMergedExportFromChunks(
+        RecoverySessionMetadata metadata,
+        RecoveryChunkData[] chunks,
+        string completionSource,
+        long exportedAtUnixMs)
+    {
+        static T[] Merge<T>(RecoveryChunkData[] items, Func<RecoveryChunkData, T[]?> selector, Func<T, long> getSequenceNumber)
+            => items.SelectMany(c => selector(c) ?? []).OrderBy(getSequenceNumber).ToArray();
+
+        var finalTokenStats = chunks
+            .LastOrDefault(c => c.LatestTokenStats is not null)?.LatestTokenStats
+            ?? metadata.LatestTokenStats;
+
         return ExperimentReplayExportFactory.Create(
             metadata.InitialSnapshot,
             metadata.LatestSnapshot,
             completionSource,
             exportedAtUnixMs,
-            MergeAndSort(existingExport?.Experiment.LifecycleEvents, lifecycleEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Sensing.GazeSamples, gazeSamples, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Derived.ViewportEvents, viewportEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Derived.FocusEvents, focusEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Derived.AttentionEvents, attentionEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Derived.ContextPreservationEvents, contextPreservationEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Interventions.DecisionProposals, decisionProposalEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Interventions.ScheduledInterventions, scheduledInterventionEvents, item => item.SequenceNumber),
-            MergeAndSort(existingExport?.Interventions.InterventionEvents, interventionEvents, item => item.SequenceNumber),
-            finalTokenStats ?? existingExport?.Derived?.FinalTokenStats);
+            Merge(chunks, c => c.LifecycleEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.GazeSamples, e => e.SequenceNumber),
+            Merge(chunks, c => c.ViewportEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.FocusEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.AttentionEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.ContextPreservationEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.DecisionProposalEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.ScheduledInterventionEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.InterventionEvents, e => e.SequenceNumber),
+            finalTokenStats);
     }
 
-    private static T[] MergeAndSort<T>(
-        IReadOnlyList<T>? existingItems,
-        IReadOnlyList<T> newItems,
-        Func<T, long> getSequenceNumber)
+    private async ValueTask<RecoveryChunkData[]> ReadAllChunksAsync(string sessionDirectoryPath, CancellationToken ct)
     {
-        return (existingItems ?? [])
-            .Concat(newItems)
-            .OrderBy(getSequenceNumber)
-            .ToArray();
+        var results = new List<(int number, RecoveryChunkData chunk)>();
+        foreach (var filePath in EnumerateChunkFiles(sessionDirectoryPath))
+        {
+            var baseName = Path.GetFileName(filePath);
+            if (!baseName.StartsWith(ChunkFilePrefix, StringComparison.Ordinal) ||
+                !baseName.EndsWith(ChunkFileSuffix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var numberPart = baseName[ChunkFilePrefix.Length..^ChunkFileSuffix.Length];
+            if (!int.TryParse(numberPart, out var chunkNumber))
+            {
+                continue;
+            }
+
+            try
+            {
+                var bytes = await File.ReadAllBytesAsync(filePath, ct);
+                var chunk = DeserializeFromGzip<RecoveryChunkData>(bytes);
+                if (chunk is not null)
+                {
+                    results.Add((chunkNumber, chunk));
+                }
+            }
+            catch
+            {
+                // Skip corrupted chunks rather than aborting the merge
+            }
+        }
+
+        return results.OrderBy(r => r.number).Select(r => r.chunk).ToArray();
     }
 
-    private async ValueTask<ExperimentReplayExport?> ReadRecoveryExportAsync(string sessionDirectoryPath, CancellationToken ct)
+    private async ValueTask WriteChunkFileAsync(
+        string sessionDirectoryPath,
+        int chunkNumber,
+        ExperimentReplayRecoveryChunkBatch batch,
+        CancellationToken ct)
     {
-        var path = Path.Combine(sessionDirectoryPath, RecoveryExportFileName);
-        if (!File.Exists(path))
+        var chunk = new RecoveryChunkData
         {
-            return null;
-        }
+            FlushedAtUnixMs = batch.FlushedAtUnixMs,
+            LifecycleEvents = batch.LifecycleEvents?.ToArray(),
+            GazeSamples = batch.GazeSamples?.ToArray(),
+            ViewportEvents = batch.ViewportEvents?.ToArray(),
+            FocusEvents = batch.FocusEvents?.ToArray(),
+            AttentionEvents = batch.AttentionEvents?.ToArray(),
+            ContextPreservationEvents = batch.ContextPreservationEvents?.ToArray(),
+            DecisionProposalEvents = batch.DecisionProposalEvents?.ToArray(),
+            ScheduledInterventionEvents = batch.ScheduledInterventionEvents?.ToArray(),
+            InterventionEvents = batch.InterventionEvents?.ToArray(),
+            LatestTokenStats = batch.LatestTokenStats?.ToDictionary(e => e.Key, e => e.Value.Copy(), StringComparer.Ordinal),
+        };
 
-        try
-        {
-            var content = await File.ReadAllTextAsync(path, ct);
-            return JsonSerializer.Deserialize<ExperimentReplayExport>(content, JsonOptions);
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        var path = Path.Combine(sessionDirectoryPath, BuildChunkFileName(chunkNumber));
+        await WriteBytesAsync(path, SerializeToGzip(chunk), ct);
     }
 
     private void RecoverInterruptedSessions()
@@ -254,7 +261,6 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
 
             RememberSessionDirectoryPath(metadata.SessionId, sessionDirectory);
             WriteMetadataAsync(metadata, CancellationToken.None).AsTask().GetAwaiter().GetResult();
-            RewriteRecoveryExportForRecoveredSession(metadata, sessionDirectory);
         }
     }
 
@@ -306,43 +312,6 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             ct);
     }
 
-    private async ValueTask WriteRecoveryExportAsync(
-        string sessionDirectoryPath,
-        ExperimentReplayExport exportDocument,
-        CancellationToken ct)
-    {
-        await WriteContentAsync(
-            Path.Combine(sessionDirectoryPath, RecoveryExportFileName),
-            JsonSerializer.Serialize(exportDocument, JsonOptions),
-            ct);
-    }
-
-    private void RewriteRecoveryExportForRecoveredSession(RecoverySessionMetadata metadata, string sessionDirectoryPath)
-    {
-        var existingExport = ReadRecoveryExportAsync(sessionDirectoryPath, CancellationToken.None).AsTask().GetAwaiter().GetResult();
-        if (existingExport is null)
-        {
-            return;
-        }
-
-        var recoveredExport = BuildMergedExport(
-            metadata,
-            existingExport,
-            ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
-            metadata.UpdatedAtUnixMs,
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            []);
-
-        WriteRecoveryExportAsync(sessionDirectoryPath, recoveredExport, CancellationToken.None).AsTask().GetAwaiter().GetResult();
-    }
-
     private static string BuildName(ExperimentSessionSnapshot snapshot, Guid sessionId)
     {
         return snapshot.ReadingSession?.Content?.Title?.Trim() switch
@@ -364,6 +333,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             ? $"session-{sessionId:N}"
             : $"{sanitizedParticipantName}-{sessionId:N}";
     }
+
+    private static string BuildChunkFileName(int chunkNumber)
+        => $"{ChunkFilePrefix}{chunkNumber:D6}{ChunkFileSuffix}";
 
     private static string SanitizePathSegment(string? value)
     {
@@ -396,6 +368,44 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         return builder.ToString().Trim('-');
     }
 
+    private int GetNextChunkNumber(Guid sessionId, string sessionDirectoryPath)
+    {
+        lock (_chunkNumberGate)
+        {
+            if (!_nextChunkNumberBySessionId.TryGetValue(sessionId, out var next))
+            {
+                next = FindMaxChunkNumber(sessionDirectoryPath) + 1;
+                if (next <= 0)
+                {
+                    next = 1;
+                }
+            }
+            _nextChunkNumberBySessionId[sessionId] = next + 1;
+            return next;
+        }
+    }
+
+    private static int FindMaxChunkNumber(string sessionDirectoryPath)
+    {
+        var max = 0;
+        foreach (var filePath in EnumerateChunkFiles(sessionDirectoryPath))
+        {
+            var baseName = Path.GetFileName(filePath);
+            if (!baseName.StartsWith(ChunkFilePrefix, StringComparison.Ordinal) ||
+                !baseName.EndsWith(ChunkFileSuffix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var numberPart = baseName[ChunkFilePrefix.Length..^ChunkFileSuffix.Length];
+            if (int.TryParse(numberPart, out var n) && n > max)
+            {
+                max = n;
+            }
+        }
+        return max;
+    }
+
     private string GetSessionDirectoryPath(Guid sessionId)
     {
         lock (_sessionDirectoryGate)
@@ -421,17 +431,29 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         return Path.Combine(_rootDirectoryPath, sessionId.ToString("N"));
     }
 
-    private string GetSessionDirectoryPath(string sessionId)
-    {
-        return Path.Combine(_rootDirectoryPath, Path.GetFileName(sessionId));
-    }
-
     private void RememberSessionDirectoryPath(Guid sessionId, string sessionDirectoryPath)
     {
         lock (_sessionDirectoryGate)
         {
             _sessionDirectoryPathsBySessionId[sessionId] = sessionDirectoryPath;
         }
+    }
+
+    private byte[] SerializeToGzip<T>(T value)
+    {
+        using var ms = new MemoryStream();
+        using (var gz = new GZipStream(ms, CompressionLevel.Optimal))
+        {
+            JsonSerializer.Serialize(gz, value, ExportJsonOptions);
+        }
+        return ms.ToArray();
+    }
+
+    private T? DeserializeFromGzip<T>(byte[] bytes)
+    {
+        using var ms = new MemoryStream(bytes);
+        using var gz = new GZipStream(ms, CompressionMode.Decompress);
+        return JsonSerializer.Deserialize<T>(gz, ExportJsonOptions);
     }
 
     private static async ValueTask WriteContentAsync(string path, string content, CancellationToken ct)
@@ -449,6 +471,29 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         try
         {
             await File.WriteAllTextAsync(tempPath, content, ct);
+            await ReplaceFileWithRetryAsync(tempPath, path, ct);
+        }
+        finally
+        {
+            DeleteFileIfExists(tempPath);
+        }
+    }
+
+    private static async ValueTask WriteBytesAsync(string path, byte[] bytes, CancellationToken ct)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var tempPath = Path.Combine(
+            directory ?? Path.GetTempPath(),
+            $"{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            await File.WriteAllBytesAsync(tempPath, bytes, ct);
             await ReplaceFileWithRetryAsync(tempPath, path, ct);
         }
         finally
@@ -487,6 +532,21 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         File.Delete(path);
     }
 
+    private sealed class RecoveryChunkData
+    {
+        public long FlushedAtUnixMs { get; set; }
+        public ExperimentLifecycleEventRecord[]? LifecycleEvents { get; set; }
+        public RawGazeSampleRecord[]? GazeSamples { get; set; }
+        public ParticipantViewportEventRecord[]? ViewportEvents { get; set; }
+        public ReadingFocusEventRecord[]? FocusEvents { get; set; }
+        public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }
+        public ReadingContextPreservationEventRecord[]? ContextPreservationEvents { get; set; }
+        public DecisionProposalEventRecord[]? DecisionProposalEvents { get; set; }
+        public ScheduledInterventionEventRecord[]? ScheduledInterventionEvents { get; set; }
+        public InterventionEventRecord[]? InterventionEvents { get; set; }
+        public Dictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats { get; set; }
+    }
+
     private sealed class RecoverySessionMetadata
     {
         public string Id { get; set; } = string.Empty;
@@ -499,5 +559,6 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public long? CompletedAtUnixMs { get; set; }
         public ExperimentSessionSnapshot InitialSnapshot { get; set; } = null!;
         public ExperimentSessionSnapshot LatestSnapshot { get; set; } = null!;
+        public Dictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats { get; set; }
     }
 }

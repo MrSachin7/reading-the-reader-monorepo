@@ -166,6 +166,7 @@ export type ReadingFocusSnapshot = {
   activeBlockId: string | null
   activeSentenceId: string | null
   updatedAtUnixMs: number
+  activeTokenText?: string | null
 }
 
 export type ReadingInterventionCommitBoundary =

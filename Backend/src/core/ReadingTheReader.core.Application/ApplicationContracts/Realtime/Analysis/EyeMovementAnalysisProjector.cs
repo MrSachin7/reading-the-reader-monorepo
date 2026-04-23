@@ -29,7 +29,7 @@ internal static class EyeMovementAnalysisProjector
                 previous.SkimCount,
                 Math.Max(previous.MaxFixationMs, currentTokenDurationMs.Value),
                 Math.Max(previous.LastFixationMs, currentTokenDurationMs.Value),
-                previous.Text);
+                state.CurrentFixation.TokenText ?? previous.Text);
         }
         else if (state.CandidateFixation is not null)
         {

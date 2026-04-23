@@ -17,6 +17,9 @@ export default {
   integration: {
     title: 'External AI Integration'
   },
+  'technical-specification': {
+    title: 'Technology Specification'
+  },
   project: {
     title: 'Thesis / Project'
   }

@@ -75,7 +75,7 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     runtimeState.TokenStats,
                     runtimeState.RecentFixations,
                     runtimeState.CandidateFixation.StartedAtUnixMs,
-                    runtimeState.CandidateFixation.TokenText);
+                    runtimeState.CurrentFixation?.TokenText);
                 var nextFixation = new FixationSnapshot(
                     runtimeState.CandidateFixation.TokenId,
                     runtimeState.CandidateFixation.BlockId,
@@ -85,7 +85,8 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     runtimeState.CandidateFixation.StartedAtUnixMs,
                     observation.ObservedAtUnixMs,
                     durationMs,
-                    null);
+                    null,
+                    runtimeState.CandidateFixation.TokenText);
 
                 return ValueTask.FromResult<EyeMovementAnalysisProcessingResult?>(
                     new EyeMovementAnalysisProcessingResult(runtimeState with
@@ -165,7 +166,7 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
             runtimeState.TokenStats,
             runtimeState.RecentFixations,
             observation.ObservedAtUnixMs,
-            null);
+            runtimeState.CurrentFixation?.TokenText);
         return runtimeState with
         {
             CandidateFixation = null,

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ReadingTheReader.Realtime.Persistence;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
@@ -8,11 +7,10 @@ namespace ReadingTheReader.Realtime.Persistence.Tests;
 
 public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), $"replay-recovery-store-{Guid.NewGuid():N}");
 
     [Fact]
-    public async Task AppendChunkAsync_OverwritesReplayImportFileInsideParticipantNamedFolder()
+    public async Task AppendChunkAsync_WritesChunkFilesAndBuildsCorrectExportOnRecovery()
     {
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
@@ -50,25 +48,23 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
 
         var sessionDirectory = Directory.GetDirectories(_tempDirectory, "*", SearchOption.TopDirectoryOnly).Single();
         var directoryName = Path.GetFileName(sessionDirectory);
-        var replayImportPath = Path.Combine(sessionDirectory, "participant-replay-recovery.json");
         var metadataPath = Path.Combine(sessionDirectory, "session-meta.json");
+
+        // Verify chunk files were written (one per AppendChunkAsync call)
+        var chunkFiles = Directory.GetFiles(sessionDirectory, "chunk-*.json.gz");
+        Assert.StartsWith("participant-1-", directoryName, StringComparison.Ordinal);
+        Assert.True(File.Exists(metadataPath));
+        Assert.Equal(2, chunkFiles.Length);
+        Assert.False(File.Exists(Path.Combine(sessionDirectory, "participant-replay-recovery.json")));
+        Assert.False(File.Exists(Path.Combine(sessionDirectory, "participant-replay-recovery.json.gz")));
+
+        // Verify a new store instance recovers correctly from chunk files
         var recoveredStore = new FileExperimentReplayRecoveryStoreAdapter(_tempDirectory);
         var exportDocument = await recoveredStore.BuildExportAsync(
             sessionId,
             ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
             snapshot.StartedAtUnixMs + 6_000);
-        var persistedReplay = JsonSerializer.Deserialize<ExperimentReplayExport>(
-            await File.ReadAllTextAsync(replayImportPath),
-            JsonOptions);
 
-        Assert.StartsWith("participant-1-", directoryName, StringComparison.Ordinal);
-        Assert.True(File.Exists(metadataPath));
-        Assert.True(File.Exists(replayImportPath));
-        Assert.False(File.Exists(Path.Combine(sessionDirectory, "lifecycle.json")));
-        Assert.False(File.Exists(Path.Combine(sessionDirectory, "gaze.json")));
-        Assert.NotNull(persistedReplay);
-        Assert.Equal(2, persistedReplay!.Sensing.GazeSamples.Count);
-        Assert.Equal(2, persistedReplay.Experiment.LifecycleEvents.Count);
         Assert.NotNull(exportDocument);
         Assert.Equal(sessionId, exportDocument!.Experiment.SessionId);
         Assert.Equal(ExperimentReplayRecoveryStatuses.RecoveredIncomplete, exportDocument.Manifest.CompletionSource);
@@ -115,8 +111,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
             snapshot.StartedAtUnixMs + 4_000);
 
         var sessionDirectory = Directory.GetDirectories(_tempDirectory, "*", SearchOption.TopDirectoryOnly).Single();
-        Assert.True(File.Exists(Path.Combine(sessionDirectory, "completed-experiment.json")));
-        Assert.False(File.Exists(Path.Combine(sessionDirectory, "participant-replay-recovery.json")));
+        Assert.True(File.Exists(Path.Combine(sessionDirectory, "completed-experiment.json.gz")));
+        Assert.Empty(Directory.GetFiles(sessionDirectory, "chunk-*.json.gz"));
         Assert.False(File.Exists(Path.Combine(sessionDirectory, "session-meta.json")));
     }
 
