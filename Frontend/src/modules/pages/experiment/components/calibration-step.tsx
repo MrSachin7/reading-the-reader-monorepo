@@ -53,6 +53,7 @@ export function CalibrationStep({
     validationResult?.averageAccuracyDegrees ?? setup.averageAccuracyDegrees
   const overallPrecisionDegrees =
     validationResult?.averagePrecisionDegrees ?? setup.averagePrecisionDegrees
+  const hasValidationPassed = validationResult?.passed !== false
 
   const isComplete = setup.isReady
   const isRunning =
@@ -146,13 +147,13 @@ export function CalibrationStep({
 
   return (
     <Card className="overflow-hidden rounded-[2rem] border-slate-200/80 bg-card shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <CardHeader className="border-b pb-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Step 4</Badge>
-            <Badge variant="outline">Participant</Badge>
-            <Badge variant="outline">Calibration</Badge>
-            {isReadOnly ? <Badge variant="outline">Read only</Badge> : null}
-          </div>
+      <CardHeader className="border-b pb-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">Step 4</Badge>
+          <Badge variant="outline">Participant</Badge>
+          <Badge variant="outline">Calibration</Badge>
+          {isReadOnly ? <Badge variant="outline">Read only</Badge> : null}
+        </div>
         <CardTitle className="mt-3 text-3xl tracking-tight">
           Run the Tobii calibration and validation.
         </CardTitle>
@@ -170,15 +171,10 @@ export function CalibrationStep({
               <div className="min-w-0">
                 <p className="text-base font-semibold">Participant-owned step</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  The participant completes calibration from the participant view. Status updates will appear here automatically.
+                  The participant completes calibration from the participant view. Status updates
+                  will appear here automatically.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => requestParticipantCalibrationRerun("full")}
-              >
-                Run full calibration again
-              </Button>
             </div>
             {requestMessage ? (
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{requestMessage}</p>
@@ -204,84 +200,136 @@ export function CalibrationStep({
         )}
 
         {setup.isReady ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-4 text-emerald-900 dark:text-emerald-100">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold">Calibration applied</p>
-              {isReadOnly ? (
-                <p className="mt-1 text-sm font-semibold">
-                  {validationResult?.passed === false ? "Validation failed" : "Validation passed"}
-                </p>
-              ) : null}
-              {isReadOnly ? (
-                <p className="mt-1 text-sm leading-6 opacity-80">
-                  The selected eye tracker has an active validated calibration with{" "}
-                  {formatCalibrationQualityLabel(overallQuality).toLowerCase()} and{" "}
-                  {overallSampleCount} validation samples.
-                </p>
-              ) : null}
-              {isReadOnly ? (
-                <div className="mt-3 grid gap-2 md:grid-cols-2">
-                  <div className="rounded-lg border border-emerald-500/30 bg-white/60 px-3 py-2 text-emerald-950">
-                    <p className="text-[11px] uppercase tracking-[0.12em] opacity-70">Average accuracy</p>
-                    <p className="text-sm font-semibold">
-                      {formatCalibrationMetric(overallAccuracyDegrees)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-emerald-500/30 bg-white/60 px-3 py-2 text-emerald-950">
-                    <p className="text-[11px] uppercase tracking-[0.12em] opacity-70">Average precision</p>
-                    <p className="text-sm font-semibold">
-                      {formatCalibrationMetric(overallPrecisionDegrees)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-emerald-500/30 bg-white/60 px-3 py-2 text-emerald-950">
-                    <p className="text-[11px] uppercase tracking-[0.12em] opacity-70">Completed</p>
-                    <p className="text-sm font-semibold">
-                      {validationCompletedAtUnixMs
-                        ? new Date(validationCompletedAtUnixMs).toLocaleString()
-                        : "Not available"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-emerald-500/30 bg-white/60 px-3 py-2 text-emerald-950">
-                    <p className="text-[11px] uppercase tracking-[0.12em] opacity-70">Validation quality</p>
-                    <p className="text-sm font-semibold">
-                      {formatCalibrationQualityLabel(overallQuality)}
-                    </p>
-                  </div>
+          <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-5 text-emerald-900 dark:text-emerald-100">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold">Calibration applied</p>
+                  {isReadOnly ? (
+                    <Badge variant={hasValidationPassed ? "secondary" : "destructive"}>
+                      {hasValidationPassed ? "Validation passed" : "Validation failed"}
+                    </Badge>
+                  ) : null}
                 </div>
-              ) : (
-                <p className="mt-1 text-sm leading-6 opacity-80">
-                  Calibration and validation are complete. Please return control to the researcher.
-                </p>
-              )}
+                {isReadOnly ? (
+                  <p className="mt-2 text-sm leading-6 opacity-80">
+                    The selected eye tracker has an active validated calibration with{" "}
+                    {formatCalibrationQualityLabel(overallQuality).toLowerCase()} and{" "}
+                    {overallSampleCount} validation samples.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm leading-6 opacity-80">
+                    Calibration and validation are complete. Please return control to the researcher.
+                  </p>
+                )}
+              </div>
             </div>
+
+            {isReadOnly ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                  <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
+                    Average accuracy
+                  </p>
+                  <p className="mt-1 text-base font-semibold">
+                    {formatCalibrationMetric(overallAccuracyDegrees)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                  <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
+                    Average precision
+                  </p>
+                  <p className="mt-1 text-base font-semibold">
+                    {formatCalibrationMetric(overallPrecisionDegrees)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                  <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">Completed</p>
+                  <p className="mt-1 text-base font-semibold">
+                    {validationCompletedAtUnixMs
+                      ? new Date(validationCompletedAtUnixMs).toLocaleString()
+                      : "Not available"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                  <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
+                    Validation quality
+                  </p>
+                  <p className="mt-1 text-base font-semibold">
+                    {formatCalibrationQualityLabel(overallQuality)}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
+
         {isReadOnly && validationResult?.points?.length ? (
-          <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-4 text-emerald-900 dark:text-emerald-100">
-            <p className="text-sm font-semibold">Point-by-point review</p>
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-5 text-emerald-900 dark:text-emerald-100">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-semibold">Point-by-point review</p>
+                <p className="mt-1 text-sm leading-6 opacity-80">
+                  Review each calibration point before deciding if a rerun is needed.
+                </p>
+              </div>
+              <Badge variant="outline" className="bg-white/70 text-emerald-950">
+                Samples: {overallSampleCount ?? validationResult.sampleCount}
+              </Badge>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {validationResult.points.map((point) => (
-                <div key={point.pointId} className="rounded-lg border border-emerald-500/30 bg-white/60 px-3 py-2 text-emerald-950">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em]">{point.label}</p>
+                <div
+                  key={point.pointId}
+                  className="rounded-xl border border-emerald-500/30 bg-white/80 px-4 py-3 text-emerald-950"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">{point.label}</p>
+                    <Badge variant="outline" className="bg-emerald-100/70 text-emerald-900">
+                      {formatCalibrationQualityLabel(point.quality)}
+                    </Badge>
+                  </div>
                   <p className="mt-1 text-xs opacity-75">
                     ({point.x.toFixed(2)}, {point.y.toFixed(2)}) · {point.sampleCount} samples
                   </p>
-                  <p className="mt-2 text-xs opacity-75">Accuracy</p>
-                  <p className="text-sm font-semibold">{formatCalibrationMetric(point.averageAccuracyDegrees)}</p>
-                  <p className="mt-1 text-xs opacity-75">Precision</p>
-                  <p className="text-sm font-semibold">{formatCalibrationMetric(point.averagePrecisionDegrees)}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.12em] opacity-70">Accuracy</p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {formatCalibrationMetric(point.averageAccuracyDegrees)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.12em] opacity-70">Precision</p>
+                      <p className="mt-1 text-sm font-semibold">
+                        {formatCalibrationMetric(point.averagePrecisionDegrees)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+
+            <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={() => requestParticipantCalibrationRerun("validation")}
               >
                 Run validation again
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => requestParticipantCalibrationRerun("full")}
+              >
+                Run full calibration again
+              </Button>
             </div>
+
+            {requestMessage ? (
+              <p className="mt-3 text-sm leading-6 opacity-80">{requestMessage}</p>
+            ) : null}
           </div>
         ) : null}
 
@@ -316,9 +364,7 @@ export function CalibrationStep({
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Calibration needs to be rerun</p>
-              <p className="mt-1 text-sm leading-6 opacity-80">
-                {failureMessage}
-              </p>
+              <p className="mt-1 text-sm leading-6 opacity-80">{failureMessage}</p>
             </div>
             {!isReadOnly ? (
               <Button variant="outline" onClick={handleReset}>
