@@ -1,7 +1,7 @@
 import {
   ExperimentStepper,
   type ExperimentStepperMode,
-} from "./components/experiment-stepper";
+} from "./components/experiment-stepper"
 
 type ExperimentPageProps = {
   mode?: ExperimentStepperMode
@@ -10,7 +10,8 @@ type ExperimentPageProps = {
 export default function ExperimentPage({ mode = "researcher" }: ExperimentPageProps) {
   const isParticipantMode = mode === "participant"
   const title = "Researcher experiment control"
-  const description = "Prepare the device and reading baseline first, then follow the participant steps and start the session when everything is ready."
+  const description =
+    "Prepare the device and reading baseline first, then follow the participant steps and start the session when everything is ready."
 
   return (
     <section
@@ -38,5 +39,5 @@ export default function ExperimentPage({ mode = "researcher" }: ExperimentPagePr
         </div>
       )}
     </section>
-  );
+  )
 }

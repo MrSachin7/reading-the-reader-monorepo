@@ -1,9 +1,21 @@
-import Link from "next/link";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+const PARTICIPANT_FLOW_STARTED_KEY = "participant-flow-started-v2"
 
 export default function HomePage() {
+  const handleStartExperimentClick = () => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    window.localStorage.setItem(PARTICIPANT_FLOW_STARTED_KEY, `${Date.now()}`)
+  }
+
   return (
     <section className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-5xl items-center">
       <div className="grid w-full gap-6">
@@ -11,17 +23,20 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="text-2xl">Experiment flow</CardTitle>
             <CardDescription>
-              Start the experiment as the researcher, prepare the device and reading baseline, then hand over the participant information and calibration steps in the dedicated participant view.
+              Start the experiment as the researcher, prepare the device and reading baseline, then
+              hand over the participant information and calibration steps in the dedicated
+              participant view.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild size="lg" variant="outline">
-              <Link href="/researcher/experiment">Start Experiment</Link>
+              <Link href="/researcher/experiment" onClick={handleStartExperimentClick}>
+                Start Experiment
+              </Link>
             </Button>
           </CardContent>
         </Card>
       </div>
     </section>
-  );
+  )
 }
-
