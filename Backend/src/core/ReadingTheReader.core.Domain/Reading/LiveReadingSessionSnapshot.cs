@@ -14,7 +14,9 @@ public sealed record LiveReadingSessionSnapshot(
     InterventionEventSnapshot? LatestIntervention,
     IReadOnlyList<InterventionEventSnapshot> RecentInterventions,
     ReadingAttentionSummarySnapshot? AttentionSummary = null,
-    ReadingPresentationSnapshot? InitialPresentation = null)
+    ReadingPresentationSnapshot? InitialPresentation = null,
+    IReadOnlyList<ExperimentSequenceItemSnapshot>? ExperimentItems = null,
+    int? CurrentExperimentItemIndex = null)
 {
     public static LiveReadingSessionSnapshot Empty { get; } = new(
         null,
@@ -30,6 +32,8 @@ public sealed record LiveReadingSessionSnapshot(
         null,
         [],
         null,
+        null,
+        [],
         null);
 
     public LiveReadingSessionSnapshot Copy()
@@ -48,6 +52,8 @@ public sealed record LiveReadingSessionSnapshot(
             LatestIntervention?.Copy(),
             RecentInterventions is null ? [] : [.. RecentInterventions.Select(item => item.Copy())],
             AttentionSummary?.Copy(),
-            InitialPresentation?.Copy());
+            InitialPresentation?.Copy(),
+            ExperimentItems is null ? [] : [.. ExperimentItems.Select(item => item.Copy())],
+            CurrentExperimentItemIndex);
     }
 }

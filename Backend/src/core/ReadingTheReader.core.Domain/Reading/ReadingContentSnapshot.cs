@@ -5,6 +5,8 @@ public sealed record ReadingContentSnapshot(
     string Title,
     string Markdown,
     string? SourceSetupId,
+    string? ExperimentSetupId,
+    string? ExperimentSetupItemId,
     long UpdatedAtUnixMs)
 {
     public bool UsesSavedSetup => !string.IsNullOrWhiteSpace(SourceSetupId);
