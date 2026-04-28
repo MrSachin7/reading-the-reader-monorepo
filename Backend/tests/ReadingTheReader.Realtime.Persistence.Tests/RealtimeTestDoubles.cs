@@ -281,6 +281,7 @@ public sealed class RealtimeTestDoubles
         private readonly Dictionary<string, ExperimentReplayExport> _savedById = new(StringComparer.Ordinal);
 
         public ExperimentReplayExport? LatestExport { get; private set; }
+        public ExperimentProcessedExport? LatestProcessedExport { get; private set; }
 
         public IReadOnlyCollection<SavedExperimentReplayExportSummary> Saved => _saved.AsReadOnly();
 
@@ -293,6 +294,17 @@ public sealed class RealtimeTestDoubles
         public ValueTask<ExperimentReplayExport?> LoadLatestAsync(CancellationToken ct = default)
         {
             return ValueTask.FromResult(LatestExport?.Copy());
+        }
+
+        public ValueTask SaveLatestProcessedAsync(ExperimentProcessedExport exportDocument, CancellationToken ct = default)
+        {
+            LatestProcessedExport = exportDocument.Copy();
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask<ExperimentProcessedExport?> LoadLatestProcessedAsync(CancellationToken ct = default)
+        {
+            return ValueTask.FromResult(LatestProcessedExport?.Copy());
         }
 
         public ValueTask<SavedExperimentReplayExportSummary> SaveNamedAsync(
@@ -353,6 +365,7 @@ public sealed class RealtimeTestDoubles
                 [],
                 [],
                 [],
+                [],
                 []);
             return ValueTask.CompletedTask;
         }
@@ -370,6 +383,7 @@ public sealed class RealtimeTestDoubles
                 LatestSnapshot = batch.LatestSnapshot.Copy(),
                 LifecycleEvents = [.. session.LifecycleEvents, .. batch.LifecycleEvents.Select(item => item.Copy())],
                 GazeSamples = [.. session.GazeSamples, .. batch.GazeSamples.Select(item => item.Copy())],
+                EnrichedGazeSamples = [.. session.EnrichedGazeSamples, .. (batch.EnrichedGazeSamples ?? []).Select(item => item.Copy())],
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
@@ -407,6 +421,28 @@ public sealed class RealtimeTestDoubles
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+        }
+
+        public ValueTask<ExperimentProcessedExport?> BuildProcessedExportAsync(
+            Guid sessionId,
+            string completionSource,
+            long exportedAtUnixMs,
+            CancellationToken ct = default)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return ValueTask.FromResult<ExperimentProcessedExport?>(null);
+            }
+
+            return ValueTask.FromResult<ExperimentProcessedExport?>(ExperimentProcessedExportFactory.Create(
+                session.InitialSnapshot,
+                session.LatestSnapshot,
+                completionSource,
+                exportedAtUnixMs,
+                session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.EnrichedGazeSamples.OrderBy(item => item.SequenceNumber).ToArray()));
         }
 
         public ValueTask MarkCompletedAsync(
@@ -471,13 +507,14 @@ public sealed class RealtimeTestDoubles
             ExperimentSessionSnapshot LatestSnapshot,
             IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
             IReadOnlyList<RawGazeSampleRecord> GazeSamples,
-        IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
-        IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
-        IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
-        IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
-        IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
-        IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
-        IReadOnlyList<InterventionEventRecord> InterventionEvents);
+            IReadOnlyList<EnrichedGazeSampleRecord> EnrichedGazeSamples,
+            IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
+            IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
+            IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
+            IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
+            IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
+            IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
+            IReadOnlyList<InterventionEventRecord> InterventionEvents);
     }
 
     public sealed class FakeEyeTrackerAdapter : IEyeTrackerAdapter

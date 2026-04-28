@@ -29,6 +29,7 @@ public static class MessageTypes
     public const string UnregisterParticipantView = "unregisterParticipantView";
     public const string ParticipantViewportUpdated = "participantViewportUpdated";
     public const string ReadingFocusUpdated = "readingFocusUpdated";
+    public const string ReadingEnrichedGazeSampleUpdated = "readingEnrichedGazeSampleUpdated";
     public const string ReadingGazeObservationUpdated = "readingGazeObservationUpdated";
     public const string ReadingContextPreservationUpdated = "readingContextPreservationUpdated";
     public const string ReadingAttentionSummaryUpdated = "readingAttentionSummaryUpdated";

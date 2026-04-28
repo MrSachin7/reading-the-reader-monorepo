@@ -2,7 +2,7 @@
 
 import { type RefObject, useEffect, useRef } from "react";
 
-import { subscribeToGaze } from "@/lib/gaze-socket";
+import { subscribeToGaze, type GazeData } from "@/lib/gaze-socket";
 import {
   calculateGazePoint,
   normalizeGazePoint,
@@ -16,6 +16,7 @@ type UseGazeTokenHighlightParams = {
   enabled?: boolean;
   highlightTokensBeingLookedAt?: boolean;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onEnrichedFocusSample?: (sample: GazeData, focus: GazeFocusState) => void;
   onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
 };
 
@@ -324,6 +325,7 @@ export function useGazeTokenHighlight({
   enabled = true,
   highlightTokensBeingLookedAt = true,
   onFocusChange,
+  onEnrichedFocusSample,
   onObservationChange,
 }: UseGazeTokenHighlightParams) {
   const wordLayoutsRef = useRef<WordLayout[]>([]);
@@ -331,11 +333,13 @@ export function useGazeTokenHighlight({
   const activeTokenIdRef = useRef<string | null>(null);
   const highlightedElementsRef = useRef<Map<HTMLElement, HighlightVariant>>(new Map());
   const fixationCandidateRef = useRef<FixationCandidate | null>(null);
+  const latestSampleRef = useRef<GazeData | null>(null);
   const latestPointRef = useRef<GazePoint | null>(null);
   const normalizedPointRef = useRef<GazePoint | null>(null);
   const lastValidPointAtRef = useRef(0);
   const lastFocusSignatureRef = useRef<string | null>(null);
   const lastFocusReportedAtRef = useRef(0);
+  const lastEnrichedSampleKeyRef = useRef<string | null>(null);
   const lastObservationSignatureRef = useRef<string | null>(null);
   const lastObservationReportedAtRef = useRef(0);
 
@@ -355,10 +359,23 @@ export function useGazeTokenHighlight({
     const reportFocus = (
       partial: Omit<GazeFocusState, "updatedAtUnixMs">
     ) => {
+      const now = Date.now();
+      const focus = {
+        ...partial,
+        updatedAtUnixMs: now,
+      };
+      const latestSample = latestSampleRef.current;
+      if (onEnrichedFocusSample && latestSample) {
+        const sampleKey = `${latestSample.deviceTimeStamp}:${latestSample.systemTimeStamp ?? ""}`;
+        if (sampleKey !== lastEnrichedSampleKeyRef.current) {
+          lastEnrichedSampleKeyRef.current = sampleKey;
+          onEnrichedFocusSample(latestSample, focus);
+        }
+      }
+
       if (!onFocusChange) {
         return;
       }
-
       const signature = JSON.stringify([
         partial.isInsideReadingArea,
         partial.normalizedContentX?.toFixed(4) ?? null,
@@ -368,7 +385,6 @@ export function useGazeTokenHighlight({
         partial.activeSentenceId,
         partial.activeTokenText,
       ]);
-      const now = Date.now();
 
       if (
         signature === lastFocusSignatureRef.current &&
@@ -379,10 +395,7 @@ export function useGazeTokenHighlight({
 
       lastFocusSignatureRef.current = signature;
       lastFocusReportedAtRef.current = now;
-      onFocusChange({
-        ...partial,
-        updatedAtUnixMs: now,
-      });
+      onFocusChange(focus);
     };
 
     const reportObservation = (
@@ -533,6 +546,7 @@ export function useGazeTokenHighlight({
     window.addEventListener("resize", onResize);
 
     const unsubscribeGaze = subscribeToGaze((sample) => {
+      latestSampleRef.current = sample;
       const nextPoint = calculateGazePoint(sample);
       if (!nextPoint) {
         return;
@@ -811,14 +825,16 @@ export function useGazeTokenHighlight({
       container.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       fixationCandidateRef.current = null;
+      latestSampleRef.current = null;
       normalizedPointRef.current = null;
       activeTokenIdRef.current = null;
       lastFocusSignatureRef.current = null;
       lastFocusReportedAtRef.current = 0;
+      lastEnrichedSampleKeyRef.current = null;
       lastObservationSignatureRef.current = null;
       lastObservationReportedAtRef.current = 0;
       setActiveWord(null, true);
       wordLayoutsRef.current = [];
     };
-  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt, onFocusChange, onObservationChange]);
+  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt, onFocusChange, onEnrichedFocusSample, onObservationChange]);
 }

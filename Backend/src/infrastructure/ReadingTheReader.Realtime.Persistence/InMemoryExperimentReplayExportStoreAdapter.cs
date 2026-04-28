@@ -9,6 +9,7 @@ public sealed class InMemoryExperimentReplayExportStoreAdapter : IExperimentRepl
     private readonly object _gate = new();
     private readonly IExperimentReplayExportSerializer _serializer;
     private ExperimentReplayExport? _latest;
+    private ExperimentProcessedExport? _latestProcessed;
     private readonly Dictionary<string, (SavedExperimentReplayExportSummary Summary, string SerializedContent)> _saved = [];
 
     public InMemoryExperimentReplayExportStoreAdapter(IExperimentReplayExportSerializer serializer)
@@ -31,6 +32,24 @@ public sealed class InMemoryExperimentReplayExportStoreAdapter : IExperimentRepl
         lock (_gate)
         {
             return ValueTask.FromResult(_latest?.Copy());
+        }
+    }
+
+    public ValueTask SaveLatestProcessedAsync(ExperimentProcessedExport exportDocument, CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            _latestProcessed = exportDocument.Copy();
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask<ExperimentProcessedExport?> LoadLatestProcessedAsync(CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            return ValueTask.FromResult(_latestProcessed?.Copy());
         }
     }
 
