@@ -22,6 +22,10 @@ import {
 import { EMPTY_READING_ATTENTION_SUMMARY } from "@/lib/reading-attention-summary"
 import { normalizeReaderAppearance, type ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
+import {
+  buildExperimentItemReadingSessionPayload,
+  getExperimentSequencePositionFromSession,
+} from "@/lib/experiment-sequence"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import type { ReadingInterventionCommitBoundary } from "@/lib/experiment-session"
 import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
@@ -47,8 +51,10 @@ import {
   useApplyPendingInterventionNowMutation,
   useGetInterventionModulesQuery,
   useGetReaderShellSettingsQuery,
+  useUpsertReadingSessionMutation,
   useUpdateInterventionPolicyMutation,
 } from "@/redux"
+import { getErrorMessage } from "@/lib/error-utils"
 
 function EmptyState({
   title,
@@ -190,10 +196,13 @@ function ResearcherCurrentLiveBody({
   const { data: interventionModules = [] } = useGetInterventionModulesQuery()
   const [updateInterventionPolicy] = useUpdateInterventionPolicyMutation()
   const [applyPendingInterventionNow] = useApplyPendingInterventionNowMutation()
+  const [upsertReadingSession, { isLoading: isAdvancingExperimentText }] =
+    useUpsertReadingSessionMutation()
   const effectiveInterventionModules =
     interventionModules.length > 0 ? interventionModules : FALLBACK_INTERVENTION_MODULES
   const readingSession = session.readingSession
   const content = readingSession.content!
+  const [experimentSequenceError, setExperimentSequenceError] = useState<string | null>(null)
   const [tokenAttention, setTokenAttention] = useState<RemoteTokenAttentionSnapshot>(
     readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
   )
@@ -260,6 +269,16 @@ function ResearcherCurrentLiveBody({
     readingSession.focus.activeTokenId && tokenTextLookup.has(readingSession.focus.activeTokenId)
       ? tokenTextLookup.get(readingSession.focus.activeTokenId) ?? null
       : readingSession.focus.activeTokenId
+  const experimentSequencePosition = useMemo(
+    () =>
+      getExperimentSequencePositionFromSession(
+        readingSession.experimentItems,
+        readingSession.currentExperimentItemIndex,
+        content
+      ),
+    [content, readingSession.currentExperimentItemIndex, readingSession.experimentItems]
+  )
+  const currentExperimentTextIndex = experimentSequencePosition?.currentIndex ?? null
 
   useEffect(() => {
     latestTokenAttentionRef.current = effectiveTokenAttention
@@ -325,6 +344,43 @@ function ResearcherCurrentLiveBody({
     await applyPendingInterventionNow().unwrap()
   }, [applyPendingInterventionNow])
 
+  const handleAdvanceExperimentText = useCallback(async () => {
+    setExperimentSequenceError(null)
+
+    if (!content.experimentSetupId || !experimentSequencePosition) {
+      setExperimentSequenceError("The current live session is not linked to a reusable experiment sequence.")
+      return
+    }
+
+    const nextItem = experimentSequencePosition.nextItem
+    if (!nextItem) {
+      setExperimentSequenceError("You are already on the last text in this experiment.")
+      return
+    }
+
+    try {
+      await upsertReadingSession(
+        buildExperimentItemReadingSessionPayload({
+          item: nextItem,
+          appearance: readingSession.appearance,
+          experimentSetupId: content.experimentSetupId,
+          experimentItems: readingSession.experimentItems,
+          currentExperimentItemIndex: experimentSequencePosition.currentIndex + 1,
+        })
+      ).unwrap()
+    } catch (error) {
+      setExperimentSequenceError(getErrorMessage(error, "Could not load the next text."))
+    }
+  }, [
+    experimentSequencePosition,
+    content.experimentSetupId,
+    readingSession.appearance.appFont,
+    readingSession.appearance.palette,
+    readingSession.appearance.themeMode,
+    readingSession.experimentItems,
+    upsertReadingSession,
+  ])
+
   const mirrorTrustState: LiveMirrorTrustState = getLiveMirrorTrustState({
     followParticipant,
     hasParticipantViewConnection: session.liveMonitoring.hasParticipantViewConnection,
@@ -388,6 +444,15 @@ function ResearcherCurrentLiveBody({
           onPauseAutomation={() => pauseDecisionAutomation()}
           onResumeAutomation={() => resumeDecisionAutomation()}
           onExecutionModeChange={(executionMode) => setDecisionExecutionMode(executionMode)}
+          experimentTextCount={readingSession.experimentItems.length}
+          currentExperimentTextIndex={currentExperimentTextIndex}
+          canAdvanceExperimentText={
+            currentExperimentTextIndex !== null &&
+            currentExperimentTextIndex < readingSession.experimentItems.length - 1
+          }
+          isAdvancingExperimentText={isAdvancingExperimentText}
+          experimentSequenceError={experimentSequenceError}
+          onAdvanceExperimentText={() => void handleAdvanceExperimentText()}
         />
 
         <LiveReaderColumn

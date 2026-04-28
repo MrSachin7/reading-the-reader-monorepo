@@ -31,11 +31,41 @@ public sealed partial class ExperimentSessionManager
         try
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var normalizedExperimentItems = command.ExperimentItems is null
+                ? []
+                : command.ExperimentItems
+                    .Where(item =>
+                        !string.IsNullOrWhiteSpace(item.Id) &&
+                        !string.IsNullOrWhiteSpace(item.Title) &&
+                        !string.IsNullOrWhiteSpace(item.Markdown))
+                    .OrderBy(item => item.Order)
+                    .Select(item => new ExperimentSequenceItemSnapshot(
+                        item.Id.Trim(),
+                        item.Order,
+                        item.Title.Trim(),
+                        item.Markdown,
+                        string.IsNullOrWhiteSpace(item.SourceSetupId) ? null : item.SourceSetupId.Trim(),
+                        item.FontFamily.Trim(),
+                        item.FontSizePx,
+                        item.LineWidthPx,
+                        item.LineHeight,
+                        item.LetterSpacingEm,
+                        item.EditableByResearcher))
+                    .ToArray();
+            int? normalizedCurrentExperimentItemIndex = null;
+            if (normalizedExperimentItems.Length > 0)
+            {
+                var requestedIndex = command.CurrentExperimentItemIndex ?? 0;
+                normalizedCurrentExperimentItemIndex = Math.Max(0, Math.Min(requestedIndex, normalizedExperimentItems.Length - 1));
+            }
+
             var content = new ReadingContentSnapshot(
                 command.DocumentId.Trim(),
                 command.Title.Trim(),
                 command.Markdown,
                 string.IsNullOrWhiteSpace(command.SourceSetupId) ? null : command.SourceSetupId.Trim(),
+                string.IsNullOrWhiteSpace(command.ExperimentSetupId) ? null : command.ExperimentSetupId.Trim(),
+                string.IsNullOrWhiteSpace(command.ExperimentSetupItemId) ? null : command.ExperimentSetupItemId.Trim(),
                 updatedAtUnixMs);
 
             var viewportIsConnected = _liveReadingSession.ParticipantViewport.IsConnected;
@@ -57,6 +87,8 @@ public sealed partial class ExperimentSessionManager
                 RecentContextPreservationEvents = [],
                 LatestLayoutGuardrail = null,
                 AttentionSummary = null,
+                ExperimentItems = normalizedExperimentItems,
+                CurrentExperimentItemIndex = normalizedCurrentExperimentItemIndex,
             };
             _lastMeaningfulReadingFocus = ReadingFocusSnapshot.Empty;
             _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;

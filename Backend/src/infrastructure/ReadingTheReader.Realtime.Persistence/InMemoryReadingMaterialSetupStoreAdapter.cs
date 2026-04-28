@@ -18,8 +18,10 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapter : IReadingMaterialS
         var setup = new ReadingMaterialSetup
         {
             Id = id,
+            Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
             Title = command.Title.Trim(),
             Markdown = command.Markdown,
+            ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
             FileName = BuildUniqueFileName(command.Title, id),
             CreatedAtUnixMs = createdAtUnixMs,
             UpdatedAtUnixMs = createdAtUnixMs,
@@ -79,8 +81,10 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapter : IReadingMaterialS
             var updated = new ReadingMaterialSetup
             {
                 Id = existing.Id,
+                Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
                 Title = command.Title.Trim(),
                 Markdown = command.Markdown,
+                ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
                 FileName = existing.FileName,
                 CreatedAtUnixMs = existing.CreatedAtUnixMs,
                 UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),

@@ -29,8 +29,10 @@ public sealed class UpdateReadingMaterialSetupEndpoint : Endpoint<UpdateReadingM
             var updated = await _readingMaterialSetupService.UpdateAsync(new UpdateReadingMaterialSetupCommand
             {
                 Id = id ?? string.Empty,
+                Name = req.Name,
                 Title = req.Title,
                 Markdown = req.Markdown,
+                ResearcherQuestions = req.ResearcherQuestions,
                 FontFamily = req.FontFamily,
                 FontSizePx = req.FontSizePx,
                 LineWidthPx = req.LineWidthPx,

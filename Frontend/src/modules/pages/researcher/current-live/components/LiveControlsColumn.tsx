@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
-import { Activity, Check, Keyboard, Pause, Play, User, X } from "lucide-react"
+import { Activity, ArrowRight, Check, Keyboard, Pause, Play, User, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -66,6 +66,12 @@ type LiveControlsColumnProps = {
   onPauseAutomation: () => void
   onResumeAutomation: () => void
   onExecutionModeChange: (executionMode: string) => void
+  experimentTextCount: number
+  currentExperimentTextIndex: number | null
+  canAdvanceExperimentText: boolean
+  isAdvancingExperimentText: boolean
+  experimentSequenceError: string | null
+  onAdvanceExperimentText: () => void
 }
 
 export function LiveControlsColumn({
@@ -96,6 +102,12 @@ export function LiveControlsColumn({
   onPauseAutomation,
   onResumeAutomation,
   onExecutionModeChange,
+  experimentTextCount,
+  currentExperimentTextIndex,
+  canAdvanceExperimentText,
+  isAdvancingExperimentText,
+  experimentSequenceError,
+  onAdvanceExperimentText,
 }: LiveControlsColumnProps) {
   const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false)
   const isExactMirror = mirrorTrustState.kind === "exact"
@@ -216,6 +228,42 @@ export function LiveControlsColumn({
                 </div>
               </CardContent>
             </Card>
+
+            {experimentTextCount > 1 ? (
+              <Card className="rounded-2xl bg-card/96 shadow-sm">
+                <CardContent className="pt-6">
+                  <SectionHeader icon={<ArrowRight className="size-3.5" />} title="Experiment sequence" />
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">Current text</p>
+                      <Badge variant="outline">
+                        {currentExperimentTextIndex === null
+                          ? "Unknown"
+                          : `${currentExperimentTextIndex + 1} / ${experimentTextCount}`}
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant="outline"
+                      disabled={!canAdvanceExperimentText || isAdvancingExperimentText}
+                      onClick={onAdvanceExperimentText}
+                    >
+                      <ArrowRight className="size-3.5" />
+                      {isAdvancingExperimentText ? "Loading next text..." : "Next text"}
+                    </Button>
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      Move the live reading session to the next saved text in the selected experiment.
+                    </p>
+                    {experimentSequenceError ? (
+                      <p className="text-xs leading-5 text-rose-700 dark:text-rose-300">
+                        {experimentSequenceError}
+                      </p>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
 
             <Card className="rounded-2xl bg-card/96 shadow-sm">
               <CardContent className="pt-6">
