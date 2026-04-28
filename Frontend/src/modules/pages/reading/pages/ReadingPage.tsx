@@ -328,7 +328,7 @@ export function ReadingPage() {
   })
 
   return (
-    <div className="relative">
+    <div className="relative" data-reader-surface="true">
       <div className="pointer-events-none fixed right-4 top-4 z-30 md:right-6 md:top-6">
         <ExperimentCompletionActions
           session={liveSession}

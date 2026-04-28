@@ -53,11 +53,11 @@ export function ReplayUploadState({
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
-          className={cn(
+            className={cn(
             "flex min-h-0 h-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-10 text-center shadow-sm transition-all",
             isDragging
-              ? "border-sky-400 bg-sky-500/8 shadow-[0_0_0_4px_rgba(14,165,233,0.14)]"
-              : "border-border hover:border-sky-300"
+              ? "border-primary/55 bg-primary/8 shadow-[0_0_0_4px_rgba(15,23,42,0.08)]"
+              : "border-border hover:border-primary/40"
           )}
         >
           <Input
@@ -68,7 +68,7 @@ export function ReplayUploadState({
             onChange={onInputChange}
           />
           <div className="flex h-18 w-18 items-center justify-center rounded-2xl border bg-background shadow-sm">
-            <FileUp className="h-8 w-8 text-sky-500" />
+            <FileUp className="h-8 w-8 text-primary" />
           </div>
           <p className="mt-6 text-xl font-semibold">Upload replay file</p>
           <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
@@ -106,7 +106,7 @@ export function ReplayUploadState({
                     type="button"
                     onClick={() => onSelectSavedExport(item.id)}
                     disabled={loadingExportId === item.id}
-                    className="w-full rounded-xl border p-4 text-left transition-colors hover:border-sky-300 hover:bg-accent/30"
+                    className="w-full rounded-xl border p-4 text-left transition-colors hover:border-primary/35 hover:bg-accent/30"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">{item.name}</p>

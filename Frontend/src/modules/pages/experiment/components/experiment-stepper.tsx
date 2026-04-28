@@ -142,7 +142,7 @@ export function ExperimentStepNavigation({
             className={cn(
               "w-full rounded-[1.5rem] border p-4 text-left transition-all",
               isActive && "border-primary bg-primary/5 shadow-[0_12px_40px_rgba(15,23,42,0.06)]",
-              isCompleted && "border-emerald-300/60 bg-emerald-500/5",
+              isCompleted && "border-primary/35 bg-primary/10",
               !isActive && !isCompleted && "bg-card hover:border-primary/40 hover:bg-primary/5",
               isLocked && "cursor-not-allowed opacity-55 hover:border-border hover:bg-card"
             )}
@@ -154,7 +154,7 @@ export function ExperimentStepNavigation({
                   isActive
                     ? "border-primary bg-primary text-primary-foreground"
                     : isCompleted
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-neutral-300 bg-neutral-100 text-neutral-500"
                 )}
               >
@@ -352,13 +352,13 @@ function PluginStatusPanel({
       className={cn(
         "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
         tone === "connected" &&
-          "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
+          "border-primary/55 bg-primary/10 shadow-[0_12px_32px_rgba(15,23,42,0.1)]",
         tone === "unavailable" &&
-          "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
+          "border-destructive/55 bg-destructive/10 shadow-[0_12px_32px_rgba(127,29,29,0.14)]",
         tone === "offline" &&
-          "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]",
+          "border-accent/55 bg-accent/15 shadow-[0_12px_32px_rgba(120,53,15,0.12)]",
         tone === "builtin" &&
-          "border-sky-500/60 bg-sky-500/10 shadow-[0_12px_32px_rgba(14,165,233,0.12)]"
+          "border-secondary-foreground/35 bg-secondary/80 shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -371,10 +371,10 @@ function PluginStatusPanel({
         <Badge
           className={cn(
             "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
-            tone === "connected" && "border-emerald-600/30 bg-emerald-600 text-white",
-            tone === "unavailable" && "border-rose-600/30 bg-rose-600 text-white",
-            tone === "offline" && "border-amber-600/30 bg-amber-500 text-amber-950",
-            tone === "builtin" && "border-sky-600/30 bg-sky-600 text-white"
+            tone === "connected" && "border-primary/40 bg-primary text-primary-foreground",
+            tone === "unavailable" && "border-destructive/40 bg-destructive text-white",
+            tone === "offline" && "border-accent/45 bg-accent text-accent-foreground",
+            tone === "builtin" && "border-secondary-foreground/35 bg-secondary text-secondary-foreground"
           )}
         >
           {badge}
@@ -483,7 +483,7 @@ function RuntimePluginOptionButton({
         "bg-card hover:border-primary/40 hover:bg-accent/30",
         isSelected && "border-primary bg-accent/50",
         isUnavailable &&
-          "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
       )}
     >
       <div className="space-y-3">
@@ -496,7 +496,7 @@ function RuntimePluginOptionButton({
           <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
           <p className="mt-3 text-sm text-muted-foreground">{description}</p>
           {isUnavailable ? (
-            <p className="mt-2 text-xs text-amber-700">{unavailableMessage}</p>
+            <p className="mt-2 text-xs text-accent-foreground">{unavailableMessage}</p>
           ) : null}
         </div>
       </div>
@@ -1214,8 +1214,8 @@ function SessionContentStep({
                       "w-full rounded-2xl border p-5 text-left transition-colors",
                       "bg-card hover:border-primary/40 hover:bg-accent/30",
                       isSelected && "border-primary bg-accent/50",
-                      isUnavailable &&
-                        "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+        isUnavailable &&
+          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
                     )}
                   >
                   <div className="space-y-3">
@@ -1232,7 +1232,7 @@ function SessionContentStep({
                       </p>
                       <p className="mt-3 text-sm text-muted-foreground">{option.description}</p>
                       {isUnavailable ? (
-                        <p className="mt-2 text-xs text-amber-700">
+            <p className="mt-2 text-xs text-accent-foreground">
                           Start the decision-maker service before choosing this plugin.
                         </p>
                       ) : null}

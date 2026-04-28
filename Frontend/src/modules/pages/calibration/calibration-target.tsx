@@ -28,7 +28,7 @@ export function CalibrationTarget({ x, y, phase }: CalibrationTargetProps) {
         }`}
       >
         <div
-          className={`rounded-full border border-sky-500/70 bg-sky-200/45 transition-all duration-300 ${
+          className={`rounded-full border border-primary/70 bg-primary/20 transition-all duration-300 ${
             isHoldPhase ? "h-4.5 w-4.5" : isBurstPhase ? "h-16 w-16 opacity-0" : "h-7 w-7"
           }`}
         />

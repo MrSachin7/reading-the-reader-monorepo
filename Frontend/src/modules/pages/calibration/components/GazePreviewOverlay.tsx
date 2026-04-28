@@ -16,7 +16,7 @@ export function GazePreviewOverlay() {
       connectionStats={connectionStats}
       sampleRateHz={sampleRateHz}
       hasRecentGaze={hasRecentGaze}
-      markerClassName="h-4 w-4 border-blue-400 bg-blue-500/60 shadow-[0_0_22px_rgba(96,165,250,0.68)]"
+      markerClassName="h-4 w-4 border-primary bg-primary/60 shadow-[0_0_22px_rgba(15,23,42,0.4)]"
     />
   )
 }

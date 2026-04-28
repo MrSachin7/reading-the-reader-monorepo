@@ -7,6 +7,7 @@ The monorepo is intentionally split into separate application roots instead of o
 - `Backend/`: .NET solution, API host, infrastructure adapters, and tests
 - `Frontend/`: Next.js application for researcher and participant experiences
 - `Decision-Maker/`: Python mock external decision-provider service
+- `scripts/`: one-command launchers for development and production frontend/backend startup
 - `docs/`: source documentation that is copied into the hosted docs app
 - `DocsSite/`: static docs website hosted on GitHub Pages
 - `.github/workflows/`: CI and Pages deployment workflows
@@ -51,12 +52,23 @@ Use this when working on:
 - integration handoff material
 - thesis and analysis reference pages
 
+### `scripts/`
+
+Use this when working on:
+
+- coordinated frontend/backend startup
+- Windows hardware-mode launch commands
+- production-build local serving
+- documenting the difference between host-side Tobii execution and portable mock/demo workflows
+
 ## Monorepo Runtime Relationship
 
 ```mermaid
 flowchart LR
   Frontend["Frontend/"] -->|REST + WS| Backend["Backend/"]
   Decision["Decision-Maker/"] -->|Provider WS| Backend
+  Scripts["scripts/"] -->|starts| Frontend
+  Scripts -->|starts| Backend
   Docs["DocsSite/"] -->|Hosted reference| Pages["GitHub Pages"]
 ```
 

@@ -126,9 +126,9 @@ export function LiveReaderColumn({
               className={cn(
                 "inline-flex rounded-full border px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm backdrop-blur",
                 mirrorTrustState.tone === "positive"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                  ? "border-primary/35 bg-primary/10 text-primary"
                   : mirrorTrustState.tone === "warning"
-                    ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                    ? "border-accent/45 bg-accent/15 text-accent-foreground"
                     : "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-200"
               )}
             >
@@ -139,7 +139,7 @@ export function LiveReaderColumn({
         {showReadingDynamics ? (
           <div className="pointer-events-none absolute right-4 top-4 z-10">
             <span
-              className="inline-flex rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-amber-800 shadow-sm backdrop-blur"
+              className="inline-flex rounded-full border border-accent/45 bg-accent/15 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-accent-foreground shadow-sm backdrop-blur"
             >
               Token heat map
             </span>

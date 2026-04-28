@@ -281,7 +281,7 @@ export function LiveControlsColumn({
                     variant="outline"
                     className={cn(
                       "font-mono text-[10px] uppercase tracking-wider",
-                      decisionState.automationPaused && "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                      decisionState.automationPaused && "border-accent/45 text-accent-foreground"
                     )}
                   >
                     {decisionState.automationPaused ? "Paused" : "Active"}
@@ -344,8 +344,8 @@ export function LiveControlsColumn({
                     className={cn(
                       "mt-3 rounded-lg border px-3 py-2 text-xs leading-5",
                       isExternalDecisionUnavailable
-                        ? "border-amber-500/35 bg-amber-500/10 text-amber-950 dark:text-amber-100"
-                        : "border-emerald-500/35 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100"
+                        ? "border-accent/45 bg-accent/15 text-accent-foreground"
+                        : "border-primary/40 bg-primary/10 text-primary"
                     )}
                   >
                     {isExternalDecisionUnavailable
@@ -361,7 +361,7 @@ export function LiveControlsColumn({
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">Active proposal</p>
-                    <Badge className="bg-emerald-600 text-white">Awaiting action</Badge>
+                    <Badge className="bg-primary text-primary-foreground">Awaiting action</Badge>
                   </div>
                   <p className="mt-2 text-sm leading-5 text-foreground">
                     {decisionState.activeProposal.rationale}
@@ -380,7 +380,7 @@ export function LiveControlsColumn({
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <Button
                       size="sm"
-                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
                       onClick={() => onApproveProposal(decisionState.activeProposal!.proposalId)}
                     >
                       <Check className="size-3.5" />
@@ -389,7 +389,7 @@ export function LiveControlsColumn({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-rose-500/40 text-rose-700 hover:bg-rose-500/10 dark:text-rose-300"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10"
                       onClick={() => onRejectProposal(decisionState.activeProposal!.proposalId)}
                     >
                       <X className="size-3.5" />
@@ -410,8 +410,8 @@ export function LiveControlsColumn({
                       className={cn(
                         "text-[10px] uppercase tracking-wider",
                         layoutGuardrail.status === "suppressed"
-                          ? "border-amber-500/35 text-amber-700 dark:text-amber-300"
-                          : "border-emerald-500/35 text-emerald-700 dark:text-emerald-300"
+                          ? "border-accent/45 text-accent-foreground"
+                          : "border-primary/40 text-primary"
                       )}
                     >
                       {layoutGuardrail.status === "suppressed" ? "Holding" : "Applied"}
@@ -570,17 +570,17 @@ function HealthPill({
     <span
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider",
-        tone === "positive" && "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-        tone === "warning" && "border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-        tone === "negative" && "border-rose-500/35 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+        tone === "positive" && "border-primary/40 bg-primary/10 text-primary",
+        tone === "warning" && "border-accent/45 bg-accent/15 text-accent-foreground",
+        tone === "negative" && "border-destructive/40 bg-destructive/10 text-destructive"
       )}
     >
       <span
         className={cn(
           "size-1.5 rounded-full",
-          tone === "positive" && "bg-emerald-500",
-          tone === "warning" && "bg-amber-500",
-          tone === "negative" && "bg-rose-500"
+          tone === "positive" && "bg-primary",
+          tone === "warning" && "bg-accent",
+          tone === "negative" && "bg-destructive"
         )}
       />
       {label}

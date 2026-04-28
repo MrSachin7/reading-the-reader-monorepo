@@ -59,9 +59,9 @@ export function CalibrationReviewPanel({
     >
       <div className="flex items-start gap-4">
         {validationResult?.passed ? (
-          <ShieldCheck className="mt-1 h-8 w-8 shrink-0 text-emerald-600" />
+          <ShieldCheck className="mt-1 h-8 w-8 shrink-0 text-primary" />
         ) : (
-          <AlertTriangle className="mt-1 h-8 w-8 shrink-0 text-rose-600" />
+          <AlertTriangle className="mt-1 h-8 w-8 shrink-0 text-destructive" />
         )}
         <div className="min-w-0">
           <p className={`text-sm uppercase tracking-[0.22em] ${validationQualityStyles.badge}`}>

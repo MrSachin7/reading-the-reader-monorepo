@@ -394,13 +394,13 @@ function ResearcherCurrentLiveBody({
     <main className="h-screen overflow-hidden bg-background px-4 py-5 md:px-8 md:py-8">
       {mirrorTrustState.kind === "approximate" ? (
         <div className="pointer-events-none fixed inset-x-4 top-4 z-30 flex justify-center md:inset-x-8">
-          <div className="pointer-events-auto w-full max-w-4xl rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 shadow-lg backdrop-blur">
+          <div className="pointer-events-auto w-full max-w-4xl rounded-2xl border border-accent/45 bg-accent/15 px-4 py-3 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                <p className="text-sm font-semibold text-accent-foreground">
                   {mirrorTrustState.headline}
                 </p>
-                <p className="mt-1 text-sm text-amber-900/85 dark:text-amber-100/85">
+                <p className="mt-1 text-sm text-accent-foreground/85">
                   {mirrorTrustState.detail}
                 </p>
               </div>

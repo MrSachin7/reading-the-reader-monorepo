@@ -14,7 +14,75 @@ This page consolidates the practical run commands across the monorepo.
 - frontend: `http://localhost:3000`
 - backend HTTP: `http://localhost:5190`
 - backend HTTPS: `https://localhost:7248`
+- application WebSocket: `ws://localhost:5190/ws`
 - provider WebSocket: `ws://localhost:5190/ws/provider`
+
+## One-Command Frontend and Backend Launch
+
+The repository root contains launch scripts that start the frontend and backend together. This is the recommended path for local researcher-machine usage because the real Tobii hardware path is Windows-bound.
+
+Windows development mode:
+
+```powershell
+.\scripts\start-dev.ps1
+```
+
+Windows production-build mode:
+
+```powershell
+.\scripts\start-production.ps1
+```
+
+First-time dependency install/restore:
+
+```powershell
+.\scripts\start-dev.ps1 -Install
+.\scripts\start-production.ps1 -Install
+```
+
+Open the frontend automatically:
+
+```powershell
+.\scripts\start-dev.ps1 -OpenBrowser
+.\scripts\start-production.ps1 -OpenBrowser
+```
+
+The scripts default to:
+
+- backend: `http://localhost:5190`
+- frontend: `http://localhost:3000`
+- frontend API URL: `http://localhost:5190/api`
+- frontend WebSocket URL: `ws://localhost:5190/ws`
+
+Override ports when needed:
+
+```powershell
+.\scripts\start-dev.ps1 -BackendUrl "http://localhost:5191" -FrontendPort 3001
+.\scripts\start-production.ps1 -BackendUrl "http://localhost:5191" -FrontendPort 3001
+```
+
+Shell equivalents exist for environments where the backend can run and real Tobii hardware is not required:
+
+```bash
+./scripts/start-dev.sh
+./scripts/start-production.sh
+```
+
+For first-time shell setup:
+
+```bash
+INSTALL=1 ./scripts/start-dev.sh
+INSTALL=1 ./scripts/start-production.sh
+```
+
+Production mode builds before serving:
+
+- frontend: `bun run build`, then `bun run start`
+- backend: `dotnet build --configuration Release`, then `dotnet run --configuration Release --no-build`
+
+Build output and errors are printed in the terminal that launches the production script. If either build fails, the script stops before starting servers.
+
+The frontend is not served by opening the `.next` folder directly. After `bun run build`, Next.js is served with `bun run start`, which runs the production Next server.
 
 ## Backend
 
@@ -75,11 +143,21 @@ bun run build
 
 ## Typical Full Local Flow
 
-1. Start the backend.
-2. Start the frontend.
-3. If you are validating the external provider seam, start the mock decision-maker.
-4. Open the frontend and run the experiment workflow.
-5. Use the docs site separately when updating or reviewing documentation.
+1. Run `.\scripts\start-dev.ps1` from the repository root on Windows.
+2. If you are validating the external provider seam, start the mock decision-maker.
+3. Open the frontend and run the experiment workflow.
+4. Use the docs site separately when updating or reviewing documentation.
+
+## Hardware and Docker Boundary
+
+Docker is not the default real-experiment launcher for this project. Docker Desktop on Windows and macOS commonly runs Linux containers inside a VM, which does not make the Windows-only Tobii SDK or USB/device access available to the backend process.
+
+The thesis-safe position is:
+
+- the application stack can be coordinated from one script
+- real Tobii experiment mode targets Windows host execution
+- mock, replay, and mouse-mode workflows are the portable/demo path
+- the hardware limitation is isolated to the sensing infrastructure adapter
 
 ## Mouse-Mode Demo Flow
 

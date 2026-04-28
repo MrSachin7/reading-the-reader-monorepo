@@ -284,7 +284,7 @@ export function EyetrackerSetup({
 
       <CardContent className="space-y-5">
         {setup.isReady ? (
-          <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
+          <Alert className="border-primary/35 bg-primary/10 text-primary">
             <Info />
             <AlertTitle>Eyetracker is ready</AlertTitle>
           </Alert>
@@ -297,7 +297,7 @@ export function EyetrackerSetup({
         ) : null}
 
         {hasUnsavedLocalChanges ? (
-          <Alert className="border-amber-400/50 bg-amber-500/5 text-amber-950 dark:text-amber-100">
+          <Alert className="border-accent/45 bg-accent/15 text-accent-foreground">
             <Info />
             <AlertTitle>Local tracker changes are not applied yet</AlertTitle>
             <AlertDescription>
@@ -435,7 +435,7 @@ export function EyetrackerSetup({
                 </div>
 
                 {!requiresLicence ? (
-                  <Alert className="border-emerald-400/40 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
+                  <Alert className="border-primary/35 bg-primary/10 text-primary">
                     <Info />
                     <AlertTitle>License not required</AlertTitle>
                     <AlertDescription>
@@ -446,7 +446,7 @@ export function EyetrackerSetup({
                 ) : null}
 
                 {requiresLicence && hasSavedLicence ? (
-                  <Alert className="border-amber-400/60 bg-amber-50/60 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+                  <Alert className="border-accent/50 bg-accent/15 text-accent-foreground">
                     <Info />
                     <AlertTitle>Existing license detected</AlertTitle>
                     <AlertDescription>
@@ -554,7 +554,7 @@ export function EyetrackerSetup({
                             displayedLicenceFileName &&
                               "cursor-not-allowed opacity-70 hover:border-muted-foreground/35 hover:bg-transparent",
                             !canUploadNewLicense &&
-                              "cursor-not-allowed border-amber-400/60 bg-amber-50/30 opacity-80 hover:border-amber-400/60 hover:bg-amber-50/30 dark:border-amber-700 dark:bg-amber-950/20"
+                              "cursor-not-allowed border-accent/50 bg-accent/12 opacity-80 hover:border-accent/50 hover:bg-accent/12"
                           )}
                             >
                               <Upload className="mb-3 h-7 w-7 text-muted-foreground transition-colors group-hover:text-primary" />
