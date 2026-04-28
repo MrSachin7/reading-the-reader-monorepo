@@ -18,6 +18,10 @@ public interface IReaderObservationService
         UpdateReadingFocusCommand command,
         CancellationToken ct = default);
 
+    ValueTask<ReadingFocusSnapshot> UpdateEnrichedGazeSampleAsync(
+        UpdateEnrichedGazeSampleCommand command,
+        CancellationToken ct = default);
+
     ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
         ReadingGazeObservationCommand command,
         CancellationToken ct = default);

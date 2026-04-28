@@ -12,6 +12,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
     private static readonly JsonSerializerOptions SummaryJsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly string _latestFilePath;
+    private readonly string _latestProcessedFilePath;
     private readonly string _savedDirectoryPath;
     private readonly IExperimentReplayExportSerializer _serializer;
 
@@ -21,6 +22,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         IExperimentReplayExportSerializer serializer)
     {
         _latestFilePath = latestFilePath;
+        _latestProcessedFilePath = BuildProcessedLatestFilePath(latestFilePath);
         _savedDirectoryPath = savedDirectoryPath;
         _serializer = serializer;
     }
@@ -48,6 +50,31 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
         var content = await File.ReadAllTextAsync(_latestFilePath, ct);
         return _serializer.Deserialize(content, ExperimentReplayExportFormats.Json);
+    }
+
+    public async ValueTask SaveLatestProcessedAsync(ExperimentProcessedExport exportDocument, CancellationToken ct = default)
+    {
+        var directory = Path.GetDirectoryName(_latestProcessedFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await WriteContentAsync(
+            _latestProcessedFilePath,
+            JsonSerializer.Serialize(exportDocument, SummaryJsonOptions),
+            ct);
+    }
+
+    public async ValueTask<ExperimentProcessedExport?> LoadLatestProcessedAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(_latestProcessedFilePath))
+        {
+            return null;
+        }
+
+        var content = await File.ReadAllTextAsync(_latestProcessedFilePath, ct);
+        return JsonSerializer.Deserialize<ExperimentProcessedExport>(content, SummaryJsonOptions);
     }
 
     public async ValueTask<SavedExperimentReplayExportSummary> SaveNamedAsync(
@@ -184,6 +211,14 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         normalized = Regex.Replace(normalized, "-{2,}", "-");
         normalized = normalized.Trim('-', '.');
         return string.IsNullOrWhiteSpace(normalized) ? "experiment-file" : normalized;
+    }
+
+    private static string BuildProcessedLatestFilePath(string latestFilePath)
+    {
+        var directory = Path.GetDirectoryName(latestFilePath) ?? string.Empty;
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(latestFilePath);
+        var extension = Path.GetExtension(latestFilePath);
+        return Path.Combine(directory, $"{fileNameWithoutExtension}-processed{extension}");
     }
 
     private async ValueTask<ExperimentReplayExport?> ReadExportAsync(string path, CancellationToken ct)

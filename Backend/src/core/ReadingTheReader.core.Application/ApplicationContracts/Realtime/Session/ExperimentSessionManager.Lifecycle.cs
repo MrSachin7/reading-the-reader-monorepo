@@ -201,7 +201,13 @@ public sealed partial class ExperimentSessionManager
                 source,
                 stoppedAtUnixMs,
                 ct) ?? throw new InvalidOperationException("No replay recovery data is available for this session.");
+            var processedExportDocument = await _experimentReplayRecoveryStoreAdapter.BuildProcessedExportAsync(
+                snapshot.SessionId.Value,
+                source,
+                stoppedAtUnixMs,
+                ct) ?? throw new InvalidOperationException("No processed export data is available for this session.");
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
+            await _experimentReplayExportStoreAdapter.SaveLatestProcessedAsync(processedExportDocument, ct);
             await _experimentReplayRecoveryStoreAdapter.MarkCompletedAsync(snapshot.SessionId.Value, exportDocument, stoppedAtUnixMs, ct);
             await _experimentStateStoreAdapter.ClearActiveReplayAsync(ct);
             ResetReplayHistory();

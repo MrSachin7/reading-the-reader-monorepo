@@ -81,6 +81,10 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 await _readerObservationService.UpdateReadingFocusAsync(readingFocusUpdated.Payload, ct);
                 return;
 
+            case ReadingEnrichedGazeSampleUpdatedRealtimeCommand enrichedGazeSampleUpdated:
+                await _readerObservationService.UpdateEnrichedGazeSampleAsync(enrichedGazeSampleUpdated.Payload, ct);
+                return;
+
             case ReadingGazeObservationUpdatedRealtimeCommand readingObservationUpdated:
                 await _readerObservationService.UpdateReadingGazeObservationAsync(
                     readingObservationUpdated.Payload,

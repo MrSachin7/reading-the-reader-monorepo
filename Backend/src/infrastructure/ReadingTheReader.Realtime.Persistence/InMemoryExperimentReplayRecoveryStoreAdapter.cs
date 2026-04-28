@@ -31,6 +31,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
+                [],
                 null);
         }
 
@@ -52,6 +53,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 LatestSnapshot = batch.LatestSnapshot.Copy(),
                 LifecycleEvents = [.. session.LifecycleEvents, .. batch.LifecycleEvents.Select(item => item.Copy())],
                 GazeSamples = [.. session.GazeSamples, .. batch.GazeSamples.Select(item => item.Copy())],
+                EnrichedGazeSamples = [.. session.EnrichedGazeSamples, .. (batch.EnrichedGazeSamples ?? []).Select(item => item.Copy())],
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
@@ -98,6 +100,31 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.LatestTokenStats));
+        }
+    }
+
+    public ValueTask<ExperimentProcessedExport?> BuildProcessedExportAsync(
+        Guid sessionId,
+        string completionSource,
+        long exportedAtUnixMs,
+        CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return ValueTask.FromResult<ExperimentProcessedExport?>(null);
+            }
+
+            return ValueTask.FromResult<ExperimentProcessedExport?>(ExperimentProcessedExportFactory.Create(
+                session.InitialSnapshot,
+                session.LatestSnapshot,
+                completionSource,
+                exportedAtUnixMs,
+                session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.EnrichedGazeSamples.OrderBy(item => item.SequenceNumber).ToArray()));
         }
     }
 
@@ -150,6 +177,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         ExperimentSessionSnapshot LatestSnapshot,
         IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
         IReadOnlyList<RawGazeSampleRecord> GazeSamples,
+        IReadOnlyList<EnrichedGazeSampleRecord> EnrichedGazeSamples,
         IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,

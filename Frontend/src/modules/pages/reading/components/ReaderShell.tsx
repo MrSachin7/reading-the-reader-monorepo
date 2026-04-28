@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiveGazeOverlay } from "@/modules/pages/gaze/components/LiveGazeOverlay";
 import type { GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers";
+import type { GazeData } from "@/lib/gaze-socket";
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader";
 import { ReadingToolbar } from "@/modules/pages/reading/components/ReadingToolbar";
 import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/readingMetrics";
@@ -58,6 +59,7 @@ type ReaderShellProps = {
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
   onFocusChange?: (focus: GazeFocusState) => void;
+  onEnrichedFocusSample?: (sample: GazeData, focus: GazeFocusState) => void;
   onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
   onContextPreservationChange?: (snapshot: ReadingContextPreservationSnapshot) => void;
   viewportActivePageIndex?: number | null;
@@ -187,6 +189,7 @@ export function ReaderShell({
   onPresentationChange,
   onViewportMetricsChange,
   onFocusChange,
+  onEnrichedFocusSample,
   onObservationChange,
   onContextPreservationChange,
   viewportActivePageIndex = null,
@@ -238,6 +241,7 @@ export function ReaderShell({
     enabled: enableLiveGazeTracking,
     highlightTokensBeingLookedAt,
     onFocusChange,
+    onEnrichedFocusSample,
     onObservationChange,
   });
 

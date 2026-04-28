@@ -38,6 +38,10 @@ public sealed record ReadingFocusUpdatedRealtimeCommand(
     string ConnectionId,
     UpdateReadingFocusCommand Payload) : IRealtimeIngressCommand;
 
+public sealed record ReadingEnrichedGazeSampleUpdatedRealtimeCommand(
+    string ConnectionId,
+    UpdateEnrichedGazeSampleCommand Payload) : IRealtimeIngressCommand;
+
 public sealed record ReadingGazeObservationUpdatedRealtimeCommand(
     string ConnectionId,
     ReadingGazeObservationCommand Payload) : IRealtimeIngressCommand;
@@ -114,6 +118,11 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Reading focus payload is invalid.",
                 parsed => new ReadingFocusUpdatedRealtimeCommand(connectionId, parsed)),
+            MessageTypes.ReadingEnrichedGazeSampleUpdated => Deserialize<UpdateEnrichedGazeSampleCommand>(
+                payload,
+                connectionId,
+                "Reading enriched gaze sample payload is invalid.",
+                parsed => new ReadingEnrichedGazeSampleUpdatedRealtimeCommand(connectionId, parsed)),
             MessageTypes.ReadingGazeObservationUpdated => Deserialize<ReadingGazeObservationCommand>(
                 payload,
                 connectionId,
