@@ -28,6 +28,20 @@ export {
   useGetInterventionModulesQuery,
 } from "./intervention-modules-api"
 export {
+  experimentSetupApi,
+  useCreateExperimentSetupMutation,
+  useGetExperimentSetupsQuery,
+  useLazyGetExperimentSetupByIdQuery,
+  useUpdateExperimentSetupMutation,
+} from "./experiment-setup-api"
+export type {
+  CreateExperimentSetupRequest,
+  CreateExperimentSetupRequestItem,
+  ExperimentSetup,
+  ExperimentSetupItem,
+  UpdateExperimentSetupRequest,
+} from "./experiment-setup-api"
+export {
   experimentSessionApi,
   useApplyPendingInterventionNowMutation,
   useFinishExperimentSessionMutation,

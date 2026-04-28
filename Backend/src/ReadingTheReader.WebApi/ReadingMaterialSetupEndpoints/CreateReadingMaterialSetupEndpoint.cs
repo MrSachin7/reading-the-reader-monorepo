@@ -26,8 +26,10 @@ public sealed class CreateReadingMaterialSetupEndpoint : Endpoint<CreateReadingM
         {
             var saved = await _readingMaterialSetupService.SaveAsync(new SaveReadingMaterialSetupCommand
             {
+                Name = req.Name,
                 Title = req.Title,
                 Markdown = req.Markdown,
+                ResearcherQuestions = req.ResearcherQuestions,
                 FontFamily = req.FontFamily,
                 FontSizePx = req.FontSizePx,
                 LineWidthPx = req.LineWidthPx,

@@ -2,8 +2,10 @@ namespace ReadingTheReader.WebApi.Contracts.ReadingMaterialSetups;
 
 public sealed class CreateReadingMaterialSetupRequest
 {
+    public string Name { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Markdown { get; set; } = string.Empty;
+    public string ResearcherQuestions { get; set; } = string.Empty;
     public string FontFamily { get; set; } = string.Empty;
     public int FontSizePx { get; set; }
     public int LineWidthPx { get; set; }

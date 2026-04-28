@@ -44,7 +44,22 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                 new ReaderAppearanceSnapshot(
                     req.ThemeMode,
                     req.Palette,
-                    req.AppFont)), ct);
+                    req.AppFont),
+                req.ExperimentSetupId,
+                req.ExperimentSetupItemId,
+                req.ExperimentItems?.Select(item => new UpsertReadingSessionExperimentItemCommand(
+                    item.Id,
+                    item.Order,
+                    item.Title,
+                    item.Markdown,
+                    item.SourceSetupId,
+                    item.FontFamily,
+                    item.FontSizePx,
+                    item.LineWidthPx,
+                    item.LineHeight,
+                    item.LetterSpacingEm,
+                    item.EditableByResearcher)).ToArray(),
+                req.CurrentExperimentItemIndex), ct);
 
             await Send.OkAsync(_experimentSessionQueryService.GetCurrentSnapshot(), ct);
         }

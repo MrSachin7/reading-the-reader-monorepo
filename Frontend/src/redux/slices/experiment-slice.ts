@@ -32,10 +32,15 @@ type ExperimentStepThreeState = {
 }
 
 type ReadingSessionState = {
-  source: "preset" | "custom"
+  source: "preset" | "custom" | "experiment"
   title: string
   customMarkdown: string
   researcherQuestions: string
+  selectedExperimentSetupId: string | null
+  selectedExperimentSetupName: string | null
+  selectedExperimentSetupItemId: string | null
+  selectedReadingMaterialSetupId: string | null
+  selectedExperimentItemCount: number
 }
 
 type ExperimentState = {
@@ -89,6 +94,11 @@ const initialState: ExperimentState = {
     title: "Reading as Deliberate Attention",
     customMarkdown: "",
     researcherQuestions: "",
+    selectedExperimentSetupId: null,
+    selectedExperimentSetupName: null,
+    selectedExperimentSetupItemId: null,
+    selectedReadingMaterialSetupId: null,
+    selectedExperimentItemCount: 0,
   },
 }
 
@@ -267,6 +277,28 @@ const experimentSlice = createSlice({
             ? state.stepThree.lastCalibrationStatus
             : calibration.status),
       }
+
+      state.readingSession = {
+        ...state.readingSession,
+        title: session.readingSession?.content?.title ?? state.readingSession.title,
+        customMarkdown: session.readingSession?.content?.markdown ?? state.readingSession.customMarkdown,
+        source:
+          session.readingSession?.content?.experimentSetupId
+            ? "experiment"
+            : session.readingSession?.content?.sourceSetupId
+              ? "custom"
+              : state.readingSession.source,
+        selectedExperimentSetupId:
+          session.readingSession?.content?.experimentSetupId ?? state.readingSession.selectedExperimentSetupId,
+        selectedExperimentSetupName: state.readingSession.selectedExperimentSetupName,
+        selectedExperimentSetupItemId:
+          session.readingSession?.content?.experimentSetupItemId ??
+          state.readingSession.selectedExperimentSetupItemId,
+        selectedReadingMaterialSetupId:
+          session.readingSession?.content?.sourceSetupId ??
+          state.readingSession.selectedReadingMaterialSetupId,
+        selectedExperimentItemCount: state.readingSession.selectedExperimentItemCount,
+      }
     },
     resetStepThreeState: (state) => {
       state.stepThree = initialState.stepThree
@@ -285,6 +317,22 @@ const experimentSlice = createSlice({
     },
     setReadingSessionResearcherQuestions: (state, action: PayloadAction<string>) => {
       state.readingSession.researcherQuestions = action.payload
+    },
+    setReadingSessionExperimentSelection: (
+      state,
+      action: PayloadAction<{
+        experimentSetupId: string | null
+        experimentSetupName: string | null
+        experimentSetupItemId: string | null
+        readingMaterialSetupId: string | null
+        itemCount: number
+      }>
+    ) => {
+      state.readingSession.selectedExperimentSetupId = action.payload.experimentSetupId
+      state.readingSession.selectedExperimentSetupName = action.payload.experimentSetupName
+      state.readingSession.selectedExperimentSetupItemId = action.payload.experimentSetupItemId
+      state.readingSession.selectedReadingMaterialSetupId = action.payload.readingMaterialSetupId
+      state.readingSession.selectedExperimentItemCount = action.payload.itemCount
     },
     resetReadingSessionState: (state) => {
       state.readingSession = initialState.readingSession
@@ -323,6 +371,7 @@ export const {
   setReadingSessionTitle,
   setReadingSessionCustomMarkdown,
   setReadingSessionResearcherQuestions,
+  setReadingSessionExperimentSelection,
   resetReadingSessionState,
 } = experimentSlice.actions
 

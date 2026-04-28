@@ -181,6 +181,8 @@ export function LiveReaderColumn({
                     markdown={content.markdown}
                     presentation={presentation}
                     experimentSetupName={content.title}
+                    experimentSequenceItems={readingSession.experimentItems}
+                    currentExperimentSequenceIndex={readingSession.currentExperimentItemIndex}
                     preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
                     highlightContext={readerOptions.highlightContext}
                     displayGazePosition={false}
@@ -235,6 +237,8 @@ export function LiveReaderColumn({
                 markdown={content.markdown}
                 presentation={presentation}
                 experimentSetupName={content.title}
+                experimentSequenceItems={readingSession.experimentItems}
+                currentExperimentSequenceIndex={readingSession.currentExperimentItemIndex}
                 preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
                 highlightContext={readerOptions.highlightContext}
                 displayGazePosition={false}

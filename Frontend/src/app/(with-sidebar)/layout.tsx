@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ExternalLink, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
+import { BookOpen, ExternalLink, FlaskConical, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
 
 import { FontSelector } from "@/components/theme/font-selector";
 import { ModeToggle } from "@/components/theme/mode-toggle";
@@ -63,6 +63,14 @@ export default function WithSidebarLayout({
                     <Link href="/reading-material/setup">
                       <NotebookPen />
                       <span>Reading Material Setup</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Experiment Setups">
+                    <Link href="/experiment/setups">
+                      <FlaskConical />
+                      <span>Experiment Setups</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

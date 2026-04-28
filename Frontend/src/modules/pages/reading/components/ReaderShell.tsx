@@ -13,6 +13,7 @@ import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation";
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
 import type { InterventionEventSnapshot, ReadingPresentationSnapshot } from "@/lib/experiment-session";
+import type { ExperimentSequenceItemSnapshot } from "@/lib/experiment-session";
 import { useGazeTokenHighlight, type GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight";
 import { usePreserveReadingContext } from "@/modules/pages/reading/lib/usePreserveReadingContext";
 import { useRemoteFocusTokenAttention } from "@/modules/pages/reading/lib/useRemoteFocusTokenAttention";
@@ -46,6 +47,8 @@ type ReaderShellProps = {
   markdown: string;
   presentation: ReadingPresentationSettings;
   experimentSetupName?: string | null;
+  experimentSequenceItems?: ExperimentSequenceItemSnapshot[];
+  currentExperimentSequenceIndex?: number | null;
   preserveContextOnIntervention?: boolean;
   highlightContext?: boolean;
   displayGazePosition?: boolean;
@@ -58,6 +61,10 @@ type ReaderShellProps = {
   useCompactLixOverlay?: boolean;
   onPresentationChange?: (next: ReadingPresentationSettings) => void;
   onViewportMetricsChange?: (metrics: ReaderViewportMetrics) => void;
+  onRetreatPastStart?: () => void | Promise<void>;
+  canRetreatPastStart?: boolean;
+  onAdvancePastEnd?: () => void | Promise<void>;
+  canAdvancePastEnd?: boolean;
   onFocusChange?: (focus: GazeFocusState) => void;
   onEnrichedFocusSample?: (sample: GazeData, focus: GazeFocusState) => void;
   onObservationChange?: (observation: ReadingGazeObservationSnapshot) => void;
@@ -176,6 +183,8 @@ export function ReaderShell({
   markdown,
   presentation,
   experimentSetupName = null,
+  experimentSequenceItems = [],
+  currentExperimentSequenceIndex = null,
   preserveContextOnIntervention = false,
   highlightContext = false,
   displayGazePosition = false,
@@ -188,6 +197,10 @@ export function ReaderShell({
   useCompactLixOverlay = false,
   onPresentationChange,
   onViewportMetricsChange,
+  onRetreatPastStart,
+  canRetreatPastStart = false,
+  onAdvancePastEnd,
+  canAdvancePastEnd = false,
   onFocusChange,
   onEnrichedFocusSample,
   onObservationChange,
@@ -227,6 +240,7 @@ export function ReaderShell({
   const [pageHeightPx, setPageHeightPx] = useState(0);
   const [currentPageScrollTop, setCurrentPageScrollTop] = useState(0);
   const [sentencePageAssignments, setSentencePageAssignments] = useState<Map<string, number>>(new Map());
+  const [experimentSequencePageCounts, setExperimentSequencePageCounts] = useState<Record<string, number>>({});
   const isControlledPage = viewportActivePageIndex !== null;
   const hasControlledViewportSize =
     (viewportWidthPx ?? 0) > 0 && (viewportHeightPx ?? 0) > 0;
@@ -274,6 +288,14 @@ export function ReaderShell({
 
   const parsedDoc = useMemo(() => parseMinimalMarkdown(markdown), [markdown]);
   const tokenizedBlocks = useMemo(() => tokenizeDocument(parsedDoc, docId), [docId, parsedDoc]);
+  const tokenizedExperimentSequenceItems = useMemo(
+    () =>
+      experimentSequenceItems.map((item) => ({
+        ...item,
+        blocks: tokenizeDocument(parseMinimalMarkdown(item.markdown), item.id),
+      })),
+    [experimentSequenceItems]
+  );
 
   const livePresentationSnapshot = useMemo<ReadingPresentationSnapshot>(
     () => ({
@@ -358,6 +380,38 @@ export function ReaderShell({
 
   const words = useMemo(() => countWords(markdown), [markdown]);
   const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
+  const globalPageMetrics = useMemo(() => {
+    if (experimentSequenceItems.length === 0 || currentExperimentSequenceIndex === null) {
+      return null;
+    }
+
+    let totalPages = 0;
+    let previousPages = 0;
+
+    for (let index = 0; index < experimentSequenceItems.length; index += 1) {
+      const item = experimentSequenceItems[index];
+      const pageCount =
+        index === currentExperimentSequenceIndex
+          ? displayPageCount
+          : Math.max(experimentSequencePageCounts[item.id] ?? 1, 1);
+
+      totalPages += pageCount;
+      if (index < currentExperimentSequenceIndex) {
+        previousPages += pageCount;
+      }
+    }
+
+    return {
+      currentPageNumber: previousPages + effectivePageIndex + 1,
+      totalPages: Math.max(totalPages, previousPages + effectivePageIndex + 1),
+    };
+  }, [
+    currentExperimentSequenceIndex,
+    displayPageCount,
+    effectivePageIndex,
+    experimentSequenceItems,
+    experimentSequencePageCounts,
+  ]);
 
   const setActivePageIndex = useCallback(
     (nextPageIndex: number, options?: { persist?: boolean; markTurn?: boolean }) => {
@@ -366,13 +420,14 @@ export function ReaderShell({
 
       if (!isControlledPage) {
         setPageIndex((current) => (current === next ? current : next));
+        window.sessionStorage.setItem(`reader:lastPageIndex:${docId}`, String(next));
       }
 
       if (markTurn && next !== effectivePageIndex) {
         lastPageTurnAtRef.current = Date.now();
       }
     },
-    [displayPageCount, effectivePageIndex, isControlledPage]
+    [displayPageCount, docId, effectivePageIndex, isControlledPage]
   );
 
   const resetToTop = useCallback(() => {
@@ -410,7 +465,9 @@ export function ReaderShell({
     }
 
     const frameId = window.requestAnimationFrame(() => {
-      setPageIndex(0);
+      const rawStoredPageIndex = window.sessionStorage.getItem(`reader:lastPageIndex:${docId}`);
+      const restoredPageIndex = rawStoredPageIndex === null ? 0 : Number(rawStoredPageIndex);
+      setPageIndex(Number.isFinite(restoredPageIndex) ? Math.max(Math.round(restoredPageIndex), 0) : 0);
       setCurrentPageScrollTop(0);
       setSentencePageAssignments(new Map());
       setMeasuredPageCount(1);
@@ -550,6 +607,53 @@ export function ReaderShell({
     pageWidthPx,
     tokenizedBlocks,
   ]);
+
+  useEffect(() => {
+    if (pageWidthPx <= 0 || pageHeightPx <= 0 || tokenizedExperimentSequenceItems.length === 0) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const measureSequencePageCounts = () => {
+      const nextCounts: Record<string, number> = {};
+
+      for (const item of tokenizedExperimentSequenceItems) {
+        const element = document.getElementById(`reader-sequence-measure:${item.id}`);
+        if (!(element instanceof HTMLElement)) {
+          continue;
+        }
+
+        nextCounts[item.id] = Math.max(
+          1,
+          Math.ceil(element.scrollWidth / Math.max(pageWidthPx, 1))
+        );
+      }
+
+      setExperimentSequencePageCounts((current) => {
+        const currentKeys = Object.keys(current);
+        const nextKeys = Object.keys(nextCounts);
+        if (
+          currentKeys.length === nextKeys.length &&
+          nextKeys.every((key) => current[key] === nextCounts[key])
+        ) {
+          return current;
+        }
+
+        return nextCounts;
+      });
+    };
+
+    frameId = window.requestAnimationFrame(() => {
+      frameId = window.requestAnimationFrame(measureSequencePageCounts);
+    });
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [pageHeightPx, pageWidthPx, tokenizedExperimentSequenceItems]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -728,9 +832,32 @@ export function ReaderShell({
 
   const moveByPages = useCallback(
     (delta: number, options?: { persist?: boolean; markTurn?: boolean }) => {
+      if (delta < 0 && effectivePageIndex <= 0) {
+        if (canRetreatPastStart && onRetreatPastStart) {
+          void onRetreatPastStart();
+        }
+        return;
+      }
+
+      const lastPageIndex = Math.max(displayPageCount - 1, 0);
+      if (delta > 0 && effectivePageIndex >= lastPageIndex) {
+        if (canAdvancePastEnd && onAdvancePastEnd) {
+          void onAdvancePastEnd();
+        }
+        return;
+      }
+
       setActivePageIndex(effectivePageIndex + delta, options);
     },
-    [effectivePageIndex, setActivePageIndex]
+    [
+      canAdvancePastEnd,
+      canRetreatPastStart,
+      displayPageCount,
+      effectivePageIndex,
+      onAdvancePastEnd,
+      onRetreatPastStart,
+      setActivePageIndex,
+    ]
   );
 
   const onKeyDown = useCallback(
@@ -885,8 +1012,12 @@ export function ReaderShell({
     };
   }, []);
 
-  const canGoPreviousPage = !isControlledPage && effectivePageIndex > 0;
-  const canGoNextPage = !isControlledPage && effectivePageIndex < displayPageCount - 1;
+  const canGoPreviousPage =
+    !isControlledPage &&
+    (effectivePageIndex > 0 || (canRetreatPastStart && Boolean(onRetreatPastStart)));
+  const canGoNextPage =
+    !isControlledPage &&
+    (effectivePageIndex < displayPageCount - 1 || (canAdvancePastEnd && Boolean(onAdvancePastEnd)));
   const useMeasuredViewportSurface = embedded && isControlledPage;
 
   const paginationFooter = (
@@ -895,7 +1026,8 @@ export function ReaderShell({
       style={{ minHeight: `${PAGINATION_OVERLAY_HEIGHT_PX}px` }}
     >
       <p className="text-xs font-medium tabular-nums text-muted-foreground">
-        Page {effectivePageIndex + 1} / {displayPageCount}
+        Page {globalPageMetrics?.currentPageNumber ?? effectivePageIndex + 1} /{" "}
+        {globalPageMetrics?.totalPages ?? displayPageCount}
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -1061,9 +1193,9 @@ export function ReaderShell({
                 overflow: "hidden",
               }}
             >
-              <div
-                ref={measurementRef}
-                className="relative h-full"
+            <div
+              ref={measurementRef}
+              className="relative h-full"
                 style={{
                   width: `${pageWidthPx}px`,
                   height: `${Math.max(pageHeightPx, 1)}px`,
@@ -1082,6 +1214,29 @@ export function ReaderShell({
                   blockStyleOverrides={baselineBlockStyleOverrides}
                 />
               </div>
+              {tokenizedExperimentSequenceItems.map((item) => (
+                <div
+                  key={item.id}
+                  id={`reader-sequence-measure:${item.id}`}
+                  className="absolute left-0 top-0 opacity-0"
+                  style={{
+                    width: `${pageWidthPx}px`,
+                    height: `${Math.max(pageHeightPx, 1)}px`,
+                    columnWidth: `${pageWidthPx}px`,
+                    columnGap: "0px",
+                    columnFill: "auto",
+                    fontFamily: getFontFamilyStyle(item.fontFamily),
+                    fontSize: `${item.fontSizePx}px`,
+                    lineHeight: item.lineHeight,
+                    letterSpacing: `${item.letterSpacingEm}em`,
+                  }}
+                >
+                  <MarkdownReader
+                    blocks={item.blocks}
+                    showLixScores={false}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>
