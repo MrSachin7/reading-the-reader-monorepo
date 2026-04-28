@@ -146,7 +146,7 @@ export function CalibrationStep({
   }
 
   return (
-    <Card className="overflow-hidden rounded-[2rem] border-slate-200/80 bg-card shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+    <Card className="overflow-hidden rounded-[2rem] border-border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
       <CardHeader className="border-b pb-8">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Step 4</Badge>
@@ -200,7 +200,7 @@ export function CalibrationStep({
         )}
 
         {setup.isReady ? (
-          <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-5 text-emerald-900 dark:text-emerald-100">
+          <div className="rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -228,7 +228,7 @@ export function CalibrationStep({
 
             {isReadOnly ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Average accuracy
                   </p>
@@ -236,7 +236,7 @@ export function CalibrationStep({
                     {formatCalibrationMetric(overallAccuracyDegrees)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Average precision
                   </p>
@@ -244,7 +244,7 @@ export function CalibrationStep({
                     {formatCalibrationMetric(overallPrecisionDegrees)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">Completed</p>
                   <p className="mt-1 text-base font-semibold">
                     {validationCompletedAtUnixMs
@@ -252,7 +252,7 @@ export function CalibrationStep({
                       : "Not available"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/30 bg-white/70 px-4 py-3 text-emerald-950">
+                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Validation quality
                   </p>
@@ -266,7 +266,7 @@ export function CalibrationStep({
         ) : null}
 
         {isReadOnly && validationResult?.points?.length ? (
-          <div className="rounded-[1.5rem] border border-emerald-400/30 bg-emerald-500/5 p-5 text-emerald-900 dark:text-emerald-100">
+          <div className="rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-base font-semibold">Point-by-point review</p>
@@ -274,7 +274,7 @@ export function CalibrationStep({
                   Review each calibration point before deciding if a rerun is needed.
                 </p>
               </div>
-              <Badge variant="outline" className="bg-white/70 text-emerald-950">
+              <Badge variant="outline" className="bg-background/70 text-foreground">
                 Samples: {overallSampleCount ?? validationResult.sampleCount}
               </Badge>
             </div>
@@ -283,11 +283,11 @@ export function CalibrationStep({
               {validationResult.points.map((point) => (
                 <div
                   key={point.pointId}
-                  className="rounded-xl border border-emerald-500/30 bg-white/80 px-4 py-3 text-emerald-950"
+                  className="rounded-xl border border-primary/35 bg-background/80 px-4 py-3 text-foreground"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{point.label}</p>
-                    <Badge variant="outline" className="bg-emerald-100/70 text-emerald-900">
+                    <Badge variant="outline" className="bg-primary/15 text-primary">
                       {formatCalibrationQualityLabel(point.quality)}
                     </Badge>
                   </div>
@@ -334,7 +334,7 @@ export function CalibrationStep({
         ) : null}
 
         {isRunning ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-sky-400/30 bg-sky-500/5 p-4 text-sky-950">
+          <div className="flex items-start gap-3 rounded-[1.5rem] border border-primary/35 bg-primary/10 p-4 text-primary">
             <ScanEye className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="text-sm font-semibold">Calibration in progress</p>
@@ -347,7 +347,7 @@ export function CalibrationStep({
         ) : null}
 
         {!setup.isReady ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-slate-300/70 bg-slate-50 p-4 text-slate-900">
+          <div className="flex items-start gap-3 rounded-[1.5rem] border border-border bg-muted/35 p-4 text-foreground">
             <ScanEye className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <p className="text-sm font-semibold">Calibration required</p>
@@ -360,7 +360,7 @@ export function CalibrationStep({
         ) : null}
 
         {hasFailed ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-amber-400/30 bg-amber-500/5 p-4 text-amber-950">
+          <div className="flex items-start gap-3 rounded-[1.5rem] border border-accent/45 bg-accent/15 p-4 text-accent-foreground">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Calibration needs to be rerun</p>
