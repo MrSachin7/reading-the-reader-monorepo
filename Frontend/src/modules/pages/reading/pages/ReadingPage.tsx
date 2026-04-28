@@ -14,7 +14,8 @@ import {
   updateReadingGazeObservation,
   updateReadingContextPreservation,
   updateParticipantViewport,
-  updateReadingFocus,
+  updateReadingEnrichedGazeSample,
+  type GazeData,
 } from "@/lib/gaze-socket"
 import { READER_SHELL_SETTINGS_DEFAULTS, getReaderShellViewSettings } from "@/lib/reader-shell-settings"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
@@ -100,16 +101,20 @@ export function ReadingPage() {
     })
   }, [])
 
-  const handleFocusChange = useCallback((focus: GazeFocusState) => {
-    updateReadingFocus({
-      isInsideReadingArea: focus.isInsideReadingArea,
-      normalizedContentX: focus.normalizedContentX,
-      normalizedContentY: focus.normalizedContentY,
-      activeTokenId: focus.activeTokenId,
-      activeBlockId: focus.activeBlockId,
-      activeSentenceId: focus.activeSentenceId,
-      activeTokenText: focus.activeTokenText,
-    })
+  const handleEnrichedFocusSample = useCallback((sample: GazeData, focus: GazeFocusState) => {
+    updateReadingEnrichedGazeSample(
+      sample,
+      {
+        isInsideReadingArea: focus.isInsideReadingArea,
+        normalizedContentX: focus.normalizedContentX,
+        normalizedContentY: focus.normalizedContentY,
+        activeTokenId: focus.activeTokenId,
+        activeBlockId: focus.activeBlockId,
+        activeSentenceId: focus.activeSentenceId,
+        activeTokenText: focus.activeTokenText,
+      },
+      focus.updatedAtUnixMs
+    )
   }, [])
 
   const handleContextPreservationChange = useCallback(
@@ -271,7 +276,7 @@ export function ReadingPage() {
         gazeOverlayPoint={liveGaze.smoothedPoint}
         gazeOverlayHasRecentPoint={liveGaze.hasRecentGaze}
         onViewportMetricsChange={handleViewportMetricsChange}
-        onFocusChange={handleFocusChange}
+        onEnrichedFocusSample={handleEnrichedFocusSample}
         onObservationChange={handleObservationChange}
         onContextPreservationChange={handleContextPreservationChange}
         latestIntervention={liveReadingSession?.latestIntervention ?? null}

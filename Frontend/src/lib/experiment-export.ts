@@ -47,3 +47,25 @@ export async function downloadExperimentExport(format: ReplayExportFormat = "jso
   link.remove()
   window.URL.revokeObjectURL(url)
 }
+
+export async function downloadProcessedExperimentExport() {
+  const response = await fetch(`${API_BASE_URL}/experiment-session/export/processed`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = response.headers.get("content-disposition")
+    ? getFileName(response.headers.get("content-disposition"), "json")
+    : "experiment-processed-export.json"
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}

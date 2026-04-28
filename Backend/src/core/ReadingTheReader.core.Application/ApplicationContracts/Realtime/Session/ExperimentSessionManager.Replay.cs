@@ -14,6 +14,11 @@ public sealed partial class ExperimentSessionManager
         return _experimentReplayExportStoreAdapter.LoadLatestAsync(ct);
     }
 
+    public ValueTask<ExperimentProcessedExport?> GetLatestProcessedExportAsync(CancellationToken ct = default)
+    {
+        return _experimentReplayExportStoreAdapter.LoadLatestProcessedAsync(ct);
+    }
+
     public async ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(
         SaveExperimentReplayExportCommand command,
         CancellationToken ct = default)
@@ -105,6 +110,7 @@ public sealed partial class ExperimentSessionManager
             _hasPendingReplayPersistence = false;
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
+            _pendingEnrichedGazeSamples = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
@@ -175,6 +181,52 @@ public sealed partial class ExperimentSessionManager
                     gazeData.RightGazeOriginInTrackBoxX,
                     gazeData.RightGazeOriginInTrackBoxY,
                     gazeData.RightGazeOriginInTrackBoxZ)));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordEnrichedGazeSample(long capturedAtUnixMs, GazeData gazeData, ReadingFocusSnapshot focus)
+    {
+        lock (_historyGate)
+        {
+            _pendingEnrichedGazeSamples.Add(new EnrichedGazeSampleRecord(
+                NextSequenceNumber(),
+                capturedAtUnixMs,
+                gazeData.DeviceTimeStamp,
+                gazeData.SystemTimeStamp,
+                ToReplayEyeSample(
+                    gazeData.LeftEyeX,
+                    gazeData.LeftEyeY,
+                    gazeData.LeftEyeValidity,
+                    gazeData.LeftEyePositionInUserX,
+                    gazeData.LeftEyePositionInUserY,
+                    gazeData.LeftEyePositionInUserZ,
+                    gazeData.LeftPupilDiameterMm,
+                    gazeData.LeftPupilValidity,
+                    gazeData.LeftGazeOriginInUserX,
+                    gazeData.LeftGazeOriginInUserY,
+                    gazeData.LeftGazeOriginInUserZ,
+                    gazeData.LeftGazeOriginValidity,
+                    gazeData.LeftGazeOriginInTrackBoxX,
+                    gazeData.LeftGazeOriginInTrackBoxY,
+                    gazeData.LeftGazeOriginInTrackBoxZ),
+                ToReplayEyeSample(
+                    gazeData.RightEyeX,
+                    gazeData.RightEyeY,
+                    gazeData.RightEyeValidity,
+                    gazeData.RightEyePositionInUserX,
+                    gazeData.RightEyePositionInUserY,
+                    gazeData.RightEyePositionInUserZ,
+                    gazeData.RightPupilDiameterMm,
+                    gazeData.RightPupilValidity,
+                    gazeData.RightGazeOriginInUserX,
+                    gazeData.RightGazeOriginInUserY,
+                    gazeData.RightGazeOriginInUserZ,
+                    gazeData.RightGazeOriginValidity,
+                    gazeData.RightGazeOriginInTrackBoxX,
+                    gazeData.RightGazeOriginInTrackBoxY,
+                    gazeData.RightGazeOriginInTrackBoxZ),
+                focus.Copy()));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -293,6 +345,7 @@ public sealed partial class ExperimentSessionManager
         bool hasPendingReplayPersistence;
         ExperimentLifecycleEventRecord[] lifecycleEvents;
         RawGazeSampleRecord[] gazeSamples;
+        EnrichedGazeSampleRecord[] enrichedGazeSamples;
         ParticipantViewportEventRecord[] participantViewportEvents;
         ReadingFocusEventRecord[] readingFocusEvents;
         ReadingAttentionEventRecord[] attentionEvents;
@@ -314,6 +367,7 @@ public sealed partial class ExperimentSessionManager
 
             lifecycleEvents = _pendingLifecycleEvents.Select(item => item.Copy()).ToArray();
             gazeSamples = _pendingGazeSamples.Select(item => item.Copy()).ToArray();
+            enrichedGazeSamples = _pendingEnrichedGazeSamples.Select(item => item.Copy()).ToArray();
             participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
             readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
@@ -327,6 +381,7 @@ public sealed partial class ExperimentSessionManager
 
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
+            _pendingEnrichedGazeSamples = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
@@ -348,6 +403,7 @@ public sealed partial class ExperimentSessionManager
                     DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                     lifecycleEvents,
                     gazeSamples,
+                    enrichedGazeSamples,
                     participantViewportEvents,
                     readingFocusEvents,
                     attentionEvents,
@@ -364,6 +420,7 @@ public sealed partial class ExperimentSessionManager
             {
                 _pendingLifecycleEvents = [.. lifecycleEvents.Select(item => item.Copy()), .. _pendingLifecycleEvents];
                 _pendingGazeSamples = [.. gazeSamples.Select(item => item.Copy()), .. _pendingGazeSamples];
+                _pendingEnrichedGazeSamples = [.. enrichedGazeSamples.Select(item => item.Copy()), .. _pendingEnrichedGazeSamples];
                 _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
                 _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];

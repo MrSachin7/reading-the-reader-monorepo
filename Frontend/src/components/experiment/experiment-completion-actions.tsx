@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { downloadExperimentExport } from "@/lib/experiment-export"
+import {
+  downloadExperimentExport,
+  downloadProcessedExperimentExport,
+} from "@/lib/experiment-export"
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
 import { getErrorMessage } from "@/lib/error-utils"
 import { useReadingSettings } from "@/modules/pages/reading/lib/useReadingSettings"
@@ -52,7 +55,7 @@ export function ExperimentCompletionActions({
     useResetExperimentSessionMutation()
   const [saveExperimentReplayExport, { isLoading: isSaving }] =
     useSaveExperimentReplayExportMutation()
-  const [downloadingFormat, setDownloadingFormat] = useState<ReplayExportFormat | null>(null)
+  const [downloadingFormat, setDownloadingFormat] = useState<ReplayExportFormat | "processed" | null>(null)
   const [savingFormat, setSavingFormat] = useState<ReplayExportFormat | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
@@ -118,6 +121,20 @@ export function ExperimentCompletionActions({
     }
   }
 
+  const handleProcessedDownload = async () => {
+    setErrorMessage(null)
+    setSaveSuccessMessage(null)
+    setDownloadingFormat("processed")
+
+    try {
+      await downloadProcessedExperimentExport()
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Could not download the processed experiment export."))
+    } finally {
+      setDownloadingFormat(null)
+    }
+  }
+
   const handleSave = async (format: ReplayExportFormat) => {
     setErrorMessage(null)
     setSaveSuccessMessage(null)
@@ -166,6 +183,13 @@ export function ExperimentCompletionActions({
               disabled={downloadingFormat !== null || isResetting}
             >
               {downloadingFormat === "csv" ? "Downloading CSV..." : "Download CSV"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => void handleProcessedDownload()}
+              disabled={downloadingFormat !== null || isResetting}
+            >
+              {downloadingFormat === "processed" ? "Downloading Processed..." : "Download Processed"}
             </Button>
           </>
         ) : null}

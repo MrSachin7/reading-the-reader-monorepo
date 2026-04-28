@@ -95,6 +95,23 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         return BuildMergedExportFromChunks(metadata, chunks, completionSource, exportedAtUnixMs);
     }
 
+    public async ValueTask<ExperimentProcessedExport?> BuildProcessedExportAsync(
+        Guid sessionId,
+        string completionSource,
+        long exportedAtUnixMs,
+        CancellationToken ct = default)
+    {
+        var metadata = await ReadMetadataAsync(sessionId, ct);
+        if (metadata?.InitialSnapshot is null || metadata.LatestSnapshot is null)
+        {
+            return null;
+        }
+
+        var sessionDirectoryPath = GetSessionDirectoryPath(sessionId);
+        var chunks = await ReadAllChunksAsync(sessionDirectoryPath, ct);
+        return BuildMergedProcessedExportFromChunks(metadata, chunks, completionSource, exportedAtUnixMs);
+    }
+
     public async ValueTask MarkCompletedAsync(
         Guid sessionId,
         ExperimentReplayExport completedExport,
@@ -170,6 +187,26 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             finalTokenStats);
     }
 
+    private ExperimentProcessedExport BuildMergedProcessedExportFromChunks(
+        RecoverySessionMetadata metadata,
+        RecoveryChunkData[] chunks,
+        string completionSource,
+        long exportedAtUnixMs)
+    {
+        static T[] Merge<T>(RecoveryChunkData[] items, Func<RecoveryChunkData, T[]?> selector, Func<T, long> getSequenceNumber)
+            => items.SelectMany(c => selector(c) ?? []).OrderBy(getSequenceNumber).ToArray();
+
+        return ExperimentProcessedExportFactory.Create(
+            metadata.InitialSnapshot,
+            metadata.LatestSnapshot,
+            completionSource,
+            exportedAtUnixMs,
+            Merge(chunks, c => c.LifecycleEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.GazeSamples, e => e.SequenceNumber),
+            Merge(chunks, c => c.FocusEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.EnrichedGazeSamples, e => e.SequenceNumber));
+    }
+
     private async ValueTask<RecoveryChunkData[]> ReadAllChunksAsync(string sessionDirectoryPath, CancellationToken ct)
     {
         var results = new List<(int number, RecoveryChunkData chunk)>();
@@ -217,6 +254,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             FlushedAtUnixMs = batch.FlushedAtUnixMs,
             LifecycleEvents = batch.LifecycleEvents?.ToArray(),
             GazeSamples = batch.GazeSamples?.ToArray(),
+            EnrichedGazeSamples = batch.EnrichedGazeSamples?.ToArray(),
             ViewportEvents = batch.ViewportEvents?.ToArray(),
             FocusEvents = batch.FocusEvents?.ToArray(),
             AttentionEvents = batch.AttentionEvents?.ToArray(),
@@ -537,6 +575,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public long FlushedAtUnixMs { get; set; }
         public ExperimentLifecycleEventRecord[]? LifecycleEvents { get; set; }
         public RawGazeSampleRecord[]? GazeSamples { get; set; }
+        public EnrichedGazeSampleRecord[]? EnrichedGazeSamples { get; set; }
         public ParticipantViewportEventRecord[]? ViewportEvents { get; set; }
         public ReadingFocusEventRecord[]? FocusEvents { get; set; }
         public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }

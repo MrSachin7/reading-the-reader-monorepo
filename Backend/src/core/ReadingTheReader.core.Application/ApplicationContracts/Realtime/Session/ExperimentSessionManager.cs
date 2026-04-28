@@ -60,6 +60,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private bool _hasPendingReplayPersistence;
     private List<ExperimentLifecycleEventRecord> _pendingLifecycleEvents = [];
     private List<RawGazeSampleRecord> _pendingGazeSamples = [];
+    private List<EnrichedGazeSampleRecord> _pendingEnrichedGazeSamples = [];
     private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
     private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
     private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];

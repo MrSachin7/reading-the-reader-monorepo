@@ -2,6 +2,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Domain;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -260,6 +261,83 @@ public sealed partial class ExperimentSessionManager
         }
         await EvaluateDecisionStrategiesAsync(ct);
         return focus;
+    }
+
+    public async ValueTask<ReadingFocusSnapshot> UpdateEnrichedGazeSampleAsync(
+        UpdateEnrichedGazeSampleCommand command,
+        CancellationToken ct = default)
+    {
+        ReadingFocusSnapshot focus;
+        LiveReadingSessionSnapshot? nextState = null;
+        InterventionEventSnapshot? interventionEvent = null;
+
+        var gaze = command.Gaze.Copy();
+
+        await _lifecycleGate.WaitAsync(ct);
+        try
+        {
+            var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var previousFocus = _liveReadingSession.Focus;
+            var previousMeaningfulFocus = _lastMeaningfulReadingFocus;
+            _liveReadingSession = _liveReadingSession with
+            {
+                Focus = CreateReadingFocusSnapshot(command.Focus, updatedAtUnixMs)
+            };
+
+            focus = _liveReadingSession.Focus.Copy();
+            var currentMeaningfulFocus = SelectMeaningfulReadingFocus(previousMeaningfulFocus, focus);
+            _lastMeaningfulReadingFocus = currentMeaningfulFocus.Copy();
+            var appliedPending = TryApplyPendingInterventionForBoundary(
+                previousFocus,
+                focus,
+                previousMeaningfulFocus,
+                currentMeaningfulFocus,
+                _liveReadingSession.ParticipantViewport,
+                _liveReadingSession.ParticipantViewport,
+                updatedAtUnixMs);
+            interventionEvent = appliedPending?.Copy();
+            nextState = appliedPending is null ? null : _liveReadingSession.Copy();
+            RecordReadingFocusEvent(updatedAtUnixMs, focus);
+            RecordEnrichedGazeSample(command.CapturedAtUnixMs ?? updatedAtUnixMs, gaze, focus);
+            await SaveCurrentCheckpointAsync(ct);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingFocusChanged, focus, ct);
+        if (ShouldPublishToExternalProvider())
+        {
+            await _externalProviderGateway.PublishReadingFocusChangedAsync(GetCurrentSessionId(), focus, ct);
+        }
+        if (nextState is not null)
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingSessionChanged, nextState, ct);
+            if (interventionEvent is not null)
+            {
+                await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.InterventionEvent, interventionEvent, ct);
+                if (ShouldPublishToExternalProvider())
+                {
+                    await _externalProviderGateway.PublishInterventionEventAsync(GetCurrentSessionId(), interventionEvent, ct);
+                }
+            }
+        }
+        await EvaluateDecisionStrategiesAsync(ct);
+        return focus;
+    }
+
+    private static ReadingFocusSnapshot CreateReadingFocusSnapshot(UpdateReadingFocusCommand command, long updatedAtUnixMs)
+    {
+        return new ReadingFocusSnapshot(
+            command.IsInsideReadingArea,
+            command.IsInsideReadingArea ? ClampNullable(command.NormalizedContentX, 0, 1) : null,
+            command.IsInsideReadingArea ? ClampNullable(command.NormalizedContentY, 0, 1) : null,
+            command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveTokenId) : null,
+            command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveBlockId) : null,
+            command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveSentenceId) : null,
+            updatedAtUnixMs,
+            command.IsInsideReadingArea ? NormalizeNullableText(command.ActiveTokenText) : null);
     }
 
     private static ReadingFocusSnapshot SelectMeaningfulReadingFocus(

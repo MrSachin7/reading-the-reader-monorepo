@@ -9,6 +9,10 @@ public interface IExperimentReplayExportStoreAdapter
 
     ValueTask<ExperimentReplayExport?> LoadLatestAsync(CancellationToken ct = default);
 
+    ValueTask SaveLatestProcessedAsync(ExperimentProcessedExport exportDocument, CancellationToken ct = default);
+
+    ValueTask<ExperimentProcessedExport?> LoadLatestProcessedAsync(CancellationToken ct = default);
+
     ValueTask<SavedExperimentReplayExportSummary> SaveNamedAsync(
         string name,
         string format,

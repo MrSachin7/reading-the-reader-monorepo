@@ -21,6 +21,7 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     long FlushedAtUnixMs,
     IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
     IReadOnlyList<RawGazeSampleRecord> GazeSamples,
+    IReadOnlyList<EnrichedGazeSampleRecord>? EnrichedGazeSamples,
     IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
     IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
     IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,

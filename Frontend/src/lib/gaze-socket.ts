@@ -158,6 +158,15 @@ type ClientEnvelope =
         activeTokenId: string | null;
         activeBlockId: string | null;
         activeSentenceId: string | null;
+        activeTokenText?: string | null;
+      };
+    }
+  | {
+      type: "readingEnrichedGazeSampleUpdated";
+      payload: {
+        gaze: GazeData;
+        focus: ReadingFocusPayload;
+        capturedAtUnixMs: number;
       };
     }
   | {
@@ -755,6 +764,18 @@ export function updateReadingFocus(payload: ReadingFocusPayload) {
   send({
     type: "readingFocusUpdated",
     payload,
+  });
+}
+
+export function updateReadingEnrichedGazeSample(gaze: GazeData, focus: ReadingFocusPayload, capturedAtUnixMs: number) {
+  connect();
+  send({
+    type: "readingEnrichedGazeSampleUpdated",
+    payload: {
+      gaze,
+      focus,
+      capturedAtUnixMs,
+    },
   });
 }
 

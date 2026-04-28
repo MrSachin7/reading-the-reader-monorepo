@@ -1,3 +1,4 @@
+using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
@@ -30,6 +31,11 @@ public sealed record UpdateReadingFocusCommand(
     string? ActiveBlockId,
     string? ActiveSentenceId = null,
     string? ActiveTokenText = null);
+
+public sealed record UpdateEnrichedGazeSampleCommand(
+    GazeData Gaze,
+    UpdateReadingFocusCommand Focus,
+    long? CapturedAtUnixMs = null);
 
 public sealed record UpdateReadingContextPreservationCommand(
     string Status,

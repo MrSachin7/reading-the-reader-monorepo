@@ -30,6 +30,11 @@ public sealed class ReaderObservationService : IReaderObservationService
         CancellationToken ct = default)
         => _sessionManager.UpdateReadingFocusAsync(command, ct);
 
+    public ValueTask<ReadingFocusSnapshot> UpdateEnrichedGazeSampleAsync(
+        UpdateEnrichedGazeSampleCommand command,
+        CancellationToken ct = default)
+        => _sessionManager.UpdateEnrichedGazeSampleAsync(command, ct);
+
     public ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
         ReadingGazeObservationCommand command,
         CancellationToken ct = default)
