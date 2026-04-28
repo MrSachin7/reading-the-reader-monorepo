@@ -10,11 +10,14 @@ public static class RealtimePersistenceModuleInstaller
     {
         services.Configure<ExperimentPersistenceOptions>(configuration.GetSection(ExperimentPersistenceOptions.SectionName));
         services.Configure<ReadingMaterialSetupStorageOptions>(configuration.GetSection(ReadingMaterialSetupStorageOptions.SectionName));
+        services.Configure<ExperimentSetupStorageOptions>(configuration.GetSection(ExperimentSetupStorageOptions.SectionName));
 
         var options = configuration.GetSection(ExperimentPersistenceOptions.SectionName).Get<ExperimentPersistenceOptions>()
             ?? new ExperimentPersistenceOptions();
         var readingMaterialSetupOptions = configuration.GetSection(ReadingMaterialSetupStorageOptions.SectionName).Get<ReadingMaterialSetupStorageOptions>()
             ?? new ReadingMaterialSetupStorageOptions();
+        var experimentSetupOptions = configuration.GetSection(ExperimentSetupStorageOptions.SectionName).Get<ExperimentSetupStorageOptions>()
+            ?? new ExperimentSetupStorageOptions();
         var useFileProvider = string.Equals(options.Provider, "File", StringComparison.OrdinalIgnoreCase);
 
         services.AddSingleton<IExperimentReplayExportSerializer, ExperimentReplayExportSerializer>();
@@ -31,6 +34,7 @@ public static class RealtimePersistenceModuleInstaller
             services.AddSingleton<IExperimentReplayRecoveryStoreAdapter>(_ =>
                 new FileExperimentReplayRecoveryStoreAdapter(options.ReplayRecoveryDirectoryPath));
             services.AddSingleton<IReadingMaterialSetupStoreAdapter>(_ => new FileReadingMaterialSetupStoreAdapter(readingMaterialSetupOptions.DirectoryPath));
+            services.AddSingleton<IExperimentSetupStoreAdapter>(_ => new FileExperimentSetupStoreAdapter(experimentSetupOptions.DirectoryPath));
         }
         else
         {
@@ -39,6 +43,7 @@ public static class RealtimePersistenceModuleInstaller
                 new InMemoryExperimentReplayExportStoreAdapter(serviceProvider.GetRequiredService<IExperimentReplayExportSerializer>()));
             services.AddSingleton<IExperimentReplayRecoveryStoreAdapter, InMemoryExperimentReplayRecoveryStoreAdapter>();
             services.AddSingleton<IReadingMaterialSetupStoreAdapter, InMemoryReadingMaterialSetupStoreAdapter>();
+            services.AddSingleton<IExperimentSetupStoreAdapter, InMemoryExperimentSetupStoreAdapter>();
         }
 
         services.AddSingleton<IEyeTrackerLicenseStoreAdapter, FileEyeTrackerLicenseStoreAdapter>();

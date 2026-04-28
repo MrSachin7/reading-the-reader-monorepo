@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
@@ -18,6 +18,10 @@ import {
 } from "@/lib/gaze-socket"
 import { READER_SHELL_SETTINGS_DEFAULTS, getReaderShellViewSettings } from "@/lib/reader-shell-settings"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
+import {
+  buildExperimentItemReadingSessionPayload,
+  getExperimentSequencePositionFromSession,
+} from "@/lib/experiment-sequence"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
@@ -28,7 +32,11 @@ import type {
   ReadingContextPreservationSnapshot,
   ReadingGazeObservationSnapshot,
 } from "@/lib/experiment-session"
-import { useGetReaderShellSettingsQuery } from "@/redux"
+import {
+  useGetReaderShellSettingsQuery,
+  useUpsertReadingSessionMutation,
+} from "@/redux"
+import { getErrorMessage } from "@/lib/error-utils"
 
 function FullscreenGate({
   isVisible,
@@ -75,11 +83,14 @@ export function ReadingPage() {
   )
   const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
+  const [upsertReadingSession] = useUpsertReadingSessionMutation()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
     readerShellSettings ?? READER_SHELL_SETTINGS_DEFAULTS,
     "reading"
   )
+  const [advanceError, setAdvanceError] = useState<string | null>(null)
+  const [isAdvancingExperimentText, setIsAdvancingExperimentText] = useState(false)
 
   useEffect(() => {
     if (!liveSession?.isActive) {
@@ -124,8 +135,72 @@ export function ReadingPage() {
   }, [])
 
   const liveReadingSession = liveSession?.readingSession
+  const liveContent = liveReadingSession?.content ?? null
   const liveReaderAppearance =
     liveSession?.isActive ? normalizeReaderAppearance(liveReadingSession?.appearance) : null
+  const experimentSequencePosition = useMemo(
+    () =>
+      liveContent && liveReadingSession
+        ? getExperimentSequencePositionFromSession(
+            liveReadingSession.experimentItems,
+            liveReadingSession.currentExperimentItemIndex,
+            liveContent
+          )
+        : null,
+    [liveContent, liveReadingSession]
+  )
+  const canAdvancePastEnd = Boolean(experimentSequencePosition?.nextItem) && !isAdvancingExperimentText
+  const canRetreatPastStart = Boolean(experimentSequencePosition?.previousItem) && !isAdvancingExperimentText
+
+  const transitionToExperimentItem = useCallback(async (targetIndex: number) => {
+    if (
+      !liveReadingSession ||
+      !liveContent?.experimentSetupId ||
+      !liveReadingSession.experimentItems[targetIndex] ||
+      isAdvancingExperimentText
+    ) {
+      return
+    }
+
+    const nextItem = liveReadingSession.experimentItems[targetIndex]
+    setAdvanceError(null)
+    setIsAdvancingExperimentText(true)
+
+    try {
+      await upsertReadingSession(
+        buildExperimentItemReadingSessionPayload({
+          item: nextItem,
+          appearance: liveReadingSession.appearance,
+          experimentSetupId: liveContent.experimentSetupId,
+          experimentItems: liveReadingSession.experimentItems,
+          currentExperimentItemIndex: targetIndex,
+        })
+      ).unwrap()
+    } catch (error) {
+      setAdvanceError(getErrorMessage(error, "Could not load the requested text in the experiment."))
+    } finally {
+      setIsAdvancingExperimentText(false)
+    }
+  }, [
+    isAdvancingExperimentText,
+    liveContent?.experimentSetupId,
+    liveReadingSession,
+    upsertReadingSession,
+  ])
+
+  const handleAdvancePastEnd = useCallback(async () => {
+    if (!experimentSequencePosition?.nextItem) {
+      return
+    }
+    await transitionToExperimentItem(experimentSequencePosition.currentIndex + 1)
+  }, [experimentSequencePosition?.nextItem, experimentSequencePosition?.currentIndex, transitionToExperimentItem])
+
+  const handleRetreatPastStart = useCallback(async () => {
+    if (!experimentSequencePosition?.previousItem) {
+      return
+    }
+    await transitionToExperimentItem(experimentSequencePosition.currentIndex - 1)
+  }, [experimentSequencePosition?.previousItem, experimentSequencePosition?.currentIndex, transitionToExperimentItem])
 
   useReaderAppearanceSync(liveReaderAppearance)
 
@@ -211,8 +286,6 @@ export function ReadingPage() {
     )
   }
 
-  const liveContent = liveReadingSession?.content ?? null
-
   if (!liveContent || liveContent.markdown.trim().length === 0) {
     return (
       <main className="min-h-screen bg-background px-4 py-10 md:px-8">
@@ -230,6 +303,9 @@ export function ReadingPage() {
                 source="participant-view"
                 className="pt-4"
               />
+              {advanceError ? (
+                <p className="pt-2 text-sm text-rose-700 dark:text-rose-300">{advanceError}</p>
+              ) : null}
             </CardHeader>
           </Card>
         </div>
@@ -261,6 +337,8 @@ export function ReadingPage() {
         markdown={liveContent.markdown}
         presentation={presentation}
         experimentSetupName={liveContent.title}
+        experimentSequenceItems={liveReadingSession?.experimentItems ?? []}
+        currentExperimentSequenceIndex={liveReadingSession?.currentExperimentItemIndex ?? null}
         preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
         highlightContext={readerOptions.highlightContext}
         displayGazePosition={readerOptions.displayGazePosition}
@@ -268,6 +346,10 @@ export function ReadingPage() {
         showToolbar={readerOptions.showToolbar}
         showBackButton={readerOptions.showBackButton}
         showLixScores={readerOptions.showLixScores}
+        onRetreatPastStart={handleRetreatPastStart}
+        canRetreatPastStart={canRetreatPastStart}
+        onAdvancePastEnd={handleAdvancePastEnd}
+        canAdvancePastEnd={canAdvancePastEnd}
         gazeOverlayPoint={liveGaze.smoothedPoint}
         gazeOverlayHasRecentPoint={liveGaze.hasRecentGaze}
         onViewportMetricsChange={handleViewportMetricsChange}
@@ -277,6 +359,13 @@ export function ReadingPage() {
         latestIntervention={liveReadingSession?.latestIntervention ?? null}
         initialPresentation={liveReadingSession?.initialPresentation ?? null}
       />
+      {advanceError ? (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-30 -translate-x-1/2 px-4">
+          <div className="pointer-events-auto rounded-2xl border border-rose-500/30 bg-card/95 px-4 py-3 text-sm text-rose-700 shadow-lg backdrop-blur dark:text-rose-300">
+            {advanceError}
+          </div>
+        </div>
+      ) : null}
       {!fullscreen.isFullscreen || !fullscreen.isVisible ? (
         <FullscreenGate
           isVisible={fullscreen.isVisible}

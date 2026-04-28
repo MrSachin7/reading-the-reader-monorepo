@@ -25,8 +25,10 @@ import {
 } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
+import { mapExperimentSetupItemsToSequenceItems } from "@/lib/experiment-sequence"
 import {
   hydrateExperimentFromSession,
+  setReadingSessionExperimentSelection,
   setReadingSessionSource,
   setReadingSessionCustomMarkdown,
   setReadingSessionResearcherQuestions,
@@ -40,8 +42,8 @@ import {
   useAppDispatch,
   useAppSelector,
   useGetExperimentSessionQuery,
-  useGetReadingMaterialSetupsQuery,
-  useLazyGetReadingMaterialSetupByIdQuery,
+  useGetExperimentSetupsQuery,
+  useLazyGetExperimentSetupByIdQuery,
   useSaveParticipantMutation,
   useStartExperimentSessionMutation,
   useUpdateDecisionConfigurationMutation,
@@ -827,15 +829,15 @@ function SessionContentStep({
   const router = useRouter()
   const dispatch = useAppDispatch()
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
-  const { data: materialSetups = [], isLoading: isLoadingMaterialSetups, refetch } =
-    useGetReadingMaterialSetupsQuery()
-  const [getReadingMaterialSetupById, { isFetching: isLoadingSelectedMaterial }] =
-    useLazyGetReadingMaterialSetupByIdQuery()
+  const { data: experimentSetups = [], isLoading: isLoadingExperimentSetups, refetch } =
+    useGetExperimentSetupsQuery()
+  const [getExperimentSetupById, { isFetching: isLoadingSelectedExperiment }] =
+    useLazyGetExperimentSetupByIdQuery()
   const [updateDecisionConfiguration, { isLoading: isSavingDecisionConfiguration }] =
     useUpdateDecisionConfigurationMutation()
   const [updateEyeMovementAnalysisConfiguration, { isLoading: isSavingAnalysisConfiguration }] =
     useUpdateEyeMovementAnalysisConfigurationMutation()
-  const { experimentSetupId, resetReadingSettings } = useReadingSettings()
+  const { resetReadingSettings } = useReadingSettings()
 
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
   const [selectedDecisionCondition, setSelectedDecisionCondition] = React.useState<
@@ -848,22 +850,29 @@ function SessionContentStep({
     currentEyeMovementAnalysisConfiguration.providerId
   )
   const hasSelectedMaterial = readingSession.title.trim().length > 0
-  const selectedSavedSetup = React.useMemo(
-    () => materialSetups.find((setup) => setup.id === experimentSetupId) ?? null,
-    [experimentSetupId, materialSetups]
+  const selectedExperimentSetup = React.useMemo(
+    () =>
+      experimentSetups.find((setup) => setup.id === readingSession.selectedExperimentSetupId) ??
+      null,
+    [experimentSetups, readingSession.selectedExperimentSetupId]
   )
   const selectedPresentationLabel =
     readingSession.source === "preset"
       ? "Default presentation"
-      : selectedSavedSetup?.name ?? "Custom presentation"
+      : readingSession.source === "experiment"
+        ? selectedExperimentSetup?.name ?? "Reusable experiment"
+        : "Custom presentation"
   const localReadingBaselineLabel =
     readingSession.source === "preset"
       ? "Built-in baseline"
-      : experimentSetupId
-        ? "Saved baseline"
+      : readingSession.source === "experiment"
+        ? "Reusable experiment"
         : "Local draft"
-  const localControlLabel = selectedSavedSetup
-    ? selectedSavedSetup.editableByExperimenter
+  const selectedExperimentItem = selectedExperimentSetup?.items.find(
+    (item) => item.id === readingSession.selectedExperimentSetupItemId
+  )
+  const localControlLabel = selectedExperimentItem
+    ? selectedExperimentItem.editableByExperimenter
       ? "Live-adjustable"
       : "Locked"
     : readingSession.source === "preset"
@@ -934,11 +943,11 @@ function SessionContentStep({
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">Step 2</Badge>
             <Badge variant="outline">Researcher</Badge>
-            <Badge variant="outline">Reading material</Badge>
+            <Badge variant="outline">Experiment baseline</Badge>
           </div>
-          <CardTitle className="mt-3 text-3xl tracking-tight">Prepare the reading baseline and runtime plugins.</CardTitle>
+          <CardTitle className="mt-3 text-3xl tracking-tight">Choose a reusable experiment and runtime plugins.</CardTitle>
           <CardDescription className="max-w-3xl text-base leading-7">
-            Pick the reading material, apply it to the current experiment session, and confirm the runtime plugins before handing over to the participant.
+            Pick the reusable experiment, apply its first text as the live reading baseline, and confirm the runtime plugins before handing over to the participant.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -958,6 +967,15 @@ function SessionContentStep({
                 dispatch(setReadingSessionTitle("Reading as Deliberate Attention"))
                 dispatch(setReadingSessionCustomMarkdown(""))
                 dispatch(setReadingSessionResearcherQuestions(""))
+                dispatch(
+                  setReadingSessionExperimentSelection({
+                    experimentSetupId: null,
+                    experimentSetupName: null,
+                    experimentSetupItemId: null,
+                    readingMaterialSetupId: null,
+                    itemCount: 0,
+                  })
+                )
               }}
               className={cn(
                 "w-full rounded-2xl border p-5 text-left transition-colors",
@@ -977,7 +995,7 @@ function SessionContentStep({
               </div>
             </button>
 
-            {materialSetups.map((setup) => (
+            {experimentSetups.map((setup) => (
               <button
                 key={setup.id}
                 type="button"
@@ -985,39 +1003,65 @@ function SessionContentStep({
                   setSelectionError(null)
 
                   try {
-                    const savedSetup = await getReadingMaterialSetupById(setup.id).unwrap()
-                    dispatch(setReadingSessionSource("custom"))
-                    dispatch(setReadingSessionTitle(savedSetup.title))
-                    dispatch(setReadingSessionCustomMarkdown(savedSetup.markdown))
-                    dispatch(setReadingSessionResearcherQuestions(savedSetup.researcherQuestions))
-                    applyReadingPresentationSettings(savedSetup)
+                    const savedSetup = await getExperimentSetupById(setup.id).unwrap()
+                    const firstItem = savedSetup.items[0]
+                    if (!firstItem) {
+                      setSelectionError("That experiment does not contain any reading materials yet.")
+                      return
+                    }
+
+                    dispatch(setReadingSessionSource("experiment"))
+                    dispatch(setReadingSessionTitle(firstItem.title))
+                    dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
+                    dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+                    dispatch(
+                      setReadingSessionExperimentSelection({
+                        experimentSetupId: savedSetup.id,
+                        experimentSetupName: savedSetup.name,
+                        experimentSetupItemId: firstItem.id,
+                        readingMaterialSetupId: firstItem.sourceReadingMaterialSetupId,
+                        itemCount: savedSetup.items.length,
+                      })
+                    )
+                    applyReadingPresentationSettings({
+                      id: firstItem.sourceReadingMaterialSetupId ?? firstItem.id,
+                      name: firstItem.title,
+                      fontFamily: firstItem.fontFamily,
+                      fontSizePx: firstItem.fontSizePx,
+                      lineWidthPx: firstItem.lineWidthPx,
+                      lineHeight: firstItem.lineHeight,
+                      letterSpacingEm: firstItem.letterSpacingEm,
+                      editableByExperimenter: firstItem.editableByExperimenter,
+                    })
                   } catch (error) {
                     if (getErrorStatus(error) === 404) {
-                      setSelectionError("That saved reading material setup no longer exists.")
+                      setSelectionError("That saved experiment no longer exists.")
                       void refetch()
                       return
                     }
 
                     setSelectionError(
-                      getErrorMessage(error, "Could not load that reading material setup.")
+                      getErrorMessage(error, "Could not load that experiment setup.")
                     )
                   }
                 }}
-                disabled={isLoadingSelectedMaterial}
+                disabled={isLoadingSelectedExperiment}
                 className={cn(
                   "w-full rounded-2xl border p-5 text-left transition-colors",
                   "bg-card hover:border-primary/40 hover:bg-accent/30",
-                  experimentSetupId === setup.id && "border-primary bg-accent/50"
+                  readingSession.selectedExperimentSetupId === setup.id && "border-primary bg-accent/50"
                 )}
               >
                 <div className="space-y-3">
                   <div>
                     <p className="text-base font-semibold">{setup.name}</p>
-                    <p className="text-xs text-muted-foreground">{setup.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {setup.items.length} texts in sequence
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <BookOpen className="h-3.5 w-3.5" />
-                    Saved quick option
+                    Reusable experiment
                   </div>
                 </div>
               </button>
@@ -1025,14 +1069,60 @@ function SessionContentStep({
 
             <button
               type="button"
-              onClick={() => router.push("/reading-material/setup?mode=custom-empty")}
-              disabled={isLoadingMaterialSetups}
+              onClick={() => router.push("/experiment/setups")}
+              disabled={isLoadingExperimentSetups}
               className="flex min-h-[170px] w-full flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 p-5 text-center transition-colors hover:border-primary/40 hover:bg-accent/30"
             >
               <Plus className="mb-3 h-6 w-6 text-muted-foreground" />
-              <p className="text-base font-semibold">Create new</p>
+              <p className="text-base font-semibold">Create experiment</p>
             </button>
           </div>
+
+          {readingSession.source === "experiment" && selectedExperimentSetup ? (
+            <Card className="border-dashed">
+              <CardHeader>
+                <CardTitle className="text-lg">Selected experiment sequence</CardTitle>
+                <CardDescription>
+                  This experiment contains {selectedExperimentSetup.items.length} text
+                  {selectedExperimentSetup.items.length === 1 ? "" : "s"}. The first one below is the
+                  current live baseline.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedExperimentSetup.items.map((item, index) => {
+                  const isCurrent = item.id === readingSession.selectedExperimentSetupItemId
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "rounded-2xl border p-4",
+                        isCurrent ? "border-primary bg-primary/5" : "bg-muted/20"
+                      )}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={isCurrent ? "secondary" : "outline"}>
+                          Text {index + 1}
+                        </Badge>
+                        {isCurrent ? <Badge variant="outline">Current baseline</Badge> : null}
+                        <Badge variant="outline">
+                          {item.editableByExperimenter ? "Live-adjustable" : "Locked"}
+                        </Badge>
+                      </div>
+                      <p className="mt-3 text-sm font-semibold">{item.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Source: {item.sourceReadingMaterialTitle}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {item.fontFamily} | {item.fontSizePx}px | {item.lineWidthPx}px | line
+                        height {item.lineHeight.toFixed(2)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <div className="space-y-5">
             <div>
@@ -1246,17 +1336,27 @@ function SessionContentStep({
           {hasSelectedMaterial ? (
             <div className="rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
               Selected: <span className="font-medium text-foreground">{readingSession.title}</span>
-              {" · "}
+              {" | "}
               <span className="font-medium text-foreground">
-                {selectedPresentationLabel} · {selectedConditionLabel}
+                {selectedPresentationLabel} | {selectedConditionLabel}
               </span>
-              {" · "}
+              {" | "}
               <span className="font-medium text-foreground">
-                {localReadingBaselineLabel} · {localControlLabel}
+                {localReadingBaselineLabel} | {localControlLabel}
               </span>
+              {readingSession.source === "experiment" && readingSession.selectedExperimentSetupName ? (
+                <>
+                  {" | "}
+                  <span className="font-medium text-foreground">
+                    {readingSession.selectedExperimentSetupName}
+                    {readingSession.selectedExperimentItemCount > 0
+                      ? ` (${readingSession.selectedExperimentItemCount} texts)`
+                      : ""}
+                  </span>
+                </>
+              ) : null}
             </div>
           ) : null}
-
         </CardContent>
       </Card>
     </div>
@@ -1268,8 +1368,8 @@ type ExperimentStepperProps = {
 }
 
 export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProps) {
-  const dispatch = useAppDispatch()
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const { resolvedTheme } = useTheme()
   const { font } = useFontTheme()
   const { palette } = usePaletteTheme()
@@ -1280,12 +1380,13 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     forceReadingMaterialReady,
   } = experimentStepperTestingOverrides
   const readingSession = useAppSelector((state: RootState) => state.experiment.readingSession)
-  const { presentation, experimentSetupId } = useReadingSettings()
+  const { presentation } = useReadingSettings()
   const isParticipantMode = mode === "participant"
   const { data: experimentSession } = useGetExperimentSessionQuery(undefined, {
     refetchOnMountOrArgChange: true,
     pollingInterval: 3_000,
   })
+  const { data: experimentSetups = [] } = useGetExperimentSetupsQuery()
   const [upsertReadingSession, { isLoading: isSavingReadingSession }] =
     useUpsertReadingSessionMutation()
   const [startExperimentSession, { isLoading: isStartingExperimentSession }] =
@@ -1332,11 +1433,42 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
       ? readingSession.title.trim()
       : "Reading as Deliberate Attention"
   const readingDocumentId =
-    readingSession.source === "custom" && experimentSetupId
-      ? experimentSetupId
+    readingSession.source === "experiment" &&
+    readingSession.selectedExperimentSetupId &&
+    readingSession.selectedExperimentSetupItemId
+      ? `${readingSession.selectedExperimentSetupId}:${readingSession.selectedExperimentSetupItemId}`
+      : readingSession.source === "custom" && readingSession.selectedReadingMaterialSetupId
+        ? readingSession.selectedReadingMaterialSetupId
       : "mock-reading-v1"
   const readingSourceSetupId =
-    readingSession.source === "custom" ? experimentSetupId ?? null : null
+    readingSession.source === "experiment"
+      ? readingSession.selectedReadingMaterialSetupId
+      : readingSession.source === "custom"
+        ? readingSession.selectedReadingMaterialSetupId
+        : null
+  const readingExperimentSetupId =
+    readingSession.source === "experiment" ? readingSession.selectedExperimentSetupId : null
+  const readingExperimentSetupItemId =
+    readingSession.source === "experiment" ? readingSession.selectedExperimentSetupItemId : null
+  const selectedExperimentSetup = React.useMemo(
+    () =>
+      experimentSetups.find((setup) => setup.id === readingSession.selectedExperimentSetupId) ??
+      null,
+    [experimentSetups, readingSession.selectedExperimentSetupId]
+  )
+  const readingExperimentItems =
+    readingSession.source === "experiment" && selectedExperimentSetup
+      ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
+      : undefined
+  const readingCurrentExperimentItemIndex =
+    readingSession.source === "experiment" && selectedExperimentSetup
+      ? Math.max(
+          0,
+          selectedExperimentSetup.items.findIndex(
+            (item) => item.id === readingSession.selectedExperimentSetupItemId
+          )
+        )
+      : undefined
   const hasLocalReadingSelection = readingSession.title.trim().length > 0
   const hasUnsavedReadingDraft =
     hasLocalReadingSelection &&
@@ -1420,7 +1552,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     }
 
     const markdown =
-      readingSession.source === "custom" && readingSession.customMarkdown.trim().length > 0
+      readingSession.source !== "preset" && readingSession.customMarkdown.trim().length > 0
         ? readingSession.customMarkdown
         : MOCK_READING_MD
 
@@ -1430,6 +1562,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         title: readingTitle,
         markdown,
         sourceSetupId: readingSourceSetupId,
+        experimentSetupId: readingExperimentSetupId,
+        experimentSetupItemId: readingExperimentSetupItemId,
         fontFamily: presentation.fontFamily,
         fontSizePx: presentation.fontSizePx,
         lineWidthPx: presentation.lineWidthPx,
@@ -1439,6 +1573,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         themeMode: resolvedTheme === "dark" ? "dark" : "light",
         palette,
         appFont: font,
+        experimentItems: readingExperimentItems,
+        currentExperimentItemIndex: readingCurrentExperimentItemIndex,
       }).unwrap()
       return true
     } catch (error) {
@@ -1456,6 +1592,10 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     readingSession.customMarkdown,
     readingSession.source,
     readingDocumentId,
+    readingExperimentSetupId,
+    readingExperimentSetupItemId,
+    readingExperimentItems,
+    readingCurrentExperimentItemIndex,
     readingSourceSetupId,
     readingTitle,
     resolvedTheme,

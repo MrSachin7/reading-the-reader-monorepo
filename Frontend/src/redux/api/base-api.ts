@@ -58,6 +58,7 @@ export const baseApi = createApi({
   tagTypes: [
     "Eyetracker",
     "Experiment",
+    "ExperimentSetup",
     "ReadingMaterialSetup",
     "CalibrationSettings",
     "ReaderShellSettings",

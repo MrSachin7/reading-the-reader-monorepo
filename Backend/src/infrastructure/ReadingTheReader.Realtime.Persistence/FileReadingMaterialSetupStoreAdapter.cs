@@ -36,7 +36,9 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
         var metadata = new StoredReadingMaterialSetupMetadata
         {
             Id = id,
+            Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
             Title = command.Title.Trim(),
+            ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
             FileName = fileName,
             CreatedAtUnixMs = createdAtUnixMs,
             UpdatedAtUnixMs = createdAtUnixMs,
@@ -133,7 +135,9 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
             var updatedMetadata = new StoredReadingMaterialSetupMetadata
             {
                 Id = existingMetadata.Id,
+                Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
                 Title = command.Title.Trim(),
+                ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
                 FileName = existingMetadata.FileName,
                 CreatedAtUnixMs = existingMetadata.CreatedAtUnixMs,
                 UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -195,8 +199,10 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
         return new ReadingMaterialSetup
         {
             Id = metadata.Id,
+            Name = string.IsNullOrWhiteSpace(metadata.Name) ? metadata.Title : metadata.Name,
             Title = metadata.Title,
             Markdown = markdown,
+            ResearcherQuestions = metadata.ResearcherQuestions ?? string.Empty,
             FileName = metadata.FileName,
             CreatedAtUnixMs = metadata.CreatedAtUnixMs,
             UpdatedAtUnixMs = GetUpdatedAtUnixMs(metadata),

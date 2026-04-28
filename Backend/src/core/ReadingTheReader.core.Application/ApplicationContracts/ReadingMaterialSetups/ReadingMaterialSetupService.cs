@@ -18,7 +18,7 @@ public sealed class ReadingMaterialSetupService : IReadingMaterialSetupService
 
     public async ValueTask<ReadingMaterialSetup> SaveAsync(SaveReadingMaterialSetupCommand command, CancellationToken ct = default)
     {
-        Validate(command.Title, command.Markdown, command.FontFamily, command.FontSizePx, command.LineWidthPx, command.LineHeight, command.LetterSpacingEm);
+        Validate(command.Name, command.Title, command.Markdown, command.FontFamily, command.FontSizePx, command.LineWidthPx, command.LineHeight, command.LetterSpacingEm);
         return await _readingMaterialSetupStoreAdapter.SaveAsync(command, ct);
     }
 
@@ -48,7 +48,7 @@ public sealed class ReadingMaterialSetupService : IReadingMaterialSetupService
             throw new ReadingMaterialSetupValidationException("id is required.");
         }
 
-        Validate(command.Title, command.Markdown, command.FontFamily, command.FontSizePx, command.LineWidthPx, command.LineHeight, command.LetterSpacingEm);
+        Validate(command.Name, command.Title, command.Markdown, command.FontFamily, command.FontSizePx, command.LineWidthPx, command.LineHeight, command.LetterSpacingEm);
 
         var updated = await _readingMaterialSetupStoreAdapter.UpdateAsync(command, ct);
         if (updated is null)
@@ -59,7 +59,7 @@ public sealed class ReadingMaterialSetupService : IReadingMaterialSetupService
         return updated;
     }
 
-    private static void Validate(string title, string markdown, string fontFamily, int fontSizePx, int lineWidthPx, double lineHeight, double letterSpacingEm)
+    private static void Validate(string name, string title, string markdown, string fontFamily, int fontSizePx, int lineWidthPx, double lineHeight, double letterSpacingEm)
     {
         if (string.IsNullOrWhiteSpace(title))
         {

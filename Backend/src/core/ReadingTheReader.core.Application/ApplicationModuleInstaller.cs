@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using ReadingTheReader.core.Application.ApplicationContracts.ExperimentSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.Participants;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
@@ -28,6 +29,7 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton(externalAnalysisProviderOptions);
         collection.AddSingleton<IParticipantService, ParticipantService>();
         collection.AddSingleton<IReadingMaterialSetupService, ReadingMaterialSetupService>();
+        collection.AddSingleton<IExperimentSetupService, ExperimentSetupService>();
         foreach (var module in BuiltInReadingInterventionModules.All)
         {
             collection.AddSingleton(typeof(IReadingInterventionModule), module);

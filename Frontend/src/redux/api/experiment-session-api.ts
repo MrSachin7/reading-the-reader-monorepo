@@ -1,4 +1,5 @@
 import type {
+  ExperimentSequenceItemSnapshot,
   ExperimentSessionSnapshot,
   ReadingInterventionCommitBoundary,
 } from "@/lib/experiment-session"
@@ -11,6 +12,8 @@ export type UpsertReadingSessionPayload = {
   title: string
   markdown: string
   sourceSetupId?: string | null
+  experimentSetupId?: string | null
+  experimentSetupItemId?: string | null
   fontFamily: string
   fontSizePx: number
   lineWidthPx: number
@@ -20,6 +23,8 @@ export type UpsertReadingSessionPayload = {
   themeMode: string
   palette: string
   appFont: string
+  experimentItems?: ExperimentSequenceItemSnapshot[]
+  currentExperimentItemIndex?: number | null
 }
 
 export type SavedExperimentReplayExportSummary = {

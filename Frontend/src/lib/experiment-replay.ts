@@ -473,6 +473,8 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     content: buildReadingContent(replay.content),
     presentation: buildReadingPresentation(replay.replay.baseline.presentation),
     initialPresentation: buildReadingPresentation(replay.replay.baseline.presentation),
+    experimentItems: [],
+    currentExperimentItemIndex: null,
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     interventionPolicy: buildReadingInterventionPolicy(null),
     participantViewport: {

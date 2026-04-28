@@ -3,7 +3,9 @@ namespace ReadingTheReader.Realtime.Persistence;
 internal sealed class StoredReadingMaterialSetupMetadata
 {
     public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
+    public string ResearcherQuestions { get; init; } = string.Empty;
     public string FileName { get; init; } = string.Empty;
     public long CreatedAtUnixMs { get; init; }
     public long UpdatedAtUnixMs { get; init; }

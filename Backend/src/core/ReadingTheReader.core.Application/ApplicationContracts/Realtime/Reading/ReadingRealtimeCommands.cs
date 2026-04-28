@@ -8,7 +8,24 @@ public sealed record UpsertReadingSessionCommand(
     string Markdown,
     string? SourceSetupId,
     ReadingPresentationSnapshot Presentation,
-    ReaderAppearanceSnapshot Appearance);
+    ReaderAppearanceSnapshot Appearance,
+    string? ExperimentSetupId = null,
+    string? ExperimentSetupItemId = null,
+    IReadOnlyList<UpsertReadingSessionExperimentItemCommand>? ExperimentItems = null,
+    int? CurrentExperimentItemIndex = null);
+
+public sealed record UpsertReadingSessionExperimentItemCommand(
+    string Id,
+    int Order,
+    string Title,
+    string Markdown,
+    string? SourceSetupId,
+    string FontFamily,
+    int FontSizePx,
+    int LineWidthPx,
+    double LineHeight,
+    double LetterSpacingEm,
+    bool EditableByResearcher);
 
 public sealed record UpdateParticipantViewportCommand(
     double ScrollProgress,
