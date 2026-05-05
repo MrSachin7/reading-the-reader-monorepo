@@ -34,6 +34,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
             [],
             [],
             [],
+            [],
             []));
         await firstStore.AppendChunkAsync(new ExperimentReplayRecoveryChunkBatch(
             sessionId,
@@ -41,6 +42,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
             snapshot.StartedAtUnixMs + 6_000,
             [new ExperimentLifecycleEventRecord(3, "session-heartbeat", "system", snapshot.StartedAtUnixMs + 5_000)],
             [CreateGazeSampleRecord(4, snapshot.StartedAtUnixMs + 5_500)],
+            [],
             [],
             [],
             [],
@@ -98,6 +100,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
             [],
             [],
             [],
+            [],
             []));
 
         var completedExport = await store.BuildExportAsync(
@@ -146,6 +149,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
                 CreateEnrichedGazeSampleRecord(41, snapshot.StartedAtUnixMs + 3_000, null, null),
                 CreateEnrichedGazeSampleRecord(61, snapshot.StartedAtUnixMs + 5_000, "token-2", "Beta"),
             ],
+            [],
             [],
             [
                 CreateFocusEventRecord(30, snapshot.StartedAtUnixMs + 2_000, "token-1", "Alpha"),

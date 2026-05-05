@@ -20,6 +20,17 @@ public sealed class InMemoryExperimentSetupStoreAdapter : IExperimentSetupStoreA
             Id = id,
             Name = command.Name.Trim(),
             Description = command.Description?.Trim() ?? string.Empty,
+            Status = ExperimentSetupStatuses.Normalize(command.Status),
+            OrderMode = ExperimentSetupOrderModes.Normalize(command.OrderMode),
+            DefaultFontFamily = command.DefaultFontFamily.Trim(),
+            DefaultFontSizePx = command.DefaultFontSizePx,
+            DefaultLineWidthPx = command.DefaultLineWidthPx,
+            DefaultLineHeight = command.DefaultLineHeight,
+            DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+            DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+            DecisionProviderId = NormalizeText(command.DecisionProviderId) ?? "manual",
+            DecisionExecutionMode = NormalizeText(command.DecisionExecutionMode) ?? "advisory",
+            CalibrationRequired = command.CalibrationRequired,
             CreatedAtUnixMs = now,
             UpdatedAtUnixMs = now,
             Items = command.Items.Select((item, index) => BuildItem(item, index, null)).ToArray()
@@ -75,6 +86,17 @@ public sealed class InMemoryExperimentSetupStoreAdapter : IExperimentSetupStoreA
                 Id = existing.Id,
                 Name = command.Name.Trim(),
                 Description = command.Description?.Trim() ?? string.Empty,
+                Status = ExperimentSetupStatuses.Normalize(command.Status),
+                OrderMode = ExperimentSetupOrderModes.Normalize(command.OrderMode),
+                DefaultFontFamily = command.DefaultFontFamily.Trim(),
+                DefaultFontSizePx = command.DefaultFontSizePx,
+                DefaultLineWidthPx = command.DefaultLineWidthPx,
+                DefaultLineHeight = command.DefaultLineHeight,
+                DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+                DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+                DecisionProviderId = NormalizeText(command.DecisionProviderId) ?? "manual",
+                DecisionExecutionMode = NormalizeText(command.DecisionExecutionMode) ?? "advisory",
+                CalibrationRequired = command.CalibrationRequired,
                 CreatedAtUnixMs = existing.CreatedAtUnixMs,
                 UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 Items = command.Items.Select((item, index) => BuildItem(item, index, item.Id)).ToArray()
@@ -103,6 +125,11 @@ public sealed class InMemoryExperimentSetupStoreAdapter : IExperimentSetupStoreA
             LetterSpacingEm = item.LetterSpacingEm,
             EditableByExperimenter = item.EditableByExperimenter
         };
+    }
+
+    private static string? NormalizeText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static ExperimentSetupItem BuildItem(UpdateExperimentSetupItemCommand item, int index, string? existingId)

@@ -7,7 +7,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay
 public static class ExperimentReplayExportSchema
 {
     public const string Name = "rtr.experiment-export";
-    public const int Version = 5;
+    public const int Version = 6;
 }
 
 public sealed record ExperimentReplayExportManifest(
@@ -122,7 +122,8 @@ public sealed record ExperimentReplayContext(
     ExperimentReplayDevice? Device,
     ExperimentReplayScreen? Screen,
     ExperimentReplayCalibrationSummary Calibration,
-    IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents)
+    IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
+    ExperimentRunSnapshot? Run = null)
 {
     public ExperimentReplayContext Copy()
     {
@@ -136,7 +137,8 @@ public sealed record ExperimentReplayContext(
             Device?.Copy(),
             Screen?.Copy(),
             Calibration.Copy(),
-            LifecycleEvents is null ? [] : [.. LifecycleEvents.Select(item => item.Copy())]);
+            LifecycleEvents is null ? [] : [.. LifecycleEvents.Select(item => item.Copy())],
+            Run?.Copy());
     }
 }
 
@@ -155,6 +157,8 @@ public sealed record ExperimentReplayContent(
     string Title,
     string Markdown,
     string? SourceSetupId,
+    string? ExperimentSetupId,
+    string? ExperimentSetupItemId,
     long UpdatedAtUnixMs,
     string ContentHash,
     ExperimentReplayContentTokenization Tokenization)
@@ -166,6 +170,8 @@ public sealed record ExperimentReplayContent(
             Title,
             Markdown,
             SourceSetupId,
+            ExperimentSetupId,
+            ExperimentSetupItemId,
             UpdatedAtUnixMs,
             ContentHash,
             Tokenization.Copy());
@@ -393,11 +399,14 @@ public sealed record ExperimentReplayBaseline(
 }
 
 public sealed record ExperimentReplayData(
-    ExperimentReplayBaseline Baseline)
+    ExperimentReplayBaseline Baseline,
+    IReadOnlyList<ReadingSessionStateRecord> ReadingSessionStates)
 {
     public ExperimentReplayData Copy()
     {
-        return new ExperimentReplayData(Baseline.Copy());
+        return new ExperimentReplayData(
+            Baseline.Copy(),
+            ReadingSessionStates is null ? [] : [.. ReadingSessionStates.Select(item => item.Copy())]);
     }
 }
 
@@ -456,55 +465,71 @@ public sealed record ExperimentLifecycleEventRecord(
 public sealed record ParticipantViewportEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    ParticipantViewportSnapshot Viewport)
+    ParticipantViewportSnapshot Viewport,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
 {
     public ParticipantViewportEventRecord Copy()
     {
         return new ParticipantViewportEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            Viewport.Copy());
+            Viewport.Copy(),
+            MaterialRunId,
+            MaterialIndex);
     }
 }
 
 public sealed record ReadingFocusEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    ReadingFocusSnapshot Focus)
+    ReadingFocusSnapshot Focus,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
 {
     public ReadingFocusEventRecord Copy()
     {
         return new ReadingFocusEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            Focus.Copy());
+            Focus.Copy(),
+            MaterialRunId,
+            MaterialIndex);
     }
 }
 
 public sealed record DecisionProposalEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    DecisionProposalSnapshot Proposal)
+    DecisionProposalSnapshot Proposal,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
 {
     public DecisionProposalEventRecord Copy()
     {
         return new DecisionProposalEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            Proposal.Copy());
+            Proposal.Copy(),
+            MaterialRunId,
+            MaterialIndex);
     }
 }
 
 public sealed record InterventionEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
-    InterventionEventSnapshot Intervention)
+    InterventionEventSnapshot Intervention,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
 {
     public InterventionEventRecord Copy()
     {
         return new InterventionEventRecord(
             SequenceNumber,
             OccurredAtUnixMs,
-            Intervention.Copy());
+            Intervention.Copy(),
+            MaterialRunId,
+            MaterialIndex);
     }
 }

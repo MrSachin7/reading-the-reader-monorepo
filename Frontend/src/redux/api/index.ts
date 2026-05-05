@@ -39,6 +39,8 @@ export type {
   CreateExperimentSetupRequestItem,
   ExperimentSetup,
   ExperimentSetupItem,
+  ExperimentTemplateOrderMode,
+  ExperimentTemplateStatus,
   UpdateExperimentSetupRequest,
 } from "./experiment-setup-api"
 export {

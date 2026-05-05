@@ -5,6 +5,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.EyeMovementAnalysis;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
@@ -70,6 +71,7 @@ public sealed partial class ExperimentSessionManager
             }
 
             EnsureSetupIsReadyForStart(current, _calibrationSnapshot, _liveReadingSession);
+            ResolveExperimentOrderForStart();
 
             Interlocked.Exchange(ref _receivedGazeSamples, 0);
             Interlocked.Exchange(ref _eventSequenceNumber, 0);
@@ -114,6 +116,70 @@ public sealed partial class ExperimentSessionManager
         {
             _lifecycleGate.Release();
         }
+    }
+
+    private void ResolveExperimentOrderForStart()
+    {
+        var run = _liveReadingSession.ExperimentRun;
+        var items = _liveReadingSession.ExperimentItems?.Select(item => item.Copy()).ToArray() ?? [];
+        if (run is null || items.Length == 0)
+        {
+            return;
+        }
+
+        var orderedItems = string.Equals(run.OrderMode, "random", StringComparison.OrdinalIgnoreCase)
+            ? items.OrderBy(_ => Random.Shared.Next()).Select((item, index) => item with { Order = index }).ToArray()
+            : items.OrderBy(item => item.Order).Select((item, index) => item with { Order = index }).ToArray();
+
+        var materialById = run.Materials.ToDictionary(item => item.Id, StringComparer.Ordinal);
+        var orderedMaterials = orderedItems.Select((item, index) =>
+        {
+            var materialId = string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id : item.MaterialRunId;
+            return materialById.TryGetValue(materialId, out var material)
+                ? material with { Order = index }
+                : new ExperimentMaterialRunSnapshot(
+                    materialId,
+                    index,
+                    item.Title,
+                    item.Markdown,
+                    item.SourceSetupId,
+                    new ReadingPresentationSnapshot(
+                        item.FontFamily,
+                        item.FontSizePx,
+                        item.LineWidthPx,
+                        item.LineHeight,
+                        item.LetterSpacingEm,
+                        item.EditableByResearcher));
+        }).ToArray();
+
+        var first = orderedItems[0];
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var presentation = ReadingPresentationRules.Normalize(new ReadingPresentationSnapshot(
+            first.FontFamily,
+            first.FontSizePx,
+            first.LineWidthPx,
+            first.LineHeight,
+            first.LetterSpacingEm,
+            first.EditableByResearcher));
+        _liveReadingSession = _liveReadingSession with
+        {
+            Content = new ReadingContentSnapshot(
+                _liveReadingSession.Content?.DocumentId ?? first.Id,
+                first.Title,
+                first.Markdown,
+                first.SourceSetupId,
+                run.SourceExperimentSetupId,
+                first.Id,
+                now),
+            Presentation = presentation,
+            InitialPresentation = presentation.Copy(),
+            ExperimentItems = orderedItems,
+            CurrentExperimentItemIndex = 0,
+            ExperimentRun = run with
+            {
+                Materials = orderedMaterials
+            }
+        };
     }
 
     public async Task<bool> StopSessionAsync(CancellationToken ct = default)

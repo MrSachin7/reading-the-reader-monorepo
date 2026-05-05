@@ -13,6 +13,7 @@ export type UpsertReadingSessionPayload = {
   markdown: string
   sourceSetupId?: string | null
   experimentSetupId?: string | null
+  experimentSetupName?: string | null
   experimentSetupItemId?: string | null
   fontFamily: string
   fontSizePx: number
@@ -25,6 +26,8 @@ export type UpsertReadingSessionPayload = {
   appFont: string
   experimentItems?: ExperimentSequenceItemSnapshot[]
   currentExperimentItemIndex?: number | null
+  orderMode?: "fixed" | "random"
+  isOneOff?: boolean
 }
 
 export type SavedExperimentReplayExportSummary = {
