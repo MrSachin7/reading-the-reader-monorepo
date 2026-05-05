@@ -43,6 +43,31 @@ public sealed partial class ExperimentSessionManager
         RecordGazeSample(capturedAtUnixMs, gazeData);
     }
 
+    public async ValueTask SubmitWebcamGazeSampleAsync(GazeData gazeData, long? capturedAtUnixMs = null, CancellationToken ct = default)
+    {
+        var session = Volatile.Read(ref _session);
+        if (!SensingModes.UsesWebcamGaze(_sensingModeSettingsService.CurrentMode) || !session.IsActive)
+        {
+            return;
+        }
+
+        gazeData.Sanitize();
+        var effectiveCapturedAtUnixMs = capturedAtUnixMs.HasValue
+            ? Math.Max(capturedAtUnixMs.Value, 0)
+            : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        Interlocked.Increment(ref _receivedGazeSamples);
+        Interlocked.Increment(ref _receivedWebcamGazeSamples);
+        Volatile.Write(ref _latestWebcamGazeSample, gazeData.Copy());
+        RecordWebcamGazeSample(effectiveCapturedAtUnixMs, gazeData);
+
+        await BroadcastGazeSampleAsync(
+            _gazeSubscribers.Keys.ToArray(),
+            ShouldPublishToExternalProvider(),
+            ShouldPublishToExternalAnalysisProvider(),
+            gazeData);
+    }
+
     private void OnGazeDataReceived(object? sender, GazeData gazeData)
     {
         var shouldPublishToProvider = ShouldPublishToExternalProvider();
@@ -136,7 +161,9 @@ public sealed partial class ExperimentSessionManager
     private async Task EnsureGazeStreamingStateAsync(CancellationToken ct)
     {
         var session = Volatile.Read(ref _session);
-        var isMouseMode = string.Equals(_sensingModeSettingsService.CurrentMode, SensingModes.Mouse, StringComparison.Ordinal);
+        var sensingMode = _sensingModeSettingsService.CurrentMode;
+        var isMouseMode = SensingModes.UsesMouse(sensingMode);
+        var isWebcamMode = SensingModes.UsesWebcamGaze(sensingMode);
         var bypassingEyeTrackerReadiness =
             _experimentSetupTestingOptions.ForceEyeTrackerReady == true &&
             (session.EyeTrackerDevice is null ||
@@ -149,6 +176,11 @@ public sealed partial class ExperimentSessionManager
         if (shouldStream)
         {
             if (isMouseMode)
+            {
+                return;
+            }
+
+            if (isWebcamMode)
             {
                 return;
             }

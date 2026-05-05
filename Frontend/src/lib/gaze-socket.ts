@@ -8,9 +8,13 @@ import {
   EMPTY_EXTERNAL_PROVIDER_STATUS,
   EMPTY_LIVE_MONITORING,
   EMPTY_READING_SESSION,
+  EMPTY_SIGNAL_SOURCES,
+  EMPTY_WEBCAM_STATUS,
   type DecisionRealtimeUpdate,
   type EyeMovementAnalysisSnapshot,
   type ExperimentSessionSnapshot,
+  type FacialDifficultySignalSnapshot,
+  type FacialObservationSnapshot,
   type ExperimentLiveMonitoringSnapshot,
   type InterventionEventSnapshot,
   type LiveReadingSessionSnapshot,
@@ -104,6 +108,16 @@ type ServerEnvelope =
       type: "eyeMovementAnalysisChanged";
       sentAtUnixMs: number;
       payload: EyeMovementAnalysisSnapshot;
+    }
+  | {
+      type: "facialObservationChanged";
+      sentAtUnixMs: number;
+      payload: FacialObservationSnapshot;
+    }
+  | {
+      type: "facialDifficultySignalChanged" | "webcamSensingStatusChanged";
+      sentAtUnixMs: number;
+      payload: FacialDifficultySignalSnapshot | ExperimentSessionSnapshot["webcamStatus"];
     }
   | {
       type: "interventionEvent";
@@ -482,6 +496,26 @@ function patchEyeMovementAnalysis(analysis: EyeMovementAnalysisSnapshot) {
   emitExperimentSession()
 }
 
+function patchFacialObservation(observation: FacialObservationSnapshot) {
+  patchReadingSession((current) => ({
+    ...current,
+    latestFacialObservation: observation,
+  }))
+}
+
+function patchFacialDifficultySignal(signal: FacialDifficultySignalSnapshot) {
+  patchReadingSession((current) => ({
+    ...current,
+    latestFacialDifficultySignal: signal,
+    recentFacialDifficultySignals: [
+      signal,
+      ...current.recentFacialDifficultySignals.filter(
+        (item) => item.observedAtUnixMs !== signal.observedAtUnixMs || item.state !== signal.state
+      ),
+    ].slice(0, 10),
+  }))
+}
+
 function handleMessage(raw: MessageEvent<string>) {
   try {
     const message = JSON.parse(raw.data) as ServerEnvelope;
@@ -524,6 +558,8 @@ function handleMessage(raw: MessageEvent<string>) {
         ),
         externalProviderStatus:
           message.payload.externalProviderStatus ?? EMPTY_EXTERNAL_PROVIDER_STATUS,
+        signalSources: message.payload.signalSources ?? EMPTY_SIGNAL_SOURCES,
+        webcamStatus: message.payload.webcamStatus ?? EMPTY_WEBCAM_STATUS,
         eyeMovementAnalysisProviderStatus:
           message.payload.eyeMovementAnalysisProviderStatus ??
           EMPTY_EYE_MOVEMENT_ANALYSIS_PROVIDER_STATUS,
@@ -588,6 +624,28 @@ function handleMessage(raw: MessageEvent<string>) {
         ...current,
         attentionSummary: current.attentionSummary,
       }))
+      return
+    }
+
+    if (message.type === "facialObservationChanged") {
+      patchFacialObservation(message.payload as FacialObservationSnapshot)
+      return
+    }
+
+    if (message.type === "facialDifficultySignalChanged") {
+      patchFacialDifficultySignal(message.payload as FacialDifficultySignalSnapshot)
+      return
+    }
+
+    if (message.type === "webcamSensingStatusChanged") {
+      if (!latestExperimentSession) {
+        return
+      }
+      latestExperimentSession = {
+        ...latestExperimentSession,
+        webcamStatus: message.payload as ExperimentSessionSnapshot["webcamStatus"],
+      }
+      emitExperimentSession()
       return
     }
 

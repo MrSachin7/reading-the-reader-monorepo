@@ -7,6 +7,9 @@ public sealed record LiveReadingSessionSnapshot(
     ReadingInterventionPolicySnapshot InterventionPolicy,
     ParticipantViewportSnapshot ParticipantViewport,
     ReadingFocusSnapshot Focus,
+    FacialObservationSnapshot? LatestFacialObservation,
+    FacialDifficultySignalSnapshot? LatestFacialDifficultySignal,
+    IReadOnlyList<FacialDifficultySignalSnapshot> RecentFacialDifficultySignals,
     PendingInterventionSnapshot? PendingIntervention,
     ReadingContextPreservationEventSnapshot? LatestContextPreservation,
     IReadOnlyList<ReadingContextPreservationEventSnapshot> RecentContextPreservationEvents,
@@ -34,6 +37,9 @@ public sealed record LiveReadingSessionSnapshot(
         null,
         null,
         [],
+        null,
+        null,
+        [],
         null);
 
     public LiveReadingSessionSnapshot Copy()
@@ -45,6 +51,9 @@ public sealed record LiveReadingSessionSnapshot(
             (InterventionPolicy ?? ReadingInterventionPolicySnapshot.Default).Copy(),
             (ParticipantViewport ?? ParticipantViewportSnapshot.Disconnected).Copy(),
             (Focus ?? ReadingFocusSnapshot.Empty).Copy(),
+            LatestFacialObservation?.Copy(),
+            LatestFacialDifficultySignal?.Copy(),
+            RecentFacialDifficultySignals is null ? [] : [.. RecentFacialDifficultySignals.Select(item => item.Copy())],
             PendingIntervention?.Copy(),
             LatestContextPreservation?.Copy(),
             RecentContextPreservationEvents is null ? [] : [.. RecentContextPreservationEvents.Select(item => item.Copy())],

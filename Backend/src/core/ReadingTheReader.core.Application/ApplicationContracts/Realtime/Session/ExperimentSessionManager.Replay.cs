@@ -110,7 +110,11 @@ public sealed partial class ExperimentSessionManager
             _hasPendingReplayPersistence = false;
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
+            _pendingWebcamGazeSamples = [];
             _pendingEnrichedGazeSamples = [];
+            _pendingWebcamStatusEvents = [];
+            _pendingFacialObservationEvents = [];
+            _pendingFacialDifficultyEvents = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
@@ -231,6 +235,54 @@ public sealed partial class ExperimentSessionManager
         }
     }
 
+    private void RecordWebcamGazeSample(long capturedAtUnixMs, GazeData gazeData)
+    {
+        lock (_historyGate)
+        {
+            _pendingWebcamGazeSamples.Add(new WebcamGazeSampleRecord(
+                NextSequenceNumber(),
+                capturedAtUnixMs,
+                gazeData.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordWebcamStatusEvent(long occurredAtUnixMs, WebcamSensingStatusSnapshot status)
+    {
+        lock (_historyGate)
+        {
+            _pendingWebcamStatusEvents.Add(new WebcamSensingStatusRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                status.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordFacialObservationEvent(long capturedAtUnixMs, FacialObservationSnapshot observation)
+    {
+        lock (_historyGate)
+        {
+            _pendingFacialObservationEvents.Add(new FacialObservationRecord(
+                NextSequenceNumber(),
+                capturedAtUnixMs,
+                observation.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordFacialDifficultyEvent(long occurredAtUnixMs, FacialDifficultySignalSnapshot signal)
+    {
+        lock (_historyGate)
+        {
+            _pendingFacialDifficultyEvents.Add(new FacialDifficultyEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                signal.Copy()));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
     private void RecordReadingSessionState(string reason, long occurredAtUnixMs, LiveReadingSessionSnapshot session)
     {
         lock (_historyGate)
@@ -345,11 +397,15 @@ public sealed partial class ExperimentSessionManager
         bool hasPendingReplayPersistence;
         ExperimentLifecycleEventRecord[] lifecycleEvents;
         RawGazeSampleRecord[] gazeSamples;
+        WebcamGazeSampleRecord[] webcamGazeSamples;
         EnrichedGazeSampleRecord[] enrichedGazeSamples;
+        WebcamSensingStatusRecord[] webcamStatusEvents;
+        FacialObservationRecord[] facialObservationEvents;
         ParticipantViewportEventRecord[] participantViewportEvents;
         ReadingFocusEventRecord[] readingFocusEvents;
         ReadingAttentionEventRecord[] attentionEvents;
         ReadingContextPreservationEventRecord[] contextPreservationEvents;
+        FacialDifficultyEventRecord[] facialDifficultyEvents;
         DecisionProposalEventRecord[] decisionProposalEvents;
         ScheduledInterventionEventRecord[] scheduledInterventionEvents;
         InterventionEventRecord[] interventionEvents;
@@ -367,11 +423,15 @@ public sealed partial class ExperimentSessionManager
 
             lifecycleEvents = _pendingLifecycleEvents.Select(item => item.Copy()).ToArray();
             gazeSamples = _pendingGazeSamples.Select(item => item.Copy()).ToArray();
+            webcamGazeSamples = _pendingWebcamGazeSamples.Select(item => item.Copy()).ToArray();
             enrichedGazeSamples = _pendingEnrichedGazeSamples.Select(item => item.Copy()).ToArray();
+            webcamStatusEvents = _pendingWebcamStatusEvents.Select(item => item.Copy()).ToArray();
+            facialObservationEvents = _pendingFacialObservationEvents.Select(item => item.Copy()).ToArray();
             participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
             readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
             contextPreservationEvents = _pendingContextPreservationEvents.Select(item => item.Copy()).ToArray();
+            facialDifficultyEvents = _pendingFacialDifficultyEvents.Select(item => item.Copy()).ToArray();
             decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
             scheduledInterventionEvents = _pendingScheduledInterventionEvents.Select(item => item.Copy()).ToArray();
             interventionEvents = _pendingInterventionEvents.Select(item => item.Copy()).ToArray();
@@ -381,11 +441,15 @@ public sealed partial class ExperimentSessionManager
 
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
+            _pendingWebcamGazeSamples = [];
             _pendingEnrichedGazeSamples = [];
+            _pendingWebcamStatusEvents = [];
+            _pendingFacialObservationEvents = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
             _pendingContextPreservationEvents = [];
+            _pendingFacialDifficultyEvents = [];
             _pendingDecisionProposalEvents = [];
             _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
@@ -411,7 +475,11 @@ public sealed partial class ExperimentSessionManager
                     decisionProposalEvents,
                     scheduledInterventionEvents,
                     interventionEvents,
-                    latestTokenStats),
+                    latestTokenStats,
+                    webcamGazeSamples,
+                    webcamStatusEvents,
+                    facialObservationEvents,
+                    facialDifficultyEvents),
                 ct);
         }
         catch
@@ -420,11 +488,15 @@ public sealed partial class ExperimentSessionManager
             {
                 _pendingLifecycleEvents = [.. lifecycleEvents.Select(item => item.Copy()), .. _pendingLifecycleEvents];
                 _pendingGazeSamples = [.. gazeSamples.Select(item => item.Copy()), .. _pendingGazeSamples];
+                _pendingWebcamGazeSamples = [.. webcamGazeSamples.Select(item => item.Copy()), .. _pendingWebcamGazeSamples];
                 _pendingEnrichedGazeSamples = [.. enrichedGazeSamples.Select(item => item.Copy()), .. _pendingEnrichedGazeSamples];
+                _pendingWebcamStatusEvents = [.. webcamStatusEvents.Select(item => item.Copy()), .. _pendingWebcamStatusEvents];
+                _pendingFacialObservationEvents = [.. facialObservationEvents.Select(item => item.Copy()), .. _pendingFacialObservationEvents];
                 _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
                 _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
                 _pendingContextPreservationEvents = [.. contextPreservationEvents.Select(item => item.Copy()), .. _pendingContextPreservationEvents];
+                _pendingFacialDifficultyEvents = [.. facialDifficultyEvents.Select(item => item.Copy()), .. _pendingFacialDifficultyEvents];
                 _pendingDecisionProposalEvents = [.. decisionProposalEvents.Select(item => item.Copy()), .. _pendingDecisionProposalEvents];
                 _pendingScheduledInterventionEvents = [.. scheduledInterventionEvents.Select(item => item.Copy()), .. _pendingScheduledInterventionEvents];
                 _pendingInterventionEvents = [.. interventionEvents.Select(item => item.Copy()), .. _pendingInterventionEvents];

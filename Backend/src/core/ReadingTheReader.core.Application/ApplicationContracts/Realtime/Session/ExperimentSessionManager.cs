@@ -46,8 +46,10 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private int _isGazeStreamingSuppressed;
     private long _lastLayoutInterventionAppliedAtUnixMs;
     private long _receivedGazeSamples;
+    private long _receivedWebcamGazeSamples;
     private long _eventSequenceNumber;
     private GazeData? _latestGazeSample;
+    private GazeData? _latestWebcamGazeSample;
     private CalibrationSessionSnapshot _calibrationSnapshot = CalibrationSessionSnapshots.CreateIdle();
     private ExperimentSession _session = ExperimentSession.Inactive;
     private LiveReadingSessionSnapshot _liveReadingSession = LiveReadingSessionSnapshot.Empty;
@@ -60,7 +62,11 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private bool _hasPendingReplayPersistence;
     private List<ExperimentLifecycleEventRecord> _pendingLifecycleEvents = [];
     private List<RawGazeSampleRecord> _pendingGazeSamples = [];
+    private List<WebcamGazeSampleRecord> _pendingWebcamGazeSamples = [];
     private List<EnrichedGazeSampleRecord> _pendingEnrichedGazeSamples = [];
+    private List<WebcamSensingStatusRecord> _pendingWebcamStatusEvents = [];
+    private List<FacialObservationRecord> _pendingFacialObservationEvents = [];
+    private List<FacialDifficultyEventRecord> _pendingFacialDifficultyEvents = [];
     private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
     private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
     private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];
@@ -69,6 +75,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<ScheduledInterventionEventRecord> _pendingScheduledInterventionEvents = [];
     private List<InterventionEventRecord> _pendingInterventionEvents = [];
     private IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? _latestAttentionTokenStats;
+    private WebcamSensingStatusSnapshot _webcamStatus = WebcamSensingStatusSnapshot.Default;
 
     public ExperimentSessionManager(
         IEyeTrackerAdapter eyeTrackerAdapter,
@@ -114,14 +121,19 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     public ExperimentSessionSnapshot GetCurrentSnapshot()
     {
         var session = Volatile.Read(ref _session);
-        var latest = Volatile.Read(ref _latestGazeSample);
         var sensingMode = _sensingModeSettingsService.CurrentMode;
+        var signalSources = BuildSignalSourcesSnapshot(sensingMode);
+        var latest = signalSources.GazeSource switch
+        {
+            SensingSignalSources.Webcam => Volatile.Read(ref _latestWebcamGazeSample),
+            _ => Volatile.Read(ref _latestGazeSample)
+        };
         var setup = BuildSetupSnapshot(session, _calibrationSnapshot, _liveReadingSession);
         var liveMonitoring = BuildLiveMonitoringSnapshot(
             session,
             setup,
             _liveReadingSession,
-            string.Equals(sensingMode, SensingModes.Mouse, StringComparison.Ordinal)
+            SensingModes.UsesMouse(sensingMode) || SensingModes.UsesWebcamGaze(sensingMode)
                 ? session.IsActive && (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider() || ShouldPublishToExternalAnalysisProvider())
                 : Volatile.Read(ref _isHardwareTracking) == 1,
             _gazeSubscribers.Count);
@@ -144,6 +156,8 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
             latest?.Copy(),
             _clientBroadcasterAdapter.ConnectedClients,
             liveMonitoring,
+            signalSources,
+            _webcamStatus.Copy(),
             externalProviderStatus,
             _liveReadingSession.Copy(),
             _decisionConfiguration.Copy(),
@@ -192,17 +206,24 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         LiveReadingSessionSnapshot liveReadingSession)
     {
         const string eyeTrackerBlockReason = "Select and license an eye tracker before starting the session.";
+        const string webcamBlockReason = "Connect a webcam before starting a webcam-only session.";
         const string participantBlockReason = "Save the participant information before starting the session.";
         const string calibrationBlockReason = "Calibration validation must pass before the session can start.";
         const string readingMaterialBlockReason = "Choose the reading material before starting the session.";
-        var isMouseMode = string.Equals(_sensingModeSettingsService.CurrentMode, SensingModes.Mouse, StringComparison.Ordinal);
+        var sensingMode = _sensingModeSettingsService.CurrentMode;
+        var isMouseMode = SensingModes.UsesMouse(sensingMode);
+        var isWebcamMode = SensingModes.UsesWebcamGaze(sensingMode);
+        var usesWebcamFace = SensingModes.UsesWebcamFace(sensingMode);
+        var requiresEyeTracker = SensingModes.UsesEyeTracker(sensingMode) && !isMouseMode;
+        var bypassEyeTrackerAndCalibration = isMouseMode || isWebcamMode;
+        var webcamReady = !usesWebcamFace || _webcamStatus.IsConnected;
 
         var hasSelectedEyeTracker = session.EyeTrackerDevice is not null &&
                                     !string.IsNullOrWhiteSpace(session.EyeTrackerDevice.SerialNumber);
         var requiresEyeTrackerLicence = EyeTrackerLicencePolicy.RequiresLicence(session.EyeTrackerDevice);
         var hasAppliedLicence = hasSelectedEyeTracker;
         var hasSavedLicence = requiresEyeTrackerLicence && session.EyeTrackerDevice?.HasSavedLicence == true;
-        var eyeTrackerReady = isMouseMode || (_experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence));
+        var eyeTrackerReady = !requiresEyeTracker || (_experimentSetupTestingOptions.ForceEyeTrackerReady ?? (hasSelectedEyeTracker && hasAppliedLicence));
         var eyeTracker = new EyeTrackerSetupReadinessSnapshot(
             eyeTrackerReady,
             hasSelectedEyeTracker,
@@ -228,14 +249,14 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         var hasCalibrationSession = calibrationSnapshot.SessionId.HasValue;
         var calibrationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Status) ? "idle" : calibrationSnapshot.Status;
         var validationStatus = string.IsNullOrWhiteSpace(calibrationSnapshot.Validation.Status) ? "idle" : calibrationSnapshot.Validation.Status;
-        var calibrationReady = isMouseMode || (_experimentSetupTestingOptions.ForceCalibrationReady ?? (isCalibrationApplied && isValidationPassed));
+        var calibrationReady = bypassEyeTrackerAndCalibration || (_experimentSetupTestingOptions.ForceCalibrationReady ?? (isCalibrationApplied && isValidationPassed));
         var calibration = new CalibrationSetupReadinessSnapshot(
             calibrationReady,
             hasCalibrationSession,
             isCalibrationApplied,
             isValidationPassed,
-            isMouseMode ? "skipped" : calibrationStatus,
-            isMouseMode ? "skipped" : validationStatus,
+            bypassEyeTrackerAndCalibration ? "skipped" : calibrationStatus,
+            bypassEyeTrackerAndCalibration ? "skipped" : validationStatus,
             NormalizeNullableText(validationResult?.Quality),
             validationResult?.AverageAccuracyDegrees,
             validationResult?.AveragePrecisionDegrees,
@@ -266,6 +287,14 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         {
             currentStepIndex = 0;
             blocker = new ExperimentSetupBlockerSnapshot("eye-tracker", "Eye tracker", eyeTracker.BlockReason ?? eyeTrackerBlockReason);
+        }
+        else if (isWebcamMode && !webcamReady)
+        {
+            currentStepIndex = 0;
+            blocker = new ExperimentSetupBlockerSnapshot(
+                "webcam",
+                "Webcam",
+                _webcamStatus.Detail ?? webcamBlockReason);
         }
         else if (!participant.IsReady)
         {
@@ -314,6 +343,9 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
             session.IsActive,
             isGazeStreamingActive,
             Math.Max(gazeSubscriberCount, 0),
+            liveReadingSession.LatestFacialObservation is not null || liveReadingSession.LatestFacialDifficultySignal is not null,
+            liveReadingSession.LatestFacialObservation?.CapturedAtUnixMs
+                ?? liveReadingSession.LatestFacialDifficultySignal?.ObservedAtUnixMs,
             participantViewport.IsConnected,
             hasParticipantViewportData,
             participantViewport.UpdatedAtUnixMs > 0 ? participantViewport.UpdatedAtUnixMs : null,
@@ -360,6 +392,26 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
             NormalizeNullableText(provider.ProviderId),
             NormalizeNullableText(provider.DisplayName),
             provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
+    }
+
+    private static SensingSignalSourcesSnapshot BuildSignalSourcesSnapshot(string sensingMode)
+    {
+        if (SensingModes.UsesWebcamGaze(sensingMode))
+        {
+            return new SensingSignalSourcesSnapshot(SensingSignalSources.Webcam, SensingSignalSources.Webcam);
+        }
+
+        if (SensingModes.UsesMouse(sensingMode))
+        {
+            return new SensingSignalSourcesSnapshot(SensingSignalSources.Mouse, SensingSignalSources.None);
+        }
+
+        if (SensingModes.UsesWebcamFace(sensingMode))
+        {
+            return new SensingSignalSourcesSnapshot(SensingSignalSources.Tobii, SensingSignalSources.Webcam);
+        }
+
+        return new SensingSignalSourcesSnapshot(SensingSignalSources.Tobii, SensingSignalSources.None);
     }
 
 

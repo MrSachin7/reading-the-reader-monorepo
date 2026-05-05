@@ -11,6 +11,8 @@
         <PackageReference Include="FastEndpoints" Version="8.0.1" />
         <PackageReference Include="FastEndpoints.Swagger" Version="8.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3"/>
+        <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
+        <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260302" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +25,12 @@
     <ItemGroup>
       <Content Include="..\..\.dockerignore">
         <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="OpenCv\Models\**\*.*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
 

@@ -3,7 +3,49 @@ import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 
-export type SensingMode = "eyeTracker" | "mouse"
+export type SensingMode = "eyeTracker" | "webcam" | "eyeTrackerPlusFace" | "mouse"
+
+export type FacialDifficultyState = "neutral" | "possible-struggle" | "possible-ease"
+
+export type SensingSignalSource = "none" | "tobii" | "webcam" | "mouse"
+
+export type SensingSignalSourcesSnapshot = {
+  gazeSource: SensingSignalSource
+  faceSource: SensingSignalSource
+}
+
+export type WebcamSensingStatusSnapshot = {
+  isConnected: boolean
+  status: string
+  lastFrameAtUnixMs: number | null
+  lastProcessedAtUnixMs: number | null
+  captureQuality: number
+  consecutiveFailures: number
+  detail: string | null
+}
+
+export type FacialObservationSnapshot = {
+  capturedAtUnixMs: number
+  landmarkCount: number
+  headOffsetX: number
+  headOffsetY: number
+  leftEyeOpenness: number
+  rightEyeOpenness: number
+  blinkLikelihood: number
+  mouthTension: number
+  motionScore: number
+  captureQuality: number
+  confidence: number
+  summary: string | null
+}
+
+export type FacialDifficultySignalSnapshot = {
+  state: FacialDifficultyState
+  confidence: number
+  observedAtUnixMs: number
+  cues: string[]
+  summary: string | null
+}
 
 export type ExperimentSetupBlockerSnapshot = {
   stepKey: string
@@ -71,6 +113,8 @@ export type ExperimentLiveMonitoringSnapshot = {
   canFinishSession: boolean
   isGazeStreamingActive: boolean
   gazeSubscriberCount: number
+  hasWebcamSignal: boolean
+  webcamUpdatedAtUnixMs: number | null
   hasParticipantViewConnection: boolean
   hasParticipantViewportData: boolean
   participantViewportUpdatedAtUnixMs: number | null
@@ -405,6 +449,9 @@ export type LiveReadingSessionSnapshot = {
   interventionPolicy: ReadingInterventionPolicySnapshot
   participantViewport: ParticipantViewportSnapshot
   focus: ReadingFocusSnapshot
+  latestFacialObservation: FacialObservationSnapshot | null
+  latestFacialDifficultySignal: FacialDifficultySignalSnapshot | null
+  recentFacialDifficultySignals: FacialDifficultySignalSnapshot[]
   pendingIntervention: PendingInterventionSnapshot | null
   latestContextPreservation: ReadingContextPreservationSnapshot | null
   recentContextPreservationEvents: ReadingContextPreservationSnapshot[]
@@ -428,6 +475,8 @@ export type ExperimentSessionSnapshot = {
   latestGazeSample: unknown
   connectedClients: number
   liveMonitoring: ExperimentLiveMonitoringSnapshot
+  signalSources: SensingSignalSourcesSnapshot
+  webcamStatus: WebcamSensingStatusSnapshot
   externalProviderStatus: ExternalProviderStatusSnapshot
   readingSession: LiveReadingSessionSnapshot | null
   decisionConfiguration: DecisionConfiguration
@@ -442,6 +491,8 @@ export const EMPTY_LIVE_MONITORING: ExperimentLiveMonitoringSnapshot = {
   canFinishSession: false,
   isGazeStreamingActive: false,
   gazeSubscriberCount: 0,
+  hasWebcamSignal: false,
+  webcamUpdatedAtUnixMs: null,
   hasParticipantViewConnection: false,
   hasParticipantViewportData: false,
   participantViewportUpdatedAtUnixMs: null,
@@ -519,6 +570,9 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
     activeSentenceId: null,
     updatedAtUnixMs: 0,
   },
+  latestFacialObservation: null,
+  latestFacialDifficultySignal: null,
+  recentFacialDifficultySignals: [],
   pendingIntervention: null,
   latestContextPreservation: null,
   recentContextPreservationEvents: [],
@@ -526,6 +580,21 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   latestIntervention: null,
   recentInterventions: [],
   attentionSummary: null,
+}
+
+export const EMPTY_SIGNAL_SOURCES: SensingSignalSourcesSnapshot = {
+  gazeSource: "none",
+  faceSource: "none",
+}
+
+export const EMPTY_WEBCAM_STATUS: WebcamSensingStatusSnapshot = {
+  isConnected: false,
+  status: "idle",
+  lastFrameAtUnixMs: null,
+  lastProcessedAtUnixMs: null,
+  captureQuality: 0,
+  consecutiveFailures: 0,
+  detail: null,
 }
 
 export const EMPTY_DECISION_CONFIGURATION: DecisionConfiguration = {

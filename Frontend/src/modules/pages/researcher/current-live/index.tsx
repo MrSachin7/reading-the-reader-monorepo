@@ -90,7 +90,7 @@ export default function ResearcherCurrentLivePage() {
   const session = useLiveExperimentSession()
   const hasActiveGazeSource = Boolean(
     session?.isActive &&
-      (session.sensingMode === "mouse" || session.eyeTrackerDevice)
+      (session.sensingMode === "mouse" || session.sensingMode === "webcam" || session.eyeTrackerDevice)
   )
   const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const [validityRate, setValidityRate] = useState(0)
@@ -374,9 +374,7 @@ function ResearcherCurrentLiveBody({
   }, [
     experimentSequencePosition,
     content.experimentSetupId,
-    readingSession.appearance.appFont,
-    readingSession.appearance.palette,
-    readingSession.appearance.themeMode,
+    readingSession.appearance,
     readingSession.experimentItems,
     upsertReadingSession,
   ])
@@ -418,6 +416,10 @@ function ResearcherCurrentLiveBody({
           interventionModules={effectiveInterventionModules}
           followParticipant={followParticipant}
           liveMonitoring={session.liveMonitoring}
+          webcamStatus={session.webcamStatus}
+          signalSources={session.signalSources}
+          latestFacialObservation={readingSession.latestFacialObservation}
+          latestFacialDifficultySignal={readingSession.latestFacialDifficultySignal}
           mirrorTrustState={mirrorTrustState}
           layoutGuardrail={readingSession.latestLayoutGuardrail}
           decisionConfiguration={session.decisionConfiguration}

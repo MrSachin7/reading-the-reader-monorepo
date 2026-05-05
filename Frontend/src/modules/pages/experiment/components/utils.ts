@@ -89,7 +89,10 @@ export function getAuthoritativeWorkflowStepStates(
   sensingMode: SensingMode = "eyeTracker"
 ): AuthoritativeWorkflowStepState[] {
   const isMouseMode = sensingMode === "mouse"
-  const researcherPreparationReady = setup.eyeTracker.isReady && setup.readingMaterial.isReady
+  const isWebcamMode = sensingMode === "webcam"
+  const skipsEyeTracker = isMouseMode || isWebcamMode
+  const researcherPreparationReady =
+    (skipsEyeTracker || setup.eyeTracker.isReady) && setup.readingMaterial.isReady
   const calibrationRunning =
     setup.calibration.status === "running" || setup.calibration.validationStatus === "running"
   const calibrationFailed =
@@ -106,6 +109,8 @@ export function getAuthoritativeWorkflowStepStates(
       blockReason: setup.eyeTracker.blockReason,
       summary: isMouseMode
         ? "Mouse mode active. Eyetracker selection and licence upload are skipped."
+        : isWebcamMode
+        ? "Webcam mode active. Webcam availability is required, while eyetracker setup is skipped."
         : setup.eyeTracker.isReady
         ? `Using ${setup.eyeTracker.selectedTrackerName ?? "selected eyetracker"} with licence ready.`
         : setup.eyeTracker.blockReason ?? "Choose a connected eyetracker and provide a licence if required.",
@@ -113,13 +118,13 @@ export function getAuthoritativeWorkflowStepStates(
     {
       index: 1,
       isReady: setup.readingMaterial.isReady,
-      isAvailable: setup.eyeTracker.isReady,
-      blockReason: setup.eyeTracker.isReady
+      isAvailable: skipsEyeTracker || setup.eyeTracker.isReady,
+      blockReason: skipsEyeTracker || setup.eyeTracker.isReady
         ? setup.readingMaterial.blockReason
         : "Finish the eyetracker and licence step before preparing the reading baseline.",
       summary: setup.readingMaterial.isReady
         ? `${setup.readingMaterial.title ?? "Reading material"} is saved for session start.`
-        : setup.eyeTracker.isReady
+        : skipsEyeTracker || setup.eyeTracker.isReady
           ? setup.readingMaterial.blockReason ?? "Choose and save reading material before handing over to the participant."
           : "Complete the eyetracker setup before preparing the reading baseline.",
     },
@@ -146,6 +151,8 @@ export function getAuthoritativeWorkflowStepStates(
           : "Save participant details after researcher preparation before starting calibration.",
       summary: isMouseMode
         ? "Mouse mode active. Calibration and validation are skipped."
+        : isWebcamMode
+        ? "Webcam mode active. Tobii calibration and validation are skipped."
         : setup.calibration.isReady
           ? `Validation passed with ${formatCalibrationQualityLabel(setup.calibration.validationQuality)}.`
           : calibrationRunning

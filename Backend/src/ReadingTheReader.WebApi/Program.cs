@@ -6,6 +6,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.Realtime.Persistence;
 using ReadingTheReader.TobiiEyetracker;
+using ReadingTheReader.WebApi.OpenCv;
 using ReadingTheReader.WebApi.Websockets;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,8 @@ var externalProviderOptions = builder.Configuration.GetSection(ExternalProviderO
     ?? new ExternalProviderOptions();
 var externalAnalysisProviderOptions = builder.Configuration.GetSection(ExternalAnalysisProviderOptions.SectionName).Get<ExternalAnalysisProviderOptions>()
     ?? new ExternalAnalysisProviderOptions();
+builder.Services.Configure<OpenCvWebcamSensingOptions>(
+    builder.Configuration.GetSection(OpenCvWebcamSensingOptions.SectionName));
 
 // Modules installation
 builder.Services.InstallTobiiEyeTrackerModule();
@@ -29,6 +32,7 @@ builder.Services.InstallApplicationModule(
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();
+builder.Services.AddHostedService<OpenCvWebcamSensingWorker>();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
