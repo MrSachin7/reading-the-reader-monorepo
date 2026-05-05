@@ -11,9 +11,12 @@ public sealed record UpsertReadingSessionCommand(
     ReadingPresentationSnapshot Presentation,
     ReaderAppearanceSnapshot Appearance,
     string? ExperimentSetupId = null,
+    string? ExperimentSetupName = null,
     string? ExperimentSetupItemId = null,
     IReadOnlyList<UpsertReadingSessionExperimentItemCommand>? ExperimentItems = null,
-    int? CurrentExperimentItemIndex = null);
+    int? CurrentExperimentItemIndex = null,
+    string OrderMode = "fixed",
+    bool IsOneOff = false);
 
 public sealed record UpsertReadingSessionExperimentItemCommand(
     string Id,
@@ -26,7 +29,8 @@ public sealed record UpsertReadingSessionExperimentItemCommand(
     int LineWidthPx,
     double LineHeight,
     double LetterSpacingEm,
-    bool EditableByResearcher);
+    bool EditableByResearcher,
+    string? MaterialRunId = null);
 
 public sealed record UpdateParticipantViewportCommand(
     double ScrollProgress,

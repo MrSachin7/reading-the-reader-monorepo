@@ -268,12 +268,7 @@ public sealed partial class ExperimentSessionManager
 
         if (CanApplyPendingIntervention(existingPending))
         {
-            var mergedCommand = MergeInterventionCommands(existingPending!.Intervention, command);
-            var mergedPending = existingPending with { Intervention = mergedCommand.Copy() };
-            _liveReadingSession = _liveReadingSession with { PendingIntervention = mergedPending };
-            RecordScheduledInterventionEvent(queuedAtUnixMs, mergedPending);
-            RecordReadingSessionState("intervention-merged", queuedAtUnixMs, _liveReadingSession.Copy());
-            return;
+            SupersedePendingInterventionIfQueued(queuedAtUnixMs, "replaced-by-new-intervention");
         }
 
         var queuedIntervention = BuildQueuedPendingIntervention(command, queuedAtUnixMs);

@@ -46,6 +46,7 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                     req.Palette,
                     req.AppFont),
                 req.ExperimentSetupId,
+                req.ExperimentSetupName,
                 req.ExperimentSetupItemId,
                 req.ExperimentItems?.Select(item => new UpsertReadingSessionExperimentItemCommand(
                     item.Id,
@@ -58,8 +59,11 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                     item.LineWidthPx,
                     item.LineHeight,
                     item.LetterSpacingEm,
-                    item.EditableByResearcher)).ToArray(),
-                req.CurrentExperimentItemIndex), ct);
+                    item.EditableByResearcher,
+                    item.MaterialRunId)).ToArray(),
+                req.CurrentExperimentItemIndex,
+                req.OrderMode,
+                req.IsOneOff), ct);
 
             await Send.OkAsync(_experimentSessionQueryService.GetCurrentSnapshot(), ct);
         }

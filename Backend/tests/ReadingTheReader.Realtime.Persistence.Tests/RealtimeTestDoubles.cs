@@ -366,6 +366,7 @@ public sealed class RealtimeTestDoubles
                 [],
                 [],
                 [],
+                [],
                 []);
             return ValueTask.CompletedTask;
         }
@@ -384,6 +385,7 @@ public sealed class RealtimeTestDoubles
                 LifecycleEvents = [.. session.LifecycleEvents, .. batch.LifecycleEvents.Select(item => item.Copy())],
                 GazeSamples = [.. session.GazeSamples, .. batch.GazeSamples.Select(item => item.Copy())],
                 EnrichedGazeSamples = [.. session.EnrichedGazeSamples, .. (batch.EnrichedGazeSamples ?? []).Select(item => item.Copy())],
+                ReadingSessionStates = [.. session.ReadingSessionStates, .. (batch.ReadingSessionStates ?? []).Select(item => item.Copy())],
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
@@ -414,6 +416,7 @@ public sealed class RealtimeTestDoubles
                 exportedAtUnixMs,
                 session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.ReadingSessionStates.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.ViewportEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.AttentionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
@@ -508,6 +511,7 @@ public sealed class RealtimeTestDoubles
             IReadOnlyList<ExperimentLifecycleEventRecord> LifecycleEvents,
             IReadOnlyList<RawGazeSampleRecord> GazeSamples,
             IReadOnlyList<EnrichedGazeSampleRecord> EnrichedGazeSamples,
+            IReadOnlyList<ReadingSessionStateRecord> ReadingSessionStates,
             IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
             IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
             IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,

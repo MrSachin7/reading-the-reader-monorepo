@@ -50,7 +50,8 @@ public sealed partial class ExperimentSessionManager
                         item.LineWidthPx,
                         item.LineHeight,
                         item.LetterSpacingEm,
-                        item.EditableByResearcher))
+                        item.EditableByResearcher,
+                        string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id.Trim() : item.MaterialRunId.Trim()))
                     .ToArray();
             int? normalizedCurrentExperimentItemIndex = null;
             if (normalizedExperimentItems.Length > 0)
@@ -70,6 +71,9 @@ public sealed partial class ExperimentSessionManager
 
             var viewportIsConnected = _liveReadingSession.ParticipantViewport.IsConnected;
             var normalizedInitialPresentation = ReadingPresentationRules.Normalize(command.Presentation);
+            var normalizedOrderMode = string.Equals(command.OrderMode?.Trim(), "random", StringComparison.OrdinalIgnoreCase)
+                ? "random"
+                : "fixed";
             _liveReadingSession = _liveReadingSession with
             {
                 Content = content,
@@ -89,6 +93,12 @@ public sealed partial class ExperimentSessionManager
                 AttentionSummary = null,
                 ExperimentItems = normalizedExperimentItems,
                 CurrentExperimentItemIndex = normalizedCurrentExperimentItemIndex,
+                ExperimentRun = BuildExperimentRunSnapshot(
+                    command,
+                    normalizedExperimentItems,
+                    normalizedInitialPresentation,
+                    normalizedOrderMode,
+                    updatedAtUnixMs),
             };
             _lastMeaningfulReadingFocus = ReadingFocusSnapshot.Empty;
             _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisRuntimeState.Empty;
@@ -112,6 +122,44 @@ public sealed partial class ExperimentSessionManager
         {
             await _analysisProviderGateway.PublishSessionSnapshotAsync(GetCurrentSnapshot(), ct);
         }
+    }
+
+    private static ExperimentRunSnapshot BuildExperimentRunSnapshot(
+        UpsertReadingSessionCommand command,
+        IReadOnlyList<ExperimentSequenceItemSnapshot> experimentItems,
+        ReadingPresentationSnapshot currentPresentation,
+        string orderMode,
+        long createdAtUnixMs)
+    {
+        var materials = experimentItems.Count > 0
+            ? experimentItems.Select(item => new ExperimentMaterialRunSnapshot(
+                string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id : item.MaterialRunId,
+                item.Order,
+                item.Title,
+                item.Markdown,
+                item.SourceSetupId,
+                new ReadingPresentationSnapshot(
+                    item.FontFamily,
+                    item.FontSizePx,
+                    item.LineWidthPx,
+                    item.LineHeight,
+                    item.LetterSpacingEm,
+                    item.EditableByResearcher)))
+            : [new ExperimentMaterialRunSnapshot(
+                string.IsNullOrWhiteSpace(command.ExperimentSetupItemId) ? command.DocumentId.Trim() : command.ExperimentSetupItemId.Trim(),
+                0,
+                command.Title.Trim(),
+                command.Markdown,
+                string.IsNullOrWhiteSpace(command.SourceSetupId) ? null : command.SourceSetupId.Trim(),
+                currentPresentation.Copy())];
+
+        return new ExperimentRunSnapshot(
+            string.IsNullOrWhiteSpace(command.ExperimentSetupId) ? null : command.ExperimentSetupId.Trim(),
+            string.IsNullOrWhiteSpace(command.ExperimentSetupName) ? null : command.ExperimentSetupName.Trim(),
+            command.IsOneOff || string.IsNullOrWhiteSpace(command.ExperimentSetupId),
+            orderMode,
+            materials.Select(item => item.Copy()).ToArray(),
+            createdAtUnixMs);
     }
 
     public async ValueTask<LiveReadingSessionSnapshot> RegisterParticipantViewAsync(string connectionId, CancellationToken ct = default)

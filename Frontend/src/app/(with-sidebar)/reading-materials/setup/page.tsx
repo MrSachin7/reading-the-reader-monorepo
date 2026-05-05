@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import ExperimentPage from "@/modules/pages/experiment";
+import ReadingMaterialSetupPage from "@/modules/pages/reading-material-setup";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <ExperimentPage mode="participant" />
+      <ReadingMaterialSetupPage />
     </Suspense>
   );
 }

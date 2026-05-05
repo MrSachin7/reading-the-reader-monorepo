@@ -7,6 +7,7 @@ public sealed class UpsertReadingSessionRequest
     public string Markdown { get; set; } = string.Empty;
     public string? SourceSetupId { get; set; }
     public string? ExperimentSetupId { get; set; }
+    public string? ExperimentSetupName { get; set; }
     public string? ExperimentSetupItemId { get; set; }
     public string FontFamily { get; set; } = string.Empty;
     public int FontSizePx { get; set; }
@@ -19,6 +20,8 @@ public sealed class UpsertReadingSessionRequest
     public string AppFont { get; set; } = string.Empty;
     public IReadOnlyList<UpsertReadingSessionExperimentItemRequest>? ExperimentItems { get; set; }
     public int? CurrentExperimentItemIndex { get; set; }
+    public string OrderMode { get; set; } = "fixed";
+    public bool IsOneOff { get; set; }
 }
 
 public sealed class UpsertReadingSessionExperimentItemRequest
@@ -34,4 +37,5 @@ public sealed class UpsertReadingSessionExperimentItemRequest
     public double LineHeight { get; set; }
     public double LetterSpacingEm { get; set; }
     public bool EditableByResearcher { get; set; } = true;
+    public string? MaterialRunId { get; set; }
 }

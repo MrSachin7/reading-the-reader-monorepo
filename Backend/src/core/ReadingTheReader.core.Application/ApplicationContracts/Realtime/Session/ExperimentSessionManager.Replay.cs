@@ -111,6 +111,7 @@ public sealed partial class ExperimentSessionManager
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
             _pendingEnrichedGazeSamples = [];
+            _pendingReadingSessionStates = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
@@ -189,6 +190,7 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
+            var material = GetCurrentMaterialPointer();
             _pendingEnrichedGazeSamples.Add(new EnrichedGazeSampleRecord(
                 NextSequenceNumber(),
                 capturedAtUnixMs,
@@ -226,7 +228,9 @@ public sealed partial class ExperimentSessionManager
                     gazeData.RightGazeOriginInTrackBoxX,
                     gazeData.RightGazeOriginInTrackBoxY,
                     gazeData.RightGazeOriginInTrackBoxZ),
-                focus.Copy()));
+                focus.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -235,6 +239,11 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
+            _pendingReadingSessionStates.Add(new ReadingSessionStateRecord(
+                NextSequenceNumber(),
+                reason,
+                occurredAtUnixMs,
+                session.Copy()));
             if (_activeReplayRecoverySessionId.HasValue)
             {
                 _hasPendingReplayPersistence = true;
@@ -246,10 +255,13 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
+            var material = GetCurrentMaterialPointer();
             _pendingParticipantViewportEvents.Add(new ParticipantViewportEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                viewport.Copy()));
+                viewport.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -258,10 +270,13 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
+            var material = GetCurrentMaterialPointer();
             _pendingReadingFocusEvents.Add(new ReadingFocusEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                focus.Copy()));
+                focus.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -307,7 +322,9 @@ public sealed partial class ExperimentSessionManager
             _pendingDecisionProposalEvents.Add(new DecisionProposalEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                proposal.Copy()));
+                proposal.Copy(),
+                GetCurrentMaterialPointer().MaterialRunId,
+                GetCurrentMaterialPointer().MaterialIndex));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -331,7 +348,9 @@ public sealed partial class ExperimentSessionManager
             _pendingInterventionEvents.Add(new InterventionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,
-                intervention.Copy()));
+                intervention.Copy(),
+                GetCurrentMaterialPointer().MaterialRunId,
+                GetCurrentMaterialPointer().MaterialIndex));
             _hasPendingReplayPersistence = true;
         }
     }
@@ -346,6 +365,7 @@ public sealed partial class ExperimentSessionManager
         ExperimentLifecycleEventRecord[] lifecycleEvents;
         RawGazeSampleRecord[] gazeSamples;
         EnrichedGazeSampleRecord[] enrichedGazeSamples;
+        ReadingSessionStateRecord[] readingSessionStates;
         ParticipantViewportEventRecord[] participantViewportEvents;
         ReadingFocusEventRecord[] readingFocusEvents;
         ReadingAttentionEventRecord[] attentionEvents;
@@ -368,6 +388,7 @@ public sealed partial class ExperimentSessionManager
             lifecycleEvents = _pendingLifecycleEvents.Select(item => item.Copy()).ToArray();
             gazeSamples = _pendingGazeSamples.Select(item => item.Copy()).ToArray();
             enrichedGazeSamples = _pendingEnrichedGazeSamples.Select(item => item.Copy()).ToArray();
+            readingSessionStates = _pendingReadingSessionStates.Select(item => item.Copy()).ToArray();
             participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
             readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
@@ -382,6 +403,7 @@ public sealed partial class ExperimentSessionManager
             _pendingLifecycleEvents = [];
             _pendingGazeSamples = [];
             _pendingEnrichedGazeSamples = [];
+            _pendingReadingSessionStates = [];
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
@@ -404,6 +426,7 @@ public sealed partial class ExperimentSessionManager
                     lifecycleEvents,
                     gazeSamples,
                     enrichedGazeSamples,
+                    readingSessionStates,
                     participantViewportEvents,
                     readingFocusEvents,
                     attentionEvents,
@@ -421,6 +444,7 @@ public sealed partial class ExperimentSessionManager
                 _pendingLifecycleEvents = [.. lifecycleEvents.Select(item => item.Copy()), .. _pendingLifecycleEvents];
                 _pendingGazeSamples = [.. gazeSamples.Select(item => item.Copy()), .. _pendingGazeSamples];
                 _pendingEnrichedGazeSamples = [.. enrichedGazeSamples.Select(item => item.Copy()), .. _pendingEnrichedGazeSamples];
+                _pendingReadingSessionStates = [.. readingSessionStates.Select(item => item.Copy()), .. _pendingReadingSessionStates];
                 _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
                 _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
@@ -433,6 +457,19 @@ public sealed partial class ExperimentSessionManager
 
             throw;
         }
+    }
+
+    private (string? MaterialRunId, int? MaterialIndex) GetCurrentMaterialPointer()
+    {
+        var index = _liveReadingSession.CurrentExperimentItemIndex;
+        var items = _liveReadingSession.ExperimentItems;
+        if (!index.HasValue || items is null || index.Value < 0 || index.Value >= items.Count)
+        {
+            return (null, null);
+        }
+
+        var item = items[index.Value];
+        return (string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id : item.MaterialRunId, index.Value);
     }
 
     private static ReplayEyeSample ToReplayEyeSample(

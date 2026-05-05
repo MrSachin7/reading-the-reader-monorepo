@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import ExperimentPage from "@/modules/pages/experiment";
 
 export default function Page() {
-  return <ExperimentPage mode="researcher" />;
+  return (
+    <Suspense fallback={null}>
+      <ExperimentPage mode="researcher" />
+    </Suspense>
+  );
 }

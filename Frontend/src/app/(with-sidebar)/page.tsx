@@ -1,41 +1,203 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
+import { Archive, BookOpen, Copy, FilePlus2, FlaskConical, Play, Search } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { useGetExperimentSetupsQuery } from "@/redux"
 
 const PARTICIPANT_FLOW_STARTED_KEY = "participant-flow-started-v2"
 
-export default function HomePage() {
-  const handleStartExperimentClick = () => {
-    if (typeof window === "undefined") {
-      return
-    }
+function formatDate(unixMs: number) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(unixMs))
+}
 
-    window.localStorage.setItem(PARTICIPANT_FLOW_STARTED_KEY, `${Date.now()}`)
+function markParticipantFlowStarted() {
+  if (typeof window === "undefined") {
+    return
   }
 
+  window.localStorage.setItem(PARTICIPANT_FLOW_STARTED_KEY, `${Date.now()}`)
+}
+
+export default function HomePage() {
+  const { data: templates = [], isLoading } = useGetExperimentSetupsQuery()
+  const [query, setQuery] = React.useState("")
+  const normalizedQuery = query.trim().toLowerCase()
+  const filteredTemplates = normalizedQuery
+    ? templates.filter((template) =>
+        [
+          template.name,
+          template.description,
+          template.status,
+          template.orderMode,
+          ...template.items.map((item) => item.title),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery)
+      )
+    : templates
+  const readyTemplates = filteredTemplates.filter((template) => template.status === "ready")
+  const draftTemplates = filteredTemplates.filter((template) => template.status !== "ready" && template.status !== "archived")
+
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-5xl items-center">
-      <div className="grid w-full gap-6">
-        <Card className="rounded-[2rem] border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <CardHeader>
-            <CardTitle className="text-2xl">Experiment flow</CardTitle>
-            <CardDescription>
-              Start the experiment as the researcher, prepare the device and reading baseline, then
-              hand over the participant information and calibration steps in the dedicated
-              participant view.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/researcher/experiment" onClick={handleStartExperimentClick}>
-                Start Experiment
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+    <section className="space-y-6">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Researcher dashboard
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Experiment templates</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
+            Start a saved protocol, continue a draft, or create a one-off custom experiment.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/reading-material/setup">
+              <BookOpen className="h-4 w-4" />
+              Material Library
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/experiment/setups?mode=custom">
+              <FilePlus2 className="h-4 w-4" />
+              Custom Experiment
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search templates by name, description, or material title"
+          />
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/experiment/setups">
+            <FlaskConical className="h-4 w-4" />
+            Manage Templates
+          </Link>
+        </Button>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6">
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Ready to run</h2>
+              <Badge variant="outline">{readyTemplates.length} ready</Badge>
+            </div>
+            <div className="grid gap-3">
+              {readyTemplates.map((template) => (
+                <Card key={template.id}>
+                  <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold">{template.name}</h3>
+                        <Badge>{template.status}</Badge>
+                        <Badge variant="outline">{template.orderMode}</Badge>
+                        <Badge variant="outline">{template.items.length} materials</Badge>
+                      </div>
+                      <p className="max-w-3xl text-sm text-muted-foreground">
+                        {template.description || "No description provided."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Updated {formatDate(template.updatedAtUnixMs)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button asChild onClick={markParticipantFlowStarted}>
+                        <Link href={`/researcher/experiment?templateId=${template.id}`}>
+                          <Play className="h-4 w-4" />
+                          Start
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline">
+                        <Link href={`/experiment/setups?id=${template.id}`}>Edit</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {!isLoading && readyTemplates.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    No ready templates yet. Continue a draft or create a custom experiment.
+                  </CardContent>
+                </Card>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Drafts</h2>
+              <Badge variant="outline">{draftTemplates.length} drafts</Badge>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {draftTemplates.map((template) => (
+                <Card key={template.id}>
+                  <CardHeader>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{template.status}</Badge>
+                      <Badge variant="outline">{template.items.length} materials</Badge>
+                    </div>
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
+                    <CardDescription>{template.description || "Draft template"}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline">
+                      <Link href={`/experiment/setups?id=${template.id}`}>Continue setup</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom experiment</CardTitle>
+              <CardDescription>
+                Design a one-off run now. Save it as a template only when it should be reusable.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button asChild className="w-full">
+                <Link href="/experiment/setups?mode=custom">
+                  <FilePlus2 className="h-4 w-4" />
+                  Start Custom Designer
+                </Link>
+              </Button>
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="rounded-lg border p-3">
+                  <Copy className="mb-2 h-4 w-4" />
+                  Reuse saved materials
+                </div>
+                <div className="rounded-lg border p-3">
+                  <Archive className="mb-2 h-4 w-4" />
+                  Snapshot preserved
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
     </section>
   )

@@ -28,6 +28,17 @@ public sealed class CreateExperimentSetupEndpoint : Endpoint<CreateExperimentSet
             {
                 Name = req.Name,
                 Description = req.Description,
+                Status = req.Status,
+                OrderMode = req.OrderMode,
+                DefaultFontFamily = req.DefaultFontFamily,
+                DefaultFontSizePx = req.DefaultFontSizePx,
+                DefaultLineWidthPx = req.DefaultLineWidthPx,
+                DefaultLineHeight = req.DefaultLineHeight,
+                DefaultLetterSpacingEm = req.DefaultLetterSpacingEm,
+                DefaultEditableByExperimenter = req.DefaultEditableByExperimenter,
+                DecisionProviderId = req.DecisionProviderId,
+                DecisionExecutionMode = req.DecisionExecutionMode,
+                CalibrationRequired = req.CalibrationRequired,
                 Items = req.Items.Select(item => new SaveExperimentSetupItemCommand
                 {
                     SourceReadingMaterialSetupId = item.SourceReadingMaterialSetupId,
