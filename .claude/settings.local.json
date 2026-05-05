@@ -5,7 +5,9 @@
       "Bash(xargs grep *)",
       "Bash(grep -n \"LatestSnapshot\\\\|InitialSnapshot\\\\|metadata\\\\\\\\.Latest\\\\|metadata\\\\\\\\.Initial\" \"C:\\\\Users\\\\s243871\\\\reading-the-reader-monorepo/Backend/src/infrastructure/ReadingTheReader.Realtime.Persistence/FileExperimentReplayRecoveryStoreAdapter.cs\")",
       "Bash(dotnet build *)",
-      "Bash(bun tsc *)"
+      "Bash(bun tsc *)",
+      "Bash(bun run *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   }
 }

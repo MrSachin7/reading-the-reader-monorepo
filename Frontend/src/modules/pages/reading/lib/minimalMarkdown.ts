@@ -64,6 +64,10 @@ function parseInline(text: string): InlineNode[] {
         cursor = close + 1;
         continue;
       }
+      // No valid closing * — treat as literal text and advance past it.
+      nodes.push({ type: "text", text: "*" });
+      cursor += 1;
+      continue;
     }
 
     const nextMarker = text.indexOf("*", cursor);

@@ -374,9 +374,7 @@ function ResearcherCurrentLiveBody({
   }, [
     experimentSequencePosition,
     content.experimentSetupId,
-    readingSession.appearance.appFont,
-    readingSession.appearance.palette,
-    readingSession.appearance.themeMode,
+    readingSession.appearance,
     readingSession.experimentItems,
     upsertReadingSession,
   ])

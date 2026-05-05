@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
 import { BookOpen, Crosshair, FileText, MousePointer2, Plus, ScanEye } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
@@ -1078,52 +1078,6 @@ function SessionContentStep({
             </button>
           </div>
 
-          {readingSession.source === "experiment" && selectedExperimentSetup ? (
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className="text-lg">Selected experiment sequence</CardTitle>
-                <CardDescription>
-                  This experiment contains {selectedExperimentSetup.items.length} text
-                  {selectedExperimentSetup.items.length === 1 ? "" : "s"}. The first one below is the
-                  current live baseline.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedExperimentSetup.items.map((item, index) => {
-                  const isCurrent = item.id === readingSession.selectedExperimentSetupItemId
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "rounded-2xl border p-4",
-                        isCurrent ? "border-primary bg-primary/5" : "bg-muted/20"
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={isCurrent ? "secondary" : "outline"}>
-                          Text {index + 1}
-                        </Badge>
-                        {isCurrent ? <Badge variant="outline">Current baseline</Badge> : null}
-                        <Badge variant="outline">
-                          {item.editableByExperimenter ? "Live-adjustable" : "Locked"}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm font-semibold">{item.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Source: {item.sourceReadingMaterialTitle}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {item.fontFamily} | {item.fontSizePx}px | {item.lineWidthPx}px | line
-                        height {item.lineHeight.toFixed(2)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          ) : null}
-
           <div className="space-y-5">
             <div>
               <p className="text-sm font-semibold">Runtime plugins</p>
@@ -1369,6 +1323,7 @@ type ExperimentStepperProps = {
 
 export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const { resolvedTheme } = useTheme()
   const { font } = useFontTheme()
@@ -1387,10 +1342,12 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     pollingInterval: 3_000,
   })
   const { data: experimentSetups = [] } = useGetExperimentSetupsQuery()
+  const [getExperimentSetupById] = useLazyGetExperimentSetupByIdQuery()
   const [upsertReadingSession, { isLoading: isSavingReadingSession }] =
     useUpsertReadingSessionMutation()
   const [startExperimentSession, { isLoading: isStartingExperimentSession }] =
     useStartExperimentSessionMutation()
+  const [updateTemplateDecisionConfiguration] = useUpdateDecisionConfigurationMutation()
   const [updateExperimentSetupTestingOverrides] =
     useUpdateExperimentSetupTestingOverridesMutation()
   const [step, setStep] = React.useState(0)
@@ -1405,6 +1362,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     3: false,
   })
   const stepSubmitHandlerRef = React.useRef<(() => Promise<boolean>) | null>(null)
+  const appliedTemplateQueryRef = React.useRef<string | null>(null)
 
   const setup = experimentSession?.setup ?? EMPTY_EXPERIMENT_SETUP
   const sensingMode: SensingMode = experimentSession?.sensingMode ?? "eyeTracker"
@@ -1456,6 +1414,67 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
       null,
     [experimentSetups, readingSession.selectedExperimentSetupId]
   )
+  const templateIdFromQuery = searchParams.get("templateId")
+
+  React.useEffect(() => {
+    if (!templateIdFromQuery || appliedTemplateQueryRef.current === templateIdFromQuery) {
+      return
+    }
+
+    appliedTemplateQueryRef.current = templateIdFromQuery
+    void (async () => {
+      try {
+        const savedSetup = await getExperimentSetupById(templateIdFromQuery).unwrap()
+        const firstItem = savedSetup.items[0]
+        if (!firstItem) {
+          return
+        }
+
+        dispatch(setReadingSessionSource("experiment"))
+        dispatch(setReadingSessionTitle(firstItem.title))
+        dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
+        dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+        dispatch(
+          setReadingSessionExperimentSelection({
+            experimentSetupId: savedSetup.id,
+            experimentSetupName: savedSetup.name,
+            experimentSetupItemId: firstItem.id,
+            readingMaterialSetupId: firstItem.sourceReadingMaterialSetupId,
+            itemCount: savedSetup.items.length,
+          })
+        )
+        applyReadingPresentationSettings({
+          id: firstItem.sourceReadingMaterialSetupId ?? firstItem.id,
+          name: firstItem.title,
+          fontFamily: firstItem.fontFamily,
+          fontSizePx: firstItem.fontSizePx,
+          lineWidthPx: firstItem.lineWidthPx,
+          lineHeight: firstItem.lineHeight,
+          letterSpacingEm: firstItem.letterSpacingEm,
+          editableByExperimenter: firstItem.editableByExperimenter,
+        })
+        const decisionOption = resolveConditionOption(
+          savedSetup.decisionProviderId,
+          savedSetup.decisionExecutionMode
+        )
+        await updateTemplateDecisionConfiguration({
+          conditionLabel: decisionOption.label,
+          providerId: savedSetup.decisionProviderId,
+          executionMode: savedSetup.decisionExecutionMode,
+          automationPaused: experimentSession?.decisionState?.automationPaused ?? false,
+        }).unwrap()
+        setStep(1)
+      } catch {
+        appliedTemplateQueryRef.current = null
+      }
+    })()
+  }, [
+    dispatch,
+    experimentSession?.decisionState?.automationPaused,
+    getExperimentSetupById,
+    templateIdFromQuery,
+    updateTemplateDecisionConfiguration,
+  ])
   const readingExperimentItems =
     readingSession.source === "experiment" && selectedExperimentSetup
       ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
@@ -1563,6 +1582,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         markdown,
         sourceSetupId: readingSourceSetupId,
         experimentSetupId: readingExperimentSetupId,
+        experimentSetupName:
+          readingSession.source === "experiment" ? readingSession.selectedExperimentSetupName : null,
         experimentSetupItemId: readingExperimentSetupItemId,
         fontFamily: presentation.fontFamily,
         fontSizePx: presentation.fontSizePx,
@@ -1575,6 +1596,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         appFont: font,
         experimentItems: readingExperimentItems,
         currentExperimentItemIndex: readingCurrentExperimentItemIndex,
+        orderMode: selectedExperimentSetup?.orderMode ?? "fixed",
+        isOneOff: readingSession.source !== "experiment",
       }).unwrap()
       return true
     } catch (error) {
@@ -1591,6 +1614,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     presentation.lineWidthPx,
     readingSession.customMarkdown,
     readingSession.source,
+    readingSession.selectedExperimentSetupName,
     readingDocumentId,
     readingExperimentSetupId,
     readingExperimentSetupItemId,
@@ -1599,6 +1623,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     readingSourceSetupId,
     readingTitle,
     resolvedTheme,
+    selectedExperimentSetup,
     upsertReadingSession,
     font,
     palette,

@@ -58,6 +58,8 @@ export type {
   Eyetracker,
   ExperimentSetup,
   ExperimentSetupItem,
+  ExperimentTemplateOrderMode,
+  ExperimentTemplateStatus,
   ReplayExportFormat,
   SavedExperimentReplayExportSummary,
   UpdateDecisionConfigurationPayload,
