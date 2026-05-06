@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowDown, ArrowUp, BookOpen, FilePlus2, Library, LoaderCircle, Save, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, BookOpen, Library, LoaderCircle, Save, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -27,7 +27,6 @@ import {
   type ReadingMaterialSetup,
   useCreateExperimentSetupMutation,
   useAppDispatch,
-  useGetExperimentSetupsQuery,
   useGetReadingMaterialSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
@@ -184,8 +183,6 @@ export default function ExperimentSetupPage() {
   const [saveError, setSaveError] = React.useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null)
 
-  const { data: experimentSetups = [], isLoading: isLoadingExperiments, refetch } =
-    useGetExperimentSetupsQuery()
   const { data: readingMaterialSetups = [], isLoading: isLoadingReadingMaterials } =
     useGetReadingMaterialSetupsQuery()
   const [getExperimentSetupById, { isFetching: isLoadingSelectedSetup }] =
@@ -219,14 +216,13 @@ export default function ExperimentSetupPage() {
       } catch (error) {
         if (getErrorStatus(error) === 404) {
           setSelectionError("That saved experiment no longer exists.")
-          void refetch()
           return
         }
 
         setSelectionError(getErrorMessage(error, "Could not load that experiment setup."))
       }
     },
-    [getExperimentSetupById, refetch]
+    [getExperimentSetupById]
   )
 
   React.useEffect(() => {
@@ -236,15 +232,6 @@ export default function ExperimentSetupPage() {
 
     void loadSetup(selectedSetupId)
   }, [draft.items.length, draft.name, loadSetup, selectedSetupId])
-
-  const handleStartNew = React.useCallback(() => {
-    setSelectedSetupId(null)
-    setSelectionError(null)
-    setSaveError(null)
-    setSaveSuccess(null)
-    setDraft(emptyDraft)
-    setSaveAsTemplate(true)
-  }, [])
 
   const handleAddReadingMaterial = React.useCallback(
     async (setupId: string) => {
@@ -437,91 +424,50 @@ export default function ExperimentSetupPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Experiment template designer</h1>
+        <Link
+          href="/experiment-templates"
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Experiment templates
+        </Link>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {selectedSetupId ? "Edit template" : "New template"}
+        </h1>
         <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
           Compose reusable or one-off experiment setups from saved materials. Each template stores
           copied markdown, resolved presentation settings, order mode, and runtime strategy.
         </p>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>Saved templates</CardTitle>
-                <CardDescription>Load a reusable setup or start a custom one.</CardDescription>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleStartNew}>
-                <FilePlus2 className="h-4 w-4" />
-                New
-              </Button>
-            </div>
+            <CardTitle>Template settings</CardTitle>
+            <CardDescription>
+              Define overview, order, defaults, runtime strategy, and the materials that belong to it.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-6">
             {selectionError ? (
               <Alert variant="destructive">
-                <AlertTitle>Selection issue</AlertTitle>
+                <AlertTitle>Load issue</AlertTitle>
                 <AlertDescription>{selectionError}</AlertDescription>
               </Alert>
             ) : null}
 
-            {experimentSetups.map((setup) => (
-              <button
-                key={setup.id}
-                type="button"
-                onClick={() => void loadSetup(setup.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-colors ${
-                  selectedSetupId === setup.id ? "border-primary bg-accent/40" : "hover:border-primary/40"
-                }`}
-              >
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold">{setup.name}</p>
-                    <Badge variant="outline">{setup.status}</Badge>
-                    <Badge variant="outline">{setup.orderMode}</Badge>
-                    <Badge variant="outline">{setup.items.length} texts</Badge>
-                  </div>
-                  {setup.description ? (
-                    <p className="text-xs text-muted-foreground">{setup.description}</p>
-                  ) : null}
-                  <p className="text-[11px] text-muted-foreground">
-                    Updated {formatDate(setup.updatedAtUnixMs)}
-                  </p>
-                </div>
-              </button>
-            ))}
-
-            {!isLoadingExperiments && experimentSetups.length === 0 ? (
-              <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
-                No experiment setups saved yet.
-              </div>
+            {saveError ? (
+              <Alert variant="destructive">
+                <AlertTitle>Save issue</AlertTitle>
+                <AlertDescription>{saveError}</AlertDescription>
+              </Alert>
             ) : null}
-          </CardContent>
-        </Card>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{selectedSetupId ? "Edit template" : "Create template"}</CardTitle>
-              <CardDescription>
-                Define overview, order, defaults, runtime strategy, and the materials that belong to it.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {saveError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Save issue</AlertTitle>
-                  <AlertDescription>{saveError}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              {saveSuccess ? (
-                <Alert>
-                  <AlertTitle>Saved</AlertTitle>
-                  <AlertDescription>{saveSuccess}</AlertDescription>
-                </Alert>
-              ) : null}
+            {saveSuccess ? (
+              <Alert>
+                <AlertTitle>Saved</AlertTitle>
+                <AlertDescription>{saveSuccess}</AlertDescription>
+              </Alert>
+            ) : null}
 
               <FieldGroup className="grid gap-6 md:grid-cols-2">
                 <Field>
@@ -972,7 +918,6 @@ export default function ExperimentSetupPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
     </section>
   )

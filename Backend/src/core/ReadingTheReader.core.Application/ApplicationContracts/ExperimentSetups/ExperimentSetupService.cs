@@ -84,6 +84,20 @@ public sealed class ExperimentSetupService : IExperimentSetupService
         return updated;
     }
 
+    public async ValueTask DeleteAsync(string id, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new ExperimentSetupValidationException("id is required.");
+        }
+
+        var deleted = await _experimentSetupStoreAdapter.DeleteAsync(id, ct);
+        if (!deleted)
+        {
+            throw new ExperimentSetupNotFoundException(id);
+        }
+    }
+
     private async ValueTask ValidateAsync(
         string name,
         string status,
