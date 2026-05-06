@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { ArrowDown, ArrowUp, BookOpen, FilePlus2, LoaderCircle, Save, Trash2 } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { ArrowDown, ArrowUp, BookOpen, Library, LoaderCircle, Save, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -21,14 +22,22 @@ import {
   type CreateExperimentSetupRequestItem,
   type ExperimentSetup,
   type ExperimentSetupItem,
+  type ExperimentTemplateOrderMode,
+  type ExperimentTemplateStatus,
   type ReadingMaterialSetup,
   useCreateExperimentSetupMutation,
-  useGetExperimentSetupsQuery,
+  useAppDispatch,
   useGetReadingMaterialSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
   useUpdateExperimentSetupMutation,
+  setReadingSessionCustomMarkdown,
+  setReadingSessionExperimentSelection,
+  setReadingSessionResearcherQuestions,
+  setReadingSessionSource,
+  setReadingSessionTitle,
 } from "@/redux"
+import { applyReadingPresentationSettings } from "@/modules/pages/reading/lib/useReadingSettings"
 
 type DraftItem = ExperimentSetupItem & {
   localId: string
@@ -37,6 +46,17 @@ type DraftItem = ExperimentSetupItem & {
 type DraftState = {
   name: string
   description: string
+  status: ExperimentTemplateStatus
+  orderMode: ExperimentTemplateOrderMode
+  defaultFontFamily: FontTheme
+  defaultFontSizePx: number
+  defaultLineWidthPx: number
+  defaultLineHeight: number
+  defaultLetterSpacingEm: number
+  defaultEditableByExperimenter: boolean
+  decisionProviderId: string
+  decisionExecutionMode: string
+  calibrationRequired: boolean
   items: DraftItem[]
 }
 
@@ -51,6 +71,17 @@ const FONT_LABELS: Record<FontTheme, string> = {
 const emptyDraft: DraftState = {
   name: "",
   description: "",
+  status: "draft",
+  orderMode: "fixed",
+  defaultFontFamily: "merriweather",
+  defaultFontSizePx: 18,
+  defaultLineWidthPx: 680,
+  defaultLineHeight: 1.7,
+  defaultLetterSpacingEm: 0.02,
+  defaultEditableByExperimenter: true,
+  decisionProviderId: "manual",
+  decisionExecutionMode: "advisory",
+  calibrationRequired: true,
   items: [],
 }
 
@@ -90,6 +121,17 @@ function mapExperimentToDraft(setup: ExperimentSetup): DraftState {
   return {
     name: setup.name,
     description: setup.description,
+    status: setup.status ?? "draft",
+    orderMode: setup.orderMode ?? "fixed",
+    defaultFontFamily: setup.defaultFontFamily ?? "merriweather",
+    defaultFontSizePx: setup.defaultFontSizePx ?? 18,
+    defaultLineWidthPx: setup.defaultLineWidthPx ?? 680,
+    defaultLineHeight: setup.defaultLineHeight ?? 1.7,
+    defaultLetterSpacingEm: setup.defaultLetterSpacingEm ?? 0.02,
+    defaultEditableByExperimenter: setup.defaultEditableByExperimenter ?? true,
+    decisionProviderId: setup.decisionProviderId ?? "manual",
+    decisionExecutionMode: setup.decisionExecutionMode ?? "advisory",
+    calibrationRequired: setup.calibrationRequired ?? true,
     items: setup.items.map((item) => ({
       ...item,
       localId: item.id || createLocalId(),
@@ -101,6 +143,17 @@ function toCreateRequest(draft: DraftState): CreateExperimentSetupRequest {
   return {
     name: draft.name.trim(),
     description: draft.description.trim(),
+    status: draft.status,
+    orderMode: draft.orderMode,
+    defaultFontFamily: draft.defaultFontFamily,
+    defaultFontSizePx: draft.defaultFontSizePx,
+    defaultLineWidthPx: draft.defaultLineWidthPx,
+    defaultLineHeight: draft.defaultLineHeight,
+    defaultLetterSpacingEm: draft.defaultLetterSpacingEm,
+    defaultEditableByExperimenter: draft.defaultEditableByExperimenter,
+    decisionProviderId: draft.decisionProviderId,
+    decisionExecutionMode: draft.decisionExecutionMode,
+    calibrationRequired: draft.calibrationRequired,
     items: draft.items.map<CreateExperimentSetupRequestItem>((item) => ({
       sourceReadingMaterialSetupId: item.sourceReadingMaterialSetupId,
       sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
@@ -118,16 +171,18 @@ function toCreateRequest(draft: DraftState): CreateExperimentSetupRequest {
 }
 
 export default function ExperimentSetupPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const dispatch = useAppDispatch()
   const requestedId = searchParams.get("id")
+  const startInCustomMode = searchParams.get("mode") === "custom"
   const [selectedSetupId, setSelectedSetupId] = React.useState<string | null>(requestedId)
   const [draft, setDraft] = React.useState<DraftState>(emptyDraft)
+  const [saveAsTemplate, setSaveAsTemplate] = React.useState(!startInCustomMode)
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
   const [saveError, setSaveError] = React.useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null)
 
-  const { data: experimentSetups = [], isLoading: isLoadingExperiments, refetch } =
-    useGetExperimentSetupsQuery()
   const { data: readingMaterialSetups = [], isLoading: isLoadingReadingMaterials } =
     useGetReadingMaterialSetupsQuery()
   const [getExperimentSetupById, { isFetching: isLoadingSelectedSetup }] =
@@ -161,14 +216,13 @@ export default function ExperimentSetupPage() {
       } catch (error) {
         if (getErrorStatus(error) === 404) {
           setSelectionError("That saved experiment no longer exists.")
-          void refetch()
           return
         }
 
         setSelectionError(getErrorMessage(error, "Could not load that experiment setup."))
       }
     },
-    [getExperimentSetupById, refetch]
+    [getExperimentSetupById]
   )
 
   React.useEffect(() => {
@@ -178,14 +232,6 @@ export default function ExperimentSetupPage() {
 
     void loadSetup(selectedSetupId)
   }, [draft.items.length, draft.name, loadSetup, selectedSetupId])
-
-  const handleStartNew = React.useCallback(() => {
-    setSelectedSetupId(null)
-    setSelectionError(null)
-    setSaveError(null)
-    setSaveSuccess(null)
-    setDraft(emptyDraft)
-  }, [])
 
   const handleAddReadingMaterial = React.useCallback(
     async (setupId: string) => {
@@ -289,97 +335,144 @@ export default function ExperimentSetupPage() {
     }
   }, [createExperimentSetup, draft, selectedSetupId, updateExperimentSetup])
 
+  const applyDraftToRuntime = React.useCallback((setupId: string | null, setupName: string | null) => {
+    const firstItem = draft.items[0]
+    if (!firstItem) {
+      setSaveError("Add at least one reading material before starting.")
+      return false
+    }
+
+    dispatch(setReadingSessionSource(setupId ? "experiment" : "custom"))
+    dispatch(setReadingSessionTitle(firstItem.title))
+    dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
+    dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+    dispatch(
+      setReadingSessionExperimentSelection({
+        experimentSetupId: setupId,
+        experimentSetupName: setupName,
+        experimentSetupItemId: setupId ? firstItem.id || firstItem.localId : null,
+        readingMaterialSetupId: firstItem.sourceReadingMaterialSetupId,
+        itemCount: setupId ? draft.items.length : 0,
+      })
+    )
+    applyReadingPresentationSettings({
+      id: firstItem.sourceReadingMaterialSetupId ?? firstItem.localId,
+      name: firstItem.title,
+      fontFamily: firstItem.fontFamily,
+      fontSizePx: firstItem.fontSizePx,
+      lineWidthPx: firstItem.lineWidthPx,
+      lineHeight: firstItem.lineHeight,
+      letterSpacingEm: firstItem.letterSpacingEm,
+      editableByExperimenter: firstItem.editableByExperimenter,
+    })
+    return true
+  }, [dispatch, draft.items])
+
+  const handleStart = React.useCallback(async () => {
+    setSaveError(null)
+    setSaveSuccess(null)
+
+    try {
+      if (saveAsTemplate) {
+        const saved = selectedSetupId
+          ? await updateExperimentSetup({
+              id: selectedSetupId,
+              body: {
+                ...toCreateRequest(draft),
+                status: draft.items.length > 0 ? "ready" : draft.status,
+                items: draft.items.map((item) => ({
+                  id: item.id || undefined,
+                  sourceReadingMaterialSetupId: item.sourceReadingMaterialSetupId,
+                  sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
+                  title: item.title.trim(),
+                  markdown: item.markdown,
+                  researcherQuestions: item.researcherQuestions,
+                  fontFamily: item.fontFamily,
+                  fontSizePx: item.fontSizePx,
+                  lineWidthPx: item.lineWidthPx,
+                  lineHeight: item.lineHeight,
+                  letterSpacingEm: item.letterSpacingEm,
+                  editableByExperimenter: item.editableByExperimenter,
+                })),
+              },
+            }).unwrap()
+          : await createExperimentSetup({
+              ...toCreateRequest(draft),
+              status: draft.items.length > 0 ? "ready" : draft.status,
+            }).unwrap()
+
+        router.push(`/researcher/experiment?templateId=${saved.id}`)
+        return
+      }
+
+      if (applyDraftToRuntime(null, null)) {
+        router.push("/researcher/experiment")
+      }
+    } catch (error) {
+      setSaveError(getErrorMessage(error, "Could not start this experiment."))
+    }
+  }, [
+    applyDraftToRuntime,
+    createExperimentSetup,
+    draft,
+    router,
+    saveAsTemplate,
+    selectedSetupId,
+    updateExperimentSetup,
+  ])
+
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Reusable experiment builder</h1>
+        <Link
+          href="/experiment-templates"
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Experiment templates
+        </Link>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {selectedSetupId ? "Edit template" : "New template"}
+        </h1>
         <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
-          Compose a reusable experiment from saved reading materials. Each text keeps its own
-          styling snapshot so researchers can reuse the full study setup, not only individual texts.
+          Compose reusable or one-off experiment setups from saved materials. Each template stores
+          copied markdown, resolved presentation settings, order mode, and runtime strategy.
         </p>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>Saved experiments</CardTitle>
-                <CardDescription>Load a reusable experiment or start a fresh one.</CardDescription>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleStartNew}>
-                <FilePlus2 className="h-4 w-4" />
-                New
-              </Button>
-            </div>
+            <CardTitle>Template settings</CardTitle>
+            <CardDescription>
+              Define overview, order, defaults, runtime strategy, and the materials that belong to it.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-6">
             {selectionError ? (
               <Alert variant="destructive">
-                <AlertTitle>Selection issue</AlertTitle>
+                <AlertTitle>Load issue</AlertTitle>
                 <AlertDescription>{selectionError}</AlertDescription>
               </Alert>
             ) : null}
 
-            {experimentSetups.map((setup) => (
-              <button
-                key={setup.id}
-                type="button"
-                onClick={() => void loadSetup(setup.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-colors ${
-                  selectedSetupId === setup.id ? "border-primary bg-accent/40" : "hover:border-primary/40"
-                }`}
-              >
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold">{setup.name}</p>
-                    <Badge variant="outline">{setup.items.length} texts</Badge>
-                  </div>
-                  {setup.description ? (
-                    <p className="text-xs text-muted-foreground">{setup.description}</p>
-                  ) : null}
-                  <p className="text-[11px] text-muted-foreground">
-                    Updated {formatDate(setup.updatedAtUnixMs)}
-                  </p>
-                </div>
-              </button>
-            ))}
-
-            {!isLoadingExperiments && experimentSetups.length === 0 ? (
-              <div className="rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
-                No experiment setups saved yet.
-              </div>
+            {saveError ? (
+              <Alert variant="destructive">
+                <AlertTitle>Save issue</AlertTitle>
+                <AlertDescription>{saveError}</AlertDescription>
+              </Alert>
             ) : null}
-          </CardContent>
-        </Card>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{selectedSetupId ? "Edit experiment" : "Create experiment"}</CardTitle>
-              <CardDescription>
-                Give the experiment a name, then add the reading materials that belong to it.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {saveError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Save issue</AlertTitle>
-                  <AlertDescription>{saveError}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              {saveSuccess ? (
-                <Alert>
-                  <AlertTitle>Saved</AlertTitle>
-                  <AlertDescription>{saveSuccess}</AlertDescription>
-                </Alert>
-              ) : null}
+            {saveSuccess ? (
+              <Alert>
+                <AlertTitle>Saved</AlertTitle>
+                <AlertDescription>{saveSuccess}</AlertDescription>
+              </Alert>
+            ) : null}
 
               <FieldGroup className="grid gap-6 md:grid-cols-2">
                 <Field>
-                  <FieldLabel>Experiment name</FieldLabel>
-                  <FieldDescription>Required. This is the reusable experiment name shown to researchers.</FieldDescription>
+                  <FieldLabel>Template name</FieldLabel>
+                  <FieldDescription>Required. This is the reusable setup name shown to researchers.</FieldDescription>
                   <Input
                     value={draft.name}
                     onChange={(event) =>
@@ -399,11 +492,156 @@ export default function ExperimentSetupPage() {
                     placeholder="Optional notes for researchers about the sequence or purpose of this experiment."
                   />
                 </Field>
+                <Field>
+                  <FieldLabel>Status</FieldLabel>
+                  <Select
+                    value={draft.status}
+                    onValueChange={(value: ExperimentTemplateStatus) =>
+                      setDraft((current) => ({ ...current, status: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="ready">Ready</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>Material order</FieldLabel>
+                  <Select
+                    value={draft.orderMode}
+                    onValueChange={(value: ExperimentTemplateOrderMode) =>
+                      setDraft((current) => ({ ...current, orderMode: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose order" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed order</SelectItem>
+                      <SelectItem value="random">Fully random at session start</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>Decision strategy</FieldLabel>
+                  <Select
+                    value={`${draft.decisionProviderId}:${draft.decisionExecutionMode}`}
+                    onValueChange={(value) => {
+                      const [decisionProviderId, decisionExecutionMode] = value.split(":")
+                      setDraft((current) => ({
+                        ...current,
+                        decisionProviderId,
+                        decisionExecutionMode,
+                      }))
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose strategy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual:advisory">Manual researcher control</SelectItem>
+                      <SelectItem value="rule-based:advisory">Rule-based advisory</SelectItem>
+                      <SelectItem value="rule-based:autonomous">Rule-based autonomous</SelectItem>
+                      <SelectItem value="external:advisory">External advisory</SelectItem>
+                      <SelectItem value="external:autonomous">External autonomous</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <FieldLabel>Require calibration</FieldLabel>
+                    <FieldDescription>Keep enabled for real eye-tracker sessions.</FieldDescription>
+                  </div>
+                  <Switch
+                    checked={draft.calibrationRequired}
+                    onCheckedChange={(checked) =>
+                      setDraft((current) => ({ ...current, calibrationRequired: checked }))
+                    }
+                  />
+                </Field>
+              </FieldGroup>
+
+              <FieldGroup className="grid gap-6 md:grid-cols-2">
+                <Field>
+                  <FieldLabel>Default font family</FieldLabel>
+                  <Select
+                    value={draft.defaultFontFamily}
+                    onValueChange={(value: FontTheme) =>
+                      setDraft((current) => ({ ...current, defaultFontFamily: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FONTS.map((font) => (
+                        <SelectItem key={font} value={font}>
+                          {FONT_LABELS[font]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <FieldLabel>Default live adjustments</FieldLabel>
+                    <FieldDescription>Allow researchers to adjust baseline display at runtime.</FieldDescription>
+                  </div>
+                  <Switch
+                    checked={draft.defaultEditableByExperimenter}
+                    onCheckedChange={(checked) =>
+                      setDraft((current) => ({ ...current, defaultEditableByExperimenter: checked }))
+                    }
+                  />
+                </Field>
+                <Field>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel>Default font size</FieldLabel>
+                    <span className="text-sm text-muted-foreground">{draft.defaultFontSizePx}px</span>
+                  </div>
+                  <Slider
+                    value={[draft.defaultFontSizePx]}
+                    min={14}
+                    max={32}
+                    step={1}
+                    onValueChange={([value]) =>
+                      setDraft((current) => ({ ...current, defaultFontSizePx: value ?? current.defaultFontSizePx }))
+                    }
+                  />
+                </Field>
+                <Field>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel>Default line width</FieldLabel>
+                    <span className="text-sm text-muted-foreground">{draft.defaultLineWidthPx}px</span>
+                  </div>
+                  <Slider
+                    value={[draft.defaultLineWidthPx]}
+                    min={480}
+                    max={980}
+                    step={10}
+                    onValueChange={([value]) =>
+                      setDraft((current) => ({ ...current, defaultLineWidthPx: value ?? current.defaultLineWidthPx }))
+                    }
+                  />
+                </Field>
               </FieldGroup>
 
               <FieldGroup className="space-y-3">
                 <Field>
-                  <FieldLabel>Add reading material</FieldLabel>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel>Add reading material</FieldLabel>
+                    <Link href="/reading-materials">
+                      <Button variant="outline" size="sm" type="button">
+                        <Library className="mr-2 h-4 w-4" />
+                        Material Library
+                      </Button>
+                    </Link>
+                  </div>
                   <FieldDescription>
                     Each added item snapshots the text plus its experiment-specific styling.
                   </FieldDescription>
@@ -650,24 +888,36 @@ export default function ExperimentSetupPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                  <Switch checked={saveAsTemplate} onCheckedChange={setSaveAsTemplate} />
+                  Save as template
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleStart()}
+                  disabled={isSaving || isLoadingSelectedSetup || draft.items.length === 0}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Start
+                </Button>
                 <Button
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={isSaving || isLoadingSelectedSetup}
                 >
                   {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {selectedSetupId ? "Update experiment" : "Save experiment"}
+                  {selectedSetupId ? "Update template" : "Save template"}
                 </Button>
                 {isLoadingSelectedSetup ? (
-                  <span className="text-sm text-muted-foreground">Loading saved experiment…</span>
+                  <span className="text-sm text-muted-foreground">Loading saved template...</span>
                 ) : null}
                 {isLoadingReadingMaterialDetail ? (
-                  <span className="text-sm text-muted-foreground">Loading reading material…</span>
+                  <span className="text-sm text-muted-foreground">Loading reading material...</span>
                 ) : null}
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
     </section>
   )

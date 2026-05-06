@@ -19,7 +19,7 @@ export function CalibrationProgressDots({
           key={point.pointId}
           className={`h-2.5 rounded-full transition-all ${
             point.status === "collected"
-              ? "w-10 bg-emerald-500"
+              ? "w-10 bg-primary"
               : index === activePointIndex
                 ? "w-14 bg-slate-950"
                 : "w-10 bg-slate-300"

@@ -30,6 +30,7 @@ export {
 export {
   experimentSetupApi,
   useCreateExperimentSetupMutation,
+  useDeleteExperimentSetupMutation,
   useGetExperimentSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useUpdateExperimentSetupMutation,
@@ -39,6 +40,8 @@ export type {
   CreateExperimentSetupRequestItem,
   ExperimentSetup,
   ExperimentSetupItem,
+  ExperimentTemplateOrderMode,
+  ExperimentTemplateStatus,
   UpdateExperimentSetupRequest,
 } from "./experiment-setup-api"
 export {

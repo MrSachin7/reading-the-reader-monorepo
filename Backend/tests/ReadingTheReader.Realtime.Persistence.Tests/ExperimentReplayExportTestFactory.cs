@@ -138,6 +138,8 @@ internal static class ExperimentReplayExportTestFactory
                 "Sample",
                 "# Hello",
                 null,
+                null,
+                null,
                 1_710_000_001_000,
                 "hash-1",
                 new ExperimentReplayContentTokenization("minimal-markdown", "v1")),
@@ -178,7 +180,8 @@ internal static class ExperimentReplayExportTestFactory
             new ExperimentReplayData(
                 new ExperimentReplayBaseline(
                     presentation,
-                    appearance)),
+                    appearance),
+                []),
             []);
     }
 }

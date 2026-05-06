@@ -1,6 +1,9 @@
 import type { FontTheme } from "@/hooks/use-font-theme"
 import { baseApi } from "@/redux/api/base-api"
 
+export type ExperimentTemplateStatus = "draft" | "ready" | "archived"
+export type ExperimentTemplateOrderMode = "fixed" | "random"
+
 export type ExperimentSetupItem = {
   id: string
   order: number
@@ -21,6 +24,17 @@ export type ExperimentSetup = {
   id: string
   name: string
   description: string
+  status: ExperimentTemplateStatus
+  orderMode: ExperimentTemplateOrderMode
+  defaultFontFamily: FontTheme
+  defaultFontSizePx: number
+  defaultLineWidthPx: number
+  defaultLineHeight: number
+  defaultLetterSpacingEm: number
+  defaultEditableByExperimenter: boolean
+  decisionProviderId: string
+  decisionExecutionMode: string
+  calibrationRequired: boolean
   items: ExperimentSetupItem[]
   createdAtUnixMs: number
   updatedAtUnixMs: number
@@ -31,6 +45,17 @@ export type CreateExperimentSetupRequestItem = Omit<ExperimentSetupItem, "id" | 
 export type CreateExperimentSetupRequest = {
   name: string
   description: string
+  status: ExperimentTemplateStatus
+  orderMode: ExperimentTemplateOrderMode
+  defaultFontFamily: FontTheme
+  defaultFontSizePx: number
+  defaultLineWidthPx: number
+  defaultLineHeight: number
+  defaultLetterSpacingEm: number
+  defaultEditableByExperimenter: boolean
+  decisionProviderId: string
+  decisionExecutionMode: string
+  calibrationRequired: boolean
   items: CreateExperimentSetupRequestItem[]
 }
 
@@ -52,6 +77,17 @@ export type UpdateExperimentSetupRequestItem = {
 export type UpdateExperimentSetupRequest = {
   name: string
   description: string
+  status: ExperimentTemplateStatus
+  orderMode: ExperimentTemplateOrderMode
+  defaultFontFamily: FontTheme
+  defaultFontSizePx: number
+  defaultLineWidthPx: number
+  defaultLineHeight: number
+  defaultLetterSpacingEm: number
+  defaultEditableByExperimenter: boolean
+  decisionProviderId: string
+  decisionExecutionMode: string
+  calibrationRequired: boolean
   items: UpdateExperimentSetupRequestItem[]
 }
 
@@ -99,11 +135,22 @@ export const experimentSetupApi = baseApi.injectEndpoints({
         { type: "ExperimentSetup", id: "LIST" },
       ],
     }),
+    deleteExperimentSetup: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/experiment-setups/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "ExperimentSetup", id },
+        { type: "ExperimentSetup", id: "LIST" },
+      ],
+    }),
   }),
 })
 
 export const {
   useCreateExperimentSetupMutation,
+  useDeleteExperimentSetupMutation,
   useGetExperimentSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useUpdateExperimentSetupMutation,

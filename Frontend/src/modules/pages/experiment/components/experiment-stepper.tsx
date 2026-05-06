@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
 import { BookOpen, Camera, Crosshair, FileText, MousePointer2, Plus, ScanEye } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
@@ -143,7 +143,7 @@ export function ExperimentStepNavigation({
             className={cn(
               "w-full rounded-[1.5rem] border p-4 text-left transition-all",
               isActive && "border-primary bg-primary/5 shadow-[0_12px_40px_rgba(15,23,42,0.06)]",
-              isCompleted && "border-emerald-300/60 bg-emerald-500/5",
+              isCompleted && "border-primary/35 bg-primary/10",
               !isActive && !isCompleted && "bg-card hover:border-primary/40 hover:bg-primary/5",
               isLocked && "cursor-not-allowed opacity-55 hover:border-border hover:bg-card"
             )}
@@ -155,7 +155,7 @@ export function ExperimentStepNavigation({
                   isActive
                     ? "border-primary bg-primary text-primary-foreground"
                     : isCompleted
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-700"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-neutral-300 bg-neutral-100 text-neutral-500"
                 )}
               >
@@ -353,13 +353,13 @@ function PluginStatusPanel({
       className={cn(
         "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
         tone === "connected" &&
-          "border-emerald-500/70 bg-emerald-500/10 shadow-[0_12px_32px_rgba(16,185,129,0.14)]",
+          "border-primary/55 bg-primary/10 shadow-[0_12px_32px_rgba(15,23,42,0.1)]",
         tone === "unavailable" &&
-          "border-rose-500/70 bg-rose-500/10 shadow-[0_12px_32px_rgba(244,63,94,0.14)]",
+          "border-destructive/55 bg-destructive/10 shadow-[0_12px_32px_rgba(127,29,29,0.14)]",
         tone === "offline" &&
-          "border-amber-500/70 bg-amber-500/10 shadow-[0_12px_32px_rgba(245,158,11,0.14)]",
+          "border-accent/55 bg-accent/15 shadow-[0_12px_32px_rgba(120,53,15,0.12)]",
         tone === "builtin" &&
-          "border-sky-500/60 bg-sky-500/10 shadow-[0_12px_32px_rgba(14,165,233,0.12)]"
+          "border-secondary-foreground/35 bg-secondary/80 shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -372,10 +372,10 @@ function PluginStatusPanel({
         <Badge
           className={cn(
             "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
-            tone === "connected" && "border-emerald-600/30 bg-emerald-600 text-white",
-            tone === "unavailable" && "border-rose-600/30 bg-rose-600 text-white",
-            tone === "offline" && "border-amber-600/30 bg-amber-500 text-amber-950",
-            tone === "builtin" && "border-sky-600/30 bg-sky-600 text-white"
+            tone === "connected" && "border-primary/40 bg-primary text-primary-foreground",
+            tone === "unavailable" && "border-destructive/40 bg-destructive text-white",
+            tone === "offline" && "border-accent/45 bg-accent text-accent-foreground",
+            tone === "builtin" && "border-secondary-foreground/35 bg-secondary text-secondary-foreground"
           )}
         >
           {badge}
@@ -551,7 +551,7 @@ function RuntimePluginOptionButton({
         "bg-card hover:border-primary/40 hover:bg-accent/30",
         isSelected && "border-primary bg-accent/50",
         isUnavailable &&
-          "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
       )}
     >
       <div className="space-y-3">
@@ -564,7 +564,7 @@ function RuntimePluginOptionButton({
           <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
           <p className="mt-3 text-sm text-muted-foreground">{description}</p>
           {isUnavailable ? (
-            <p className="mt-2 text-xs text-amber-700">{unavailableMessage}</p>
+            <p className="mt-2 text-xs text-accent-foreground">{unavailableMessage}</p>
           ) : null}
         </div>
       </div>
@@ -1146,52 +1146,6 @@ function SessionContentStep({
             </button>
           </div>
 
-          {readingSession.source === "experiment" && selectedExperimentSetup ? (
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className="text-lg">Selected experiment sequence</CardTitle>
-                <CardDescription>
-                  This experiment contains {selectedExperimentSetup.items.length} text
-                  {selectedExperimentSetup.items.length === 1 ? "" : "s"}. The first one below is the
-                  current live baseline.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {selectedExperimentSetup.items.map((item, index) => {
-                  const isCurrent = item.id === readingSession.selectedExperimentSetupItemId
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "rounded-2xl border p-4",
-                        isCurrent ? "border-primary bg-primary/5" : "bg-muted/20"
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={isCurrent ? "secondary" : "outline"}>
-                          Text {index + 1}
-                        </Badge>
-                        {isCurrent ? <Badge variant="outline">Current baseline</Badge> : null}
-                        <Badge variant="outline">
-                          {item.editableByExperimenter ? "Live-adjustable" : "Locked"}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm font-semibold">{item.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Source: {item.sourceReadingMaterialTitle}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {item.fontFamily} | {item.fontSizePx}px | {item.lineWidthPx}px | line
-                        height {item.lineHeight.toFixed(2)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          ) : null}
-
           <div className="space-y-5">
             <div>
               <p className="text-sm font-semibold">Runtime plugins</p>
@@ -1282,8 +1236,8 @@ function SessionContentStep({
                       "w-full rounded-2xl border p-5 text-left transition-colors",
                       "bg-card hover:border-primary/40 hover:bg-accent/30",
                       isSelected && "border-primary bg-accent/50",
-                      isUnavailable &&
-                        "cursor-not-allowed border-amber-500/40 bg-amber-500/5 text-muted-foreground hover:border-amber-500/40 hover:bg-amber-500/5"
+        isUnavailable &&
+          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
                     )}
                   >
                   <div className="space-y-3">
@@ -1300,7 +1254,7 @@ function SessionContentStep({
                       </p>
                       <p className="mt-3 text-sm text-muted-foreground">{option.description}</p>
                       {isUnavailable ? (
-                        <p className="mt-2 text-xs text-amber-700">
+            <p className="mt-2 text-xs text-accent-foreground">
                           Start the decision-maker service before choosing this plugin.
                         </p>
                       ) : null}
@@ -1437,6 +1391,7 @@ type ExperimentStepperProps = {
 
 export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const { resolvedTheme } = useTheme()
   const { font } = useFontTheme()
@@ -1455,10 +1410,12 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     pollingInterval: 3_000,
   })
   const { data: experimentSetups = [] } = useGetExperimentSetupsQuery()
+  const [getExperimentSetupById] = useLazyGetExperimentSetupByIdQuery()
   const [upsertReadingSession, { isLoading: isSavingReadingSession }] =
     useUpsertReadingSessionMutation()
   const [startExperimentSession, { isLoading: isStartingExperimentSession }] =
     useStartExperimentSessionMutation()
+  const [updateTemplateDecisionConfiguration] = useUpdateDecisionConfigurationMutation()
   const [updateExperimentSetupTestingOverrides] =
     useUpdateExperimentSetupTestingOverridesMutation()
   const [step, setStep] = React.useState(0)
@@ -1473,6 +1430,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     3: false,
   })
   const stepSubmitHandlerRef = React.useRef<(() => Promise<boolean>) | null>(null)
+  const appliedTemplateQueryRef = React.useRef<string | null>(null)
 
   const setup = experimentSession?.setup ?? EMPTY_EXPERIMENT_SETUP
   const sensingMode: SensingMode = experimentSession?.sensingMode ?? "eyeTracker"
@@ -1525,6 +1483,67 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
       null,
     [experimentSetups, readingSession.selectedExperimentSetupId]
   )
+  const templateIdFromQuery = searchParams.get("templateId")
+
+  React.useEffect(() => {
+    if (!templateIdFromQuery || appliedTemplateQueryRef.current === templateIdFromQuery) {
+      return
+    }
+
+    appliedTemplateQueryRef.current = templateIdFromQuery
+    void (async () => {
+      try {
+        const savedSetup = await getExperimentSetupById(templateIdFromQuery).unwrap()
+        const firstItem = savedSetup.items[0]
+        if (!firstItem) {
+          return
+        }
+
+        dispatch(setReadingSessionSource("experiment"))
+        dispatch(setReadingSessionTitle(firstItem.title))
+        dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
+        dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+        dispatch(
+          setReadingSessionExperimentSelection({
+            experimentSetupId: savedSetup.id,
+            experimentSetupName: savedSetup.name,
+            experimentSetupItemId: firstItem.id,
+            readingMaterialSetupId: firstItem.sourceReadingMaterialSetupId,
+            itemCount: savedSetup.items.length,
+          })
+        )
+        applyReadingPresentationSettings({
+          id: firstItem.sourceReadingMaterialSetupId ?? firstItem.id,
+          name: firstItem.title,
+          fontFamily: firstItem.fontFamily,
+          fontSizePx: firstItem.fontSizePx,
+          lineWidthPx: firstItem.lineWidthPx,
+          lineHeight: firstItem.lineHeight,
+          letterSpacingEm: firstItem.letterSpacingEm,
+          editableByExperimenter: firstItem.editableByExperimenter,
+        })
+        const decisionOption = resolveConditionOption(
+          savedSetup.decisionProviderId,
+          savedSetup.decisionExecutionMode
+        )
+        await updateTemplateDecisionConfiguration({
+          conditionLabel: decisionOption.label,
+          providerId: savedSetup.decisionProviderId,
+          executionMode: savedSetup.decisionExecutionMode,
+          automationPaused: experimentSession?.decisionState?.automationPaused ?? false,
+        }).unwrap()
+        setStep(1)
+      } catch {
+        appliedTemplateQueryRef.current = null
+      }
+    })()
+  }, [
+    dispatch,
+    experimentSession?.decisionState?.automationPaused,
+    getExperimentSetupById,
+    templateIdFromQuery,
+    updateTemplateDecisionConfiguration,
+  ])
   const readingExperimentItems =
     readingSession.source === "experiment" && selectedExperimentSetup
       ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
@@ -1632,6 +1651,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         markdown,
         sourceSetupId: readingSourceSetupId,
         experimentSetupId: readingExperimentSetupId,
+        experimentSetupName:
+          readingSession.source === "experiment" ? readingSession.selectedExperimentSetupName : null,
         experimentSetupItemId: readingExperimentSetupItemId,
         fontFamily: presentation.fontFamily,
         fontSizePx: presentation.fontSizePx,
@@ -1644,6 +1665,8 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         appFont: font,
         experimentItems: readingExperimentItems,
         currentExperimentItemIndex: readingCurrentExperimentItemIndex,
+        orderMode: selectedExperimentSetup?.orderMode ?? "fixed",
+        isOneOff: readingSession.source !== "experiment",
       }).unwrap()
       return true
     } catch (error) {
@@ -1660,6 +1683,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     presentation.lineWidthPx,
     readingSession.customMarkdown,
     readingSession.source,
+    readingSession.selectedExperimentSetupName,
     readingDocumentId,
     readingExperimentSetupId,
     readingExperimentSetupItemId,
@@ -1668,6 +1692,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     readingSourceSetupId,
     readingTitle,
     resolvedTheme,
+    selectedExperimentSetup,
     upsertReadingSession,
     font,
     palette,

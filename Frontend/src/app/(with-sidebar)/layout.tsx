@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { BookOpen, ExternalLink, FlaskConical, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
+﻿import Link from "next/link";
+import { BookOpen, FlaskConical, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
 
 import { FontSelector } from "@/components/theme/font-selector";
 import { ModeToggle } from "@/components/theme/mode-toggle";
@@ -59,26 +59,18 @@ export default function WithSidebarLayout({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Reading Material Setup">
-                    <Link href="/reading-material/setup">
+                  <SidebarMenuButton asChild tooltip="Material Library">
+                    <Link href="/reading-materials">
                       <NotebookPen />
-                      <span>Reading Material Setup</span>
+                      <span>Material Library</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Experiment Setups">
-                    <Link href="/experiment/setups">
+                  <SidebarMenuButton asChild tooltip="Experiment Templates">
+                    <Link href="/experiment-templates">
                       <FlaskConical />
-                      <span>Experiment Setups</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Reading">
-                    <Link href="/reading">
-                      <BookOpen />
-                      <span>Reading</span>
+                      <span>Experiment Templates</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -87,14 +79,6 @@ export default function WithSidebarLayout({
                     <Link href="/researcher/current-live">
                       <SquareDashedMousePointer />
                       <span>Researcher Live</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Open Participant View">
-                    <Link href="/participant" target="_blank" rel="noopener noreferrer">
-                      <ExternalLink />
-                      <span>Open Participant View</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

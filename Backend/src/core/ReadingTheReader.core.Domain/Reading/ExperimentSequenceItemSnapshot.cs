@@ -11,7 +11,8 @@ public sealed record ExperimentSequenceItemSnapshot(
     int LineWidthPx,
     double LineHeight,
     double LetterSpacingEm,
-    bool EditableByResearcher)
+    bool EditableByResearcher,
+    string? MaterialRunId = null)
 {
     public ExperimentSequenceItemSnapshot Copy()
     {

@@ -4,6 +4,17 @@ public sealed class UpdateExperimentSetupRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Status { get; set; } = "draft";
+    public string OrderMode { get; set; } = "fixed";
+    public string DefaultFontFamily { get; set; } = "merriweather";
+    public int DefaultFontSizePx { get; set; } = 18;
+    public int DefaultLineWidthPx { get; set; } = 680;
+    public double DefaultLineHeight { get; set; } = 1.7;
+    public double DefaultLetterSpacingEm { get; set; } = 0.02;
+    public bool DefaultEditableByExperimenter { get; set; } = true;
+    public string DecisionProviderId { get; set; } = "manual";
+    public string DecisionExecutionMode { get; set; } = "advisory";
+    public bool CalibrationRequired { get; set; } = true;
     public List<UpdateExperimentSetupItemRequest> Items { get; set; } = [];
 }
 

@@ -67,6 +67,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<WebcamSensingStatusRecord> _pendingWebcamStatusEvents = [];
     private List<FacialObservationRecord> _pendingFacialObservationEvents = [];
     private List<FacialDifficultyEventRecord> _pendingFacialDifficultyEvents = [];
+    private List<ReadingSessionStateRecord> _pendingReadingSessionStates = [];
     private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
     private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
     private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];

@@ -23,7 +23,17 @@ public sealed class ExperimentSetupService : IExperimentSetupService
 
     public async ValueTask<ExperimentSetup> SaveAsync(SaveExperimentSetupCommand command, CancellationToken ct = default)
     {
-        await ValidateAsync(command.Name, command.Items, ct);
+        await ValidateAsync(
+            command.Name,
+            command.Status,
+            command.OrderMode,
+            command.DefaultFontFamily,
+            command.DefaultFontSizePx,
+            command.DefaultLineWidthPx,
+            command.DefaultLineHeight,
+            command.DefaultLetterSpacingEm,
+            command.Items,
+            ct);
         return await _experimentSetupStoreAdapter.SaveAsync(command, ct);
     }
 
@@ -53,7 +63,17 @@ public sealed class ExperimentSetupService : IExperimentSetupService
             throw new ExperimentSetupValidationException("id is required.");
         }
 
-        await ValidateAsync(command.Name, command.Items.Select(MapItem).ToArray(), ct);
+        await ValidateAsync(
+            command.Name,
+            command.Status,
+            command.OrderMode,
+            command.DefaultFontFamily,
+            command.DefaultFontSizePx,
+            command.DefaultLineWidthPx,
+            command.DefaultLineHeight,
+            command.DefaultLetterSpacingEm,
+            command.Items.Select(MapItem).ToArray(),
+            ct);
 
         var updated = await _experimentSetupStoreAdapter.UpdateAsync(command, ct);
         if (updated is null)
@@ -64,8 +84,29 @@ public sealed class ExperimentSetupService : IExperimentSetupService
         return updated;
     }
 
+    public async ValueTask DeleteAsync(string id, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new ExperimentSetupValidationException("id is required.");
+        }
+
+        var deleted = await _experimentSetupStoreAdapter.DeleteAsync(id, ct);
+        if (!deleted)
+        {
+            throw new ExperimentSetupNotFoundException(id);
+        }
+    }
+
     private async ValueTask ValidateAsync(
         string name,
+        string status,
+        string orderMode,
+        string defaultFontFamily,
+        int defaultFontSizePx,
+        int defaultLineWidthPx,
+        double defaultLineHeight,
+        double defaultLetterSpacingEm,
         IReadOnlyList<SaveExperimentSetupItemCommand> items,
         CancellationToken ct)
     {
@@ -74,9 +115,40 @@ public sealed class ExperimentSetupService : IExperimentSetupService
             throw new ExperimentSetupValidationException("name is required.");
         }
 
-        if (items.Count == 0)
+        var normalizedStatus = ExperimentSetupStatuses.Normalize(status);
+        if (normalizedStatus == ExperimentSetupStatuses.Ready && items.Count == 0)
         {
-            throw new ExperimentSetupValidationException("At least one reading material is required.");
+            throw new ExperimentSetupValidationException("At least one reading material is required before a template can be marked ready.");
+        }
+
+        if (string.IsNullOrWhiteSpace(defaultFontFamily) || !ValidFontFamilyRegex.IsMatch(defaultFontFamily.Trim()))
+        {
+            throw new ExperimentSetupValidationException("defaultFontFamily is invalid.");
+        }
+
+        if (ExperimentSetupOrderModes.Normalize(orderMode) == ExperimentSetupOrderModes.Random && items.Count < 2)
+        {
+            throw new ExperimentSetupValidationException("Random order requires at least two reading materials.");
+        }
+
+        if (defaultFontSizePx < ReadingPresentationRules.MinFontSizePx || defaultFontSizePx > ReadingPresentationRules.MaxFontSizePx)
+        {
+            throw new ExperimentSetupValidationException($"defaultFontSizePx must be between {ReadingPresentationRules.MinFontSizePx} and {ReadingPresentationRules.MaxFontSizePx}.");
+        }
+
+        if (defaultLineWidthPx < ReadingPresentationRules.MinLineWidthPx || defaultLineWidthPx > ReadingPresentationRules.MaxLineWidthPx)
+        {
+            throw new ExperimentSetupValidationException($"defaultLineWidthPx must be between {ReadingPresentationRules.MinLineWidthPx} and {ReadingPresentationRules.MaxLineWidthPx}.");
+        }
+
+        if (defaultLineHeight < ReadingPresentationRules.MinLineHeight || defaultLineHeight > ReadingPresentationRules.MaxLineHeight)
+        {
+            throw new ExperimentSetupValidationException($"defaultLineHeight must be between {ReadingPresentationRules.MinLineHeight} and {ReadingPresentationRules.MaxLineHeight}.");
+        }
+
+        if (defaultLetterSpacingEm < ReadingPresentationRules.MinLetterSpacingEm || defaultLetterSpacingEm > ReadingPresentationRules.MaxLetterSpacingEm)
+        {
+            throw new ExperimentSetupValidationException($"defaultLetterSpacingEm must be between {ReadingPresentationRules.MinLetterSpacingEm} and {ReadingPresentationRules.MaxLetterSpacingEm}.");
         }
 
         for (var index = 0; index < items.Count; index++)

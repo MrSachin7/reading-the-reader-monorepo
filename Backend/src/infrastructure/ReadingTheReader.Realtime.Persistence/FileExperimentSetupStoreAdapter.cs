@@ -30,6 +30,17 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
             Id = id,
             Name = command.Name.Trim(),
             Description = command.Description?.Trim() ?? string.Empty,
+            Status = ExperimentSetupStatuses.Normalize(command.Status),
+            OrderMode = ExperimentSetupOrderModes.Normalize(command.OrderMode),
+            DefaultFontFamily = command.DefaultFontFamily.Trim(),
+            DefaultFontSizePx = command.DefaultFontSizePx,
+            DefaultLineWidthPx = command.DefaultLineWidthPx,
+            DefaultLineHeight = command.DefaultLineHeight,
+            DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+            DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+            DecisionProviderId = NormalizeText(command.DecisionProviderId) ?? "manual",
+            DecisionExecutionMode = NormalizeText(command.DecisionExecutionMode) ?? "advisory",
+            CalibrationRequired = command.CalibrationRequired,
             CreatedAtUnixMs = now,
             UpdatedAtUnixMs = now,
             Items = command.Items.Select((item, index) => ToStoredItem(item, index, null)).ToList()
@@ -93,6 +104,17 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
             Id = existing.Id,
             Name = command.Name.Trim(),
             Description = command.Description?.Trim() ?? string.Empty,
+            Status = ExperimentSetupStatuses.Normalize(command.Status),
+            OrderMode = ExperimentSetupOrderModes.Normalize(command.OrderMode),
+            DefaultFontFamily = command.DefaultFontFamily.Trim(),
+            DefaultFontSizePx = command.DefaultFontSizePx,
+            DefaultLineWidthPx = command.DefaultLineWidthPx,
+            DefaultLineHeight = command.DefaultLineHeight,
+            DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+            DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+            DecisionProviderId = NormalizeText(command.DecisionProviderId) ?? "manual",
+            DecisionExecutionMode = NormalizeText(command.DecisionExecutionMode) ?? "advisory",
+            CalibrationRequired = command.CalibrationRequired,
             CreatedAtUnixMs = existing.CreatedAtUnixMs,
             UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             Items = command.Items.Select((item, index) => ToStoredItem(item, index, item.Id)).ToList()
@@ -100,6 +122,18 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
 
         await WriteAsync(path, updated, ct);
         return ToExperimentSetup(updated);
+    }
+
+    public ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        var path = GetPath(id);
+        if (!File.Exists(path))
+        {
+            return ValueTask.FromResult(false);
+        }
+
+        File.Delete(path);
+        return ValueTask.FromResult(true);
     }
 
     private string GetPath(string id) => Path.Combine(_directoryPath, $"{id}.json");
@@ -166,6 +200,17 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
             Id = stored.Id,
             Name = stored.Name,
             Description = stored.Description,
+            Status = ExperimentSetupStatuses.Normalize(stored.Status),
+            OrderMode = ExperimentSetupOrderModes.Normalize(stored.OrderMode),
+            DefaultFontFamily = string.IsNullOrWhiteSpace(stored.DefaultFontFamily) ? "merriweather" : stored.DefaultFontFamily.Trim(),
+            DefaultFontSizePx = stored.DefaultFontSizePx ?? 18,
+            DefaultLineWidthPx = stored.DefaultLineWidthPx ?? 680,
+            DefaultLineHeight = stored.DefaultLineHeight ?? 1.7,
+            DefaultLetterSpacingEm = stored.DefaultLetterSpacingEm ?? 0.02,
+            DefaultEditableByExperimenter = stored.DefaultEditableByExperimenter ?? true,
+            DecisionProviderId = NormalizeText(stored.DecisionProviderId) ?? "manual",
+            DecisionExecutionMode = NormalizeText(stored.DecisionExecutionMode) ?? "advisory",
+            CalibrationRequired = stored.CalibrationRequired ?? true,
             CreatedAtUnixMs = stored.CreatedAtUnixMs,
             UpdatedAtUnixMs = stored.UpdatedAtUnixMs,
             Items = stored.Items
@@ -188,5 +233,10 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
                 })
                 .ToArray()
         };
+    }
+
+    private static string? NormalizeText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

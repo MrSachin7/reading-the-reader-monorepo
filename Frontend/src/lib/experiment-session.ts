@@ -201,6 +201,25 @@ export type ExperimentSequenceItemSnapshot = {
   lineHeight: number
   letterSpacingEm: number
   editableByResearcher: boolean
+  materialRunId?: string | null
+}
+
+export type ExperimentMaterialRunSnapshot = {
+  id: string
+  order: number
+  title: string
+  markdown: string
+  sourceSetupId: string | null
+  presentation: ReadingPresentationSnapshot
+}
+
+export type ExperimentRunSnapshot = {
+  sourceExperimentSetupId: string | null
+  sourceExperimentSetupName: string | null
+  isOneOff: boolean
+  orderMode: "fixed" | "random" | string
+  materials: ExperimentMaterialRunSnapshot[]
+  createdAtUnixMs: number
 }
 
 export type ParticipantViewportSnapshot = {
@@ -445,6 +464,7 @@ export type LiveReadingSessionSnapshot = {
   initialPresentation: ReadingPresentationSnapshot | null
   experimentItems: ExperimentSequenceItemSnapshot[]
   currentExperimentItemIndex: number | null
+  experimentRun: ExperimentRunSnapshot | null
   appearance: ReaderAppearanceSnapshot
   interventionPolicy: ReadingInterventionPolicySnapshot
   participantViewport: ParticipantViewportSnapshot
@@ -537,6 +557,7 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   initialPresentation: null,
   experimentItems: [],
   currentExperimentItemIndex: null,
+  experimentRun: null,
   appearance: {
     themeMode: "light",
     palette: "default",

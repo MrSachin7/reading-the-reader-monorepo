@@ -6,7 +6,7 @@ import type {
   ReaderAppearanceSnapshot,
 } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
-import type { ExperimentSetup, ExperimentSetupItem } from "@/redux/api/experiment-setup-api"
+import type { ExperimentSetupItem } from "@/redux/api/experiment-setup-api"
 import type { UpsertReadingSessionPayload } from "@/redux/api/experiment-session-api"
 
 export type ExperimentSequencePosition = {
@@ -31,6 +31,7 @@ export function mapExperimentSetupItemsToSequenceItems(
     lineHeight: item.lineHeight,
     letterSpacingEm: item.letterSpacingEm,
     editableByResearcher: item.editableByExperimenter,
+    materialRunId: item.id,
   }))
 }
 
@@ -83,6 +84,7 @@ export function buildExperimentItemReadingSessionPayload({
     markdown: item.markdown,
     sourceSetupId: item.sourceSetupId,
     experimentSetupId,
+    experimentSetupName: undefined,
     experimentSetupItemId: item.id,
     fontFamily: item.fontFamily,
     fontSizePx: item.fontSizePx,
@@ -95,5 +97,7 @@ export function buildExperimentItemReadingSessionPayload({
     appFont: appearance.appFont,
     experimentItems,
     currentExperimentItemIndex,
+    orderMode: "fixed",
+    isOneOff: false,
   }
 }

@@ -150,6 +150,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
                 CreateEnrichedGazeSampleRecord(61, snapshot.StartedAtUnixMs + 5_000, "token-2", "Beta"),
             ],
             [],
+            [],
             [
                 CreateFocusEventRecord(30, snapshot.StartedAtUnixMs + 2_000, "token-1", "Alpha"),
                 CreateFocusEventRecord(50, snapshot.StartedAtUnixMs + 4_000, "token-2", "Beta"),

@@ -14,6 +14,7 @@ public static class ExperimentReplayExportFactory
         long exportedAtUnixMs,
         IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
         IReadOnlyList<RawGazeSampleRecord> gazeSamples,
+        IReadOnlyList<ReadingSessionStateRecord> readingSessionStates,
         IReadOnlyList<ParticipantViewportEventRecord> participantViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
@@ -30,6 +31,7 @@ public static class ExperimentReplayExportFactory
             exportedAtUnixMs,
             lifecycleEvents,
             gazeSamples,
+            readingSessionStates,
             [],
             [],
             [],
@@ -51,6 +53,7 @@ public static class ExperimentReplayExportFactory
         long exportedAtUnixMs,
         IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
         IReadOnlyList<RawGazeSampleRecord> gazeSamples,
+        IReadOnlyList<ReadingSessionStateRecord> readingSessionStates,
         IReadOnlyList<WebcamGazeSampleRecord> webcamGazeSamples,
         IReadOnlyList<WebcamSensingStatusRecord> webcamStatusEvents,
         IReadOnlyList<FacialObservationRecord> facialObservationEvents,
@@ -163,12 +166,15 @@ public static class ExperimentReplayExportFactory
                     validationResult?.AverageAccuracyDegrees,
                     validationResult?.AveragePrecisionDegrees,
                     validationResult?.SampleCount ?? 0),
-                lifecycleEvents.Select(item => item.Copy()).ToArray()),
+                lifecycleEvents.Select(item => item.Copy()).ToArray(),
+                initialSnapshot.ReadingSession?.ExperimentRun?.Copy() ?? finalSnapshot.ReadingSession?.ExperimentRun?.Copy()),
             new ExperimentReplayContent(
                 content.DocumentId,
                 content.Title,
                 content.Markdown,
                 content.SourceSetupId,
+                content.ExperimentSetupId,
+                content.ExperimentSetupItemId,
                 content.UpdatedAtUnixMs,
                 ComputeContentHash(content.Markdown),
                 new ExperimentReplayContentTokenization("minimal-markdown", "v1")),
@@ -194,7 +200,8 @@ public static class ExperimentReplayExportFactory
             new ExperimentReplayData(
                 new ExperimentReplayBaseline(
                     baselinePresentation,
-                    baselineAppearance)),
+                    baselineAppearance),
+                readingSessionStates.Select(item => item.Copy()).ToArray()),
             []);
     }
 

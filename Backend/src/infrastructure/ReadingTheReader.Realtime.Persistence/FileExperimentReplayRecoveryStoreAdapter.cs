@@ -177,6 +177,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             exportedAtUnixMs,
             Merge(chunks, c => c.LifecycleEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.GazeSamples, e => e.SequenceNumber),
+            Merge(chunks, c => c.ReadingSessionStates, e => e.SequenceNumber),
             Merge(chunks, c => c.WebcamGazeSamples, e => e.SequenceNumber),
             Merge(chunks, c => c.WebcamStatusEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.FacialObservationEvents, e => e.SequenceNumber),
@@ -262,6 +263,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             EnrichedGazeSamples = batch.EnrichedGazeSamples?.ToArray(),
             WebcamStatusEvents = batch.WebcamStatusEvents?.ToArray(),
             FacialObservationEvents = batch.FacialObservationEvents?.ToArray(),
+            ReadingSessionStates = batch.ReadingSessionStates?.ToArray(),
             ViewportEvents = batch.ViewportEvents?.ToArray(),
             FocusEvents = batch.FocusEvents?.ToArray(),
             AttentionEvents = batch.AttentionEvents?.ToArray(),
@@ -587,6 +589,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public EnrichedGazeSampleRecord[]? EnrichedGazeSamples { get; set; }
         public WebcamSensingStatusRecord[]? WebcamStatusEvents { get; set; }
         public FacialObservationRecord[]? FacialObservationEvents { get; set; }
+        public ReadingSessionStateRecord[]? ReadingSessionStates { get; set; }
         public ParticipantViewportEventRecord[]? ViewportEvents { get; set; }
         public ReadingFocusEventRecord[]? FocusEvents { get; set; }
         public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }

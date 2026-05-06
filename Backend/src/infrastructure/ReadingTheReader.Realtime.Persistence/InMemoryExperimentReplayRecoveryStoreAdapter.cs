@@ -36,6 +36,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
+                [],
                 null);
         }
 
@@ -61,6 +62,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 EnrichedGazeSamples = [.. session.EnrichedGazeSamples, .. (batch.EnrichedGazeSamples ?? []).Select(item => item.Copy())],
                 WebcamStatusEvents = [.. session.WebcamStatusEvents, .. (batch.WebcamStatusEvents ?? []).Select(item => item.Copy())],
                 FacialObservationEvents = [.. session.FacialObservationEvents, .. (batch.FacialObservationEvents ?? []).Select(item => item.Copy())],
+                ReadingSessionStates = [.. session.ReadingSessionStates, .. (batch.ReadingSessionStates ?? []).Select(item => item.Copy())],
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
@@ -100,6 +102,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 exportedAtUnixMs,
                 session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.ReadingSessionStates.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.WebcamGazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.WebcamStatusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.FacialObservationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
@@ -193,6 +196,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<EnrichedGazeSampleRecord> EnrichedGazeSamples,
         IReadOnlyList<WebcamSensingStatusRecord> WebcamStatusEvents,
         IReadOnlyList<FacialObservationRecord> FacialObservationEvents,
+        IReadOnlyList<ReadingSessionStateRecord> ReadingSessionStates,
         IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,

@@ -8,6 +8,7 @@ import {
   type DecisionConfiguration,
   type DecisionProposalSnapshot,
   type DecisionState,
+  type ExperimentRunSnapshot,
   type ExperimentEyeTrackerSnapshot,
   type ExperimentLiveMonitoringSnapshot,
   type ExperimentParticipantSnapshot,
@@ -110,6 +111,8 @@ export type ParticipantViewportEventRecord = {
   occurredAtUnixMs: number
   elapsedSinceStartMs?: number | null
   viewport: ParticipantViewportSnapshot
+  materialRunId?: string | null
+  materialIndex?: number | null
 }
 
 export type ReadingFocusEventRecord = {
@@ -117,6 +120,8 @@ export type ReadingFocusEventRecord = {
   occurredAtUnixMs: number
   elapsedSinceStartMs?: number | null
   focus: ReadingFocusSnapshot
+  materialRunId?: string | null
+  materialIndex?: number | null
 }
 
 type ReplayAttentionEventSummary = {
@@ -146,6 +151,8 @@ export type DecisionProposalEventRecord = {
   occurredAtUnixMs: number
   elapsedSinceStartMs?: number | null
   proposal: DecisionProposalSnapshot
+  materialRunId?: string | null
+  materialIndex?: number | null
 }
 
 export type ScheduledInterventionEventRecord = {
@@ -160,6 +167,8 @@ export type InterventionEventRecord = {
   occurredAtUnixMs: number
   elapsedSinceStartMs?: number | null
   intervention: InterventionEventSnapshot
+  materialRunId?: string | null
+  materialIndex?: number | null
 }
 
 export type ExperimentReplayExport = {
@@ -175,6 +184,7 @@ export type ExperimentReplayExport = {
     screen?: ReplayScreen | null
     calibration: ReplayCalibrationSummary
     lifecycleEvents: ExperimentLifecycleEventRecord[]
+    run?: ExperimentRunSnapshot | null
   }
   content: ReadingContentSnapshot & {
     contentHash: string
@@ -523,6 +533,7 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     initialPresentation: buildReadingPresentation(replay.replay.baseline.presentation),
     experimentItems: [],
     currentExperimentItemIndex: null,
+    experimentRun: replay.experiment.run ?? null,
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     interventionPolicy: buildReadingInterventionPolicy(null),
     participantViewport: {

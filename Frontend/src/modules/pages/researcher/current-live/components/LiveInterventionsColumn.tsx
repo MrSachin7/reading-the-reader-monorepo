@@ -334,8 +334,8 @@ export function LiveInterventionsColumn({
             {hasPendingValue ? (
               <>
                 <span className="text-muted-foreground">{formattedValue}</span>
-                <span className="mx-1 text-amber-600 dark:text-amber-400">→</span>
-                <span className="font-semibold text-amber-700 dark:text-amber-300">
+                <span className="mx-1 text-accent">→</span>
+                <span className="font-semibold text-accent-foreground">
                   {formatValue(visibleValue)}
                 </span>
               </>
@@ -353,7 +353,7 @@ export function LiveInterventionsColumn({
             onValueChange={(value) => onValueChange(value[0] ?? visibleValue)}
             className={cn(
               hasPendingValue &&
-                "[&_[data-slot=slider-range]]:bg-amber-500 [&_[data-slot=slider-thumb]]:border-amber-500 [&_[data-slot=slider-thumb]]:ring-amber-500/30"
+                "[&_[data-slot=slider-range]]:bg-accent [&_[data-slot=slider-thumb]]:border-accent [&_[data-slot=slider-thumb]]:ring-accent/30"
             )}
           />
           {hasPendingValue ? (
@@ -659,15 +659,15 @@ export function LiveInterventionsColumn({
                 </p>
 
                 {queuedPendingIntervention ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2">
-                    <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-amber-500" />
-                    <p className="min-w-0 flex-1 truncate text-xs text-amber-950 dark:text-amber-100">
+                  <div className="flex items-center gap-2 rounded-lg border border-accent/45 bg-accent/15 px-3 py-2">
+                    <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-accent" />
+                    <p className="min-w-0 flex-1 truncate text-xs text-accent-foreground">
                       {pendingBoundaryCue}
                     </p>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 shrink-0 border-amber-500/50 bg-background px-2 text-xs"
+                      className="h-7 shrink-0 border-accent/55 bg-background px-2 text-xs"
                       onClick={() => void onApplyPendingInterventionNow()}
                     >
                       Apply now

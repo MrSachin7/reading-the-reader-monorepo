@@ -5,6 +5,7 @@ This project has explicit thesis and runtime constraints. They are important bec
 ## Core Constraints
 
 - Tobii eye tracker integration must work with real hardware.
+- Real Tobii experiment mode targets Windows because the selected Tobii SDK is Windows-bound.
 - The backend must remain the authoritative experiment runtime.
 - Decision strategies and intervention modules must stay swappable.
 - Researcher workflows have slightly higher priority than participant-only polish.
@@ -35,6 +36,8 @@ Without those guardrails, the project risks drifting into either an AI thesis or
 - do not bypass backend validation when adding interventions or provider flows
 - prefer additive seams over broad rewrites
 - prefer documenting current support clearly instead of implying future capabilities that are not implemented
+- prefer host-side Windows launch scripts for hardware-backed Tobii runs
+- treat Docker or non-Windows launch paths as mock, replay, or mouse-mode workflows unless the required hardware SDK/runtime is explicitly supported there
 
 ## Recommended Companion Pages
 
