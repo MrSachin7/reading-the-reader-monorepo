@@ -8,4 +8,5 @@ public interface IExperimentSetupService
     ValueTask<IReadOnlyCollection<ExperimentSetup>> ListAsync(CancellationToken ct = default);
     ValueTask<ExperimentSetup> GetByIdAsync(string id, CancellationToken ct = default);
     ValueTask<ExperimentSetup> UpdateAsync(UpdateExperimentSetupCommand command, CancellationToken ct = default);
+    ValueTask DeleteAsync(string id, CancellationToken ct = default);
 }

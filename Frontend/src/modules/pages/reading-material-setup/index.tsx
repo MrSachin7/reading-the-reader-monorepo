@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Eye, FilePlus2, LoaderCircle, Lock, Save, SlidersHorizontal, Upload } from "lucide-react"
+import { Eye, LoaderCircle, Lock, Save, SlidersHorizontal, Upload } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
@@ -16,7 +16,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { FONTS, type FontTheme } from "@/hooks/use-font-theme"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader"
-import { MOCK_READING_MD } from "@/modules/pages/reading/content/mockReading"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
 import {
   applyReadingPresentationDraft,
@@ -56,10 +55,10 @@ const FONT_FAMILY_STYLES: Record<FontTheme, string> = {
   merriweather: "var(--font-merriweather)",
 }
 
-const defaultDraft: DraftState = {
-  name: "Default reading material setup",
-  title: "Reading as Deliberate Attention",
-  markdown: MOCK_READING_MD,
+const emptyDraft: DraftState = {
+  name: "",
+  title: "",
+  markdown: "",
   researcherQuestions: "",
   fontFamily: "merriweather",
   fontSizePx: 18,
@@ -67,21 +66,6 @@ const defaultDraft: DraftState = {
   lineHeight: 1.7,
   letterSpacingEm: 0.02,
   editableByExperimenter: true,
-}
-
-const emptyCustomDraft: DraftState = {
-  ...defaultDraft,
-  title: "Untitled text",
-  markdown: "",
-}
-
-function buildExcerpt(markdown: string, wordLimit: number) {
-  return markdown
-    .replace(/[#*_`>-]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, wordLimit)
-    .join(" ")
 }
 
 function formatDate(unixMs: number) {
@@ -148,10 +132,7 @@ export default function ReadingMaterialSetupPage() {
   const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const { resetReadingSettings } = useReadingSettings()
-  const startInCustomEmptyMode = searchParams.get("mode") === "custom-empty"
-  const [draft, setDraft] = React.useState<DraftState>(() =>
-    startInCustomEmptyMode ? emptyCustomDraft : defaultDraft
-  )
+  const [draft, setDraft] = React.useState<DraftState>(emptyDraft)
   const [selectedSetupId, setSelectedSetupId] = React.useState<string | null>(null)
   const [saveError, setSaveError] = React.useState<string | null>(null)
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
@@ -165,7 +146,6 @@ export default function ReadingMaterialSetupPage() {
     useUpdateReadingMaterialSetupMutation()
 
   const isSaving = isCreating || isUpdating
-  const presetExcerpt = React.useMemo(() => buildExcerpt(MOCK_READING_MD, 26), [])
 
   const PREVIEW_CHAR_LIMIT = 8_000
 
@@ -184,21 +164,6 @@ export default function ReadingMaterialSetupPage() {
     const parsed = parseMinimalMarkdown(debouncedMarkdown)
     return tokenizeDocument(parsed, "reading-material-setup-preview")
   }, [debouncedMarkdown])
-  const isBuiltInSelected =
-    selectedSetupId === null &&
-    draft.title === defaultDraft.title &&
-    draft.markdown === defaultDraft.markdown
-  const isCustomSelected =
-    selectedSetupId !== null ||
-    draft.markdown !== defaultDraft.markdown ||
-    draft.title === "Untitled text"
-
-  const deriveDraftSource = React.useCallback((nextDraft: DraftState): "preset" | "custom" => {
-    return nextDraft.title === defaultDraft.title && nextDraft.markdown === defaultDraft.markdown
-      ? "preset"
-      : "custom"
-  }, [])
-
   // Debounce the markdown Redux dispatch — the string can be large and dispatching it
   // synchronously on every keystroke blocks the main thread via Redux DevTools serialization.
   React.useEffect(() => {
@@ -218,19 +183,6 @@ export default function ReadingMaterialSetupPage() {
   )
 
   const setupIdParam = searchParams.get("id")
-
-  React.useEffect(() => {
-    if (!startInCustomEmptyMode) {
-      return
-    }
-
-    setSelectedSetupId(null)
-    setSaveError(null)
-    setSelectionError(null)
-    setDraft(emptyCustomDraft)
-    resetReadingSettings()
-    syncReadingSession(emptyCustomDraft, "custom")
-  }, [resetReadingSettings, startInCustomEmptyMode, syncReadingSession])
 
   React.useEffect(() => {
     if (setupIdParam) {
@@ -286,22 +238,13 @@ export default function ReadingMaterialSetupPage() {
     [applySetup, draft, getReadingMaterialSetupById, refetch]
   )
 
-  const handleStartNew = React.useCallback(() => {
-    setSelectedSetupId(null)
-    setSaveError(null)
-    setSelectionError(null)
-    setDraft(defaultDraft)
-    applyReadingPresentationDraft(defaultDraft)
-    syncReadingSession(defaultDraft, "preset")
-  }, [syncReadingSession])
-
   const applyLocalDraft = React.useCallback(
-    (nextDraft: DraftState, source: "preset" | "custom", syncPresentation = false) => {
+    (nextDraft: DraftState, syncPresentation = false) => {
       setSelectedSetupId(null)
       setSaveError(null)
       setSelectionError(null)
       setDraft(nextDraft)
-      syncReadingSession(nextDraft, source)
+      syncReadingSession(nextDraft, "custom")
       if (syncPresentation) {
         applyReadingPresentationDraft(nextDraft)
       }
@@ -317,14 +260,11 @@ export default function ReadingMaterialSetupPage() {
 
       const markdown = await file.text()
       const titleFromFile = file.name.replace(/\.(md|markdown|txt)$/i, "").replace(/[-_]+/g, " ")
-      applyLocalDraft(
-        {
-          ...draft,
-          title: draft.title.trim().length > 0 ? draft.title : titleFromFile,
-          markdown,
-        },
-        "custom"
-      )
+      applyLocalDraft({
+        ...draft,
+        title: draft.title.trim().length > 0 ? draft.title : titleFromFile,
+        markdown,
+      })
     },
     [applyLocalDraft, draft]
   )
@@ -401,66 +341,6 @@ export default function ReadingMaterialSetupPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextDraft = {
-                      ...draft,
-                      title: defaultDraft.title,
-                      markdown: defaultDraft.markdown,
-                    }
-                    applyLocalDraft(nextDraft, "preset")
-                  }}
-                  className={`w-full rounded-2xl border p-5 text-left transition-colors ${
-                    isBuiltInSelected
-                      ? "border-primary bg-accent/50"
-                      : "bg-card hover:border-primary/40 hover:bg-accent/30"
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <BookOpen className="h-4 w-4" />
-                      Built-in text
-                    </div>
-                    <h3 className="text-lg font-semibold">{defaultDraft.title}</h3>
-                    <p className="text-sm text-muted-foreground">{presetExcerpt}...</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextDraft = {
-                      ...draft,
-                      title:
-                        draft.title.trim().length > 0 && draft.title !== defaultDraft.title
-                          ? draft.title
-                          : "Untitled text",
-                      markdown:
-                        draft.markdown === defaultDraft.markdown
-                          ? ""
-                          : draft.markdown,
-                    }
-                    applyLocalDraft(nextDraft, "custom")
-                  }}
-                  className={`w-full rounded-2xl border p-5 text-left transition-colors ${
-                    isCustomSelected
-                      ? "border-primary bg-accent/50"
-                      : "bg-card hover:border-primary/40 hover:bg-accent/30"
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <FilePlus2 className="h-4 w-4" />
-                      Custom markdown
-                    </div>
-                    <h3 className="text-lg font-semibold">Paste a temporary text</h3>
-                    <p className="text-sm text-muted-foreground">The editor below is the preview source.</p>
-                  </div>
-                </button>
-              </div>
-
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="reading-material-name">Setup name</FieldLabel>
@@ -479,7 +359,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.title}
                     onChange={(event) => {
                       const nextDraft = { ...draft, title: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
+                      applyLocalDraft(nextDraft)
                     }}
                     placeholder="Enter a title for this reading text"
                   />
@@ -507,7 +387,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.markdown}
                     onChange={(event) => {
                       const nextDraft = { ...draft, markdown: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
+                      applyLocalDraft(nextDraft)
                     }}
                     className="min-h-56 resize-y"
                   />
@@ -520,7 +400,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.researcherQuestions}
                     onChange={(event) => {
                       const nextDraft = { ...draft, researcherQuestions: event.target.value }
-                      applyLocalDraft(nextDraft, "custom")
+                      applyLocalDraft(nextDraft)
                     }}
                     className="min-h-32 resize-y"
                   />
@@ -551,7 +431,7 @@ export default function ReadingMaterialSetupPage() {
                     value={draft.fontFamily}
                     onValueChange={(value) => {
                       const nextDraft = { ...draft, fontFamily: value as FontTheme }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                      applyLocalDraft(nextDraft, true)
                     }}
                   >
                     <SelectTrigger id="material-font-family" className="w-full">
@@ -579,7 +459,7 @@ export default function ReadingMaterialSetupPage() {
                     value={[draft.fontSizePx]}
                     onValueChange={(value) => {
                       const nextDraft = { ...draft, fontSizePx: value[0] ?? draft.fontSizePx }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                      applyLocalDraft(nextDraft, true)
                     }}
                   />
                 </Field>
@@ -596,7 +476,7 @@ export default function ReadingMaterialSetupPage() {
                     value={[draft.lineWidthPx]}
                     onValueChange={(value) => {
                       const nextDraft = { ...draft, lineWidthPx: value[0] ?? draft.lineWidthPx }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                      applyLocalDraft(nextDraft, true)
                     }}
                   />
                 </Field>
@@ -613,7 +493,7 @@ export default function ReadingMaterialSetupPage() {
                     value={[draft.lineHeight]}
                     onValueChange={(value) => {
                       const nextDraft = { ...draft, lineHeight: value[0] ?? draft.lineHeight }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                      applyLocalDraft(nextDraft, true)
                     }}
                   />
                 </Field>
@@ -635,7 +515,7 @@ export default function ReadingMaterialSetupPage() {
                         ...draft,
                         letterSpacingEm: value[0] ?? draft.letterSpacingEm,
                       }
-                      applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                      applyLocalDraft(nextDraft, true)
                     }}
                   />
                 </Field>
@@ -660,7 +540,7 @@ export default function ReadingMaterialSetupPage() {
                       checked={draft.editableByExperimenter}
                       onCheckedChange={(checked) => {
                         const nextDraft = { ...draft, editableByExperimenter: checked }
-                        applyLocalDraft(nextDraft, deriveDraftSource(nextDraft), true)
+                        applyLocalDraft(nextDraft, true)
                       }}
                     />
                   </div>

@@ -7,7 +7,9 @@
       "Bash(dotnet build *)",
       "Bash(bun tsc *)",
       "Bash(bun run *)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(powershell -Command \"\\(Get-Content 'C:\\\\Users\\\\s243871\\\\reading-the-reader-monorepo\\\\Frontend\\\\src\\\\app\\\\\\(with-sidebar\\)\\\\layout.tsx'\\) -replace '/experiment/setups', '/experiment-templates' | Set-Content 'C:\\\\Users\\\\s243871\\\\reading-the-reader-monorepo\\\\Frontend\\\\src\\\\app\\\\\\(with-sidebar\\)\\\\layout.tsx' -Encoding utf8\")",
+      "Bash(bun x *)"
     ]
   }
 }

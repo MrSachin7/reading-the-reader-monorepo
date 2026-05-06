@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { BookOpen, FlaskConical, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
 
 import { FontSelector } from "@/components/theme/font-selector";
@@ -68,7 +68,7 @@ export default function WithSidebarLayout({
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Experiment Templates">
-                    <Link href="/experiment/setups">
+                    <Link href="/experiment-templates">
                       <FlaskConical />
                       <span>Experiment Templates</span>
                     </Link>
