@@ -50,6 +50,10 @@ export function ReplayMetadataColumn({
   const screenResolution = frame.session.screen
     ? `${frame.session.screen.physicalScreenWidthPx} x ${frame.session.screen.physicalScreenHeightPx} (DPR ${formatNumeric(frame.session.screen.devicePixelRatio, 2)})`
     : "-"
+  const latestFacialObservation = readingSession.latestFacialObservation
+  const latestFacialDifficultySignal = readingSession.latestFacialDifficultySignal
+  const signalSources = frame.session.signalSources
+  const webcamStatus = frame.session.webcamStatus
 
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
@@ -90,6 +94,9 @@ export function ReplayMetadataColumn({
                     label="Presentation"
                     value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
                   />
+                  <MetadataRow label="Gaze source" value={signalSources.gazeSource} />
+                  <MetadataRow label="Face source" value={signalSources.faceSource} />
+                  <MetadataRow label="Webcam" value={webcamStatus.status} />
                   <MetadataRow
                     label="Page"
                     value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
@@ -97,7 +104,73 @@ export function ReplayMetadataColumn({
                   <MetadataRow label="Screen" value={screenResolution} />
                   <MetadataRow label="Eyetracker" value={frame.session.eyeTrackerDevice?.name ?? "-"} />
                   <MetadataRow label="Samples" value={frame.session.receivedGazeSamples.toLocaleString()} />
+                  <MetadataRow
+                    label="Face state"
+                    value={latestFacialDifficultySignal ? latestFacialDifficultySignal.state : "-"}
+                  />
+                  <MetadataRow
+                    label="Face conf."
+                    value={latestFacialDifficultySignal ? formatNumeric(latestFacialDifficultySignal.confidence, 2) : "-"}
+                  />
                 </dl>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Facial signal</p>
+                <div className="mt-3">
+                  {latestFacialDifficultySignal ? (
+                    <div className="rounded-[1rem] border bg-muted/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <Badge variant="outline">{latestFacialDifficultySignal.state}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatAbsoluteTime(latestFacialDifficultySignal.observedAtUnixMs)}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6">
+                        {latestFacialDifficultySignal.summary ?? "Derived facial state available."}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Confidence {formatNumeric(latestFacialDifficultySignal.confidence, 2)}
+                        {latestFacialDifficultySignal.cues.length > 0
+                          ? ` · ${latestFacialDifficultySignal.cues.join(" · ")}`
+                          : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+                      No facial difficulty signal at this point in the replay.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Facial observation</p>
+                <div className="mt-3">
+                  {latestFacialObservation ? (
+                    <div className="rounded-[1rem] border bg-muted/20 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <Badge variant="outline">{latestFacialObservation.landmarkCount} landmarks</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatAbsoluteTime(latestFacialObservation.capturedAtUnixMs)}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6">
+                        {latestFacialObservation.summary ?? "Low-level webcam face features captured."}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Blink {formatNumeric(latestFacialObservation.blinkLikelihood, 2)}
+                        {` · Motion ${formatNumeric(latestFacialObservation.motionScore, 2)}`}
+                        {` · Mouth tension ${formatNumeric(latestFacialObservation.mouthTension, 2)}`}
+                        {` · Capture quality ${formatNumeric(latestFacialObservation.captureQuality, 2)}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+                      No facial observation at this point in the replay.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-[1.2rem] border bg-background/80 p-4">

@@ -22,7 +22,11 @@ import type {
   DecisionState,
   ExperimentLiveMonitoringSnapshot,
   ExternalProviderStatusSnapshot,
+  FacialDifficultySignalSnapshot,
+  FacialObservationSnapshot,
   LayoutInterventionGuardrailSnapshot,
+  SensingSignalSourcesSnapshot,
+  WebcamSensingStatusSnapshot,
 } from "@/lib/experiment-session"
 import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
@@ -42,6 +46,10 @@ type LiveControlsColumnProps = {
   interventionModules: InterventionModuleDescriptor[]
   followParticipant: boolean
   liveMonitoring: ExperimentLiveMonitoringSnapshot
+  webcamStatus: WebcamSensingStatusSnapshot
+  signalSources: SensingSignalSourcesSnapshot
+  latestFacialObservation: FacialObservationSnapshot | null
+  latestFacialDifficultySignal: FacialDifficultySignalSnapshot | null
   mirrorTrustState: LiveMirrorTrustState
   layoutGuardrail: LayoutInterventionGuardrailSnapshot | null
   decisionConfiguration: DecisionConfiguration
@@ -78,6 +86,10 @@ export function LiveControlsColumn({
   interventionModules,
   followParticipant,
   liveMonitoring,
+  webcamStatus,
+  signalSources,
+  latestFacialObservation,
+  latestFacialDifficultySignal,
   mirrorTrustState,
   layoutGuardrail,
   decisionConfiguration,
@@ -196,7 +208,26 @@ export function LiveControlsColumn({
                     }
                   />
                   <Stat label="Mirror" value={mirrorTrustState.label} />
+                  <Stat label="Gaze source" value={signalSources.gazeSource} />
+                  <Stat label="Face source" value={signalSources.faceSource} />
                   <Stat label="Current word" value={activeWord ?? "—"} className="col-span-2" />
+                  <Stat label="Webcam" value={webcamStatus.status} />
+                  <Stat
+                    label="Face state"
+                    value={
+                      latestFacialDifficultySignal
+                        ? `${latestFacialDifficultySignal.state} (${formatPercent(latestFacialDifficultySignal.confidence)})`
+                        : "—"
+                    }
+                  />
+                  <Stat
+                    label="Blink"
+                    value={latestFacialObservation ? formatPercent(latestFacialObservation.blinkLikelihood) : "—"}
+                  />
+                  <Stat
+                    label="Motion"
+                    value={latestFacialObservation ? formatPercent(latestFacialObservation.motionScore) : "—"}
+                  />
                   <Stat
                     label="Viewport"
                     value={

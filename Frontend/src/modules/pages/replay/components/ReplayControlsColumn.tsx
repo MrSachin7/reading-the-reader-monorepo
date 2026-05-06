@@ -207,7 +207,7 @@ export function ReplayControlsColumn({
                 <Input
                   id={inputId}
                   type="file"
-                  accept=".json,.json.gz,application/json,application/gzip"
+                  accept=".json,.json.gz,.csv,text/csv,application/json,application/gzip"
                   className="sr-only"
                   onChange={onInputChange}
                 />

@@ -30,4 +30,8 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     IReadOnlyList<DecisionProposalEventRecord>? DecisionProposalEvents = null,
     IReadOnlyList<ScheduledInterventionEventRecord>? ScheduledInterventionEvents = null,
     IReadOnlyList<InterventionEventRecord>? InterventionEvents = null,
-    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats = null);
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats = null,
+    IReadOnlyList<WebcamGazeSampleRecord>? WebcamGazeSamples = null,
+    IReadOnlyList<WebcamSensingStatusRecord>? WebcamStatusEvents = null,
+    IReadOnlyList<FacialObservationRecord>? FacialObservationEvents = null,
+    IReadOnlyList<FacialDifficultyEventRecord>? FacialDifficultyEvents = null);

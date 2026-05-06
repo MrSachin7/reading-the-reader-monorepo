@@ -178,10 +178,14 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.LifecycleEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.GazeSamples, e => e.SequenceNumber),
             Merge(chunks, c => c.ReadingSessionStates, e => e.SequenceNumber),
+            Merge(chunks, c => c.WebcamGazeSamples, e => e.SequenceNumber),
+            Merge(chunks, c => c.WebcamStatusEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.FacialObservationEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.ViewportEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.FocusEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.AttentionEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.ContextPreservationEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.FacialDifficultyEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.DecisionProposalEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.ScheduledInterventionEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.InterventionEvents, e => e.SequenceNumber),
@@ -255,12 +259,16 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             FlushedAtUnixMs = batch.FlushedAtUnixMs,
             LifecycleEvents = batch.LifecycleEvents?.ToArray(),
             GazeSamples = batch.GazeSamples?.ToArray(),
+            WebcamGazeSamples = batch.WebcamGazeSamples?.ToArray(),
             EnrichedGazeSamples = batch.EnrichedGazeSamples?.ToArray(),
+            WebcamStatusEvents = batch.WebcamStatusEvents?.ToArray(),
+            FacialObservationEvents = batch.FacialObservationEvents?.ToArray(),
             ReadingSessionStates = batch.ReadingSessionStates?.ToArray(),
             ViewportEvents = batch.ViewportEvents?.ToArray(),
             FocusEvents = batch.FocusEvents?.ToArray(),
             AttentionEvents = batch.AttentionEvents?.ToArray(),
             ContextPreservationEvents = batch.ContextPreservationEvents?.ToArray(),
+            FacialDifficultyEvents = batch.FacialDifficultyEvents?.ToArray(),
             DecisionProposalEvents = batch.DecisionProposalEvents?.ToArray(),
             ScheduledInterventionEvents = batch.ScheduledInterventionEvents?.ToArray(),
             InterventionEvents = batch.InterventionEvents?.ToArray(),
@@ -577,12 +585,16 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public long FlushedAtUnixMs { get; set; }
         public ExperimentLifecycleEventRecord[]? LifecycleEvents { get; set; }
         public RawGazeSampleRecord[]? GazeSamples { get; set; }
+        public WebcamGazeSampleRecord[]? WebcamGazeSamples { get; set; }
         public EnrichedGazeSampleRecord[]? EnrichedGazeSamples { get; set; }
+        public WebcamSensingStatusRecord[]? WebcamStatusEvents { get; set; }
+        public FacialObservationRecord[]? FacialObservationEvents { get; set; }
         public ReadingSessionStateRecord[]? ReadingSessionStates { get; set; }
         public ParticipantViewportEventRecord[]? ViewportEvents { get; set; }
         public ReadingFocusEventRecord[]? FocusEvents { get; set; }
         public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }
         public ReadingContextPreservationEventRecord[]? ContextPreservationEvents { get; set; }
+        public FacialDifficultyEventRecord[]? FacialDifficultyEvents { get; set; }
         public DecisionProposalEventRecord[]? DecisionProposalEvents { get; set; }
         public ScheduledInterventionEventRecord[]? ScheduledInterventionEvents { get; set; }
         public InterventionEventRecord[]? InterventionEvents { get; set; }

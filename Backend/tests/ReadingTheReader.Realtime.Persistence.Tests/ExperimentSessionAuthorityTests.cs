@@ -139,6 +139,72 @@ public sealed class ExperimentSessionAuthorityTests
     }
 
     [Fact]
+    public async Task StartSessionAsync_InWebcamMode_RequiresAvailableWebcam()
+    {
+        var sensingMode = new RealtimeTestDoubles.InMemorySensingModeSettingsService();
+        await sensingMode.UpdateModeAsync(SensingModes.Webcam);
+        var harness = RealtimeTestDoubles.CreateHarness(sensingModeSettingsService: sensingMode);
+
+        await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+        {
+            Name = "Participant 1",
+            Age = 29,
+            Sex = "female",
+            ExistingEyeCondition = "none",
+            ReadingProficiency = "advanced"
+        });
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "doc-1",
+            "Sample document",
+            "# Hello reader",
+            null,
+            ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SessionManager.StartSessionAsync());
+
+        Assert.Equal("Connect a webcam before starting a webcam-only session.", error.Message);
+        Assert.Equal("webcam", harness.SessionManager.GetCurrentSnapshot().Setup.CurrentBlocker!.StepKey);
+    }
+
+    [Fact]
+    public async Task StartSessionAsync_InWebcamMode_StartsWhenWebcamIsAvailable()
+    {
+        var sensingMode = new RealtimeTestDoubles.InMemorySensingModeSettingsService();
+        await sensingMode.UpdateModeAsync(SensingModes.Webcam);
+        var harness = RealtimeTestDoubles.CreateHarness(sensingModeSettingsService: sensingMode);
+
+        await harness.SessionManager.SetCurrentParticipantAsync(new Participant
+        {
+            Name = "Participant 1",
+            Age = 29,
+            Sex = "female",
+            ExistingEyeCondition = "none",
+            ReadingProficiency = "advanced"
+        });
+        await harness.SessionManager.SetReadingSessionAsync(new UpsertReadingSessionCommand(
+            "doc-1",
+            "Sample document",
+            "# Hello reader",
+            null,
+            ReadingPresentationSnapshot.Default,
+            ReaderAppearanceSnapshot.Default));
+        await harness.SessionManager.UpdateWebcamSensingStatusAsync(new WebcamSensingStatusSnapshot(
+            true,
+            WebcamSensingStatuses.Idle,
+            null,
+            1_710_000_000_000,
+            0,
+            0,
+            "Webcam ready."));
+
+        var started = await harness.SessionManager.StartSessionAsync();
+
+        Assert.True(started);
+        Assert.True(harness.SessionManager.GetCurrentSnapshot().IsActive);
+    }
+
+    [Fact]
     public async Task FinishSessionAsync_PersistsReplayExportAndFinalSnapshot()
     {
         var harness = RealtimeTestDoubles.CreateHarness();

@@ -157,6 +157,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
             ],
             [],
             [],
+            [],
             []));
 
         var exportDocument = await store.BuildProcessedExportAsync(

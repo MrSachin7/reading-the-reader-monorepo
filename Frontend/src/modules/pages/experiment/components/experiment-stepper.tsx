@@ -3,7 +3,7 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { LucideIcon } from "lucide-react"
-import { BookOpen, Crosshair, FileText, MousePointer2, Plus, ScanEye } from "lucide-react"
+import { BookOpen, Camera, Crosshair, FileText, MousePointer2, Plus, ScanEye } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Controller, useForm, useWatch } from "react-hook-form"
@@ -22,6 +22,7 @@ import {
   type EyeMovementAnalysisProviderStatusSnapshot,
   type ExternalProviderStatusSnapshot,
   type SensingMode,
+  type WebcamSensingStatusSnapshot,
 } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
@@ -441,6 +442,73 @@ function MouseModeSetupStep({
             </p>
           </div>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function WebcamModeSetupStep({
+  webcamStatus,
+  onCompletionChange,
+  onSubmitRequestChange,
+  onSubmittingChange,
+}: {
+  webcamStatus: WebcamSensingStatusSnapshot
+  onCompletionChange?: (isComplete: boolean) => void
+  onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
+  onSubmittingChange?: (isSubmitting: boolean) => void
+}) {
+  const isReady = webcamStatus.isConnected
+
+  React.useEffect(() => {
+    onCompletionChange?.(isReady)
+  }, [isReady, onCompletionChange])
+
+  React.useEffect(() => {
+    onSubmitRequestChange?.(null)
+    return () => onSubmitRequestChange?.(null)
+  }, [onSubmitRequestChange])
+
+  React.useEffect(() => {
+    onSubmittingChange?.(false)
+    return () => onSubmittingChange?.(false)
+  }, [onSubmittingChange])
+
+  return (
+    <Card>
+      <CardHeader className="border-b pb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">Step 1</Badge>
+          <Badge variant="outline">Webcam mode</Badge>
+        </div>
+        <CardTitle className="mt-3 text-3xl tracking-tight">Webcam sensing is active.</CardTitle>
+        <CardDescription className="max-w-3xl text-base leading-7">
+          The setup flow skips eyetracker selection and expects a working webcam before the session can start.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-6">
+        <div className="flex items-start gap-3 rounded-[1.5rem] border bg-muted/20 p-4">
+          <Camera className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">
+              {isReady ? "Webcam ready" : "Webcam unavailable"}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {isReady
+                ? "The webcam preflight check passed. You can continue with webcam-based gaze and facial sensing."
+                : webcamStatus.detail ?? "Connect a webcam to continue with webcam-only sensing."}
+            </p>
+          </div>
+        </div>
+
+        {!isReady ? (
+          <Alert variant="destructive">
+            <AlertTitle>Webcam required</AlertTitle>
+            <AlertDescription>
+              Webcam-only sessions cannot start until a camera is connected and detected by the backend.
+            </AlertDescription>
+          </Alert>
+        ) : null}
       </CardContent>
     </Card>
   )
@@ -1366,6 +1434,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
 
   const setup = experimentSession?.setup ?? EMPTY_EXPERIMENT_SETUP
   const sensingMode: SensingMode = experimentSession?.sensingMode ?? "eyeTracker"
+  const webcamStatus = experimentSession?.webcamStatus
   const workflowStepStates = React.useMemo(
     () => getAuthoritativeWorkflowStepStates(setup, sensingMode),
     [setup, sensingMode]
@@ -1822,6 +1891,13 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
   const participantSetupComplete = setup.participant.isReady && setup.calibration.isReady
   const participantReturnPath = isParticipantMode ? "/participant" : "/researcher/experiment"
   const canGoBack = isParticipantMode ? step > 2 : step > 0
+  const isWebcamMode = sensingMode === "webcam"
+  const isHybridWebcamMode = sensingMode === "eyeTrackerPlusFace"
+  const webcamUnavailable = Boolean(
+    webcamStatus &&
+    !webcamStatus.isConnected &&
+    webcamStatus.status === "unavailable"
+  )
 
   return (
     <div
@@ -1857,6 +1933,26 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
           </Alert>
         ) : null}
 
+        {!isParticipantMode && isWebcamMode && webcamUnavailable ? (
+          <Alert variant="destructive">
+            <AlertTitle>Webcam unavailable</AlertTitle>
+            <AlertDescription>
+              {webcamStatus?.detail ??
+                "Webcam-only sessions are blocked until the backend detects an available camera."}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {!isParticipantMode && isHybridWebcamMode && webcamUnavailable ? (
+          <Alert>
+            <AlertTitle>Hybrid mode is degraded</AlertTitle>
+            <AlertDescription>
+              {webcamStatus?.detail ??
+                "Tobii gaze can still run, but facial webcam signals are currently unavailable."}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {isParticipantMode && !researcherPreparationReady ? (
           <Card>
             <CardHeader className="border-b pb-6">
@@ -1886,6 +1982,23 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         ) : step === 0 ? (
           sensingMode === "mouse" ? (
             <MouseModeSetupStep
+              onCompletionChange={handleStepZeroCompletionChange}
+              onSubmittingChange={handleStepSubmittingChange}
+              onSubmitRequestChange={handleStepSubmitterChange}
+            />
+          ) : sensingMode === "webcam" ? (
+            <WebcamModeSetupStep
+              webcamStatus={
+                webcamStatus ?? {
+                  isConnected: false,
+                  status: "idle",
+                  lastFrameAtUnixMs: null,
+                  lastProcessedAtUnixMs: null,
+                  captureQuality: 0,
+                  consecutiveFailures: 0,
+                  detail: null,
+                }
+              }
               onCompletionChange={handleStepZeroCompletionChange}
               onSubmittingChange={handleStepSubmittingChange}
               onSubmitRequestChange={handleStepSubmitterChange}

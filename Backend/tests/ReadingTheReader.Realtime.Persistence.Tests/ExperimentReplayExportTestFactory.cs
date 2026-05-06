@@ -4,6 +4,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventi
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;
 
@@ -143,6 +144,7 @@ internal static class ExperimentReplayExportTestFactory
                 "hash-1",
                 new ExperimentReplayContentTokenization("minimal-markdown", "v1")),
             new ExperimentReplaySensing(
+                new SensingSignalSourcesSnapshot(SensingSignalSources.Tobii, SensingSignalSources.Webcam),
                 [
                     new RawGazeSampleRecord(
                         2,
@@ -161,12 +163,16 @@ internal static class ExperimentReplayExportTestFactory
                             new ReplayEyePupil(3.1f, "Valid"),
                             new ReplayEyeOrigin3D(10, 11, 12, "Valid"),
                             new ReplayEyeTrackBoxPoint(0.4f, 0.5f, 0.6f)))
-                ]),
+                ],
+                [],
+                [],
+                []),
             new ExperimentReplayDerived(
                 [new ParticipantViewportEventRecord(3, 1_710_000_001_500, viewport)],
                 [new ReadingFocusEventRecord(4, 1_710_000_001_600, focus)],
                 [new ReadingAttentionEventRecord(5, 1_710_000_001_900, attentionSummary)],
-                [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, contextPreservation)]),
+                [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, contextPreservation)],
+                []),
             new ExperimentReplayInterventions(
                 [new DecisionProposalEventRecord(7, 1_710_000_002_000, proposal)],
                 [new ScheduledInterventionEventRecord(8, 1_710_000_001_700, scheduledIntervention)],

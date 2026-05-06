@@ -20,6 +20,8 @@ export function formatEventKind(kind: ReplayKeyEvent["kind"]) {
   switch (kind) {
     case "lifecycle":
       return "Session"
+    case "face":
+      return "Face"
     case "proposal":
       return "Proposal"
     case "state":
@@ -41,6 +43,8 @@ export function getEventTone(kind: ReplayKeyEvent["kind"], active: boolean) {
   }
 
   switch (kind) {
+    case "face":
+      return "border-slate-400/30 bg-slate-500/10"
     case "intervention":
       return "border-amber-400/30 bg-amber-500/10"
     case "connection":

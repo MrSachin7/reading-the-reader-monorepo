@@ -76,6 +76,7 @@ export function CalibrationStep({
     "The last attempt did not complete with acceptable validation quality."
 
   const isMouseMode = sensingMode === "mouse"
+  const isWebcamMode = sensingMode === "webcam"
   const [requestMessage, setRequestMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -114,29 +115,35 @@ export function CalibrationStep({
     []
   )
 
-  if (isMouseMode) {
+  if (isMouseMode || isWebcamMode) {
     return (
       <Card className="overflow-hidden rounded-[2rem] border bg-card shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
         <CardHeader className="border-b pb-8">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">Step 4</Badge>
             <Badge variant="outline">Participant</Badge>
-            <Badge variant="outline">Mouse mode</Badge>
+            <Badge variant="outline">{isWebcamMode ? "Webcam mode" : "Mouse mode"}</Badge>
           </div>
           <CardTitle className="mt-3 text-3xl tracking-tight">
-            Calibration is skipped in mouse mode.
+            Calibration is skipped in {isWebcamMode ? "webcam" : "mouse"} mode.
           </CardTitle>
           <CardDescription className="max-w-3xl text-base leading-7">
-            The participant mouse position will be used as the gaze source for this demo session.
+            {isWebcamMode
+              ? "This session uses webcam-based sensing and does not require Tobii calibration."
+              : "The participant mouse position will be used as the gaze source for this demo session."}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-8">
           <div className="flex items-start gap-3 rounded-[1.5rem] border bg-muted/20 p-4">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold">Ready for mouse input</p>
+              <p className="text-sm font-semibold">
+                {isWebcamMode ? "Ready for webcam sensing" : "Ready for mouse input"}
+              </p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                No Tobii calibration or validation is required while mouse mode is active.
+                {isWebcamMode
+                  ? "No Tobii calibration or validation is required while webcam mode is active."
+                  : "No Tobii calibration or validation is required while mouse mode is active."}
               </p>
             </div>
           </div>

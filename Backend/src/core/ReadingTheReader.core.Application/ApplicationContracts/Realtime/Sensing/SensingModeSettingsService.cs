@@ -5,6 +5,8 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensin
 public static class SensingModes
 {
     public const string EyeTracker = "eyeTracker";
+    public const string Webcam = "webcam";
+    public const string EyeTrackerPlusFace = "eyeTrackerPlusFace";
     public const string Mouse = "mouse";
 
     public static string Normalize(string? mode)
@@ -19,7 +21,41 @@ public static class SensingModes
             return EyeTracker;
         }
 
+        if (string.Equals(mode, Webcam, StringComparison.OrdinalIgnoreCase))
+        {
+            return Webcam;
+        }
+
+        if (string.Equals(mode, EyeTrackerPlusFace, StringComparison.OrdinalIgnoreCase))
+        {
+            return EyeTrackerPlusFace;
+        }
+
         throw new ArgumentException($"Unsupported sensing mode '{mode}'.", nameof(mode));
+    }
+
+    public static bool UsesEyeTracker(string? mode)
+    {
+        var normalized = Normalize(mode);
+        return string.Equals(normalized, EyeTracker, StringComparison.Ordinal) ||
+               string.Equals(normalized, EyeTrackerPlusFace, StringComparison.Ordinal);
+    }
+
+    public static bool UsesWebcamFace(string? mode)
+    {
+        var normalized = Normalize(mode);
+        return string.Equals(normalized, Webcam, StringComparison.Ordinal) ||
+               string.Equals(normalized, EyeTrackerPlusFace, StringComparison.Ordinal);
+    }
+
+    public static bool UsesWebcamGaze(string? mode)
+    {
+        return string.Equals(Normalize(mode), Webcam, StringComparison.Ordinal);
+    }
+
+    public static bool UsesMouse(string? mode)
+    {
+        return string.Equals(Normalize(mode), Mouse, StringComparison.Ordinal);
     }
 }
 

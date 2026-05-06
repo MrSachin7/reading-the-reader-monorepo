@@ -1,5 +1,6 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
@@ -342,13 +343,77 @@ public sealed record ReadingSessionStateRecord(
     }
 }
 
+public sealed record WebcamGazeSampleRecord(
+    long SequenceNumber,
+    long CapturedAtUnixMs,
+    GazeData Gaze)
+{
+    public WebcamGazeSampleRecord Copy()
+    {
+        return new WebcamGazeSampleRecord(
+            SequenceNumber,
+            CapturedAtUnixMs,
+            Gaze.Copy());
+    }
+}
+
+public sealed record WebcamSensingStatusRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    WebcamSensingStatusSnapshot Status)
+{
+    public WebcamSensingStatusRecord Copy()
+    {
+        return new WebcamSensingStatusRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            Status.Copy());
+    }
+}
+
+public sealed record FacialObservationRecord(
+    long SequenceNumber,
+    long CapturedAtUnixMs,
+    FacialObservationSnapshot Observation)
+{
+    public FacialObservationRecord Copy()
+    {
+        return new FacialObservationRecord(
+            SequenceNumber,
+            CapturedAtUnixMs,
+            Observation.Copy());
+    }
+}
+
+public sealed record FacialDifficultyEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    FacialDifficultySignalSnapshot Signal)
+{
+    public FacialDifficultyEventRecord Copy()
+    {
+        return new FacialDifficultyEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            Signal.Copy());
+    }
+}
+
 public sealed record ExperimentReplaySensing(
-    IReadOnlyList<RawGazeSampleRecord> GazeSamples)
+    SensingSignalSourcesSnapshot SignalSources,
+    IReadOnlyList<RawGazeSampleRecord> GazeSamples,
+    IReadOnlyList<WebcamGazeSampleRecord> WebcamGazeSamples,
+    IReadOnlyList<WebcamSensingStatusRecord> WebcamStatusEvents,
+    IReadOnlyList<FacialObservationRecord> FacialObservations)
 {
     public ExperimentReplaySensing Copy()
     {
         return new ExperimentReplaySensing(
-            GazeSamples is null ? [] : [.. GazeSamples.Select(item => item.Copy())]);
+            SignalSources.Copy(),
+            GazeSamples is null ? [] : [.. GazeSamples.Select(item => item.Copy())],
+            WebcamGazeSamples is null ? [] : [.. WebcamGazeSamples.Select(item => item.Copy())],
+            WebcamStatusEvents is null ? [] : [.. WebcamStatusEvents.Select(item => item.Copy())],
+            FacialObservations is null ? [] : [.. FacialObservations.Select(item => item.Copy())]);
     }
 }
 
@@ -357,6 +422,7 @@ public sealed record ExperimentReplayDerived(
     IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
     IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
     IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
+    IReadOnlyList<FacialDifficultyEventRecord> FacialDifficultyEvents,
     IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null)
 {
     public ExperimentReplayDerived Copy()
@@ -366,6 +432,7 @@ public sealed record ExperimentReplayDerived(
             FocusEvents is null ? [] : [.. FocusEvents.Select(item => item.Copy())],
             AttentionEvents is null ? [] : [.. AttentionEvents.Select(item => item.Copy())],
             ContextPreservationEvents is null ? [] : [.. ContextPreservationEvents.Select(item => item.Copy())],
+            FacialDifficultyEvents is null ? [] : [.. FacialDifficultyEvents.Select(item => item.Copy())],
             FinalTokenStats is null
                 ? null
                 : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()));
