@@ -25,6 +25,9 @@ public static class MessageTypes
     public const string ReadingContextPreservationChanged = "readingContextPreservationChanged";
     public const string ReadingAttentionSummaryChanged = "readingAttentionSummaryChanged";
     public const string EyeMovementAnalysisChanged = "eyeMovementAnalysisChanged";
+    public const string FacialObservationChanged = "facialObservationChanged";
+    public const string FacialDifficultySignalChanged = "facialDifficultySignalChanged";
+    public const string WebcamSensingStatusChanged = "webcamSensingStatusChanged";
     public const string RegisterParticipantView = "registerParticipantView";
     public const string UnregisterParticipantView = "unregisterParticipantView";
     public const string ParticipantViewportUpdated = "participantViewportUpdated";

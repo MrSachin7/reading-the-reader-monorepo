@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Info, MousePointer2, Save, ScanEye } from "lucide-react"
+import { Camera, CheckCircle2, Info, MousePointer2, Save, ScanEye } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -28,12 +28,56 @@ const MODE_OPTIONS: Array<{
     description: "Require tracker selection, licence handling, calibration, and validation.",
   },
   {
+    value: "eyeTrackerPlusFace",
+    label: "Use eyetracker + face",
+    badge: "Hybrid",
+    description: "Keep Tobii as gaze source while adding webcam-based facial strain and expression signals.",
+  },
+  {
+    value: "webcam",
+    label: "Use webcam mode",
+    badge: "Webcam",
+    description: "Use webcam-only coarse gaze plus facial strain and expression signals without Tobii hardware.",
+  },
+  {
     value: "mouse",
     label: "Use mouse mode",
     badge: "Demo",
     description: "Use participant mouse position as synthetic gaze for demos without hardware.",
   },
 ]
+
+function getModeSavedMessage(mode: SensingMode) {
+  if (mode === "mouse") {
+    return "Mouse mode saved. The setup flow will skip Tobii-specific steps."
+  }
+
+  if (mode === "webcam") {
+    return "Webcam mode saved. Sessions will use webcam gaze plus webcam facial signals."
+  }
+
+  if (mode === "eyeTrackerPlusFace") {
+    return "Eyetracker + face mode saved. Tobii stays authoritative for gaze while webcam facial signals are added."
+  }
+
+  return "Eyetracker mode saved. The setup flow will require tracker selection and calibration."
+}
+
+function getActiveModeBadge(mode: SensingMode) {
+  if (mode === "mouse") {
+    return "Mouse mode active"
+  }
+
+  if (mode === "webcam") {
+    return "Webcam mode active"
+  }
+
+  if (mode === "eyeTrackerPlusFace") {
+    return "Eyetracker + face active"
+  }
+
+  return "Eyetracker mode active"
+}
 
 export function InputModeSettingsSection() {
   const { data, isLoading } = useGetSensingModeSettingsQuery()
@@ -67,11 +111,7 @@ export function InputModeSettingsSection() {
     try {
       const updated = await updateSensingModeSettings({ mode: draftMode }).unwrap()
       setDraftMode(updated.mode)
-      setStatusMessage(
-        updated.mode === "mouse"
-          ? "Mouse mode saved. The setup flow will skip Tobii-specific steps."
-          : "Eyetracker mode saved. The setup flow will require tracker selection and calibration."
-      )
+      setStatusMessage(getModeSavedMessage(updated.mode))
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Input mode could not be updated."))
     }
@@ -88,8 +128,8 @@ export function InputModeSettingsSection() {
                 Choose the sensing source the experiment runtime should trust.
               </CardDescription>
             </div>
-            <Badge variant={savedMode === "mouse" ? "secondary" : "outline"}>
-              {savedMode === "mouse" ? "Mouse mode active" : "Eyetracker mode active"}
+            <Badge variant={savedMode === "mouse" || savedMode === "webcam" ? "secondary" : "outline"}>
+              {getActiveModeBadge(savedMode)}
             </Badge>
           </div>
         </CardHeader>
@@ -108,7 +148,12 @@ export function InputModeSettingsSection() {
             type="single"
             value={draftMode}
             onValueChange={(value) => {
-              if (value === "eyeTracker" || value === "mouse") {
+              if (
+                value === "eyeTracker" ||
+                value === "eyeTrackerPlusFace" ||
+                value === "webcam" ||
+                value === "mouse"
+              ) {
                 setDraftMode(value)
                 setStatusMessage(null)
                 setErrorMessage(null)
@@ -119,7 +164,12 @@ export function InputModeSettingsSection() {
             className="grid w-full gap-3 md:grid-cols-2"
           >
             {MODE_OPTIONS.map((option) => {
-              const Icon = option.value === "mouse" ? MousePointer2 : ScanEye
+              const Icon =
+                option.value === "mouse"
+                  ? MousePointer2
+                  : option.value === "webcam"
+                    ? Camera
+                    : ScanEye
 
               return (
                 <ToggleGroupItem

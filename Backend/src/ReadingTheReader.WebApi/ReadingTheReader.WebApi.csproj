@@ -11,6 +11,8 @@
         <PackageReference Include="FastEndpoints" Version="8.0.1" />
         <PackageReference Include="FastEndpoints.Swagger" Version="8.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3"/>
+        <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
+        <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260302" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +25,12 @@
     <ItemGroup>
       <Content Include="..\..\.dockerignore">
         <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="OpenCv\Models\**\*.*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
 
@@ -71,6 +79,10 @@
       <_ContentIncludedByDefault Remove="data\live-experiments\4c005a08898e4c1883a9819dc06e1693\experiment-session-live.json" />
       <_ContentIncludedByDefault Remove="data\live-experiments\629ac8f3f53e46afa912f1f9628a5f9b\experiment-session-live.json" />
       <_ContentIncludedByDefault Remove="data\live-experiments\ad1eb473b14f49378efa8654fe0ec3d4\experiment-session-live.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="data\" />
     </ItemGroup>
 
 </Project>

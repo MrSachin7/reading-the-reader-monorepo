@@ -24,6 +24,49 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<InterventionEventRecord> interventionEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
     {
+        return Create(
+            initialSnapshot,
+            latestSnapshot,
+            completionSource,
+            exportedAtUnixMs,
+            lifecycleEvents,
+            gazeSamples,
+            readingSessionStates,
+            [],
+            [],
+            [],
+            participantViewportEvents,
+            readingFocusEvents,
+            attentionEvents,
+            contextPreservationEvents,
+            [],
+            decisionProposalEvents,
+            scheduledInterventionEvents,
+            interventionEvents,
+            finalTokenStats);
+    }
+
+    public static ExperimentReplayExport Create(
+        ExperimentSessionSnapshot initialSnapshot,
+        ExperimentSessionSnapshot latestSnapshot,
+        string completionSource,
+        long exportedAtUnixMs,
+        IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
+        IReadOnlyList<RawGazeSampleRecord> gazeSamples,
+        IReadOnlyList<ReadingSessionStateRecord> readingSessionStates,
+        IReadOnlyList<WebcamGazeSampleRecord> webcamGazeSamples,
+        IReadOnlyList<WebcamSensingStatusRecord> webcamStatusEvents,
+        IReadOnlyList<FacialObservationRecord> facialObservationEvents,
+        IReadOnlyList<ParticipantViewportEventRecord> participantViewportEvents,
+        IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
+        IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
+        IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
+        IReadOnlyList<FacialDifficultyEventRecord> facialDifficultyEvents,
+        IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
+        IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
+        IReadOnlyList<InterventionEventRecord> interventionEvents,
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
+    {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
         var isLiveExport = latestSnapshot.IsActive &&
                            string.Equals(normalizedCompletionSource, "live", StringComparison.OrdinalIgnoreCase);
@@ -33,10 +76,14 @@ public static class ExperimentReplayExportFactory
                 latestSnapshot.StartedAtUnixMs,
                 lifecycleEvents,
                 gazeSamples,
+                webcamGazeSamples,
+                webcamStatusEvents,
+                facialObservationEvents,
                 participantViewportEvents,
                 readingFocusEvents,
                 attentionEvents,
                 contextPreservationEvents,
+                facialDifficultyEvents,
                 decisionProposalEvents,
                 scheduledInterventionEvents,
                 interventionEvents);
@@ -131,12 +178,18 @@ public static class ExperimentReplayExportFactory
                 content.UpdatedAtUnixMs,
                 ComputeContentHash(content.Markdown),
                 new ExperimentReplayContentTokenization("minimal-markdown", "v1")),
-            new ExperimentReplaySensing(gazeSamples.Select(item => item.Copy()).ToArray()),
+            new ExperimentReplaySensing(
+                finalSnapshot.SignalSources.Copy(),
+                gazeSamples.Select(item => item.Copy()).ToArray(),
+                webcamGazeSamples.Select(item => item.Copy()).ToArray(),
+                webcamStatusEvents.Select(item => item.Copy()).ToArray(),
+                facialObservationEvents.Select(item => item.Copy()).ToArray()),
             new ExperimentReplayDerived(
                 participantViewportEvents.Select(item => item.Copy()).ToArray(),
                 readingFocusEvents.Select(item => item.Copy()).ToArray(),
                 attentionEvents.Select(item => item.Copy()).ToArray(),
                 contextPreservationEvents.Select(item => item.Copy()).ToArray(),
+                facialDifficultyEvents.Select(item => item.Copy()).ToArray(),
                 finalTokenStats is null
                     ? null
                     : finalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())),
@@ -156,10 +209,14 @@ public static class ExperimentReplayExportFactory
         long startedAtUnixMs,
         IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
         IReadOnlyList<RawGazeSampleRecord> gazeSamples,
+        IReadOnlyList<WebcamGazeSampleRecord> webcamGazeSamples,
+        IReadOnlyList<WebcamSensingStatusRecord> webcamStatusEvents,
+        IReadOnlyList<FacialObservationRecord> facialObservationEvents,
         IReadOnlyList<ParticipantViewportEventRecord> participantViewportEvents,
         IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
         IReadOnlyList<ReadingAttentionEventRecord> attentionEvents,
         IReadOnlyList<ReadingContextPreservationEventRecord> contextPreservationEvents,
+        IReadOnlyList<FacialDifficultyEventRecord> facialDifficultyEvents,
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents)
@@ -198,10 +255,14 @@ public static class ExperimentReplayExportFactory
 
         Consider(MaxOrNull(lifecycleEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(gazeSamples.Select(item => item.CapturedAtUnixMs)));
+        Consider(MaxOrNull(webcamGazeSamples.Select(item => item.CapturedAtUnixMs)));
+        Consider(MaxOrNull(webcamStatusEvents.Select(item => item.OccurredAtUnixMs)));
+        Consider(MaxOrNull(facialObservationEvents.Select(item => item.CapturedAtUnixMs)));
         Consider(MaxOrNull(participantViewportEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(readingFocusEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(attentionEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(contextPreservationEvents.Select(item => item.OccurredAtUnixMs)));
+        Consider(MaxOrNull(facialDifficultyEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(decisionProposalEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(scheduledInterventionEvents.Select(item => item.OccurredAtUnixMs)));
         Consider(MaxOrNull(interventionEvents.Select(item => item.OccurredAtUnixMs)));
