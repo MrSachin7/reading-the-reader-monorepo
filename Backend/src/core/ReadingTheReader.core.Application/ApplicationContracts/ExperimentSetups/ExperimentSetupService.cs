@@ -23,6 +23,8 @@ public sealed class ExperimentSetupService : IExperimentSetupService
 
     public async ValueTask<ExperimentSetup> SaveAsync(SaveExperimentSetupCommand command, CancellationToken ct = default)
     {
+        var normalizedItems = await NormalizeSaveItemsAsync(command.Items, ct);
+
         await ValidateAsync(
             command.Name,
             command.Status,
@@ -32,9 +34,26 @@ public sealed class ExperimentSetupService : IExperimentSetupService
             command.DefaultLineWidthPx,
             command.DefaultLineHeight,
             command.DefaultLetterSpacingEm,
-            command.Items,
+            normalizedItems,
             ct);
-        return await _experimentSetupStoreAdapter.SaveAsync(command, ct);
+
+        return await _experimentSetupStoreAdapter.SaveAsync(new SaveExperimentSetupCommand
+        {
+            Name = command.Name,
+            Description = command.Description,
+            Status = command.Status,
+            OrderMode = command.OrderMode,
+            DefaultFontFamily = command.DefaultFontFamily,
+            DefaultFontSizePx = command.DefaultFontSizePx,
+            DefaultLineWidthPx = command.DefaultLineWidthPx,
+            DefaultLineHeight = command.DefaultLineHeight,
+            DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+            DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+            DecisionProviderId = command.DecisionProviderId,
+            DecisionExecutionMode = command.DecisionExecutionMode,
+            CalibrationRequired = command.CalibrationRequired,
+            Items = normalizedItems
+        }, ct);
     }
 
     public ValueTask<IReadOnlyCollection<ExperimentSetup>> ListAsync(CancellationToken ct = default)
@@ -63,6 +82,8 @@ public sealed class ExperimentSetupService : IExperimentSetupService
             throw new ExperimentSetupValidationException("id is required.");
         }
 
+        var normalizedItems = await NormalizeUpdateItemsAsync(command.Items, ct);
+
         await ValidateAsync(
             command.Name,
             command.Status,
@@ -72,10 +93,27 @@ public sealed class ExperimentSetupService : IExperimentSetupService
             command.DefaultLineWidthPx,
             command.DefaultLineHeight,
             command.DefaultLetterSpacingEm,
-            command.Items.Select(MapItem).ToArray(),
+            normalizedItems.Select(MapItem).ToArray(),
             ct);
 
-        var updated = await _experimentSetupStoreAdapter.UpdateAsync(command, ct);
+        var updated = await _experimentSetupStoreAdapter.UpdateAsync(new UpdateExperimentSetupCommand
+        {
+            Id = command.Id,
+            Name = command.Name,
+            Description = command.Description,
+            Status = command.Status,
+            OrderMode = command.OrderMode,
+            DefaultFontFamily = command.DefaultFontFamily,
+            DefaultFontSizePx = command.DefaultFontSizePx,
+            DefaultLineWidthPx = command.DefaultLineWidthPx,
+            DefaultLineHeight = command.DefaultLineHeight,
+            DefaultLetterSpacingEm = command.DefaultLetterSpacingEm,
+            DefaultEditableByExperimenter = command.DefaultEditableByExperimenter,
+            DecisionProviderId = command.DecisionProviderId,
+            DecisionExecutionMode = command.DecisionExecutionMode,
+            CalibrationRequired = command.CalibrationRequired,
+            Items = normalizedItems
+        }, ct);
         if (updated is null)
         {
             throw new ExperimentSetupNotFoundException(command.Id);
@@ -196,15 +234,86 @@ public sealed class ExperimentSetupService : IExperimentSetupService
                 throw new ExperimentSetupValidationException($"{label}.letterSpacingEm must be between {ReadingPresentationRules.MinLetterSpacingEm} and {ReadingPresentationRules.MaxLetterSpacingEm}.");
             }
 
-            if (!string.IsNullOrWhiteSpace(item.SourceReadingMaterialSetupId))
-            {
-                var existing = await _readingMaterialSetupStoreAdapter.GetByIdAsync(item.SourceReadingMaterialSetupId.Trim(), ct);
-                if (existing is null)
-                {
-                    throw new ExperimentSetupValidationException($"{label}.sourceReadingMaterialSetupId does not exist.");
-                }
-            }
         }
+    }
+
+    private async ValueTask<SaveExperimentSetupItemCommand[]> NormalizeSaveItemsAsync(
+        IReadOnlyList<SaveExperimentSetupItemCommand> items,
+        CancellationToken ct)
+    {
+        var normalizedItems = new SaveExperimentSetupItemCommand[items.Count];
+        for (var index = 0; index < items.Count; index++)
+        {
+            normalizedItems[index] = await NormalizeSaveItemAsync(items[index], ct);
+        }
+
+        return normalizedItems;
+    }
+
+    private async ValueTask<UpdateExperimentSetupItemCommand[]> NormalizeUpdateItemsAsync(
+        IReadOnlyList<UpdateExperimentSetupItemCommand> items,
+        CancellationToken ct)
+    {
+        var normalizedItems = new UpdateExperimentSetupItemCommand[items.Count];
+        for (var index = 0; index < items.Count; index++)
+        {
+            normalizedItems[index] = await NormalizeUpdateItemAsync(items[index], ct);
+        }
+
+        return normalizedItems;
+    }
+
+    private async ValueTask<SaveExperimentSetupItemCommand> NormalizeSaveItemAsync(
+        SaveExperimentSetupItemCommand item,
+        CancellationToken ct)
+    {
+        return new SaveExperimentSetupItemCommand
+        {
+            SourceReadingMaterialSetupId = await NormalizeSourceReadingMaterialSetupIdAsync(item.SourceReadingMaterialSetupId, ct),
+            SourceReadingMaterialTitle = item.SourceReadingMaterialTitle,
+            Title = item.Title,
+            Markdown = item.Markdown,
+            ResearcherQuestions = item.ResearcherQuestions,
+            FontFamily = item.FontFamily,
+            FontSizePx = item.FontSizePx,
+            LineWidthPx = item.LineWidthPx,
+            LineHeight = item.LineHeight,
+            LetterSpacingEm = item.LetterSpacingEm,
+            EditableByExperimenter = item.EditableByExperimenter
+        };
+    }
+
+    private async ValueTask<UpdateExperimentSetupItemCommand> NormalizeUpdateItemAsync(
+        UpdateExperimentSetupItemCommand item,
+        CancellationToken ct)
+    {
+        return new UpdateExperimentSetupItemCommand
+        {
+            Id = item.Id,
+            SourceReadingMaterialSetupId = await NormalizeSourceReadingMaterialSetupIdAsync(item.SourceReadingMaterialSetupId, ct),
+            SourceReadingMaterialTitle = item.SourceReadingMaterialTitle,
+            Title = item.Title,
+            Markdown = item.Markdown,
+            ResearcherQuestions = item.ResearcherQuestions,
+            FontFamily = item.FontFamily,
+            FontSizePx = item.FontSizePx,
+            LineWidthPx = item.LineWidthPx,
+            LineHeight = item.LineHeight,
+            LetterSpacingEm = item.LetterSpacingEm,
+            EditableByExperimenter = item.EditableByExperimenter
+        };
+    }
+
+    private async ValueTask<string?> NormalizeSourceReadingMaterialSetupIdAsync(string? sourceReadingMaterialSetupId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(sourceReadingMaterialSetupId))
+        {
+            return null;
+        }
+
+        var normalizedSourceId = sourceReadingMaterialSetupId.Trim();
+        var existing = await _readingMaterialSetupStoreAdapter.GetByIdAsync(normalizedSourceId, ct);
+        return existing is null ? null : normalizedSourceId;
     }
 
     private static SaveExperimentSetupItemCommand MapItem(UpdateExperimentSetupItemCommand item)

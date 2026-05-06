@@ -81,4 +81,8 @@
       <_ContentIncludedByDefault Remove="data\live-experiments\ad1eb473b14f49378efa8654fe0ec3d4\experiment-session-live.json" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="data\" />
+    </ItemGroup>
+
 </Project>

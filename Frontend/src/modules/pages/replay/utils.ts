@@ -44,7 +44,7 @@ export function getEventTone(kind: ReplayKeyEvent["kind"], active: boolean) {
 
   switch (kind) {
     case "face":
-      return "border-rose-400/30 bg-rose-500/10"
+      return "border-slate-400/30 bg-slate-500/10"
     case "intervention":
       return "border-amber-400/30 bg-amber-500/10"
     case "connection":
