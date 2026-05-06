@@ -135,11 +135,22 @@ export const experimentSetupApi = baseApi.injectEndpoints({
         { type: "ExperimentSetup", id: "LIST" },
       ],
     }),
+    deleteExperimentSetup: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/experiment-setups/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "ExperimentSetup", id },
+        { type: "ExperimentSetup", id: "LIST" },
+      ],
+    }),
   }),
 })
 
 export const {
   useCreateExperimentSetupMutation,
+  useDeleteExperimentSetupMutation,
   useGetExperimentSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useUpdateExperimentSetupMutation,

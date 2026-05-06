@@ -1,16 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Copy, LoaderCircle, Plus } from "lucide-react"
+import { BookOpen, LoaderCircle, Plus } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { getErrorMessage } from "@/lib/error-utils"
 import {
-  type ReadingMaterialSetup,
-  useCreateReadingMaterialSetupMutation,
   useGetReadingMaterialSetupsQuery,
 } from "@/redux"
 
@@ -26,34 +23,7 @@ function describeControlState(editableByExperimenter: boolean) {
 }
 
 export default function ReadingMaterialLibraryPage() {
-  const [duplicateError, setDuplicateError] = React.useState<string | null>(null)
-  const { data: savedSetups = [], isLoading, refetch } = useGetReadingMaterialSetupsQuery()
-  const [createReadingMaterialSetup, { isLoading: isDuplicating }] =
-    useCreateReadingMaterialSetupMutation()
-
-  const handleDuplicate = React.useCallback(
-    async (setup: ReadingMaterialSetup) => {
-      setDuplicateError(null)
-      try {
-        await createReadingMaterialSetup({
-          name: `${setup.name} copy`,
-          title: setup.title,
-          markdown: setup.markdown,
-          researcherQuestions: setup.researcherQuestions,
-          fontFamily: setup.fontFamily,
-          fontSizePx: setup.fontSizePx,
-          lineWidthPx: setup.lineWidthPx,
-          lineHeight: setup.lineHeight,
-          letterSpacingEm: setup.letterSpacingEm,
-          editableByExperimenter: setup.editableByExperimenter,
-        }).unwrap()
-        void refetch()
-      } catch (error) {
-        setDuplicateError(getErrorMessage(error, "Could not duplicate that material."))
-      }
-    },
-    [createReadingMaterialSetup, refetch]
-  )
+  const { data: savedSetups = [], isLoading } = useGetReadingMaterialSetupsQuery()
 
   return (
     <section className="space-y-6">
@@ -82,12 +52,6 @@ export default function ReadingMaterialLibraryPage() {
           </div>
         </div>
       </div>
-
-      {duplicateError ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-          {duplicateError}
-        </div>
-      ) : null}
 
       {isLoading ? (
         <div className="flex items-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
@@ -127,22 +91,11 @@ export default function ReadingMaterialLibraryPage() {
                     Saved {formatDate(setup.updatedAtUnixMs)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Link href={`/reading-materials/setup?id=${setup.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isDuplicating}
-                    onClick={() => void handleDuplicate(setup)}
-                    title="Duplicate"
-                  >
-                    <Copy className="h-4 w-4" />
+                <Link href={`/reading-materials/setup?id=${setup.id}`}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Edit
                   </Button>
-                </div>
+                </Link>
               </CardContent>
             </Card>
           ))}

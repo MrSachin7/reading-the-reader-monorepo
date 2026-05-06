@@ -30,6 +30,7 @@ export {
 export {
   experimentSetupApi,
   useCreateExperimentSetupMutation,
+  useDeleteExperimentSetupMutation,
   useGetExperimentSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useUpdateExperimentSetupMutation,

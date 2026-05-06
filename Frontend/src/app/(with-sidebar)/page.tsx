@@ -2,15 +2,13 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Archive, BookOpen, Copy, FilePlus2, FlaskConical, Play, Search } from "lucide-react"
+import { BookOpen, Play, Search } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useGetExperimentSetupsQuery } from "@/redux"
-
-const PARTICIPANT_FLOW_STARTED_KEY = "participant-flow-started-v2"
 
 function formatDate(unixMs: number) {
   return new Intl.DateTimeFormat("en-US", {
@@ -24,7 +22,7 @@ function markParticipantFlowStarted() {
     return
   }
 
-  window.localStorage.setItem(PARTICIPANT_FLOW_STARTED_KEY, `${Date.now()}`)
+  window.localStorage.setItem("participant-flow-started-v2", `${Date.now()}`)
 }
 
 export default function HomePage() {
@@ -46,7 +44,9 @@ export default function HomePage() {
       )
     : templates
   const readyTemplates = filteredTemplates.filter((template) => template.status === "ready")
-  const draftTemplates = filteredTemplates.filter((template) => template.status !== "ready" && template.status !== "archived")
+  const draftTemplates = filteredTemplates.filter(
+    (template) => template.status !== "ready" && template.status !== "archived"
+  )
 
   return (
     <section className="space-y-6">
@@ -57,148 +57,105 @@ export default function HomePage() {
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Experiment templates</h1>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Start a saved protocol, continue a draft, or create a one-off custom experiment.
+            Start a saved protocol or continue a draft.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href="/reading-material/setup">
-              <BookOpen className="h-4 w-4" />
-              Material Library
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/experiment/setups?mode=custom">
-              <FilePlus2 className="h-4 w-4" />
-              Custom Experiment
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search templates by name, description, or material title"
-          />
-        </div>
         <Button asChild variant="outline">
-          <Link href="/experiment/setups">
-            <FlaskConical className="h-4 w-4" />
-            Manage Templates
+          <Link href="/reading-materials">
+            <BookOpen className="h-4 w-4" />
+            Material Library
           </Link>
         </Button>
+      </header>
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search templates by name, description, or material title"
+        />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Ready to run</h2>
-              <Badge variant="outline">{readyTemplates.length} ready</Badge>
-            </div>
-            <div className="grid gap-3">
-              {readyTemplates.map((template) => (
-                <Card key={template.id}>
-                  <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold">{template.name}</h3>
-                        <Badge>{template.status}</Badge>
-                        <Badge variant="outline">{template.orderMode}</Badge>
-                        <Badge variant="outline">{template.items.length} materials</Badge>
-                      </div>
-                      <p className="max-w-3xl text-sm text-muted-foreground">
-                        {template.description || "No description provided."}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Updated {formatDate(template.updatedAtUnixMs)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      <Button asChild onClick={markParticipantFlowStarted}>
-                        <Link href={`/researcher/experiment?templateId=${template.id}`}>
-                          <Play className="h-4 w-4" />
-                          Start
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline">
-                        <Link href={`/experiment/setups?id=${template.id}`}>Edit</Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {!isLoading && readyTemplates.length === 0 ? (
-                <Card>
-                  <CardContent className="p-6 text-sm text-muted-foreground">
-                    No ready templates yet. Continue a draft or create a custom experiment.
-                  </CardContent>
-                </Card>
-              ) : null}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Drafts</h2>
-              <Badge variant="outline">{draftTemplates.length} drafts</Badge>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {draftTemplates.map((template) => (
-                <Card key={template.id}>
-                  <CardHeader>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{template.status}</Badge>
-                      <Badge variant="outline">{template.items.length} materials</Badge>
-                    </div>
-                    <CardTitle className="text-lg">{template.name}</CardTitle>
-                    <CardDescription>{template.description || "Draft template"}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-2">
-                    <Button asChild variant="outline">
-                      <Link href={`/experiment/setups?id=${template.id}`}>Continue setup</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Ready to run</h2>
+          <Badge variant="outline">{readyTemplates.length} ready</Badge>
         </div>
+        <div className="grid gap-3">
+          {readyTemplates.map((template) => (
+            <Card key={template.id}>
+              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold">{template.name}</h3>
+                    <Badge>{template.status}</Badge>
+                    <Badge variant="outline">{template.orderMode}</Badge>
+                    <Badge variant="outline">{template.items.length} materials</Badge>
+                  </div>
+                  <p className="max-w-3xl text-sm text-muted-foreground">
+                    {template.description || "No description provided."}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Updated {formatDate(template.updatedAtUnixMs)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button asChild onClick={markParticipantFlowStarted}>
+                    <Link href={`/researcher/experiment?templateId=${template.id}`}>
+                      <Play className="h-4 w-4" />
+                      Start
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href={`/experiment-templates/setup?id=${template.id}`}>Edit</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {!isLoading && readyTemplates.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                No ready templates yet.{" "}
+                <Link href="/experiment-templates" className="underline underline-offset-4">
+                  Open the template library
+                </Link>{" "}
+                to create one.
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+      </section>
 
-        <aside className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom experiment</CardTitle>
-              <CardDescription>
-                Design a one-off run now. Save it as a template only when it should be reusable.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button asChild className="w-full">
-                <Link href="/experiment/setups?mode=custom">
-                  <FilePlus2 className="h-4 w-4" />
-                  Start Custom Designer
-                </Link>
-              </Button>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="rounded-lg border p-3">
-                  <Copy className="mb-2 h-4 w-4" />
-                  Reuse saved materials
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Drafts</h2>
+          <Badge variant="outline">{draftTemplates.length} drafts</Badge>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {draftTemplates.map((template) => (
+            <Card key={template.id}>
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{template.status}</Badge>
+                  <Badge variant="outline">{template.items.length} materials</Badge>
                 </div>
-                <div className="rounded-lg border p-3">
-                  <Archive className="mb-2 h-4 w-4" />
-                  Snapshot preserved
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+                <CardTitle className="text-lg">{template.name}</CardTitle>
+                <CardDescription>{template.description || "Draft template"}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button asChild variant="outline">
+                  <Link href={`/experiment-templates/setup?id=${template.id}`}>
+                    Continue setup
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
     </section>
   )
 }

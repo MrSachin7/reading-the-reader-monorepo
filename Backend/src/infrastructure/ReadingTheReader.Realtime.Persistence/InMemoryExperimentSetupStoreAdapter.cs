@@ -107,6 +107,16 @@ public sealed class InMemoryExperimentSetupStoreAdapter : IExperimentSetupStoreA
         }
     }
 
+    public ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        lock (_syncRoot)
+        {
+            return ValueTask.FromResult(_items.Remove(id));
+        }
+    }
+
     private static ExperimentSetupItem BuildItem(SaveExperimentSetupItemCommand item, int index, string? existingId)
     {
         return new ExperimentSetupItem

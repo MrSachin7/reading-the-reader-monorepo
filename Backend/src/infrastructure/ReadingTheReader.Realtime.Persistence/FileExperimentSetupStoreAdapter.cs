@@ -124,6 +124,18 @@ public sealed class FileExperimentSetupStoreAdapter : IExperimentSetupStoreAdapt
         return ToExperimentSetup(updated);
     }
 
+    public ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        var path = GetPath(id);
+        if (!File.Exists(path))
+        {
+            return ValueTask.FromResult(false);
+        }
+
+        File.Delete(path);
+        return ValueTask.FromResult(true);
+    }
+
     private string GetPath(string id) => Path.Combine(_directoryPath, $"{id}.json");
 
     private async ValueTask WriteAsync(string path, StoredExperimentSetup stored, CancellationToken ct)

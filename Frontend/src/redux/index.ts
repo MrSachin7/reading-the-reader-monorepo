@@ -15,6 +15,7 @@ export {
   useCollectValidationPointMutation,
   useCreateReadingMaterialSetupMutation,
   useCreateExperimentSetupMutation,
+  useDeleteExperimentSetupMutation,
   useFinishExperimentSessionMutation,
   useFinishCalibrationMutation,
   useFinishValidationMutation,
