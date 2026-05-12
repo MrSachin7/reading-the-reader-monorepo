@@ -181,7 +181,6 @@ export default function ExperimentSetupPage() {
   const [saveAsTemplate, setSaveAsTemplate] = React.useState(!startInCustomMode)
   const [selectionError, setSelectionError] = React.useState<string | null>(null)
   const [saveError, setSaveError] = React.useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = React.useState<string | null>(null)
 
   const { data: readingMaterialSetups = [], isLoading: isLoadingReadingMaterials } =
     useGetReadingMaterialSetupsQuery()
@@ -207,7 +206,6 @@ export default function ExperimentSetupPage() {
   const loadSetup = React.useCallback(
     async (id: string) => {
       setSelectionError(null)
-      setSaveSuccess(null)
 
       try {
         const setup = await getExperimentSetupById(id).unwrap()
@@ -243,7 +241,6 @@ export default function ExperimentSetupPage() {
           ...current,
           items: [...current.items, buildDraftItem(source)],
         }))
-        setSaveSuccess(null)
       } catch (error) {
         if (getErrorStatus(error) === 404) {
           setSelectionError("That reading material no longer exists.")
@@ -260,9 +257,7 @@ export default function ExperimentSetupPage() {
     setDraft((current) => ({
       ...current,
       items: current.items.map((item) => (item.localId === localId ? updater(item) : item)),
-    }))
-    setSaveSuccess(null)
-  }, [])
+    }))  }, [])
 
   const moveItem = React.useCallback((localId: string, direction: -1 | 1) => {
     setDraft((current) => {
@@ -283,25 +278,20 @@ export default function ExperimentSetupPage() {
         ...current,
         items,
       }
-    })
-    setSaveSuccess(null)
-  }, [])
+    })  }, [])
 
   const removeItem = React.useCallback((localId: string) => {
     setDraft((current) => ({
       ...current,
       items: current.items.filter((item) => item.localId !== localId),
-    }))
-    setSaveSuccess(null)
-  }, [])
+    }))  }, [])
 
   const handleSave = React.useCallback(async () => {
     setSaveError(null)
-    setSaveSuccess(null)
 
     try {
       if (selectedSetupId) {
-        const updated = await updateExperimentSetup({
+        await updateExperimentSetup({
           id: selectedSetupId,
           body: {
             ...toCreateRequest(draft),
@@ -321,19 +311,15 @@ export default function ExperimentSetupPage() {
             })),
           },
         }).unwrap()
-        setDraft(mapExperimentToDraft(updated))
-        setSaveSuccess(`Updated "${updated.name}".`)
-        return
+      } else {
+        await createExperimentSetup(toCreateRequest(draft)).unwrap()
       }
 
-      const created = await createExperimentSetup(toCreateRequest(draft)).unwrap()
-      setSelectedSetupId(created.id)
-      setDraft(mapExperimentToDraft(created))
-      setSaveSuccess(`Saved "${created.name}".`)
+      router.push("/experiment-templates")
     } catch (error) {
       setSaveError(getErrorMessage(error, "Could not save the experiment setup."))
     }
-  }, [createExperimentSetup, draft, selectedSetupId, updateExperimentSetup])
+  }, [createExperimentSetup, draft, router, selectedSetupId, updateExperimentSetup])
 
   const applyDraftToRuntime = React.useCallback((setupId: string | null, setupName: string | null) => {
     const firstItem = draft.items[0]
@@ -370,8 +356,6 @@ export default function ExperimentSetupPage() {
 
   const handleStart = React.useCallback(async () => {
     setSaveError(null)
-    setSaveSuccess(null)
-
     try {
       if (saveAsTemplate) {
         const saved = selectedSetupId
@@ -459,13 +443,6 @@ export default function ExperimentSetupPage() {
               <Alert variant="destructive">
                 <AlertTitle>Save issue</AlertTitle>
                 <AlertDescription>{saveError}</AlertDescription>
-              </Alert>
-            ) : null}
-
-            {saveSuccess ? (
-              <Alert>
-                <AlertTitle>Saved</AlertTitle>
-                <AlertDescription>{saveSuccess}</AlertDescription>
               </Alert>
             ) : null}
 
