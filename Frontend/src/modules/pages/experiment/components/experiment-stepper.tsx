@@ -58,7 +58,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   applyReadingPresentationSettings,
   useReadingSettings,
@@ -306,6 +306,19 @@ function resolveConditionOption(
   )
 }
 
+function getDecisionOptionValue(
+  option: Pick<DecisionConditionOption, "providerId" | "executionMode">
+) {
+  return `${option.providerId}:${option.executionMode}`
+}
+
+function resolveConditionOptionValue(value: string) {
+  return (
+    DECISION_CONDITION_OPTIONS.find((option) => getDecisionOptionValue(option) === value) ??
+    DECISION_CONDITION_OPTIONS[0]
+  )
+}
+
 function isExternalConditionAvailable(
   option: DecisionConditionOption,
   externalProviderStatus: ExternalProviderStatusSnapshot
@@ -321,79 +334,6 @@ function isExternalConditionAvailable(
   return option.executionMode === "autonomous"
     ? externalProviderStatus.supportsAutonomousExecution
     : externalProviderStatus.supportsAdvisoryExecution
-}
-
-function getAvailableDecisionConditionOptions(
-  externalProviderStatus: ExternalProviderStatusSnapshot
-) {
-  return DECISION_CONDITION_OPTIONS.filter((option) =>
-    isExternalConditionAvailable(option, externalProviderStatus)
-  )
-}
-
-type PluginStatusPanelProps = {
-  eyebrow: string
-  title: string
-  badge: string
-  tone: "connected" | "offline" | "unavailable" | "builtin"
-  description: string
-  details?: string[]
-}
-
-function PluginStatusPanel({
-  eyebrow,
-  title,
-  badge,
-  tone,
-  description,
-  details = [],
-}: PluginStatusPanelProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-[1.4rem] border-2 px-5 py-4 shadow-sm",
-        tone === "connected" &&
-          "border-primary/55 bg-primary/10 shadow-[0_12px_32px_rgba(15,23,42,0.1)]",
-        tone === "unavailable" &&
-          "border-destructive/55 bg-destructive/10 shadow-[0_12px_32px_rgba(127,29,29,0.14)]",
-        tone === "offline" &&
-          "border-accent/55 bg-accent/15 shadow-[0_12px_32px_rgba(120,53,15,0.12)]",
-        tone === "builtin" &&
-          "border-secondary-foreground/35 bg-secondary/80 shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
-      )}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/75">
-            {eyebrow}
-          </p>
-          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        </div>
-        <Badge
-          className={cn(
-            "border px-3 py-1 text-[10px] uppercase tracking-[0.18em]",
-            tone === "connected" && "border-primary/40 bg-primary text-primary-foreground",
-            tone === "unavailable" && "border-destructive/40 bg-destructive text-white",
-            tone === "offline" && "border-accent/45 bg-accent text-accent-foreground",
-            tone === "builtin" && "border-secondary-foreground/35 bg-secondary text-secondary-foreground"
-          )}
-        >
-          {badge}
-        </Badge>
-      </div>
-
-      <p className="mt-3 text-sm leading-6 text-foreground/85">{description}</p>
-      {details.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {details.map((detail) => (
-            <Badge key={detail} variant="outline" className="bg-background/70">
-              {detail}
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
 }
 
 function MouseModeSetupStep({
@@ -511,64 +451,6 @@ function WebcamModeSetupStep({
         ) : null}
       </CardContent>
     </Card>
-  )
-}
-
-type RuntimePluginOptionButtonProps = {
-  label: string
-  pluginLabel: string
-  meta: string
-  description: string
-  isSelected: boolean
-  isUnavailable?: boolean
-  disabled?: boolean
-  unavailableMessage: string
-  onClick: () => void
-}
-
-function RuntimePluginOptionButton({
-  label,
-  pluginLabel,
-  meta,
-  description,
-  isSelected,
-  isUnavailable = false,
-  disabled = false,
-  unavailableMessage,
-  onClick,
-}: RuntimePluginOptionButtonProps) {
-  return (
-    <button
-      type="button"
-      disabled={disabled || isUnavailable}
-      onClick={() => {
-        if (!isUnavailable) {
-          onClick()
-        }
-      }}
-      className={cn(
-        "w-full rounded-2xl border p-5 text-left transition-colors",
-        "bg-card hover:border-primary/40 hover:bg-accent/30",
-        isSelected && "border-primary bg-accent/50",
-        isUnavailable &&
-          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
-      )}
-    >
-      <div className="space-y-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-semibold">{label}</p>
-            <Badge variant={isSelected ? "secondary" : "outline"}>{pluginLabel}</Badge>
-            {isUnavailable ? <Badge variant="outline">Unavailable</Badge> : null}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
-          <p className="mt-3 text-sm text-muted-foreground">{description}</p>
-          {isUnavailable ? (
-            <p className="mt-2 text-xs text-accent-foreground">{unavailableMessage}</p>
-          ) : null}
-        </div>
-      </div>
-    </button>
   )
 }
 
@@ -877,6 +759,7 @@ type SessionContentStepProps = {
   onCompletionChange?: (isComplete: boolean) => void
   onSubmitRequestChange?: (submitHandler: (() => Promise<boolean>) | null) => void
   saveReadingSessionDraft?: () => Promise<boolean>
+  isReadingMaterialSelectionLocked?: boolean
   currentDecisionConfiguration?: DecisionConfiguration
   currentEyeMovementAnalysisConfiguration?: EyeMovementAnalysisConfiguration
   externalProviderStatus?: ExternalProviderStatusSnapshot
@@ -888,6 +771,7 @@ function SessionContentStep({
   onCompletionChange,
   onSubmitRequestChange,
   saveReadingSessionDraft,
+  isReadingMaterialSelectionLocked = false,
   currentDecisionConfiguration = EMPTY_DECISION_CONFIGURATION,
   currentEyeMovementAnalysisConfiguration = EMPTY_EYE_MOVEMENT_ANALYSIS_CONFIGURATION,
   externalProviderStatus = EMPTY_EXTERNAL_PROVIDER_STATUS,
@@ -918,6 +802,10 @@ function SessionContentStep({
     currentEyeMovementAnalysisConfiguration.providerId
   )
   const hasSelectedMaterial = readingSession.title.trim().length > 0
+  const readyExperimentSetups = React.useMemo(
+    () => experimentSetups.filter((setup) => setup.status === "ready"),
+    [experimentSetups]
+  )
   const selectedExperimentSetup = React.useMemo(
     () =>
       experimentSetups.find((setup) => setup.id === readingSession.selectedExperimentSetupId) ??
@@ -946,10 +834,6 @@ function SessionContentStep({
     : readingSession.source === "preset"
       ? "Live-adjustable"
       : "Local draft"
-  const availableDecisionOptions = React.useMemo(
-    () => getAvailableDecisionConditionOptions(externalProviderStatus),
-    [externalProviderStatus]
-  )
   const selectedConditionOption = React.useMemo(
     () =>
       resolveConditionOption(
@@ -962,17 +846,7 @@ function SessionContentStep({
   const isSelectedConditionUnavailable =
     selectedConditionOption.providerId === "external" &&
     !isExternalConditionAvailable(selectedConditionOption, externalProviderStatus)
-  const visibleDecisionOptions = React.useMemo(() => {
-    if (!isSelectedConditionUnavailable) {
-      return availableDecisionOptions
-    }
-
-    return [...availableDecisionOptions, selectedConditionOption]
-  }, [availableDecisionOptions, isSelectedConditionUnavailable, selectedConditionOption])
-  const connectedExternalModes = [
-    externalProviderStatus.supportsAdvisoryExecution ? "advisory" : null,
-    externalProviderStatus.supportsAutonomousExecution ? "autonomous" : null,
-  ].filter(Boolean) as string[]
+  const selectedDecisionValue = getDecisionOptionValue(selectedConditionOption)
   const decisionPluginName =
     externalProviderStatus.displayName ?? externalProviderStatus.providerId ?? "Decision-maker service"
   const eyeAnalyzerPluginName =
@@ -981,8 +855,20 @@ function SessionContentStep({
     "Eye analyzer service"
   const isSelectedAnalysisPluginUnavailable =
     selectedAnalysisProviderId === "external" && !eyeMovementAnalysisProviderStatus.isConnected
-  const selectedAnalysisPluginLabel =
-    selectedAnalysisProviderId === "external" ? "Eye analyzer service" : "Built-in analyzer"
+  const selectedAnalysisOption =
+    EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS.find(
+      (option) => option.providerId === selectedAnalysisProviderId
+    ) ?? EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS[0]
+  const decisionStatusLabel = externalProviderStatus.isConnected
+    ? "Connected"
+    : isSelectedConditionUnavailable
+      ? "Unavailable"
+      : "Built-in"
+  const analysisStatusLabel = eyeMovementAnalysisProviderStatus.isConnected
+    ? "Connected"
+    : isSelectedAnalysisPluginUnavailable
+      ? "Unavailable"
+      : "Built-in"
 
   React.useEffect(() => {
     onCompletionChange?.(hasSelectedMaterial)
@@ -1003,6 +889,68 @@ function SessionContentStep({
     onSubmitRequestChange?.(saveReadingSessionDraft ?? null)
     return () => onSubmitRequestChange?.(null)
   }, [onSubmitRequestChange, saveReadingSessionDraft])
+
+  const handleDecisionPluginChange = React.useCallback(
+    async (value: string) => {
+      const option = resolveConditionOptionValue(value)
+      const isUnavailable =
+        option.providerId === "external" &&
+        !isExternalConditionAvailable(option, externalProviderStatus)
+
+      if (isUnavailable) {
+        return
+      }
+
+      setSelectionError(null)
+
+      try {
+        await updateDecisionConfiguration({
+          conditionLabel: option.label,
+          providerId: option.providerId,
+          executionMode: option.executionMode,
+          automationPaused,
+        }).unwrap()
+        setSelectedDecisionCondition({
+          providerId: option.providerId,
+          executionMode: option.executionMode,
+        })
+      } catch (error) {
+        setSelectionError(
+          getErrorMessage(error, "Could not update the experiment condition.")
+        )
+      }
+    },
+    [automationPaused, externalProviderStatus, updateDecisionConfiguration]
+  )
+
+  const handleAnalysisPluginChange = React.useCallback(
+    async (providerId: string) => {
+      const option =
+        EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS.find(
+          (pluginOption) => pluginOption.providerId === providerId
+        ) ?? EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS[0]
+      const isUnavailable =
+        option.providerId === "external" && !eyeMovementAnalysisProviderStatus.isConnected
+
+      if (isUnavailable) {
+        return
+      }
+
+      setSelectionError(null)
+
+      try {
+        await updateEyeMovementAnalysisConfiguration({
+          providerId: option.providerId,
+        }).unwrap()
+        setSelectedAnalysisProviderId(option.providerId)
+      } catch (error) {
+        setSelectionError(
+          getErrorMessage(error, "Could not update eye movement analysis.")
+        )
+      }
+    },
+    [eyeMovementAnalysisProviderStatus.isConnected, updateEyeMovementAnalysisConfiguration]
+  )
 
   return (
     <div className="space-y-6">
@@ -1026,10 +974,24 @@ function SessionContentStep({
             </Alert>
           ) : null}
 
+          {isReadingMaterialSelectionLocked ? (
+            <Alert>
+              <AlertTitle>Reading material locked</AlertTitle>
+              <AlertDescription>
+                This session was started from a template, so its reading baseline stays fixed here.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <button
               type="button"
+              disabled={isReadingMaterialSelectionLocked}
               onClick={() => {
+                if (isReadingMaterialSelectionLocked) {
+                  return
+                }
+
                 resetReadingSettings()
                 dispatch(setReadingSessionSource("preset"))
                 dispatch(setReadingSessionTitle("Reading as Deliberate Attention"))
@@ -1048,7 +1010,9 @@ function SessionContentStep({
               className={cn(
                 "w-full rounded-2xl border p-5 text-left transition-colors",
                 "bg-card hover:border-primary/40 hover:bg-accent/30",
-                readingSession.source === "preset" && "border-primary bg-accent/50"
+                readingSession.source === "preset" && "border-primary bg-accent/50",
+                isReadingMaterialSelectionLocked &&
+                  "cursor-not-allowed opacity-60 hover:border-border hover:bg-card"
               )}
             >
               <div className="space-y-3">
@@ -1063,11 +1027,16 @@ function SessionContentStep({
               </div>
             </button>
 
-            {experimentSetups.map((setup) => (
+            {readyExperimentSetups.map((setup) => (
               <button
                 key={setup.id}
                 type="button"
+                disabled={isLoadingSelectedExperiment || isReadingMaterialSelectionLocked}
                 onClick={async () => {
+                  if (isReadingMaterialSelectionLocked) {
+                    return
+                  }
+
                   setSelectionError(null)
 
                   try {
@@ -1113,11 +1082,12 @@ function SessionContentStep({
                     )
                   }
                 }}
-                disabled={isLoadingSelectedExperiment}
                 className={cn(
                   "w-full rounded-2xl border p-5 text-left transition-colors",
                   "bg-card hover:border-primary/40 hover:bg-accent/30",
-                  readingSession.selectedExperimentSetupId === setup.id && "border-primary bg-accent/50"
+                  readingSession.selectedExperimentSetupId === setup.id && "border-primary bg-accent/50",
+                  isReadingMaterialSelectionLocked &&
+                    "cursor-not-allowed opacity-60 hover:border-border hover:bg-card"
                 )}
               >
                 <div className="space-y-3">
@@ -1138,221 +1108,138 @@ function SessionContentStep({
             <button
               type="button"
               onClick={() => router.push("/experiment/setups")}
-              disabled={isLoadingExperimentSetups}
-              className="flex min-h-[170px] w-full flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 p-5 text-center transition-colors hover:border-primary/40 hover:bg-accent/30"
+              disabled={isLoadingExperimentSetups || isReadingMaterialSelectionLocked}
+              className={cn(
+                "flex min-h-[170px] w-full flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 p-5 text-center transition-colors hover:border-primary/40 hover:bg-accent/30",
+                isReadingMaterialSelectionLocked &&
+                  "cursor-not-allowed opacity-60 hover:border-border hover:bg-muted/20"
+              )}
             >
               <Plus className="mb-3 h-6 w-6 text-muted-foreground" />
               <p className="text-base font-semibold">Create experiment</p>
             </button>
           </div>
 
-          <div className="space-y-5">
-            <div>
-              <p className="text-sm font-semibold">Runtime plugins</p>
-              <p className="text-sm text-muted-foreground">
-                Choose the decision and eye movement analysis plugins for this session.
-              </p>
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Runtime plugins</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Choose the decision and eye movement analysis plugins for this session.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant={
+                    isSelectedConditionUnavailable
+                      ? "destructive"
+                      : externalProviderStatus.isConnected
+                        ? "default"
+                        : "secondary"
+                  }
+                >
+                  Decision: {decisionStatusLabel}
+                </Badge>
+                <Badge
+                  variant={
+                    isSelectedAnalysisPluginUnavailable
+                      ? "destructive"
+                      : eyeMovementAnalysisProviderStatus.isConnected
+                        ? "default"
+                        : "secondary"
+                  }
+                >
+                  Analyzer: {analysisStatusLabel}
+                </Badge>
+              </div>
             </div>
 
-            <PluginStatusPanel
-              eyebrow="Decision plugin"
-              title={
-                externalProviderStatus.isConnected
-                  ? `${decisionPluginName} connected`
-                  : isSelectedConditionUnavailable
-                    ? "Selected decision plugin unavailable"
-                    : "Built-in decision flow active"
-              }
-              badge={
-                externalProviderStatus.isConnected
-                  ? "Connected"
-                  : isSelectedConditionUnavailable
-                    ? "Unavailable"
-                    : "Built-in"
-              }
-              tone={
-                externalProviderStatus.isConnected
-                  ? "connected"
-                  : isSelectedConditionUnavailable
-                    ? "unavailable"
-                    : "builtin"
-              }
-              description={
-                externalProviderStatus.isConnected
-                  ? connectedExternalModes.length > 0
-                    ? `The external decision-maker is available for ${connectedExternalModes.join(" and ")} execution.`
-                    : "The external decision-maker is connected but does not advertise execution support."
-                  : isSelectedConditionUnavailable
-                    ? "Reconnect the decision-maker service or switch to a built-in decision plugin before relying on automation."
-                    : "External decision plugins become selectable when a decision-maker service connects."
-              }
-              details={[
-                `Selected: ${selectedConditionLabel}`,
-                externalProviderStatus.providerId
-                  ? `Provider: ${externalProviderStatus.providerId}`
-                  : "Provider: built-in",
-              ]}
-            />
+            <FieldGroup className="mt-5 grid gap-4 lg:grid-cols-2">
+              <Field>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <FieldLabel>Decision plugin</FieldLabel>
+                  <Badge variant="outline">{selectedConditionOption.pluginLabel}</Badge>
+                </div>
+                <Select
+                  value={selectedDecisionValue}
+                  disabled={isSavingDecisionConfiguration}
+                  onValueChange={handleDecisionPluginChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select decision plugin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {DECISION_CONDITION_OPTIONS.map((option) => {
+                        const isUnavailable =
+                          option.providerId === "external" &&
+                          !isExternalConditionAvailable(option, externalProviderStatus)
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {visibleDecisionOptions.map((option) => {
-                const isSelected =
-                  selectedDecisionCondition.providerId === option.providerId &&
-                  selectedDecisionCondition.executionMode === option.executionMode
-                const isUnavailable =
-                  option.providerId === "external" &&
-                  !isExternalConditionAvailable(option, externalProviderStatus)
-
-                return (
-                  <button
-                    key={option.label}
-                    type="button"
-                    disabled={isSavingDecisionConfiguration || isUnavailable}
-                    onClick={async () => {
-                      if (isUnavailable) {
-                        return
-                      }
-
-                      setSelectionError(null)
-
-                      try {
-                        await updateDecisionConfiguration({
-                          conditionLabel: option.label,
-                          providerId: option.providerId,
-                          executionMode: option.executionMode,
-                          automationPaused,
-                        }).unwrap()
-                        setSelectedDecisionCondition({
-                          providerId: option.providerId,
-                          executionMode: option.executionMode,
-                        })
-                      } catch (error) {
-                        setSelectionError(
-                          getErrorMessage(error, "Could not update the experiment condition.")
+                        return (
+                          <SelectItem
+                            key={option.label}
+                            value={getDecisionOptionValue(option)}
+                            disabled={isUnavailable}
+                          >
+                            {option.label}
+                            {isUnavailable ? " - unavailable" : ""}
+                          </SelectItem>
                         )
-                      }
-                    }}
-                    className={cn(
-                      "w-full rounded-2xl border p-5 text-left transition-colors",
-                      "bg-card hover:border-primary/40 hover:bg-accent/30",
-                      isSelected && "border-primary bg-accent/50",
-        isUnavailable &&
-          "cursor-not-allowed border-accent/45 bg-accent/10 text-muted-foreground hover:border-accent/45 hover:bg-accent/10"
-                    )}
-                  >
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-semibold">{option.label}</p>
-                        <Badge variant={isSelected ? "secondary" : "outline"}>
-                          {option.pluginLabel}
-                        </Badge>
-                        {isUnavailable ? <Badge variant="outline">Unavailable</Badge> : null}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {option.providerId} · {option.executionMode}
-                      </p>
-                      <p className="mt-3 text-sm text-muted-foreground">{option.description}</p>
-                      {isUnavailable ? (
-            <p className="mt-2 text-xs text-accent-foreground">
-                          Start the decision-maker service before choosing this plugin.
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  {externalProviderStatus.isConnected
+                    ? `${decisionPluginName} is connected.`
+                    : isSelectedConditionUnavailable
+                      ? "Reconnect the decision-maker service or switch to a built-in option."
+                      : "External decision plugins become selectable when a service connects."}
+                </FieldDescription>
+              </Field>
+              <Field>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <FieldLabel>Eye analyzer</FieldLabel>
+                  <Badge variant="outline">{selectedAnalysisOption.pluginLabel}</Badge>
+                </div>
+                <Select
+                  value={selectedAnalysisOption.providerId}
+                  disabled={isSavingAnalysisConfiguration}
+                  onValueChange={handleAnalysisPluginChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select eye analyzer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS.map((option) => {
+                        const isUnavailable =
+                          option.providerId === "external" &&
+                          !eyeMovementAnalysisProviderStatus.isConnected
 
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold">Eye analyzer plugin</p>
-              <p className="text-sm text-muted-foreground">
-                Choose which plugin owns fixation and saccade analysis.
-              </p>
-            </div>
-
-            <PluginStatusPanel
-              eyebrow="Eye analyzer plugin"
-              title={
-                eyeMovementAnalysisProviderStatus.isConnected
-                  ? `${eyeAnalyzerPluginName} connected`
-                  : isSelectedAnalysisPluginUnavailable
-                    ? "Selected eye analyzer unavailable"
-                    : "Built-in analyzer active"
-              }
-              badge={
-                eyeMovementAnalysisProviderStatus.isConnected
-                  ? "Connected"
-                  : isSelectedAnalysisPluginUnavailable
-                    ? "Unavailable"
-                    : "Built-in"
-              }
-              tone={
-                eyeMovementAnalysisProviderStatus.isConnected
-                  ? "connected"
-                  : isSelectedAnalysisPluginUnavailable
-                    ? "unavailable"
-                    : "builtin"
-              }
-              description={
-                eyeMovementAnalysisProviderStatus.isConnected
-                  ? "The external analyzer can provide backend-owned fixation and saccade state for this session."
-                  : isSelectedAnalysisPluginUnavailable
-                    ? "Reconnect the analyzer service or switch to the built-in analyzer before starting the session."
-                    : "The built-in analyzer remains the authoritative fixation and saccade source until an external analyzer is selected."
-              }
-              details={[
-                `Selected: ${selectedAnalysisPluginLabel}`,
-                eyeMovementAnalysisProviderStatus.providerId
-                  ? `Provider: ${eyeMovementAnalysisProviderStatus.providerId}`
-                  : "Provider: built-in",
-              ]}
-            />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {EYE_MOVEMENT_ANALYSIS_PLUGIN_OPTIONS.map((option) => {
-                const isSelected = selectedAnalysisProviderId === option.providerId
-                const isUnavailable =
-                  option.providerId === "external" &&
-                  !eyeMovementAnalysisProviderStatus.isConnected
-
-                return (
-                  <RuntimePluginOptionButton
-                    key={option.providerId}
-                    label={option.label}
-                    pluginLabel={option.pluginLabel}
-                    meta={option.providerId}
-                    description={
-                      option.providerId === "external" &&
-                      eyeMovementAnalysisProviderStatus.isConnected
-                        ? `Use ${eyeAnalyzerPluginName} for fixation and saccade state.`
-                        : option.description
-                    }
-                    isSelected={isSelected}
-                    isUnavailable={isUnavailable}
-                    disabled={isSavingAnalysisConfiguration}
-                    unavailableMessage="Start the eye analyzer service before choosing this plugin."
-                    onClick={async () => {
-                      setSelectionError(null)
-
-                      try {
-                        await updateEyeMovementAnalysisConfiguration({
-                          providerId: option.providerId,
-                        }).unwrap()
-                        setSelectedAnalysisProviderId(option.providerId)
-                      } catch (error) {
-                        setSelectionError(
-                          getErrorMessage(error, "Could not update eye movement analysis.")
+                        return (
+                          <SelectItem
+                            key={option.providerId}
+                            value={option.providerId}
+                            disabled={isUnavailable}
+                          >
+                            {option.label}
+                            {isUnavailable ? " - unavailable" : ""}
+                          </SelectItem>
                         )
-                      }
-                    }}
-                  />
-                )
-              })}
-            </div>
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  {eyeMovementAnalysisProviderStatus.isConnected
+                    ? `${eyeAnalyzerPluginName} is connected.`
+                    : isSelectedAnalysisPluginUnavailable
+                      ? "Reconnect the analyzer service or switch to the built-in analyzer."
+                      : "The built-in analyzer remains active until an external analyzer is selected."}
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
           </div>
 
           {hasSelectedMaterial ? (
@@ -1494,6 +1381,10 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     void (async () => {
       try {
         const savedSetup = await getExperimentSetupById(templateIdFromQuery).unwrap()
+        if (savedSetup.status !== "ready") {
+          return
+        }
+
         const firstItem = savedSetup.items[0]
         if (!firstItem) {
           return
@@ -2016,6 +1907,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
             onCompletionChange={handleStepOneCompletionChange}
             onSubmitRequestChange={handleStepSubmitterChange}
             saveReadingSessionDraft={saveReadingSessionDraft}
+            isReadingMaterialSelectionLocked={Boolean(templateIdFromQuery)}
             currentDecisionConfiguration={
               experimentSession?.decisionConfiguration ?? EMPTY_DECISION_CONFIGURATION
             }
