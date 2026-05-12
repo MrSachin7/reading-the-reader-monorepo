@@ -34,7 +34,6 @@ import {
   setReadingSessionCustomMarkdown,
   setReadingSessionExperimentSelection,
   setReadingSessionResearcherQuestions,
-  setReadingSessionSource,
   setReadingSessionTitle,
 } from "@/redux"
 import { applyReadingPresentationSettings } from "@/modules/pages/reading/lib/useReadingSettings"
@@ -342,7 +341,6 @@ export default function ExperimentSetupPage() {
       return false
     }
 
-    dispatch(setReadingSessionSource(setupId ? "experiment" : "custom"))
     dispatch(setReadingSessionTitle(firstItem.title))
     dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
     dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))

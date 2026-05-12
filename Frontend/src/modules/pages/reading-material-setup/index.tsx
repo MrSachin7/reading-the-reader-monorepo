@@ -28,7 +28,6 @@ import {
   type ReadingMaterialSetup,
   setReadingSessionCustomMarkdown,
   setReadingSessionResearcherQuestions,
-  setReadingSessionSource,
   setReadingSessionTitle,
   useAppDispatch,
   useCreateReadingMaterialSetupMutation,
@@ -174,10 +173,9 @@ export default function ReadingMaterialSetupPage() {
   }, [draft.markdown, dispatch])
 
   const syncReadingSession = React.useCallback(
-    (nextDraft: DraftState, source: "preset" | "custom") => {
+    (nextDraft: DraftState) => {
       dispatch(setReadingSessionTitle(nextDraft.title))
       dispatch(setReadingSessionResearcherQuestions(nextDraft.researcherQuestions))
-      dispatch(setReadingSessionSource(source))
     },
     [dispatch]
   )
@@ -206,7 +204,7 @@ export default function ReadingMaterialSetupPage() {
         editableByExperimenter: next.editableByExperimenter,
       })
       setSelectedSetupId(next.id)
-      syncReadingSession(next, "custom")
+      syncReadingSession(next)
       applyReadingPresentationSettings(next)
     },
     [syncReadingSession]
@@ -244,7 +242,7 @@ export default function ReadingMaterialSetupPage() {
       setSaveError(null)
       setSelectionError(null)
       setDraft(nextDraft)
-      syncReadingSession(nextDraft, "custom")
+      syncReadingSession(nextDraft)
       if (syncPresentation) {
         applyReadingPresentationDraft(nextDraft)
       }
