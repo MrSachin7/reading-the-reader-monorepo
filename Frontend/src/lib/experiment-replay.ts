@@ -8,6 +8,7 @@ import {
   type DecisionConfiguration,
   type DecisionProposalSnapshot,
   type DecisionState,
+  type ExperimentMaterialRunSnapshot,
   type ExperimentRunSnapshot,
   type ExperimentEyeTrackerSnapshot,
   type ExperimentLiveMonitoringSnapshot,
@@ -461,6 +462,17 @@ function buildReadingContent(content: ExperimentReplayExport["content"]): Readin
   }
 }
 
+function buildReadingContentFromMaterial(material: ExperimentMaterialRunSnapshot, createdAtUnixMs: number): ReadingContentSnapshot {
+  return {
+    documentId: material.id,
+    title: material.title,
+    markdown: material.markdown,
+    sourceSetupId: material.sourceSetupId ?? null,
+    updatedAtUnixMs: createdAtUnixMs,
+    usesSavedSetup: Boolean(material.sourceSetupId),
+  }
+}
+
 function buildReadingPresentation(presentation: ReadingPresentationSnapshot): ReadingPresentationSnapshot {
   return { ...presentation, isPresentationLocked: !presentation.editableByResearcher }
 }
@@ -527,12 +539,26 @@ function buildDecisionProposal(proposal: DecisionProposalSnapshot): DecisionProp
 }
 
 function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSessionSnapshot {
+  const runMaterials = replay.experiment.run?.materials ?? []
+  const experimentItems = runMaterials.map((m) => ({
+    id: m.id,
+    order: m.order,
+    title: m.title,
+    markdown: m.markdown,
+    sourceSetupId: m.sourceSetupId ?? null,
+    fontFamily: m.presentation.fontFamily,
+    fontSizePx: m.presentation.fontSizePx,
+    lineWidthPx: m.presentation.lineWidthPx,
+    lineHeight: m.presentation.lineHeight,
+    letterSpacingEm: m.presentation.letterSpacingEm,
+    editableByResearcher: m.presentation.editableByResearcher,
+  }))
   return {
     content: buildReadingContent(replay.content),
     presentation: buildReadingPresentation(replay.replay.baseline.presentation),
     initialPresentation: buildReadingPresentation(replay.replay.baseline.presentation),
-    experimentItems: [],
-    currentExperimentItemIndex: null,
+    experimentItems,
+    currentExperimentItemIndex: experimentItems.length > 0 ? 0 : null,
     experimentRun: replay.experiment.run ?? null,
     appearance: buildReaderAppearance(replay.replay.baseline.appearance),
     interventionPolicy: buildReadingInterventionPolicy(null),
@@ -940,6 +966,20 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   if (readingSession.latestIntervention) {
     readingSession.presentation = { ...readingSession.latestIntervention.appliedPresentation }
     readingSession.appearance = { ...readingSession.latestIntervention.appliedAppearance }
+  }
+
+  const activeMaterialIndex = viewportRecord?.materialIndex ?? focusRecord?.materialIndex ?? null
+  const runMaterials = replay.experiment.run?.materials ?? []
+  if (activeMaterialIndex !== null && activeMaterialIndex >= 0 && activeMaterialIndex < runMaterials.length) {
+    const activeMaterial = runMaterials[activeMaterialIndex]!
+    readingSession.content = buildReadingContentFromMaterial(activeMaterial, replay.experiment.run!.createdAtUnixMs)
+    readingSession.currentExperimentItemIndex = activeMaterialIndex
+    if (!readingSession.latestIntervention) {
+      readingSession.presentation = buildReadingPresentation(activeMaterial.presentation)
+      readingSession.initialPresentation = buildReadingPresentation(activeMaterial.presentation)
+    } else {
+      readingSession.initialPresentation = buildReadingPresentation(activeMaterial.presentation)
+    }
   }
 
   const receivedGazeSamples =
