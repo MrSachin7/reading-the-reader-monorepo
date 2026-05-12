@@ -32,7 +32,7 @@ type ExperimentStepThreeState = {
 }
 
 type ReadingSessionState = {
-  source: "preset" | "custom" | "experiment"
+  source: "experiment"
   title: string
   customMarkdown: string
   researcherQuestions: string
@@ -90,8 +90,8 @@ const initialState: ExperimentState = {
     lastCalibrationStatus: null,
   },
   readingSession: {
-    source: "preset",
-    title: "Reading as Deliberate Attention",
+    source: "experiment",
+    title: "",
     customMarkdown: "",
     researcherQuestions: "",
     selectedExperimentSetupId: null,
@@ -282,12 +282,7 @@ const experimentSlice = createSlice({
         ...state.readingSession,
         title: session.readingSession?.content?.title ?? state.readingSession.title,
         customMarkdown: session.readingSession?.content?.markdown ?? state.readingSession.customMarkdown,
-        source:
-          session.readingSession?.content?.experimentSetupId
-            ? "experiment"
-            : session.readingSession?.content?.sourceSetupId
-              ? "custom"
-              : state.readingSession.source,
+        source: "experiment",
         selectedExperimentSetupId:
           session.readingSession?.content?.experimentSetupId ?? state.readingSession.selectedExperimentSetupId,
         selectedExperimentSetupName: state.readingSession.selectedExperimentSetupName,
@@ -302,12 +297,6 @@ const experimentSlice = createSlice({
     },
     resetStepThreeState: (state) => {
       state.stepThree = initialState.stepThree
-    },
-    setReadingSessionSource: (
-      state,
-      action: PayloadAction<ReadingSessionState["source"]>
-    ) => {
-      state.readingSession.source = action.payload
     },
     setReadingSessionTitle: (state, action: PayloadAction<string>) => {
       state.readingSession.title = action.payload
@@ -367,7 +356,6 @@ export const {
   hydrateExperimentFromSession,
   hydrateStepThreeCalibrationState,
   resetStepThreeState,
-  setReadingSessionSource,
   setReadingSessionTitle,
   setReadingSessionCustomMarkdown,
   setReadingSessionResearcherQuestions,

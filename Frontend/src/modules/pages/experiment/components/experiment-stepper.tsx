@@ -30,7 +30,6 @@ import { mapExperimentSetupItemsToSequenceItems } from "@/lib/experiment-sequenc
 import {
   hydrateExperimentFromSession,
   setReadingSessionExperimentSelection,
-  setReadingSessionSource,
   setReadingSessionCustomMarkdown,
   setReadingSessionResearcherQuestions,
   setReadingSessionTitle,
@@ -801,7 +800,9 @@ function SessionContentStep({
   const [selectedAnalysisProviderId, setSelectedAnalysisProviderId] = React.useState(
     currentEyeMovementAnalysisConfiguration.providerId
   )
-  const hasSelectedMaterial = readingSession.title.trim().length > 0
+  const hasSelectedMaterial =
+    readingSession.selectedExperimentSetupId !== null &&
+    readingSession.selectedExperimentSetupItemId !== null
   const readyExperimentSetups = React.useMemo(
     () => experimentSetups.filter((setup) => setup.status === "ready"),
     [experimentSetups]
@@ -812,18 +813,8 @@ function SessionContentStep({
       null,
     [experimentSetups, readingSession.selectedExperimentSetupId]
   )
-  const selectedPresentationLabel =
-    readingSession.source === "preset"
-      ? "Default presentation"
-      : readingSession.source === "experiment"
-        ? selectedExperimentSetup?.name ?? "Reusable experiment"
-        : "Custom presentation"
-  const localReadingBaselineLabel =
-    readingSession.source === "preset"
-      ? "Built-in baseline"
-      : readingSession.source === "experiment"
-        ? "Reusable experiment"
-        : "Local draft"
+  const selectedPresentationLabel = selectedExperimentSetup?.name ?? "Reusable experiment"
+  const localReadingBaselineLabel = "Reusable experiment"
   const selectedExperimentItem = selectedExperimentSetup?.items.find(
     (item) => item.id === readingSession.selectedExperimentSetupItemId
   )
@@ -831,9 +822,7 @@ function SessionContentStep({
     ? selectedExperimentItem.editableByExperimenter
       ? "Live-adjustable"
       : "Locked"
-    : readingSession.source === "preset"
-      ? "Live-adjustable"
-      : "Local draft"
+    : "—"
   const selectedConditionOption = React.useMemo(
     () =>
       resolveConditionOption(
@@ -984,49 +973,6 @@ function SessionContentStep({
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <button
-              type="button"
-              disabled={isReadingMaterialSelectionLocked}
-              onClick={() => {
-                if (isReadingMaterialSelectionLocked) {
-                  return
-                }
-
-                resetReadingSettings()
-                dispatch(setReadingSessionSource("preset"))
-                dispatch(setReadingSessionTitle("Reading as Deliberate Attention"))
-                dispatch(setReadingSessionCustomMarkdown(""))
-                dispatch(setReadingSessionResearcherQuestions(""))
-                dispatch(
-                  setReadingSessionExperimentSelection({
-                    experimentSetupId: null,
-                    experimentSetupName: null,
-                    experimentSetupItemId: null,
-                    readingMaterialSetupId: null,
-                    itemCount: 0,
-                  })
-                )
-              }}
-              className={cn(
-                "w-full rounded-2xl border p-5 text-left transition-colors",
-                "bg-card hover:border-primary/40 hover:bg-accent/30",
-                readingSession.source === "preset" && "border-primary bg-accent/50",
-                isReadingMaterialSelectionLocked &&
-                  "cursor-not-allowed opacity-60 hover:border-border hover:bg-card"
-              )}
-            >
-              <div className="space-y-3">
-                <div>
-                  <p className="text-base font-semibold">Default text</p>
-                  <p className="text-xs text-muted-foreground">Reading as Deliberate Attention</p>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <BookOpen className="h-3.5 w-3.5" />
-                  Built-in fallback
-                </div>
-              </div>
-            </button>
-
             {readyExperimentSetups.map((setup) => (
               <button
                 key={setup.id}
@@ -1047,7 +993,6 @@ function SessionContentStep({
                       return
                     }
 
-                    dispatch(setReadingSessionSource("experiment"))
                     dispatch(setReadingSessionTitle(firstItem.title))
                     dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
                     dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
@@ -1253,7 +1198,7 @@ function SessionContentStep({
               <span className="font-medium text-foreground">
                 {localReadingBaselineLabel} | {localControlLabel}
               </span>
-              {readingSession.source === "experiment" && readingSession.selectedExperimentSetupName ? (
+              {readingSession.selectedExperimentSetupName ? (
                 <>
                   {" | "}
                   <span className="font-medium text-foreground">
@@ -1347,23 +1292,12 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
       ? readingSession.title.trim()
       : "Reading as Deliberate Attention"
   const readingDocumentId =
-    readingSession.source === "experiment" &&
-    readingSession.selectedExperimentSetupId &&
-    readingSession.selectedExperimentSetupItemId
+    readingSession.selectedExperimentSetupId && readingSession.selectedExperimentSetupItemId
       ? `${readingSession.selectedExperimentSetupId}:${readingSession.selectedExperimentSetupItemId}`
-      : readingSession.source === "custom" && readingSession.selectedReadingMaterialSetupId
-        ? readingSession.selectedReadingMaterialSetupId
-      : "mock-reading-v1"
-  const readingSourceSetupId =
-    readingSession.source === "experiment"
-      ? readingSession.selectedReadingMaterialSetupId
-      : readingSession.source === "custom"
-        ? readingSession.selectedReadingMaterialSetupId
-        : null
-  const readingExperimentSetupId =
-    readingSession.source === "experiment" ? readingSession.selectedExperimentSetupId : null
-  const readingExperimentSetupItemId =
-    readingSession.source === "experiment" ? readingSession.selectedExperimentSetupItemId : null
+      : null
+  const readingSourceSetupId = readingSession.selectedReadingMaterialSetupId
+  const readingExperimentSetupId = readingSession.selectedExperimentSetupId
+  const readingExperimentSetupItemId = readingSession.selectedExperimentSetupItemId
   const selectedExperimentSetup = React.useMemo(
     () =>
       experimentSetups.find((setup) => setup.id === readingSession.selectedExperimentSetupId) ??
@@ -1390,7 +1324,6 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
           return
         }
 
-        dispatch(setReadingSessionSource("experiment"))
         dispatch(setReadingSessionTitle(firstItem.title))
         dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
         dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
@@ -1435,20 +1368,20 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     templateIdFromQuery,
     updateTemplateDecisionConfiguration,
   ])
-  const readingExperimentItems =
-    readingSession.source === "experiment" && selectedExperimentSetup
-      ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
-      : undefined
-  const readingCurrentExperimentItemIndex =
-    readingSession.source === "experiment" && selectedExperimentSetup
-      ? Math.max(
-          0,
-          selectedExperimentSetup.items.findIndex(
-            (item) => item.id === readingSession.selectedExperimentSetupItemId
-          )
+  const readingExperimentItems = selectedExperimentSetup
+    ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
+    : undefined
+  const readingCurrentExperimentItemIndex = selectedExperimentSetup
+    ? Math.max(
+        0,
+        selectedExperimentSetup.items.findIndex(
+          (item) => item.id === readingSession.selectedExperimentSetupItemId
         )
-      : undefined
-  const hasLocalReadingSelection = readingSession.title.trim().length > 0
+      )
+    : undefined
+  const hasLocalReadingSelection =
+    readingSession.selectedExperimentSetupId !== null &&
+    readingSession.selectedExperimentSetupItemId !== null
   const hasUnsavedReadingDraft =
     hasLocalReadingSelection &&
     (setup.readingMaterial.documentId !== readingDocumentId ||
@@ -1530,20 +1463,18 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
       return false
     }
 
-    const markdown =
-      readingSession.source !== "preset" && readingSession.customMarkdown.trim().length > 0
-        ? readingSession.customMarkdown
-        : MOCK_READING_MD
+    const markdown = readingSession.customMarkdown.trim().length > 0
+      ? readingSession.customMarkdown
+      : MOCK_READING_MD
 
     try {
       await upsertReadingSession({
-        documentId: readingDocumentId,
+        documentId: readingDocumentId ?? "",
         title: readingTitle,
         markdown,
         sourceSetupId: readingSourceSetupId,
         experimentSetupId: readingExperimentSetupId,
-        experimentSetupName:
-          readingSession.source === "experiment" ? readingSession.selectedExperimentSetupName : null,
+        experimentSetupName: readingSession.selectedExperimentSetupName,
         experimentSetupItemId: readingExperimentSetupItemId,
         fontFamily: presentation.fontFamily,
         fontSizePx: presentation.fontSizePx,
@@ -1557,7 +1488,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
         experimentItems: readingExperimentItems,
         currentExperimentItemIndex: readingCurrentExperimentItemIndex,
         orderMode: selectedExperimentSetup?.orderMode ?? "fixed",
-        isOneOff: readingSession.source !== "experiment",
+        isOneOff: false,
       }).unwrap()
       return true
     } catch (error) {
