@@ -38,10 +38,20 @@ function inlineNodesToText(inlines: InlineNode[]): string {
 type SentenceTracker = {
   currentSentenceIndex: number;
   sentenceKey: string;
+  currentWordIndex: number;
 };
 
 function buildSentenceId(docId: string, sentenceKey: string, sentenceIndex: number) {
   return `${docId}:${sentenceKey}:sentence:${sentenceIndex}`;
+}
+
+function buildWordTokenId(
+  docId: string,
+  sentenceKey: string,
+  sentenceIndex: number,
+  wordIndex: number
+) {
+  return `${buildSentenceId(docId, sentenceKey, sentenceIndex)}:word:${wordIndex}`
 }
 
 function tokenEndsSentence(part: string) {
@@ -51,14 +61,16 @@ function tokenEndsSentence(part: string) {
 function tokenizeText(
   text: string,
   docId: string,
-  blockIndex: number,
   sentenceKey: string,
-  wordIndexRef: { current: number },
   spaceIndexRef: { current: number },
-  sentenceTracker: SentenceTracker
+  sentenceTracker: SentenceTracker,
+  options?: {
+    treatAsSingleSentence?: boolean
+  }
 ): Token[] {
   const parts = text.split(/(\s+)/);
   const tokens: Token[] = [];
+  const treatAsSingleSentence = options?.treatAsSingleSentence ?? false
 
   for (const part of parts) {
     if (!part) {
@@ -67,7 +79,7 @@ function tokenizeText(
 
     if (/^\s+$/.test(part)) {
       tokens.push({
-        id: `${docId}:${blockIndex}:space:${spaceIndexRef.current}`,
+        id: `${docId}:${sentenceKey}:space:${spaceIndexRef.current}`,
         text: part,
         kind: "space",
         sentenceId: buildSentenceId(
@@ -81,7 +93,12 @@ function tokenizeText(
     }
 
     tokens.push({
-      id: `${docId}:${blockIndex}:${wordIndexRef.current}`,
+      id: buildWordTokenId(
+        docId,
+        sentenceKey,
+        sentenceTracker.currentSentenceIndex,
+        sentenceTracker.currentWordIndex
+      ),
       text: part,
       kind: "word",
       sentenceId: buildSentenceId(
@@ -90,10 +107,11 @@ function tokenizeText(
         sentenceTracker.currentSentenceIndex
       ),
     });
-    wordIndexRef.current += 1;
+    sentenceTracker.currentWordIndex += 1
 
-    if (tokenEndsSentence(part)) {
-      sentenceTracker.currentSentenceIndex += 1;
+    if (!treatAsSingleSentence && tokenEndsSentence(part)) {
+      sentenceTracker.currentSentenceIndex += 1
+      sentenceTracker.currentWordIndex = 1
     }
   }
 
@@ -103,14 +121,17 @@ function tokenizeText(
 function inlineNodesToRuns(
   inlines: InlineNode[],
   docId: string,
-  blockIndex: number,
   sentenceKey: string,
-  wordIndexRef: { current: number },
-  spaceIndexRef: { current: number }
+  spaceIndexRef: { current: number },
+  options?: {
+    treatAsSingleSentence?: boolean
+    initialSentenceIndex?: number
+  }
 ): TokenRun[] {
   const sentenceTracker: SentenceTracker = {
-    currentSentenceIndex: 0,
+    currentSentenceIndex: options?.initialSentenceIndex ?? 1,
     sentenceKey,
+    currentWordIndex: 1,
   };
 
   return inlines.map((inline) => ({
@@ -118,19 +139,18 @@ function inlineNodesToRuns(
     tokens: tokenizeText(
       inline.text,
       docId,
-      blockIndex,
       sentenceKey,
-      wordIndexRef,
       spaceIndexRef,
-      sentenceTracker
+      sentenceTracker,
+      options
     ),
   }));
 }
 
 function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): TokenizedBlock {
-  const wordIndexRef = { current: 0 };
   const spaceIndexRef = { current: 0 };
-  const blockId = `${docId}:${blockIndex}`;
+  const blockNumber = blockIndex + 1
+  const blockId = `${docId}:${blockNumber}`;
 
   if (block.type === "bullet_list") {
     return {
@@ -140,10 +160,12 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
         runs: inlineNodesToRuns(
           item.inlines,
           docId,
-          blockIndex,
-          `${blockIndex}:item:${itemIndex}`,
-          wordIndexRef,
-          spaceIndexRef
+          `${blockNumber}`,
+          spaceIndexRef,
+          {
+            treatAsSingleSentence: true,
+            initialSentenceIndex: itemIndex + 1,
+          }
         ),
       })),
     };
@@ -156,9 +178,7 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
       runs: inlineNodesToRuns(
         block.inlines,
         docId,
-        blockIndex,
-        `${blockIndex}`,
-        wordIndexRef,
+        `${blockNumber}`,
         spaceIndexRef
       ),
       lixScore: calculateLix(inlineNodesToText(block.inlines)),
@@ -171,9 +191,7 @@ function tokenizeBlock(block: MdBlock, docId: string, blockIndex: number): Token
     runs: inlineNodesToRuns(
       block.inlines,
       docId,
-      blockIndex,
-      `${blockIndex}`,
-      wordIndexRef,
+      `${blockNumber}`,
       spaceIndexRef
     ),
   };
