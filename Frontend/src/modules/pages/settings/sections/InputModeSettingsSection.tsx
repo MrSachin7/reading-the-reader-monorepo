@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Camera, CheckCircle2, Info, MousePointer2, Save, ScanEye } from "lucide-react"
+import { CheckCircle2, Info, MousePointer2, Save, ScanEye } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -32,12 +32,6 @@ const MODE_OPTIONS: Array<{
     label: "Use eyetracker + face",
     badge: "Hybrid",
     description: "Keep Tobii as gaze source while adding webcam-based facial strain and expression signals.",
-  },
-  {
-    value: "webcam",
-    label: "Use webcam mode",
-    badge: "Webcam",
-    description: "Use webcam-only coarse gaze plus facial strain and expression signals without Tobii hardware.",
   },
   {
     value: "mouse",
@@ -151,7 +145,6 @@ export function InputModeSettingsSection() {
               if (
                 value === "eyeTracker" ||
                 value === "eyeTrackerPlusFace" ||
-                value === "webcam" ||
                 value === "mouse"
               ) {
                 setDraftMode(value)
@@ -167,9 +160,7 @@ export function InputModeSettingsSection() {
               const Icon =
                 option.value === "mouse"
                   ? MousePointer2
-                  : option.value === "webcam"
-                    ? Camera
-                    : ScanEye
+                  : ScanEye
 
               return (
                 <ToggleGroupItem
