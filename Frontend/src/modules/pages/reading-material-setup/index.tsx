@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Eye, LoaderCircle, Lock, Save, SlidersHorizontal, Upload } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -128,6 +128,7 @@ function normalizeReadingMaterialSetup(
 }
 
 export default function ReadingMaterialSetupPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const { resetReadingSettings } = useReadingSettings()
@@ -286,6 +287,7 @@ export default function ReadingMaterialSetupPage() {
 
       applySetup(savedSetup)
       void refetch()
+      router.push("/reading-materials")
     } catch (error) {
       if (getErrorStatus(error) === 404) {
         setSelectedSetupId(null)
