@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useRef } from "react";
 
 import { subscribeToGaze, type GazeData } from "@/lib/gaze-socket";
 import {
@@ -105,13 +105,15 @@ function intersectsViewport(rect: DOMRect, viewportRect: DOMRect) {
   );
 }
 
-function buildWordLayouts(container: HTMLElement) {
-  const blockOrder = Array.from(container.querySelectorAll<HTMLElement>("[data-block-id]"))
+// Bug 1 fix: query from contentRoot (the live text column) instead of the full
+// container, which also contains the hidden measurement div with duplicate spans.
+function buildWordLayouts(container: HTMLElement, contentRoot: HTMLElement) {
+  const blockOrder = Array.from(contentRoot.querySelectorAll<HTMLElement>("[data-block-id]"))
     .map((block) => block.dataset.blockId)
     .filter((blockId): blockId is string => Boolean(blockId))
 
   const elements = Array.from(
-    container.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
+    contentRoot.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
   );
   const viewportRect = container.getBoundingClientRect();
 
@@ -119,6 +121,11 @@ function buildWordLayouts(container: HTMLElement) {
   let currentLine = -1;
   let currentLineCenterY = 0;
   let currentLineHeight = 0;
+  // Bug 5 fix: track running sums so the line center is a true mean rather than
+  // a drifting 2-sample average that shifts toward the last word processed.
+  let currentLineSumY = 0;
+  let currentLineCount = 0;
+  let currentLineSumHeight = 0;
 
   for (const element of elements) {
     const rect = element.getBoundingClientRect();
@@ -126,7 +133,7 @@ function buildWordLayouts(container: HTMLElement) {
       continue;
     }
 
-     if (!intersectsViewport(rect, viewportRect)) {
+    if (!intersectsViewport(rect, viewportRect)) {
       continue;
     }
 
@@ -138,11 +145,17 @@ function buildWordLayouts(container: HTMLElement) {
 
     if (currentLine < 0 || Math.abs(centerY - currentLineCenterY) > tolerance) {
       currentLine += 1;
+      currentLineSumY = centerY;
+      currentLineCount = 1;
       currentLineCenterY = centerY;
+      currentLineSumHeight = rect.height;
       currentLineHeight = rect.height;
     } else {
-      currentLineCenterY = (currentLineCenterY + centerY) / 2;
-      currentLineHeight = (currentLineHeight + rect.height) / 2;
+      currentLineSumY += centerY;
+      currentLineCount += 1;
+      currentLineCenterY = currentLineSumY / currentLineCount;
+      currentLineSumHeight += rect.height;
+      currentLineHeight = currentLineSumHeight / currentLineCount;
     }
 
     const blockId = element.closest<HTMLElement>("[data-block-id]")?.dataset.blockId ?? null
@@ -343,6 +356,18 @@ export function useGazeTokenHighlight({
   const lastObservationSignatureRef = useRef<string | null>(null);
   const lastObservationReportedAtRef = useRef(0);
 
+  // Bug 2 fix: store callbacks in refs so the effect never needs to re-run when
+  // the parent passes new function references on each render.
+  const onFocusChangeRef = useRef(onFocusChange);
+  const onEnrichedFocusSampleRef = useRef(onEnrichedFocusSample);
+  const onObservationChangeRef = useRef(onObservationChange);
+
+  useLayoutEffect(() => {
+    onFocusChangeRef.current = onFocusChange;
+    onEnrichedFocusSampleRef.current = onEnrichedFocusSample;
+    onObservationChangeRef.current = onObservationChange;
+  });
+
   useEffect(() => {
     if (!enabled) {
       return;
@@ -365,15 +390,15 @@ export function useGazeTokenHighlight({
         updatedAtUnixMs: now,
       };
       const latestSample = latestSampleRef.current;
-      if (onEnrichedFocusSample && latestSample) {
+      if (onEnrichedFocusSampleRef.current && latestSample) {
         const sampleKey = `${latestSample.deviceTimeStamp}:${latestSample.systemTimeStamp ?? ""}`;
         if (sampleKey !== lastEnrichedSampleKeyRef.current) {
           lastEnrichedSampleKeyRef.current = sampleKey;
-          onEnrichedFocusSample(latestSample, focus);
+          onEnrichedFocusSampleRef.current(latestSample, focus);
         }
       }
 
-      if (!onFocusChange) {
+      if (!onFocusChangeRef.current) {
         return;
       }
       const signature = JSON.stringify([
@@ -395,13 +420,13 @@ export function useGazeTokenHighlight({
 
       lastFocusSignatureRef.current = signature;
       lastFocusReportedAtRef.current = now;
-      onFocusChange(focus);
+      onFocusChangeRef.current(focus);
     };
 
     const reportObservation = (
       partial: Omit<ReadingGazeObservationSnapshot, "observedAtUnixMs">
     ) => {
-      if (!onObservationChange) {
+      if (!onObservationChangeRef.current) {
         return
       }
 
@@ -430,7 +455,7 @@ export function useGazeTokenHighlight({
 
       lastObservationSignatureRef.current = signature
       lastObservationReportedAtRef.current = nowUnixMs
-      onObservationChange({
+      onObservationChangeRef.current({
         ...partial,
         observedAtUnixMs: nowUnixMs,
       })
@@ -492,8 +517,15 @@ export function useGazeTokenHighlight({
           : wordLayoutsRef.current[nextIndex]?.element.dataset.tokenId ?? null;
     };
 
+    // Bug 1 fix: resolve the live content root so buildWordLayouts only queries
+    // the visible text column, not the hidden measurement div inside the container.
+    const resolveContentRoot = (): HTMLElement =>
+      contentRef?.current ??
+      container.querySelector<HTMLElement>("[data-reader-content='true']") ??
+      container;
+
     const refreshLayouts = () => {
-      wordLayoutsRef.current = buildWordLayouts(container);
+      wordLayoutsRef.current = buildWordLayouts(container, resolveContentRoot());
 
       if (activeTokenIdRef.current) {
         const nextIndex = wordLayoutsRef.current.findIndex(
@@ -530,12 +562,18 @@ export function useGazeTokenHighlight({
 
     const resizeObserver = new ResizeObserver(scheduleRefresh);
     resizeObserver.observe(container);
-    if (container.firstElementChild instanceof HTMLElement) {
-      resizeObserver.observe(container.firstElementChild);
+    // Bug 4 fix: observe the content element directly instead of
+    // container.firstElementChild, which points to the remote focus marker when
+    // it is rendered and causes content resize events to be missed.
+    const contentEl = contentRef?.current ?? container.querySelector<HTMLElement>("[data-reader-content='true']");
+    if (contentEl instanceof HTMLElement) {
+      resizeObserver.observe(contentEl);
     }
 
+    // Bug 6 fix: refresh layouts synchronously on scroll so that word rects are
+    // current before the next render RAF fires, eliminating the 1-frame stale window.
     const onScroll = () => {
-      scheduleRefresh();
+      refreshLayouts();
     };
 
     const onResize = () => {
@@ -625,32 +663,20 @@ export function useGazeTokenHighlight({
 
       const x = clamp(normalizedPoint.x * window.innerWidth, 0, window.innerWidth);
       const y = clamp(normalizedPoint.y * window.innerHeight, 0, window.innerHeight);
-      const contentElement =
-        contentRef?.current ?? container.querySelector<HTMLElement>("[data-reader-content='true']");
 
-      if (!(contentElement instanceof HTMLElement)) {
-        reportObservation({
-          isInsideReadingArea: false,
-          normalizedContentX: null,
-          normalizedContentY: null,
-          ...getTokenObservationFields(null),
-          isStale: true,
-          staleReason: normalizeObservationStaleReason("no-point"),
-        })
-        reportFocus({
-          isInsideReadingArea: false,
-          normalizedContentX: null,
-          normalizedContentY: null,
-          activeTokenId: null,
-          activeBlockId: null,
-          activeSentenceId: null,
-          activeTokenText: null,
-        });
+      // Bug 3 fix: use the content element's bounds (the actual text column) as
+      // the reading area, not the full scroll container which includes side padding.
+      // This prevents gaze in the padding from reaching pickWordIndex with no nearby
+      // words, and makes normalizedContentX/Y semantically correct (fraction of the
+      // text column, not the container).
+      const contentElement = resolveContentRoot();
+      if (contentElement === container) {
+        // contentRef not yet attached — skip this frame
         renderFrameId = window.requestAnimationFrame(render);
         return;
       }
 
-      const readingAreaRect = container.getBoundingClientRect();
+      const readingAreaRect = contentElement.getBoundingClientRect();
       const isInsideReadingArea =
         x >= readingAreaRect.left &&
         x <= readingAreaRect.right &&
@@ -836,5 +862,8 @@ export function useGazeTokenHighlight({
       setActiveWord(null, true);
       wordLayoutsRef.current = [];
     };
-  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt, onFocusChange, onEnrichedFocusSample, onObservationChange]);
+  // Bug 2 fix: callbacks are accessed through refs (kept in sync via useLayoutEffect)
+  // so they are intentionally excluded from this dependency array. The effect only
+  // needs to re-run when the structural parameters that drive setup change.
+  }, [containerRef, contentRef, enabled, highlightTokensBeingLookedAt]);
 }
