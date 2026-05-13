@@ -477,9 +477,6 @@ export function ReaderShell({
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      // Clear stored position on unmount (experiment ended) or when the document
-      // changes, so the next session always starts at page 1.
-      window.sessionStorage.removeItem(`reader:lastPageIndex:${docId}`);
     };
   }, [docId, isControlledPage, markdown]);
 

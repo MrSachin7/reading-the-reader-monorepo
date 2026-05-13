@@ -105,6 +105,23 @@ export function ReadingPage() {
     }
   }, [liveSession?.isActive])
 
+  useEffect(() => {
+    if (!liveSession?.isActive) {
+      return
+    }
+
+    return () => {
+      // Session just ended — purge all stored page positions so the next
+      // experiment always starts at page 1 for every text.
+      const keysToRemove: string[] = []
+      for (let i = 0; i < window.sessionStorage.length; i++) {
+        const key = window.sessionStorage.key(i)
+        if (key?.startsWith("reader:lastPageIndex:")) keysToRemove.push(key)
+      }
+      keysToRemove.forEach((k) => window.sessionStorage.removeItem(k))
+    }
+  }, [liveSession?.isActive])
+
   const handleViewportMetricsChange = useCallback((metrics: ReaderViewportMetrics) => {
     updateParticipantViewport({
       ...metrics,
