@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
+import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ReplayReaderOptions } from "@/modules/pages/replay/types"
 
 type ReplayReaderColumnProps = {
@@ -12,6 +13,7 @@ type ReplayReaderColumnProps = {
   presentation: ReadingPresentationSettings
   readingSession: LiveReadingSessionSnapshot
   readerOptions: ReplayReaderOptions
+  remoteTokenAttention: RemoteTokenAttentionSnapshot | null
 }
 
 export function ReplayReaderColumn({
@@ -20,6 +22,7 @@ export function ReplayReaderColumn({
   presentation,
   readingSession,
   readerOptions,
+  remoteTokenAttention,
 }: ReplayReaderColumnProps) {
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
@@ -56,6 +59,7 @@ export function ReplayReaderColumn({
             activeTokenId: readingSession.focus.activeTokenId,
             activeSentenceId: readingSession.focus.activeSentenceId,
           }}
+          remoteTokenAttention={remoteTokenAttention}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}

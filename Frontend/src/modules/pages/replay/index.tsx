@@ -326,6 +326,7 @@ export default function ReplayPage() {
           presentation={presentation}
           readingSession={readingSession}
           readerOptions={readerOptions}
+          remoteTokenAttention={readingSession.attentionSummary}
         />
 
         <ReplayMetadataColumn

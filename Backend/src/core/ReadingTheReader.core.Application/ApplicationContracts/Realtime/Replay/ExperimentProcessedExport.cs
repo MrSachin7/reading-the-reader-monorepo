@@ -5,7 +5,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay
 public static class ExperimentProcessedExportSchema
 {
     public const string Name = "rtr.processed-experiment-export";
-    public const int Version = 2;
+    public const int Version = 3;
 }
 
 public sealed record ProcessedGazeSampleRecord(
@@ -76,12 +76,28 @@ public sealed record ProcessedMaterialSummary(
     }
 }
 
+public sealed record ExperimentProcessedInterventions(
+    IReadOnlyList<DecisionProposalEventRecord> DecisionProposals,
+    IReadOnlyList<InterventionEventRecord> InterventionEvents)
+{
+    public static ExperimentProcessedInterventions Empty { get; } = new([], []);
+
+    public ExperimentProcessedInterventions Copy()
+    {
+        return new ExperimentProcessedInterventions(
+            DecisionProposals is null ? [] : [.. DecisionProposals.Select(item => item.Copy())],
+            InterventionEvents is null ? [] : [.. InterventionEvents.Select(item => item.Copy())]);
+    }
+}
+
 public sealed record ExperimentProcessedExport(
     ExperimentReplayExportManifest Manifest,
     ExperimentReplayContext Experiment,
     ExperimentReplayContent Content,
     IReadOnlyList<ProcessedGazeSampleRecord> GazeSamples,
-    IReadOnlyList<ProcessedMaterialSummary> MaterialSummaries)
+    IReadOnlyList<ProcessedMaterialSummary> MaterialSummaries,
+    ExperimentProcessedInterventions Interventions,
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null)
 {
     public ExperimentProcessedExport Copy()
     {
@@ -90,6 +106,10 @@ public sealed record ExperimentProcessedExport(
             Experiment.Copy(),
             Content.Copy(),
             GazeSamples is null ? [] : [.. GazeSamples.Select(item => item.Copy())],
-            MaterialSummaries is null ? [] : [.. MaterialSummaries.Select(item => item.Copy())]);
+            MaterialSummaries is null ? [] : [.. MaterialSummaries.Select(item => item.Copy())],
+            (Interventions ?? ExperimentProcessedInterventions.Empty).Copy(),
+            FinalTokenStats is null
+                ? null
+                : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()));
     }
 }

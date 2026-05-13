@@ -201,6 +201,10 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         static T[] Merge<T>(RecoveryChunkData[] items, Func<RecoveryChunkData, T[]?> selector, Func<T, long> getSequenceNumber)
             => items.SelectMany(c => selector(c) ?? []).OrderBy(getSequenceNumber).ToArray();
 
+        var finalTokenStats = chunks
+            .LastOrDefault(c => c.LatestTokenStats is not null)?.LatestTokenStats
+            ?? metadata.LatestTokenStats;
+
         return ExperimentProcessedExportFactory.Create(
             metadata.InitialSnapshot,
             metadata.LatestSnapshot,
@@ -209,7 +213,10 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.LifecycleEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.GazeSamples, e => e.SequenceNumber),
             Merge(chunks, c => c.FocusEvents, e => e.SequenceNumber),
-            Merge(chunks, c => c.EnrichedGazeSamples, e => e.SequenceNumber));
+            Merge(chunks, c => c.EnrichedGazeSamples, e => e.SequenceNumber),
+            Merge(chunks, c => c.DecisionProposalEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.InterventionEvents, e => e.SequenceNumber),
+            finalTokenStats);
     }
 
     private async ValueTask<RecoveryChunkData[]> ReadAllChunksAsync(string sessionDirectoryPath, CancellationToken ct)

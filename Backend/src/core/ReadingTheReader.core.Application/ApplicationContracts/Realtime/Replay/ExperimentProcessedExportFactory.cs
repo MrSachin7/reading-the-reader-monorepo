@@ -13,7 +13,10 @@ public static class ExperimentProcessedExportFactory
         IReadOnlyList<ExperimentLifecycleEventRecord> lifecycleEvents,
         IReadOnlyList<RawGazeSampleRecord> gazeSamples,
         IReadOnlyList<ReadingFocusEventRecord> readingFocusEvents,
-        IReadOnlyList<EnrichedGazeSampleRecord>? enrichedGazeSamples = null)
+        IReadOnlyList<EnrichedGazeSampleRecord>? enrichedGazeSamples = null,
+        IReadOnlyList<DecisionProposalEventRecord>? decisionProposalEvents = null,
+        IReadOnlyList<InterventionEventRecord>? interventionEvents = null,
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
     {
         var replayExport = ExperimentReplayExportFactory.Create(
             initialSnapshot,
@@ -31,13 +34,23 @@ public static class ExperimentProcessedExportFactory
             [],
             [],
             [],
+            decisionProposalEvents ?? [],
             [],
-            [],
-            []);
+            interventionEvents ?? []);
 
         var processedSamples = enrichedGazeSamples is { Count: > 0 }
             ? BuildProcessedGazeSamples(enrichedGazeSamples)
             : BuildProcessedGazeSamples(gazeSamples, readingFocusEvents);
+
+        var orderedDecisionProposals = (decisionProposalEvents ?? [])
+            .Select(item => item.Copy())
+            .OrderBy(item => item.SequenceNumber)
+            .ToArray();
+        var orderedInterventionEvents = (interventionEvents ?? [])
+            .Select(item => item.Copy())
+            .OrderBy(item => item.SequenceNumber)
+            .ToArray();
+        var copiedFinalTokenStats = finalTokenStats?.ToDictionary(e => e.Key, e => e.Value.Copy());
 
         return new ExperimentProcessedExport(
             replayExport.Manifest with
@@ -53,7 +66,48 @@ public static class ExperimentProcessedExportFactory
             replayExport.Experiment.Copy(),
             replayExport.Content.Copy(),
             processedSamples,
-            BuildMaterialSummaries(replayExport.Experiment.Run, processedSamples, readingFocusEvents));
+            BuildMaterialSummaries(replayExport.Experiment.Run, processedSamples, readingFocusEvents),
+            new ExperimentProcessedInterventions(orderedDecisionProposals, orderedInterventionEvents),
+            copiedFinalTokenStats);
+    }
+
+    public static ExperimentProcessedExport Create(ExperimentReplayExport replayExport)
+    {
+        ArgumentNullException.ThrowIfNull(replayExport);
+
+        var focusEvents = replayExport.Derived?.FocusEvents ?? [];
+        var processedSamples = BuildProcessedGazeSamples(
+            replayExport.Sensing?.GazeSamples ?? [],
+            focusEvents);
+
+        var orderedDecisionProposals = (replayExport.Interventions?.DecisionProposals ?? [])
+            .Select(item => item.Copy())
+            .OrderBy(item => item.SequenceNumber)
+            .ToArray();
+        var orderedInterventionEvents = (replayExport.Interventions?.InterventionEvents ?? [])
+            .Select(item => item.Copy())
+            .OrderBy(item => item.SequenceNumber)
+            .ToArray();
+        var copiedFinalTokenStats = replayExport.Derived?.FinalTokenStats?
+            .ToDictionary(e => e.Key, e => e.Value.Copy());
+
+        return new ExperimentProcessedExport(
+            replayExport.Manifest with
+            {
+                Schema = ExperimentProcessedExportSchema.Name,
+                Version = ExperimentProcessedExportSchema.Version,
+                ExportProfile = "processed",
+                Producer = replayExport.Manifest.Producer with
+                {
+                    ExporterVersion = ExperimentProcessedExportSchema.Version.ToString()
+                }
+            },
+            replayExport.Experiment.Copy(),
+            replayExport.Content.Copy(),
+            processedSamples,
+            BuildMaterialSummaries(replayExport.Experiment.Run, processedSamples, focusEvents),
+            new ExperimentProcessedInterventions(orderedDecisionProposals, orderedInterventionEvents),
+            copiedFinalTokenStats);
     }
 
     private static IReadOnlyList<ProcessedGazeSampleRecord> BuildProcessedGazeSamples(

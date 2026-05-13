@@ -139,7 +139,10 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.LifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.GazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.FocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
-                session.EnrichedGazeSamples.OrderBy(item => item.SequenceNumber).ToArray()));
+                session.EnrichedGazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.LatestTokenStats));
         }
     }
 
