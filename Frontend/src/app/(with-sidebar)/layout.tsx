@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { BookOpen, FlaskConical, Layers, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
+import { BookOpen, FlaskConical, Layers, Monitor, NotebookPen, Settings2, SquareDashedMousePointer, TimerReset } from "lucide-react";
 
 import { FontSelector } from "@/components/theme/font-selector";
 import { ModeToggle } from "@/components/theme/mode-toggle";
@@ -79,6 +79,14 @@ export default function WithSidebarLayout({
                     <Link href="/researcher/current-live">
                       <SquareDashedMousePointer />
                       <span>Researcher Live</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Participant View">
+                    <Link href="/participant" target="_blank" rel="noopener noreferrer">
+                      <Monitor />
+                      <span>Participant View</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
