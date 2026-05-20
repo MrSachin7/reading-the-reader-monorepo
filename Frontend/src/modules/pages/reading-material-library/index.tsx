@@ -1,16 +1,34 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react"
+import { BookOpen, Download, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { getErrorMessage } from "@/lib/error-utils"
 import {
+  buildReadingMaterialExport,
+  downloadJsonFile,
+  sanitizeExportFileName,
+} from "@/lib/setup-portability"
+import {
   useDeleteReadingMaterialSetupMutation,
+  useGetExperimentSetupsQuery,
   useGetReadingMaterialSetupsQuery,
+  useLazyGetReadingMaterialSetupByIdQuery,
 } from "@/redux"
 
 function formatDate(unixMs: number) {
@@ -26,9 +44,29 @@ function describeControlState(editableByExperimenter: boolean) {
 
 export default function ReadingMaterialLibraryPage() {
   const { data: savedSetups = [], isLoading } = useGetReadingMaterialSetupsQuery()
+  const { data: experimentSetups = [] } = useGetExperimentSetupsQuery()
   const [deleteReadingMaterialSetup] = useDeleteReadingMaterialSetupMutation()
+  const [getReadingMaterialSetupById] = useLazyGetReadingMaterialSetupByIdQuery()
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [exportingId, setExportingId] = React.useState<string | null>(null)
   const [actionError, setActionError] = React.useState<string | null>(null)
+
+  const templateUsageCountByMaterialId = React.useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const template of experimentSetups) {
+      const materialIds = new Set(
+        template.items
+          .map((item) => item.sourceReadingMaterialSetupId)
+          .filter((id): id is string => Boolean(id))
+      )
+
+      for (const materialId of materialIds) {
+        counts.set(materialId, (counts.get(materialId) ?? 0) + 1)
+      }
+    }
+
+    return counts
+  }, [experimentSetups])
 
   const handleDelete = React.useCallback(
     async (id: string) => {
@@ -43,6 +81,26 @@ export default function ReadingMaterialLibraryPage() {
       }
     },
     [deleteReadingMaterialSetup]
+  )
+
+  const handleExport = React.useCallback(
+    async (setup: (typeof savedSetups)[number]) => {
+      setActionError(null)
+      setExportingId(setup.id)
+
+      try {
+        const fullSetup = await getReadingMaterialSetupById(setup.id).unwrap()
+        downloadJsonFile(
+          `${sanitizeExportFileName(fullSetup.name, "reading-material")}.reading-material.json`,
+          buildReadingMaterialExport(fullSetup)
+        )
+      } catch (error) {
+        setActionError(getErrorMessage(error, "Could not export that reading material."))
+      } finally {
+        setExportingId(null)
+      }
+    },
+    [getReadingMaterialSetupById]
   )
 
   return (
@@ -128,13 +186,54 @@ export default function ReadingMaterialLibraryPage() {
                     variant="outline"
                     size="sm"
                     type="button"
-                    disabled={deletingId === setup.id}
-                    onClick={() => void handleDelete(setup.id)}
-                    className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={exportingId === setup.id}
+                    onClick={() => void handleExport(setup)}
+                    className="flex-1"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    {deletingId === setup.id ? "Deleting..." : "Delete"}
+                    {exportingId === setup.id ? (
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {exportingId === setup.id ? "Exporting..." : "Export"}
                   </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        disabled={deletingId === setup.id}
+                        className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {deletingId === setup.id ? "Deleting..." : "Delete"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete reading material?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This permanently deletes <span className="font-medium">{setup.name}</span> from
+                          the material library.
+                          {templateUsageCountByMaterialId.get(setup.id)
+                            ? ` ${templateUsageCountByMaterialId.get(setup.id)} experiment template${
+                                templateUsageCountByMaterialId.get(setup.id) === 1 ? "" : "s"
+                              } currently use copied content from this material and will remain available, but the library source link and quiz lookup will no longer resolve.`
+                            : " No experiment templates currently reference this material."}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => void handleDelete(setup.id)}
+                        >
+                          Delete material
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

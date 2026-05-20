@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowDown, ArrowUp, BookOpen, Library, LoaderCircle, Save, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, BookOpen, Library, LoaderCircle, Save, Trash2, Upload } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { FONTS, type FontTheme } from "@/hooks/use-font-theme"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
+import { parseExperimentTemplateImport } from "@/lib/setup-portability"
 import {
   type CreateExperimentSetupRequest,
   type CreateExperimentSetupRequestItem,
@@ -133,6 +134,39 @@ function mapExperimentToDraft(setup: ExperimentSetup): DraftState {
     items: setup.items.map((item) => ({
       ...item,
       localId: item.id || createLocalId(),
+    })),
+  }
+}
+
+function mapCreateRequestToDraft(setup: CreateExperimentSetupRequest): DraftState {
+  return {
+    name: setup.name,
+    description: setup.description,
+    status: setup.status ?? "draft",
+    orderMode: setup.orderMode ?? "fixed",
+    defaultFontFamily: setup.defaultFontFamily ?? "merriweather",
+    defaultFontSizePx: setup.defaultFontSizePx ?? 18,
+    defaultLineWidthPx: setup.defaultLineWidthPx ?? 680,
+    defaultLineHeight: setup.defaultLineHeight ?? 1.7,
+    defaultLetterSpacingEm: setup.defaultLetterSpacingEm ?? 0.02,
+    defaultEditableByExperimenter: setup.defaultEditableByExperimenter ?? true,
+    decisionProviderId: setup.decisionProviderId ?? "manual",
+    decisionExecutionMode: setup.decisionExecutionMode ?? "advisory",
+    calibrationRequired: setup.calibrationRequired ?? true,
+    items: setup.items.map((item, index) => ({
+      localId: createLocalId(),
+      id: "",
+      order: index,
+      sourceReadingMaterialSetupId: item.sourceReadingMaterialSetupId,
+      sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
+      title: item.title,
+      markdown: item.markdown,
+      fontFamily: item.fontFamily,
+      fontSizePx: item.fontSizePx,
+      lineWidthPx: item.lineWidthPx,
+      lineHeight: item.lineHeight,
+      letterSpacingEm: item.letterSpacingEm,
+      editableByExperimenter: item.editableByExperimenter,
     })),
   }
 }
@@ -291,6 +325,28 @@ export default function ExperimentSetupPage() {
       items: current.items.filter((item) => item.localId !== localId),
     }))  }, [])
 
+  const handleJsonFileImport = React.useCallback(async (file: File | null | undefined) => {
+    if (!file) {
+      return
+    }
+
+    try {
+      const imported = parseExperimentTemplateImport(JSON.parse(await file.text()))
+      if (!imported) {
+        setSelectionError("That JSON file is not a valid experiment template export.")
+        return
+      }
+
+      setDraft(mapCreateRequestToDraft(imported))
+      setSelectedSetupId(null)
+      setSaveAsTemplate(true)
+      setSelectionError(null)
+      setSaveError(null)
+    } catch {
+      setSelectionError("That JSON file could not be read.")
+    }
+  }, [])
+
   const handleSave = React.useCallback(async () => {
     setSaveError(null)
 
@@ -409,20 +465,35 @@ export default function ExperimentSetupPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-2">
-        <Link
-          href="/experiment-templates"
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← Experiment templates
-        </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {selectedSetupId ? "Edit template" : "New template"}
-        </h1>
-        <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
-          Compose reusable or one-off experiment setups from saved materials. Each template stores
-          copied markdown, resolved presentation settings, order mode, and runtime strategy.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Link
+            href="/experiment-templates"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Experiment templates
+          </Link>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {selectedSetupId ? "Edit template" : "New template"}
+          </h1>
+          <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
+            Compose reusable or one-off experiment setups from saved materials. Each template stores
+            copied markdown, resolved presentation settings, order mode, and runtime strategy.
+          </p>
+        </div>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent/30">
+          <Upload className="h-4 w-4" />
+          Import JSON
+          <input
+            type="file"
+            accept=".json,application/json"
+            className="sr-only"
+            onChange={(event) => {
+              void handleJsonFileImport(event.target.files?.[0])
+              event.currentTarget.value = ""
+            }}
+          />
+        </label>
       </header>
 
       <div className="space-y-6">
