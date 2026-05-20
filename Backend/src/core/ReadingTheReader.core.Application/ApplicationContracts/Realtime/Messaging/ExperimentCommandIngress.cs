@@ -175,14 +175,16 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
         if (payload.Layout is not null)
         {
             var optionBboxes = payload.Layout.OptionBboxes?
-                .Select(o => new QuizOptionBbox(o.OptionId, o.X, o.Y, o.Width, o.Height))
+                .Select(o => new QuizOptionBbox(o.OptionId, o.X, o.Y, o.Width, o.Height, o.Text))
                 .ToArray() ?? [];
             layout = new QuizQuestionLayout(
                 payload.Layout.PromptX,
                 payload.Layout.PromptY,
                 payload.Layout.PromptWidth,
                 payload.Layout.PromptHeight,
-                optionBboxes);
+                optionBboxes,
+                payload.Layout.ViewportWidth,
+                payload.Layout.ViewportHeight);
         }
 
         return new QuizLifecycleEventCommand(

@@ -5,12 +5,14 @@ import * as React from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import type { ReplayQuizFrame } from "@/lib/experiment-replay"
+import type { ParticipantViewportSnapshot } from "@/lib/experiment-session"
 import type { GazeData } from "@/lib/gaze-socket"
 import { cn } from "@/lib/utils"
 
 type Props = {
   quiz: ReplayQuizFrame
   gaze: GazeData | null
+  participantViewport: ParticipantViewportSnapshot | null
 }
 
 function averageNormalizedGaze(gaze: GazeData): { x: number; y: number } | null {
@@ -39,7 +41,49 @@ function averageNormalizedGaze(gaze: GazeData): { x: number; y: number } | null 
   return { x, y }
 }
 
-export function ReplayQuizPanel({ quiz, gaze }: Props) {
+function computeStageDimensions(
+  quiz: ReplayQuizFrame,
+  participantViewport: ParticipantViewportSnapshot | null
+) {
+  // Strongest signal: the viewport size captured at the same moment the bboxes were
+  // measured. This is the only value guaranteed to share a coordinate space with the
+  // recorded bboxes and the normalized gaze.
+  const layoutViewportWidth = quiz.layout?.viewportWidth ?? null
+  const layoutViewportHeight = quiz.layout?.viewportHeight ?? null
+  if (
+    layoutViewportWidth !== null &&
+    layoutViewportHeight !== null &&
+    layoutViewportWidth > 0 &&
+    layoutViewportHeight > 0
+  ) {
+    return { width: layoutViewportWidth, height: layoutViewportHeight }
+  }
+
+  // Older recordings: the participant's reader viewport is usually close enough.
+  if (participantViewport && participantViewport.viewportWidthPx > 0 && participantViewport.viewportHeightPx > 0) {
+    return {
+      width: participantViewport.viewportWidthPx,
+      height: participantViewport.viewportHeightPx,
+    }
+  }
+
+  // Last resort: stretch the bbox extent so at least the layout itself is visible.
+  if (quiz.layout) {
+    const maxX = Math.max(
+      quiz.layout.promptX + quiz.layout.promptWidth,
+      ...quiz.layout.optionBboxes.map((o) => o.x + o.width)
+    )
+    const maxY = Math.max(
+      quiz.layout.promptY + quiz.layout.promptHeight,
+      ...quiz.layout.optionBboxes.map((o) => o.y + o.height)
+    )
+    return { width: maxX + 24, height: maxY + 24 }
+  }
+
+  return { width: 1440, height: 900 }
+}
+
+export function ReplayQuizPanel({ quiz, gaze, participantViewport }: Props) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [container, setContainer] = React.useState<{ width: number; height: number }>({ width: 0, height: 0 })
 
@@ -59,19 +103,18 @@ export function ReplayQuizPanel({ quiz, gaze }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  const viewportWidth = quiz.layout ? Math.max(...quiz.layout.optionBboxes.map((o) => o.x + o.width), quiz.layout.promptX + quiz.layout.promptWidth, window.innerWidth) : window.innerWidth
-  const viewportHeight = window.innerHeight
-
-  // We scale recorded viewport bboxes into the available container so the same proportions are preserved.
-  const scaleX = container.width > 0 ? container.width / viewportWidth : 1
-  const scaleY = container.height > 0 ? container.height / viewportHeight : 1
-  const scale = Math.min(scaleX, scaleY) || 1
+  const stage = computeStageDimensions(quiz, participantViewport)
+  // Fit-to-contain. Never upscale past 1:1 — the recorded layout looks best at native size.
+  const scale =
+    container.width > 0 && container.height > 0
+      ? Math.min(container.width / stage.width, container.height / stage.height, 1)
+      : 1
 
   const normalizedGaze = gaze ? averageNormalizedGaze(gaze) : null
-  // Gaze is normalized 0-1 of the original screen. We approximate by scaling against the
-  // recorded viewport space (innerWidth/innerHeight at recording time).
-  const gazeOverlayX = normalizedGaze ? normalizedGaze.x * viewportWidth * scale : null
-  const gazeOverlayY = normalizedGaze ? normalizedGaze.y * viewportHeight * scale : null
+  // Gaze is normalized 0–1 of the participant's screen (Tobii) or viewport (mouse).
+  // Multiplying by the recorded viewport size keeps the dot aligned with the bboxes.
+  const gazeStageX = normalizedGaze ? normalizedGaze.x * stage.width : null
+  const gazeStageY = normalizedGaze ? normalizedGaze.y * stage.height : null
 
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
@@ -106,55 +149,77 @@ export function ReplayQuizPanel({ quiz, gaze }: Props) {
                   : quiz.activeRegionType === "prompt"
                     ? "Looking at prompt"
                     : quiz.activeRegionType === "option"
-                      ? `Looking at option`
+                      ? "Looking at option"
                       : "—"}
               </span>
             </div>
+
             <div ref={containerRef} className="relative flex-1 overflow-hidden bg-background/40">
+              {/* The stage is the participant's recorded viewport. We render bboxes at their
+                  original coordinates inside it and uniformly transform-scale the whole thing
+                  to fit the panel. The translate keeps the scaled stage centered when the
+                  panel's aspect ratio doesn't match the participant viewport's. */}
               <div
-                className="absolute rounded-md border border-primary/30 bg-primary/5 p-3 text-sm leading-snug"
                 style={{
-                  left: quiz.layout.promptX * scale,
-                  top: quiz.layout.promptY * scale,
-                  width: quiz.layout.promptWidth * scale,
-                  minHeight: quiz.layout.promptHeight * scale,
+                  position: "absolute",
+                  left: Math.max(0, (container.width - stage.width * scale) / 2),
+                  top: Math.max(0, (container.height - stage.height * scale) / 2),
+                  width: stage.width,
+                  height: stage.height,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
                 }}
               >
-                {quiz.prompt ?? "(prompt not recorded)"}
-              </div>
-
-              {quiz.layout.optionBboxes.map((option) => {
-                const isSelected = option.optionId === quiz.selectedOptionId
-                const isFocused =
-                  quiz.activeRegionType === "option" && quiz.activeOptionId === option.optionId
-                return (
-                  <div
-                    key={option.optionId}
-                    className={cn(
-                      "absolute flex items-center rounded-md border px-3 text-sm transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary/15 text-primary-foreground"
-                        : "border-border bg-card",
-                      isFocused ? "ring-2 ring-amber-400" : null
-                    )}
-                    style={{
-                      left: option.x * scale,
-                      top: option.y * scale,
-                      width: option.width * scale,
-                      height: option.height * scale,
-                    }}
-                  >
-                    <span className="truncate">{option.optionId}</span>
-                  </div>
-                )
-              })}
-
-              {gazeOverlayX !== null && gazeOverlayY !== null ? (
                 <div
-                  className="pointer-events-none absolute -ml-3 -mt-3 h-6 w-6 rounded-full border-2 border-fuchsia-500 bg-fuchsia-500/30"
-                  style={{ left: gazeOverlayX, top: gazeOverlayY }}
-                />
-              ) : null}
+                  className="absolute rounded-md border border-primary/30 bg-primary/5 p-3 text-base leading-snug"
+                  style={{
+                    left: quiz.layout.promptX,
+                    top: quiz.layout.promptY,
+                    width: quiz.layout.promptWidth,
+                    minHeight: quiz.layout.promptHeight,
+                  }}
+                >
+                  {quiz.prompt ?? "(prompt not recorded)"}
+                </div>
+
+                {quiz.layout.optionBboxes.map((option) => {
+                  const isSelected = option.optionId === quiz.selectedOptionId
+                  const isFocused =
+                    quiz.activeRegionType === "option" && quiz.activeOptionId === option.optionId
+                  return (
+                    <div
+                      key={option.optionId}
+                      className={cn(
+                        "absolute flex items-center rounded-md border px-3 text-base transition-colors",
+                        isSelected
+                          ? "border-primary bg-primary/15 text-primary"
+                          : "border-border bg-card",
+                        isFocused ? "ring-2 ring-amber-400" : null
+                      )}
+                      style={{
+                        left: option.x,
+                        top: option.y,
+                        width: option.width,
+                        height: option.height,
+                      }}
+                    >
+                      <span className="truncate">{option.text ?? option.optionId}</span>
+                    </div>
+                  )
+                })}
+
+                {gazeStageX !== null && gazeStageY !== null ? (
+                  <div
+                    className="pointer-events-none absolute rounded-full border-2 border-fuchsia-500 bg-fuchsia-500/30"
+                    style={{
+                      left: gazeStageX - 12,
+                      top: gazeStageY - 12,
+                      width: 24,
+                      height: 24,
+                    }}
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         )}

@@ -38,6 +38,7 @@ export type QuizOptionBbox = {
   y: number
   width: number
   height: number
+  text?: string | null
 }
 
 export type QuizQuestionLayout = {
@@ -46,6 +47,8 @@ export type QuizQuestionLayout = {
   promptWidth: number
   promptHeight: number
   optionBboxes: QuizOptionBbox[]
+  viewportWidth?: number | null
+  viewportHeight?: number | null
 }
 
 export type QuizLifecycleEventType =
