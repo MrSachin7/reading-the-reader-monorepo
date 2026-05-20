@@ -32,6 +32,29 @@ function Invoke-NativeCommand {
     }
 }
 
+function Test-FrontendDependenciesInstalled {
+    $nextShim = Join-Path $frontendDir "node_modules\.bin\next"
+    $nextCmdShim = "$nextShim.cmd"
+
+    return (Test-Path $nextShim) -or (Test-Path $nextCmdShim)
+}
+
+function Install-FrontendDependenciesIfNeeded {
+    param([switch]$Force)
+
+    if ((-not $Force) -and (Test-FrontendDependenciesInstalled)) {
+        return
+    }
+
+    Push-Location $frontendDir
+    try {
+        Invoke-NativeCommand "Install frontend dependencies" { bun install }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $frontendDir = Join-Path $repoRoot "Frontend"
 $backendDir = Join-Path $repoRoot "Backend"
@@ -56,15 +79,9 @@ if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
     throw "bun was not found on PATH. Install Bun before running this script."
 }
 
-if ($Install) {
-    Push-Location $frontendDir
-    try {
-        Invoke-NativeCommand "Install frontend dependencies" { bun install }
-    }
-    finally {
-        Pop-Location
-    }
+Install-FrontendDependenciesIfNeeded -Force:$Install
 
+if ($Install) {
     Push-Location $backendDir
     try {
         Invoke-NativeCommand "Restore backend dependencies" { dotnet restore ".\reading-the-reader-backend.sln" }

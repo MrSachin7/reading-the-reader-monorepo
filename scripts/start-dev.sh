@@ -39,8 +39,15 @@ if [[ ! -f "$BACKEND_PROJECT" ]]; then
   exit 1
 fi
 
-if [[ "$INSTALL" == "1" ]]; then
+if [[ "$INSTALL" == "1" || ! -x "$FRONTEND_DIR/node_modules/.bin/next" ]]; then
+  echo ""
+  echo "==> Install frontend dependencies"
   (cd "$FRONTEND_DIR" && bun install)
+fi
+
+if [[ "$INSTALL" == "1" ]]; then
+  echo ""
+  echo "==> Restore backend dependencies"
   (cd "$BACKEND_DIR" && dotnet restore "./reading-the-reader-backend.sln")
 fi
 

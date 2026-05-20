@@ -14,6 +14,8 @@ Optional first-time dependency restore/install:
 .\scripts\start-dev.ps1 -Install
 ```
 
+Frontend dependencies are installed automatically if missing, so a fresh clone can usually run `.\scripts\start-dev.ps1` directly. Use `-Install` when you want to force frontend install and backend restore.
+
 Open the browser after starting:
 
 ```powershell
@@ -34,6 +36,8 @@ Optional first-time dependency restore/install:
 INSTALL=1 ./scripts/start-dev.sh
 ```
 
+Frontend dependencies are installed automatically if missing, so a fresh clone can usually run `./scripts/start-dev.sh` directly. Use `INSTALL=1` when you want to force frontend install and backend restore.
+
 This starts the same app stack, but real Tobii hardware support still depends on the host OS and SDK availability.
 
 ## Production build mode
@@ -52,6 +56,7 @@ Shell:
 
 These scripts first build both applications in the current terminal:
 
+- if frontend dependencies are missing, `bun install` runs automatically before the frontend build
 - frontend: `bun run build` with `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_WS_URL` set, then served with `bun run start`
 - backend: `dotnet build --configuration Release`, then run with `--configuration Release --no-build`
 
