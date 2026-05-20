@@ -32,6 +32,8 @@ export function formatEventKind(kind: ReplayKeyEvent["kind"]) {
       return "Connection"
     case "recovery":
       return "Recovery"
+    case "quiz":
+      return "Quiz"
     default:
       return "Event"
   }
@@ -55,6 +57,8 @@ export function getEventTone(kind: ReplayKeyEvent["kind"], active: boolean) {
       return "border-cyan-400/30 bg-cyan-500/10"
     case "state":
       return "border-slate-400/30 bg-slate-500/10"
+    case "quiz":
+      return "border-fuchsia-400/30 bg-fuchsia-500/10"
     default:
       return "border-border bg-background/80"
   }

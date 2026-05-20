@@ -190,7 +190,10 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.ScheduledInterventionEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.InterventionEvents, e => e.SequenceNumber),
             finalTokenStats,
-            Merge(chunks, c => c.QuizAnswerEvents, e => e.SequenceNumber));
+            Merge(chunks, c => c.QuizAnswerEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.QuizLifecycleEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.QuizFocusEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.QuizSelectionEvents, e => e.SequenceNumber));
     }
 
     private ExperimentProcessedExport BuildMergedProcessedExportFromChunks(
@@ -281,6 +284,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             ScheduledInterventionEvents = batch.ScheduledInterventionEvents?.ToArray(),
             InterventionEvents = batch.InterventionEvents?.ToArray(),
             QuizAnswerEvents = batch.QuizAnswerEvents?.ToArray(),
+            QuizLifecycleEvents = batch.QuizLifecycleEvents?.ToArray(),
+            QuizFocusEvents = batch.QuizFocusEvents?.ToArray(),
+            QuizSelectionEvents = batch.QuizSelectionEvents?.ToArray(),
             LatestTokenStats = batch.LatestTokenStats?.ToDictionary(e => e.Key, e => e.Value.Copy(), StringComparer.Ordinal),
         };
 
@@ -608,6 +614,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public ScheduledInterventionEventRecord[]? ScheduledInterventionEvents { get; set; }
         public InterventionEventRecord[]? InterventionEvents { get; set; }
         public QuizAnswerRecord[]? QuizAnswerEvents { get; set; }
+        public QuizLifecycleRecord[]? QuizLifecycleEvents { get; set; }
+        public QuizFocusRecord[]? QuizFocusEvents { get; set; }
+        public QuizSelectionRecord[]? QuizSelectionEvents { get; set; }
         public Dictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats { get; set; }
     }
 

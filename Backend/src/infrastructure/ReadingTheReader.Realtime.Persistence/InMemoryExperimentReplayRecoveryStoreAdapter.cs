@@ -38,6 +38,9 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
+                [],
+                [],
+                [],
                 null);
         }
 
@@ -73,6 +76,9 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
                 InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())],
                 QuizAnswerEvents = [.. session.QuizAnswerEvents, .. (batch.QuizAnswerEvents ?? []).Select(item => item.Copy())],
+                QuizLifecycleEvents = [.. session.QuizLifecycleEvents, .. (batch.QuizLifecycleEvents ?? []).Select(item => item.Copy())],
+                QuizFocusEvents = [.. session.QuizFocusEvents, .. (batch.QuizFocusEvents ?? []).Select(item => item.Copy())],
+                QuizSelectionEvents = [.. session.QuizSelectionEvents, .. (batch.QuizSelectionEvents ?? []).Select(item => item.Copy())],
                 LatestTokenStats = batch.LatestTokenStats is null
                     ? session.LatestTokenStats
                     : batch.LatestTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())
@@ -117,7 +123,10 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.LatestTokenStats,
-                session.QuizAnswerEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+                session.QuizAnswerEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.QuizLifecycleEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.QuizFocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.QuizSelectionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
         }
     }
 
@@ -212,5 +221,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> InterventionEvents,
         IReadOnlyList<QuizAnswerRecord> QuizAnswerEvents,
+        IReadOnlyList<QuizLifecycleRecord> QuizLifecycleEvents,
+        IReadOnlyList<QuizFocusRecord> QuizFocusEvents,
+        IReadOnlyList<QuizSelectionRecord> QuizSelectionEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats);
 }

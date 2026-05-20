@@ -189,17 +189,73 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
 
         if (exportDocument.Quiz?.Answers is { Count: > 0 } quizAnswers)
         {
-            rows.AddRange(quizAnswers.Select(item => new ExperimentReplayCsvRow
+            rows.AddRange(quizAnswers.Select(item =>
             {
-                RowType = "quiz-answer",
+                double? timeToAnswerMs = null;
+                if (item.QuestionShownAtUnixMs.HasValue && item.LastSelectedAtUnixMs.HasValue)
+                {
+                    timeToAnswerMs = Math.Max(0, item.LastSelectedAtUnixMs.Value - item.QuestionShownAtUnixMs.Value);
+                }
+
+                return new ExperimentReplayCsvRow
+                {
+                    RowType = "quiz-answer",
+                    SessionId = sessionId,
+                    SequenceNumber = item.SequenceNumber,
+                    OccurredAtUnixMs = item.OccurredAtUnixMs,
+                    EventType = item.MaterialItemId,
+                    Source = item.MaterialRunId,
+                    TokenId = item.QuestionId,
+                    Details = item.SelectedOptionId,
+                    MetricValue = timeToAnswerMs,
+                    Notes = item.IsCorrect ? "correct" : "incorrect"
+                };
+            }));
+        }
+
+        if (exportDocument.Quiz?.LifecycleEvents is { Count: > 0 } quizLifecycleEvents)
+        {
+            rows.AddRange(quizLifecycleEvents.Select(item => new ExperimentReplayCsvRow
+            {
+                RowType = "quiz-lifecycle",
                 SessionId = sessionId,
                 SequenceNumber = item.SequenceNumber,
                 OccurredAtUnixMs = item.OccurredAtUnixMs,
-                EventType = item.MaterialItemId,
-                Source = item.MaterialRunId,
+                EventType = item.EventType,
+                Source = item.MaterialItemId,
+                TokenId = item.QuestionId,
+                Details = item.Prompt,
+                Notes = item.Direction
+            }));
+        }
+
+        if (exportDocument.Quiz?.FocusEvents is { Count: > 0 } quizFocusEvents)
+        {
+            rows.AddRange(quizFocusEvents.Select(item => new ExperimentReplayCsvRow
+            {
+                RowType = "quiz-focus",
+                SessionId = sessionId,
+                SequenceNumber = item.SequenceNumber,
+                OccurredAtUnixMs = item.OccurredAtUnixMs,
+                EventType = item.ActiveRegionType,
+                Source = item.MaterialItemId,
+                TokenId = item.QuestionId,
+                Details = item.ActiveOptionId,
+            }));
+        }
+
+        if (exportDocument.Quiz?.SelectionEvents is { Count: > 0 } quizSelectionEvents)
+        {
+            rows.AddRange(quizSelectionEvents.Select(item => new ExperimentReplayCsvRow
+            {
+                RowType = "quiz-selection",
+                SessionId = sessionId,
+                SequenceNumber = item.SequenceNumber,
+                OccurredAtUnixMs = item.OccurredAtUnixMs,
+                EventType = "selection-changed",
+                Source = item.MaterialItemId,
                 TokenId = item.QuestionId,
                 Details = item.SelectedOptionId,
-                Notes = item.IsCorrect ? "correct" : "incorrect"
             }));
         }
 

@@ -34,8 +34,21 @@ public sealed class SubmitQuizAnswersEndpoint : Endpoint<SubmitQuizAnswersReques
                     answer.SelectedOptionId ?? string.Empty))
                 .ToArray();
 
+            IReadOnlyDictionary<string, QuizSelectionHistoryEntry>? selectionHistories = null;
+            if (req.SelectionHistories is { Count: > 0 } histories)
+            {
+                selectionHistories = histories.ToDictionary(
+                    pair => pair.Key,
+                    pair => new QuizSelectionHistoryEntry(
+                        pair.Value.QuestionShownAtUnixMs,
+                        pair.Value.FirstSelectedAtUnixMs,
+                        pair.Value.LastSelectedAtUnixMs,
+                        pair.Value.SelectionChangeCount),
+                    StringComparer.Ordinal);
+            }
+
             await _runtimeAuthority.SubmitQuizAnswersAsync(
-                new SubmitQuizAnswersCommand(req.MaterialItemId ?? string.Empty, answers),
+                new SubmitQuizAnswersCommand(req.MaterialItemId ?? string.Empty, answers, selectionHistories),
                 ct);
 
             await Send.OkAsync(_experimentSessionQueryService.GetCurrentSnapshot(), ct);

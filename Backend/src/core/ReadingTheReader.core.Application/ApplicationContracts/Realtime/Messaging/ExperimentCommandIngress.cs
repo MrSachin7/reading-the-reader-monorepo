@@ -1,4 +1,5 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 
@@ -131,6 +132,21 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 await _runtimeAuthority.SetDecisionExecutionModeAsync(setDecisionExecutionMode.ExecutionMode, ct);
                 return;
 
+            case SubmitQuizLifecycleEventRealtimeCommand lifecycleEvent:
+                await _runtimeAuthority.RecordQuizLifecycleEventAsync(
+                    MapToQuizLifecycleCommand(lifecycleEvent.Payload), ct);
+                return;
+
+            case SubmitQuizFocusEventRealtimeCommand focusEvent:
+                await _runtimeAuthority.RecordQuizFocusEventAsync(
+                    MapToQuizFocusCommand(focusEvent.Payload), ct);
+                return;
+
+            case SubmitQuizSelectionEventRealtimeCommand selectionEvent:
+                await _runtimeAuthority.RecordQuizSelectionEventAsync(
+                    MapToQuizSelectionCommand(selectionEvent.Payload), ct);
+                return;
+
             case DisconnectClientRealtimeCommand disconnect:
                 await _runtimeAuthority.UnsubscribeGazeDataAsync(disconnect.ConnectionId, ct);
                 await _readerObservationService.DisconnectParticipantViewAsync(disconnect.ConnectionId, ct);
@@ -151,6 +167,53 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 await SendErrorAsync(command.ConnectionId, "Unsupported realtime command.", ct);
                 return;
         }
+    }
+
+    private static QuizLifecycleEventCommand MapToQuizLifecycleCommand(QuizLifecycleEventPayload payload)
+    {
+        QuizQuestionLayout? layout = null;
+        if (payload.Layout is not null)
+        {
+            var optionBboxes = payload.Layout.OptionBboxes?
+                .Select(o => new QuizOptionBbox(o.OptionId, o.X, o.Y, o.Width, o.Height))
+                .ToArray() ?? [];
+            layout = new QuizQuestionLayout(
+                payload.Layout.PromptX,
+                payload.Layout.PromptY,
+                payload.Layout.PromptWidth,
+                payload.Layout.PromptHeight,
+                optionBboxes);
+        }
+
+        return new QuizLifecycleEventCommand(
+            payload.MaterialItemId,
+            payload.EventType,
+            payload.OccurredAtUnixMs,
+            payload.QuestionCount,
+            payload.QuestionId,
+            payload.QuestionIndex,
+            payload.Prompt,
+            layout,
+            payload.Direction);
+    }
+
+    private static QuizFocusEventCommand MapToQuizFocusCommand(QuizFocusEventPayload payload)
+    {
+        return new QuizFocusEventCommand(
+            payload.MaterialItemId,
+            payload.QuestionId,
+            payload.ActiveRegionType,
+            payload.OccurredAtUnixMs,
+            payload.ActiveOptionId);
+    }
+
+    private static QuizSelectionEventCommand MapToQuizSelectionCommand(QuizSelectionEventPayload payload)
+    {
+        return new QuizSelectionEventCommand(
+            payload.MaterialItemId,
+            payload.QuestionId,
+            payload.SelectedOptionId,
+            payload.OccurredAtUnixMs);
     }
 
     private async Task SendErrorAsync(string connectionId, string message, CancellationToken ct)
