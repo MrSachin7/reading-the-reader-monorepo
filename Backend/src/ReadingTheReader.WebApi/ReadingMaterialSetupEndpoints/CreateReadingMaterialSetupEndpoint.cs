@@ -1,6 +1,7 @@
 using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
+using ReadingTheReader.WebApi.Contracts;
 using ReadingTheReader.WebApi.Contracts.ReadingMaterialSetups;
 
 namespace ReadingTheReader.WebApi.ReadingMaterialSetupEndpoints;
@@ -29,7 +30,7 @@ public sealed class CreateReadingMaterialSetupEndpoint : Endpoint<CreateReadingM
                 Name = req.Name,
                 Title = req.Title,
                 Markdown = req.Markdown,
-                ResearcherQuestions = req.ResearcherQuestions,
+                ComprehensionQuiz = ComprehensionQuestionMapping.ToDomain(req.ComprehensionQuiz),
                 FontFamily = req.FontFamily,
                 FontSizePx = req.FontSizePx,
                 LineWidthPx = req.LineWidthPx,

@@ -34,4 +34,5 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     IReadOnlyList<WebcamGazeSampleRecord>? WebcamGazeSamples = null,
     IReadOnlyList<WebcamSensingStatusRecord>? WebcamStatusEvents = null,
     IReadOnlyList<FacialObservationRecord>? FacialObservationEvents = null,
-    IReadOnlyList<FacialDifficultyEventRecord>? FacialDifficultyEvents = null);
+    IReadOnlyList<FacialDifficultyEventRecord>? FacialDifficultyEvents = null,
+    IReadOnlyList<QuizAnswerRecord>? QuizAnswerEvents = null);

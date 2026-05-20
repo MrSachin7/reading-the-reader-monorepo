@@ -15,6 +15,7 @@ export {
   useCollectValidationPointMutation,
   useCreateReadingMaterialSetupMutation,
   useCreateExperimentSetupMutation,
+  useDeleteReadingMaterialSetupMutation,
   useDeleteExperimentSetupMutation,
   useFinishExperimentSessionMutation,
   useFinishCalibrationMutation,
@@ -31,6 +32,7 @@ export {
   useResetExperimentSessionMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
+  useSubmitQuizAnswersMutation,
   useGetReadingMaterialSetupsQuery,
   useGetReaderShellSettingsQuery,
   useGetSensingModeSettingsQuery,
@@ -110,6 +112,6 @@ export {
   resetReadingSessionState,
   setReadingSessionCustomMarkdown,
   setReadingSessionExperimentSelection,
-  setReadingSessionResearcherQuestions,
+  setReadingSessionComprehensionQuiz,
   setReadingSessionTitle,
 } from "./slices/experiment-slice"

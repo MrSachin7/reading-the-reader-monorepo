@@ -1,4 +1,5 @@
 import type { CalibrationQuality, CalibrationSessionSnapshot } from "@/lib/calibration"
+import type { ComprehensionQuestion, QuizStatus } from "@/lib/comprehension-quiz"
 import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
@@ -202,6 +203,8 @@ export type ExperimentSequenceItemSnapshot = {
   letterSpacingEm: number
   editableByResearcher: boolean
   materialRunId?: string | null
+  comprehensionQuiz?: ComprehensionQuestion[] | null
+  quizStatus?: QuizStatus
 }
 
 export type ExperimentMaterialRunSnapshot = {

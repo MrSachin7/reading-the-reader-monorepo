@@ -447,6 +447,7 @@ function ResearcherCurrentLiveBody({
           onResumeAutomation={() => resumeDecisionAutomation()}
           onExecutionModeChange={(executionMode) => setDecisionExecutionMode(executionMode)}
           experimentTextCount={readingSession.experimentItems.length}
+          experimentItems={readingSession.experimentItems}
           currentExperimentTextIndex={currentExperimentTextIndex}
           canAdvanceExperimentText={
             currentExperimentTextIndex !== null &&

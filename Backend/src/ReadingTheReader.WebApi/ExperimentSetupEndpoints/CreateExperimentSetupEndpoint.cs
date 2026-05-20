@@ -45,7 +45,6 @@ public sealed class CreateExperimentSetupEndpoint : Endpoint<CreateExperimentSet
                     SourceReadingMaterialTitle = item.SourceReadingMaterialTitle,
                     Title = item.Title,
                     Markdown = item.Markdown,
-                    ResearcherQuestions = item.ResearcherQuestions,
                     FontFamily = item.FontFamily,
                     FontSizePx = item.FontSizePx,
                     LineWidthPx = item.LineWidthPx,

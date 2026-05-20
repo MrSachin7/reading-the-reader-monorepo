@@ -7,6 +7,7 @@ import type {
 } from "@/lib/experiment-session"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import type { ExperimentSetupItem } from "@/redux/api/experiment-setup-api"
+import type { ReadingMaterialSetup } from "@/redux/api/reading-material-api"
 import type { UpsertReadingSessionPayload } from "@/redux/api/experiment-session-api"
 
 export type ExperimentSequencePosition = {
@@ -17,8 +18,13 @@ export type ExperimentSequencePosition = {
 }
 
 export function mapExperimentSetupItemsToSequenceItems(
-  items: ExperimentSetupItem[]
+  items: ExperimentSetupItem[],
+  readingMaterialSetups: ReadingMaterialSetup[] = []
 ): ExperimentSequenceItemSnapshot[] {
+  const quizByMaterialId = new Map<string, ReadingMaterialSetup["comprehensionQuiz"]>()
+  for (const setup of readingMaterialSetups) {
+    quizByMaterialId.set(setup.id, setup.comprehensionQuiz ?? [])
+  }
   return items.map((item, index) => ({
     id: item.id,
     order: item.order ?? index,
@@ -32,6 +38,10 @@ export function mapExperimentSetupItemsToSequenceItems(
     letterSpacingEm: item.letterSpacingEm,
     editableByResearcher: item.editableByExperimenter,
     materialRunId: item.id,
+    comprehensionQuiz: item.sourceReadingMaterialSetupId
+      ? quizByMaterialId.get(item.sourceReadingMaterialSetupId) ?? []
+      : [],
+    quizStatus: "not-started",
   }))
 }
 

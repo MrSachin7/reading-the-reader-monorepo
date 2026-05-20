@@ -31,9 +31,9 @@ import {
   useLazyGetExperimentSetupByIdQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
   useUpdateExperimentSetupMutation,
+  setReadingSessionComprehensionQuiz,
   setReadingSessionCustomMarkdown,
   setReadingSessionExperimentSelection,
-  setReadingSessionResearcherQuestions,
   setReadingSessionTitle,
 } from "@/redux"
 import { applyReadingPresentationSettings } from "@/modules/pages/reading/lib/useReadingSettings"
@@ -106,7 +106,6 @@ function buildDraftItem(setup: ReadingMaterialSetup): DraftItem {
     sourceReadingMaterialTitle: setup.title,
     title: setup.title,
     markdown: setup.markdown,
-    researcherQuestions: setup.researcherQuestions,
     fontFamily: setup.fontFamily,
     fontSizePx: setup.fontSizePx,
     lineWidthPx: setup.lineWidthPx,
@@ -158,7 +157,6 @@ function toCreateRequest(draft: DraftState): CreateExperimentSetupRequest {
       sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
       title: item.title.trim(),
       markdown: item.markdown,
-      researcherQuestions: item.researcherQuestions,
       fontFamily: item.fontFamily,
       fontSizePx: item.fontSizePx,
       lineWidthPx: item.lineWidthPx,
@@ -193,6 +191,14 @@ export default function ExperimentSetupPage() {
     useUpdateExperimentSetupMutation()
 
   const isSaving = isCreating || isUpdating
+
+  const quizCountByMaterialId = React.useMemo(() => {
+    const map = new Map<string, number>()
+    for (const setup of readingMaterialSetups) {
+      map.set(setup.id, setup.comprehensionQuiz?.length ?? 0)
+    }
+    return map
+  }, [readingMaterialSetups])
 
   React.useEffect(() => {
     if (!requestedId) {
@@ -300,7 +306,6 @@ export default function ExperimentSetupPage() {
               sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
               title: item.title.trim(),
               markdown: item.markdown,
-              researcherQuestions: item.researcherQuestions,
               fontFamily: item.fontFamily,
               fontSizePx: item.fontSizePx,
               lineWidthPx: item.lineWidthPx,
@@ -329,7 +334,7 @@ export default function ExperimentSetupPage() {
 
     dispatch(setReadingSessionTitle(firstItem.title))
     dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
-    dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+    dispatch(setReadingSessionComprehensionQuiz([]))
     dispatch(
       setReadingSessionExperimentSelection({
         experimentSetupId: setupId,
@@ -368,7 +373,6 @@ export default function ExperimentSetupPage() {
                   sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
                   title: item.title.trim(),
                   markdown: item.markdown,
-                  researcherQuestions: item.researcherQuestions,
                   fontFamily: item.fontFamily,
                   fontSizePx: item.fontSizePx,
                   lineWidthPx: item.lineWidthPx,
@@ -664,7 +668,11 @@ export default function ExperimentSetupPage() {
                   </div>
                 ) : null}
 
-                {draft.items.map((item, index) => (
+                {draft.items.map((item, index) => {
+                  const quizCount = item.sourceReadingMaterialSetupId
+                    ? quizCountByMaterialId.get(item.sourceReadingMaterialSetupId) ?? 0
+                    : 0
+                  return (
                   <Card key={item.localId}>
                     <CardHeader>
                       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -672,6 +680,9 @@ export default function ExperimentSetupPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">Text {index + 1}</Badge>
                             <Badge variant="outline">{item.sourceReadingMaterialTitle}</Badge>
+                            <Badge variant="outline">
+                              {quizCount > 0 ? `Quiz: ${quizCount} question${quizCount === 1 ? "" : "s"}` : "No quiz"}
+                            </Badge>
                           </div>
                           <CardTitle className="text-xl">{item.title || "Untitled text"}</CardTitle>
                           <CardDescription>
@@ -744,19 +755,6 @@ export default function ExperimentSetupPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                        </Field>
-                        <Field className="md:col-span-2">
-                          <FieldLabel>Researcher questions</FieldLabel>
-                          <Textarea
-                            value={item.researcherQuestions}
-                            onChange={(event) =>
-                              updateItem(item.localId, (current) => ({
-                                ...current,
-                                researcherQuestions: event.target.value,
-                              }))
-                            }
-                            rows={3}
-                          />
                         </Field>
                       </FieldGroup>
 
@@ -859,7 +857,8 @@ export default function ExperimentSetupPage() {
                       </Field>
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="flex flex-wrap items-center gap-3">

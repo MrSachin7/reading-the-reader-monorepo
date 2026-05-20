@@ -1,12 +1,13 @@
 import { baseApi } from "@/redux/api/base-api"
 import type { FontTheme } from "@/hooks/use-font-theme"
+import type { ComprehensionQuestion } from "@/lib/comprehension-quiz"
 
 export type ReadingMaterialSetup = {
   id: string
   name: string
   title: string
   markdown: string
-  researcherQuestions: string
+  comprehensionQuiz: ComprehensionQuestion[]
   fontFamily: FontTheme
   fontSizePx: number
   lineWidthPx: number
@@ -21,7 +22,7 @@ export type CreateReadingMaterialSetupRequest = {
   name: string
   title: string
   markdown: string
-  researcherQuestions: string
+  comprehensionQuiz: ComprehensionQuestion[]
   fontFamily: FontTheme
   fontSizePx: number
   lineWidthPx: number
@@ -79,11 +80,22 @@ export const readingMaterialApi = baseApi.injectEndpoints({
         { type: "ReadingMaterialSetup", id: "LIST" },
       ],
     }),
+    deleteReadingMaterialSetup: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/reading-material-setups/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "ReadingMaterialSetup", id },
+        { type: "ReadingMaterialSetup", id: "LIST" },
+      ],
+    }),
   }),
 })
 
 export const {
   useCreateReadingMaterialSetupMutation,
+  useDeleteReadingMaterialSetupMutation,
   useGetReadingMaterialSetupsQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
   useUpdateReadingMaterialSetupMutation,

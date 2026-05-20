@@ -11,7 +11,6 @@ export type ExperimentSetupItem = {
   sourceReadingMaterialTitle: string
   title: string
   markdown: string
-  researcherQuestions: string
   fontFamily: FontTheme
   fontSizePx: number
   lineWidthPx: number
@@ -65,7 +64,6 @@ export type UpdateExperimentSetupRequestItem = {
   sourceReadingMaterialTitle: string
   title: string
   markdown: string
-  researcherQuestions: string
   fontFamily: FontTheme
   fontSizePx: number
   lineWidthPx: number

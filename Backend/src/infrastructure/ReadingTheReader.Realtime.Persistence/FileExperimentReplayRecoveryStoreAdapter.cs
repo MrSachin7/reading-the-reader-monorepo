@@ -189,7 +189,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.DecisionProposalEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.ScheduledInterventionEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.InterventionEvents, e => e.SequenceNumber),
-            finalTokenStats);
+            finalTokenStats,
+            Merge(chunks, c => c.QuizAnswerEvents, e => e.SequenceNumber));
     }
 
     private ExperimentProcessedExport BuildMergedProcessedExportFromChunks(
@@ -279,6 +280,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             DecisionProposalEvents = batch.DecisionProposalEvents?.ToArray(),
             ScheduledInterventionEvents = batch.ScheduledInterventionEvents?.ToArray(),
             InterventionEvents = batch.InterventionEvents?.ToArray(),
+            QuizAnswerEvents = batch.QuizAnswerEvents?.ToArray(),
             LatestTokenStats = batch.LatestTokenStats?.ToDictionary(e => e.Key, e => e.Value.Copy(), StringComparer.Ordinal),
         };
 
@@ -605,6 +607,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public DecisionProposalEventRecord[]? DecisionProposalEvents { get; set; }
         public ScheduledInterventionEventRecord[]? ScheduledInterventionEvents { get; set; }
         public InterventionEventRecord[]? InterventionEvents { get; set; }
+        public QuizAnswerRecord[]? QuizAnswerEvents { get; set; }
         public Dictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats { get; set; }
     }
 

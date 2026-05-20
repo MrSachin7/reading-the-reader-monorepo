@@ -12,7 +12,9 @@ public sealed record ExperimentSequenceItemSnapshot(
     double LineHeight,
     double LetterSpacingEm,
     bool EditableByResearcher,
-    string? MaterialRunId = null)
+    string? MaterialRunId = null,
+    IReadOnlyList<ComprehensionQuestion>? ComprehensionQuiz = null,
+    string QuizStatus = "not-started")
 {
     public ExperimentSequenceItemSnapshot Copy()
     {

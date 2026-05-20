@@ -16,6 +16,8 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask SetReadingSessionAsync(UpsertReadingSessionCommand command, CancellationToken ct = default);
 
+    ValueTask<LiveReadingSessionSnapshot> SubmitQuizAnswersAsync(SubmitQuizAnswersCommand command, CancellationToken ct = default);
+
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
     ValueTask<ReadingInterventionPolicySnapshot> UpdateInterventionPolicyAsync(

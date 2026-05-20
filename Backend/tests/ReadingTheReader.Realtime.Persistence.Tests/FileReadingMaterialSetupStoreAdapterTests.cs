@@ -151,6 +151,36 @@ public sealed class FileReadingMaterialSetupStoreAdapterTests : IDisposable
         Assert.True(updated.UpdatedAtUnixMs > updated.CreatedAtUnixMs);
     }
 
+    [Fact]
+    public async Task DeleteAsync_RemovesMarkdownAndMetadata()
+    {
+        var sut = new FileReadingMaterialSetupStoreAdapter(_tempDirectory);
+
+        var saved = await sut.SaveAsync(new SaveReadingMaterialSetupCommand
+        {
+            Title = "Delete Me",
+            Markdown = "Before",
+            FontFamily = "inter",
+            FontSizePx = 18,
+            LineWidthPx = 700,
+            LineHeight = 1.6,
+            LetterSpacingEm = 0.02,
+            EditableByExperimenter = false
+        });
+
+        var markdownPath = Path.Combine(_tempDirectory, saved.FileName);
+        var metadataPath = Path.Combine(_tempDirectory, Path.ChangeExtension(saved.FileName, ".json"));
+
+        var deleted = await sut.DeleteAsync(saved.Id);
+        var missing = await sut.GetByIdAsync(saved.Id);
+
+        Assert.True(deleted);
+        Assert.Null(missing);
+        Assert.False(File.Exists(markdownPath));
+        Assert.False(File.Exists(metadataPath));
+        Assert.Empty(await sut.ListAsync());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

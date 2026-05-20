@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
+import type { ComprehensionQuestion } from "@/lib/comprehension-quiz"
 
 type ExperimentStepOneState = {
   serialNumber: string
@@ -35,7 +36,7 @@ type ReadingSessionState = {
   source: "experiment"
   title: string
   customMarkdown: string
-  researcherQuestions: string
+  comprehensionQuiz: ComprehensionQuestion[]
   selectedExperimentSetupId: string | null
   selectedExperimentSetupName: string | null
   selectedExperimentSetupItemId: string | null
@@ -93,7 +94,7 @@ const initialState: ExperimentState = {
     source: "experiment",
     title: "",
     customMarkdown: "",
-    researcherQuestions: "",
+    comprehensionQuiz: [],
     selectedExperimentSetupId: null,
     selectedExperimentSetupName: null,
     selectedExperimentSetupItemId: null,
@@ -304,8 +305,8 @@ const experimentSlice = createSlice({
     setReadingSessionCustomMarkdown: (state, action: PayloadAction<string>) => {
       state.readingSession.customMarkdown = action.payload
     },
-    setReadingSessionResearcherQuestions: (state, action: PayloadAction<string>) => {
-      state.readingSession.researcherQuestions = action.payload
+    setReadingSessionComprehensionQuiz: (state, action: PayloadAction<ComprehensionQuestion[]>) => {
+      state.readingSession.comprehensionQuiz = action.payload
     },
     setReadingSessionExperimentSelection: (
       state,
@@ -358,7 +359,7 @@ export const {
   resetStepThreeState,
   setReadingSessionTitle,
   setReadingSessionCustomMarkdown,
-  setReadingSessionResearcherQuestions,
+  setReadingSessionComprehensionQuiz,
   setReadingSessionExperimentSelection,
   resetReadingSessionState,
 } = experimentSlice.actions

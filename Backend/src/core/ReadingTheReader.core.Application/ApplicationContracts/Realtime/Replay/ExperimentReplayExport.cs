@@ -493,6 +493,32 @@ public sealed record ExperimentReplayAnnotation(
     }
 }
 
+public sealed record QuizAnswerRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    string MaterialItemId,
+    string? MaterialRunId,
+    int? MaterialIndex,
+    string QuestionId,
+    string SelectedOptionId,
+    bool IsCorrect)
+{
+    public QuizAnswerRecord Copy()
+    {
+        return this with { };
+    }
+}
+
+public sealed record ExperimentReplayQuiz(
+    IReadOnlyList<QuizAnswerRecord> Answers)
+{
+    public ExperimentReplayQuiz Copy()
+    {
+        return new ExperimentReplayQuiz(
+            Answers is null ? [] : [.. Answers.Select(item => item.Copy())]);
+    }
+}
+
 public sealed record ExperimentReplayExport(
     ExperimentReplayExportManifest Manifest,
     ExperimentReplayContext Experiment,
@@ -501,7 +527,8 @@ public sealed record ExperimentReplayExport(
     ExperimentReplayDerived Derived,
     ExperimentReplayInterventions Interventions,
     ExperimentReplayData Replay,
-    IReadOnlyList<ExperimentReplayAnnotation> Annotations)
+    IReadOnlyList<ExperimentReplayAnnotation> Annotations,
+    ExperimentReplayQuiz? Quiz = null)
 {
     public ExperimentReplayExport Copy()
     {
@@ -513,7 +540,8 @@ public sealed record ExperimentReplayExport(
             Derived.Copy(),
             Interventions.Copy(),
             Replay.Copy(),
-            Annotations is null ? [] : [.. Annotations.Select(item => item.Copy())]);
+            Annotations is null ? [] : [.. Annotations.Select(item => item.Copy())],
+            Quiz?.Copy());
     }
 }
 

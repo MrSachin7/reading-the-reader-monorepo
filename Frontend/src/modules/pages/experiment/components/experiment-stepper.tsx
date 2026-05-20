@@ -30,8 +30,8 @@ import { mapExperimentSetupItemsToSequenceItems } from "@/lib/experiment-sequenc
 import {
   hydrateExperimentFromSession,
   setReadingSessionExperimentSelection,
+  setReadingSessionComprehensionQuiz,
   setReadingSessionCustomMarkdown,
-  setReadingSessionResearcherQuestions,
   setReadingSessionTitle,
   setStepTwoAge,
   setStepTwoEyeCondition,
@@ -43,6 +43,7 @@ import {
   useAppSelector,
   useGetExperimentSessionQuery,
   useGetExperimentSetupsQuery,
+  useGetReadingMaterialSetupsQuery,
   useLazyGetExperimentSetupByIdQuery,
   useSaveParticipantMutation,
   useStartExperimentSessionMutation,
@@ -995,7 +996,7 @@ function SessionContentStep({
 
                     dispatch(setReadingSessionTitle(firstItem.title))
                     dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
-                    dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+                    dispatch(setReadingSessionComprehensionQuiz([]))
                     dispatch(
                       setReadingSessionExperimentSelection({
                         experimentSetupId: savedSetup.id,
@@ -1242,6 +1243,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     pollingInterval: 3_000,
   })
   const { data: experimentSetups = [] } = useGetExperimentSetupsQuery()
+  const { data: readingMaterialSetups = [] } = useGetReadingMaterialSetupsQuery()
   const [getExperimentSetupById] = useLazyGetExperimentSetupByIdQuery()
   const [upsertReadingSession, { isLoading: isSavingReadingSession }] =
     useUpsertReadingSessionMutation()
@@ -1326,7 +1328,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
 
         dispatch(setReadingSessionTitle(firstItem.title))
         dispatch(setReadingSessionCustomMarkdown(firstItem.markdown))
-        dispatch(setReadingSessionResearcherQuestions(firstItem.researcherQuestions))
+        dispatch(setReadingSessionComprehensionQuiz([]))
         dispatch(
           setReadingSessionExperimentSelection({
             experimentSetupId: savedSetup.id,
@@ -1369,7 +1371,7 @@ export function ExperimentStepper({ mode = "researcher" }: ExperimentStepperProp
     updateTemplateDecisionConfiguration,
   ])
   const readingExperimentItems = selectedExperimentSetup
-    ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items)
+    ? mapExperimentSetupItemsToSequenceItems(selectedExperimentSetup.items, readingMaterialSetups)
     : undefined
   const readingCurrentExperimentItemIndex = selectedExperimentSetup
     ? Math.max(

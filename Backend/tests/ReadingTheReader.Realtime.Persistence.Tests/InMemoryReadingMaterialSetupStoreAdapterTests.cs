@@ -134,4 +134,23 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapterTests
         Assert.True(updated.EditableByExperimenter);
         Assert.True(updated.UpdatedAtUnixMs > updated.CreatedAtUnixMs);
     }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesSavedSetup()
+    {
+        var sut = new InMemoryReadingMaterialSetupStoreAdapter();
+
+        var saved = await sut.SaveAsync(new SaveReadingMaterialSetupCommand
+        {
+            Title = "Delete Me",
+            Markdown = "Before"
+        });
+
+        var deleted = await sut.DeleteAsync(saved.Id);
+        var missing = await sut.GetByIdAsync(saved.Id);
+
+        Assert.True(deleted);
+        Assert.Null(missing);
+        Assert.Empty(await sut.ListAsync());
+    }
 }

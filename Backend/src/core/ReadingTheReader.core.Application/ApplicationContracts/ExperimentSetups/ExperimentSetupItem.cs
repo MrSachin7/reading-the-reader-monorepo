@@ -8,7 +8,6 @@ public sealed class ExperimentSetupItem
     public string SourceReadingMaterialTitle { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
     public string Markdown { get; init; } = string.Empty;
-    public string ResearcherQuestions { get; init; } = string.Empty;
     public string FontFamily { get; init; } = string.Empty;
     public int FontSizePx { get; init; }
     public int LineWidthPx { get; init; }

@@ -1,6 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 using ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups.Commands;
 using ReadingTheReader.core.Application.InfrastructureContracts;
+using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.Realtime.Persistence;
 
@@ -21,7 +22,7 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapter : IReadingMaterialS
             Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
             Title = command.Title.Trim(),
             Markdown = command.Markdown,
-            ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
+            ComprehensionQuiz = command.ComprehensionQuiz ?? Array.Empty<ComprehensionQuestion>(),
             FileName = BuildUniqueFileName(command.Title, id),
             CreatedAtUnixMs = createdAtUnixMs,
             UpdatedAtUnixMs = createdAtUnixMs,
@@ -84,7 +85,7 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapter : IReadingMaterialS
                 Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
                 Title = command.Title.Trim(),
                 Markdown = command.Markdown,
-                ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
+                ComprehensionQuiz = command.ComprehensionQuiz ?? Array.Empty<ComprehensionQuestion>(),
                 FileName = existing.FileName,
                 CreatedAtUnixMs = existing.CreatedAtUnixMs,
                 UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -98,6 +99,16 @@ public sealed class InMemoryReadingMaterialSetupStoreAdapter : IReadingMaterialS
 
             _items[command.Id] = updated;
             return ValueTask.FromResult<ReadingMaterialSetup?>(updated);
+        }
+    }
+
+    public ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        lock (_syncRoot)
+        {
+            return ValueTask.FromResult(_items.Remove(id));
         }
     }
 

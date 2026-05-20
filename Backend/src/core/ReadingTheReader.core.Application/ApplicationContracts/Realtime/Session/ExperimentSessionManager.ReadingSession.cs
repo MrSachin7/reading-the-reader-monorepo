@@ -51,7 +51,8 @@ public sealed partial class ExperimentSessionManager
                         item.LineHeight,
                         item.LetterSpacingEm,
                         item.EditableByResearcher,
-                        string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id.Trim() : item.MaterialRunId.Trim()))
+                        string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id.Trim() : item.MaterialRunId.Trim(),
+                        item.ComprehensionQuiz))
                     .ToArray();
             int? normalizedCurrentExperimentItemIndex = null;
             if (normalizedExperimentItems.Length > 0)

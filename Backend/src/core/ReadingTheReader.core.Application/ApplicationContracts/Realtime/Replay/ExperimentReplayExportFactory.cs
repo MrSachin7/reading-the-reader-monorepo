@@ -22,7 +22,8 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents,
-        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null,
+        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null)
     {
         return Create(
             initialSnapshot,
@@ -43,7 +44,8 @@ public static class ExperimentReplayExportFactory
             decisionProposalEvents,
             scheduledInterventionEvents,
             interventionEvents,
-            finalTokenStats);
+            finalTokenStats,
+            quizAnswerEvents);
     }
 
     public static ExperimentReplayExport Create(
@@ -65,7 +67,8 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<DecisionProposalEventRecord> decisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents,
-        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null)
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null,
+        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
         var isLiveExport = latestSnapshot.IsActive &&
@@ -202,7 +205,10 @@ public static class ExperimentReplayExportFactory
                     baselinePresentation,
                     baselineAppearance),
                 readingSessionStates.Select(item => item.Copy()).ToArray()),
-            []);
+            [],
+            quizAnswerEvents is null
+                ? null
+                : new ExperimentReplayQuiz(quizAnswerEvents.Select(item => item.Copy()).ToArray()));
     }
 
     private static long? DetermineLastOccurredAtUnixMs(

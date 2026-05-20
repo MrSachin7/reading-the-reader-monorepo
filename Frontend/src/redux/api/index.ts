@@ -56,6 +56,7 @@ export {
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
+  useSubmitQuizAnswersMutation,
   useUpdateDecisionConfigurationMutation,
   useUpdateEyeMovementAnalysisConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
@@ -78,6 +79,7 @@ export type { SaveParticipantPayload } from "./participant-api"
 export {
   readingMaterialApi,
   useCreateReadingMaterialSetupMutation,
+  useDeleteReadingMaterialSetupMutation,
   useGetReadingMaterialSetupsQuery,
   useLazyGetReadingMaterialSetupByIdQuery,
   useUpdateReadingMaterialSetupMutation,

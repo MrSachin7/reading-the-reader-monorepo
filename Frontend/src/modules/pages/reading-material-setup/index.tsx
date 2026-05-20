@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { FONTS, type FontTheme } from "@/hooks/use-font-theme"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
+import { ComprehensionQuizEditor } from "@/modules/pages/reading-material-setup/components/ComprehensionQuizEditor"
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
 import {
@@ -26,8 +27,8 @@ import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize"
 import {
   type CreateReadingMaterialSetupRequest,
   type ReadingMaterialSetup,
+  setReadingSessionComprehensionQuiz,
   setReadingSessionCustomMarkdown,
-  setReadingSessionResearcherQuestions,
   setReadingSessionTitle,
   useAppDispatch,
   useCreateReadingMaterialSetupMutation,
@@ -58,7 +59,7 @@ const emptyDraft: DraftState = {
   name: "",
   title: "",
   markdown: "",
-  researcherQuestions: "",
+  comprehensionQuiz: [],
   fontFamily: "merriweather",
   fontSizePx: 18,
   lineWidthPx: 680,
@@ -99,10 +100,9 @@ function normalizeReadingMaterialSetup(
     name,
     title: typeof setup.title === "string" ? setup.title : fallback.title,
     markdown: typeof setup.markdown === "string" ? setup.markdown : fallback.markdown,
-    researcherQuestions:
-      typeof setup.researcherQuestions === "string"
-        ? setup.researcherQuestions
-        : fallback.researcherQuestions,
+    comprehensionQuiz: Array.isArray(setup.comprehensionQuiz)
+      ? setup.comprehensionQuiz
+      : fallback.comprehensionQuiz,
     fontFamily:
       setup.fontFamily === "roboto-flex" ||
       setup.fontFamily === "geist" ||
@@ -176,7 +176,7 @@ export default function ReadingMaterialSetupPage() {
   const syncReadingSession = React.useCallback(
     (nextDraft: DraftState) => {
       dispatch(setReadingSessionTitle(nextDraft.title))
-      dispatch(setReadingSessionResearcherQuestions(nextDraft.researcherQuestions))
+      dispatch(setReadingSessionComprehensionQuiz(nextDraft.comprehensionQuiz))
     },
     [dispatch]
   )
@@ -196,7 +196,7 @@ export default function ReadingMaterialSetupPage() {
         name: next.name,
         title: next.title,
         markdown: next.markdown,
-        researcherQuestions: next.researcherQuestions,
+        comprehensionQuiz: next.comprehensionQuiz,
         fontFamily: next.fontFamily,
         fontSizePx: next.fontSizePx,
         lineWidthPx: next.lineWidthPx,
@@ -393,19 +393,26 @@ export default function ReadingMaterialSetupPage() {
                   />
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="reading-material-questions">Researcher questions</FieldLabel>
-                  <Textarea
-                    id="reading-material-questions"
-                    value={draft.researcherQuestions}
-                    onChange={(event) => {
-                      const nextDraft = { ...draft, researcherQuestions: event.target.value }
-                      applyLocalDraft(nextDraft)
-                    }}
-                    className="min-h-32 resize-y"
-                  />
-                </Field>
               </FieldGroup>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Comprehension quiz</CardTitle>
+              <CardDescription>
+                Questions shown to the reader after they finish this material. Each question must have
+                at least two options and one marked correct.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ComprehensionQuizEditor
+                value={draft.comprehensionQuiz}
+                onChange={(nextQuiz) => {
+                  const nextDraft = { ...draft, comprehensionQuiz: nextQuiz }
+                  applyLocalDraft(nextDraft)
+                }}
+              />
             </CardContent>
           </Card>
 
@@ -564,7 +571,7 @@ export default function ReadingMaterialSetupPage() {
                   Text: {draft.title.trim().length > 0 ? draft.title : "Untitled"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Questions: {draft.researcherQuestions.trim().length > 0 ? "Added" : "None"}
+                  Quiz: {draft.comprehensionQuiz.length > 0 ? `${draft.comprehensionQuiz.length} question(s)` : "None"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Font: {FONT_LABELS[draft.fontFamily]} {draft.fontSizePx}px

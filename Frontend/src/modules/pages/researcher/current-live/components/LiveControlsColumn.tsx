@@ -21,6 +21,7 @@ import type {
   DecisionConfiguration,
   DecisionState,
   ExperimentLiveMonitoringSnapshot,
+  ExperimentSequenceItemSnapshot,
   ExternalProviderStatusSnapshot,
   FacialDifficultySignalSnapshot,
   FacialObservationSnapshot,
@@ -32,6 +33,7 @@ import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
+import { QuizProgressCard } from "@/modules/pages/researcher/current-live/components/QuizProgressCard"
 import { summarizeProposalChanges } from "@/modules/pages/researcher/current-live/lib/intervention-helpers"
 import type { LiveMirrorTrustState, LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 import {
@@ -75,6 +77,7 @@ type LiveControlsColumnProps = {
   onResumeAutomation: () => void
   onExecutionModeChange: (executionMode: string) => void
   experimentTextCount: number
+  experimentItems: ExperimentSequenceItemSnapshot[]
   currentExperimentTextIndex: number | null
   canAdvanceExperimentText: boolean
   isAdvancingExperimentText: boolean
@@ -115,6 +118,7 @@ export function LiveControlsColumn({
   onResumeAutomation,
   onExecutionModeChange,
   experimentTextCount,
+  experimentItems,
   currentExperimentTextIndex,
   canAdvanceExperimentText,
   isAdvancingExperimentText,
@@ -295,6 +299,8 @@ export function LiveControlsColumn({
                 </CardContent>
               </Card>
             ) : null}
+
+            <QuizProgressCard items={experimentItems} />
 
             <Card className="rounded-2xl bg-card/96 shadow-sm">
               <CardContent className="pt-6">

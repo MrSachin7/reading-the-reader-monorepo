@@ -37,6 +37,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
+                [],
                 null);
         }
 
@@ -71,6 +72,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
                 ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
                 InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())],
+                QuizAnswerEvents = [.. session.QuizAnswerEvents, .. (batch.QuizAnswerEvents ?? []).Select(item => item.Copy())],
                 LatestTokenStats = batch.LatestTokenStats is null
                     ? session.LatestTokenStats
                     : batch.LatestTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())
@@ -114,7 +116,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
-                session.LatestTokenStats));
+                session.LatestTokenStats,
+                session.QuizAnswerEvents.OrderBy(item => item.SequenceNumber).ToArray()));
         }
     }
 
@@ -208,5 +211,6 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
         IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> InterventionEvents,
+        IReadOnlyList<QuizAnswerRecord> QuizAnswerEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats);
 }

@@ -1,13 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, LoaderCircle, Plus } from "lucide-react"
+import { BookOpen, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { getErrorMessage } from "@/lib/error-utils"
 import {
+  useDeleteReadingMaterialSetupMutation,
   useGetReadingMaterialSetupsQuery,
 } from "@/redux"
 
@@ -24,6 +26,24 @@ function describeControlState(editableByExperimenter: boolean) {
 
 export default function ReadingMaterialLibraryPage() {
   const { data: savedSetups = [], isLoading } = useGetReadingMaterialSetupsQuery()
+  const [deleteReadingMaterialSetup] = useDeleteReadingMaterialSetupMutation()
+  const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [actionError, setActionError] = React.useState<string | null>(null)
+
+  const handleDelete = React.useCallback(
+    async (id: string) => {
+      setActionError(null)
+      setDeletingId(id)
+      try {
+        await deleteReadingMaterialSetup(id).unwrap()
+      } catch (error) {
+        setActionError(getErrorMessage(error, "Could not delete that reading material."))
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [deleteReadingMaterialSetup]
+  )
 
   return (
     <section className="space-y-6">
@@ -52,6 +72,12 @@ export default function ReadingMaterialLibraryPage() {
           </div>
         </div>
       </div>
+
+      {actionError ? (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
 
       {isLoading ? (
         <div className="flex items-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
@@ -91,11 +117,25 @@ export default function ReadingMaterialLibraryPage() {
                     Saved {formatDate(setup.updatedAtUnixMs)}
                   </p>
                 </div>
-                <Link href={`/reading-materials/setup?id=${setup.id}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Edit
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="flex-1">
+                    <Link href={`/reading-materials/setup?id=${setup.id}`}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Link>
                   </Button>
-                </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    disabled={deletingId === setup.id}
+                    onClick={() => void handleDelete(setup.id)}
+                    className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {deletingId === setup.id ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

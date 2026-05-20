@@ -43,7 +43,6 @@ function toCreateRequest(setup: ExperimentSetup): CreateExperimentSetupRequest {
       sourceReadingMaterialTitle: item.sourceReadingMaterialTitle,
       title: item.title,
       markdown: item.markdown,
-      researcherQuestions: item.researcherQuestions,
       fontFamily: item.fontFamily,
       fontSizePx: item.fontSizePx,
       lineWidthPx: item.lineWidthPx,

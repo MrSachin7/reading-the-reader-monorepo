@@ -38,7 +38,7 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
             Id = id,
             Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
             Title = command.Title.Trim(),
-            ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
+            ComprehensionQuiz = ComprehensionQuizPersistenceMapping.ToStored(command.ComprehensionQuiz),
             FileName = fileName,
             CreatedAtUnixMs = createdAtUnixMs,
             UpdatedAtUnixMs = createdAtUnixMs,
@@ -137,7 +137,7 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
                 Id = existingMetadata.Id,
                 Name = string.IsNullOrWhiteSpace(command.Name) ? command.Title.Trim() : command.Name.Trim(),
                 Title = command.Title.Trim(),
-                ResearcherQuestions = command.ResearcherQuestions ?? string.Empty,
+                ComprehensionQuiz = ComprehensionQuizPersistenceMapping.ToStored(command.ComprehensionQuiz),
                 FileName = existingMetadata.FileName,
                 CreatedAtUnixMs = existingMetadata.CreatedAtUnixMs,
                 UpdatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -155,6 +155,36 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
         }
 
         return null;
+    }
+
+    public async ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        if (!Directory.Exists(_directoryPath))
+        {
+            return false;
+        }
+
+        foreach (var metadataFile in Directory.GetFiles(_directoryPath, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var metadata = await ReadMetadataAsync(metadataFile, ct);
+            if (metadata is null || !string.Equals(metadata.Id, id, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var markdownPath = Path.Combine(_directoryPath, metadata.FileName);
+            if (File.Exists(markdownPath))
+            {
+                File.Delete(markdownPath);
+            }
+
+            File.Delete(metadataFile);
+            return true;
+        }
+
+        return false;
     }
 
     private string BuildUniqueFileName(string title, string id)
@@ -202,7 +232,7 @@ public sealed class FileReadingMaterialSetupStoreAdapter : IReadingMaterialSetup
             Name = string.IsNullOrWhiteSpace(metadata.Name) ? metadata.Title : metadata.Name,
             Title = metadata.Title,
             Markdown = markdown,
-            ResearcherQuestions = metadata.ResearcherQuestions ?? string.Empty,
+            ComprehensionQuiz = ComprehensionQuizPersistenceMapping.ToDomain(metadata.ComprehensionQuiz),
             FileName = metadata.FileName,
             CreatedAtUnixMs = metadata.CreatedAtUnixMs,
             UpdatedAtUnixMs = GetUpdatedAtUnixMs(metadata),

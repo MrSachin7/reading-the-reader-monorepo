@@ -1,3 +1,5 @@
+using ReadingTheReader.core.Domain.Reading;
+
 namespace ReadingTheReader.core.Application.ApplicationContracts.ReadingMaterialSetups;
 
 public sealed class ReadingMaterialSetup
@@ -6,7 +8,7 @@ public sealed class ReadingMaterialSetup
     public string Name { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
     public string Markdown { get; init; } = string.Empty;
-    public string ResearcherQuestions { get; init; } = string.Empty;
+    public IReadOnlyList<ComprehensionQuestion> ComprehensionQuiz { get; init; } = Array.Empty<ComprehensionQuestion>();
     public string FileName { get; init; } = string.Empty;
     public long CreatedAtUnixMs { get; init; }
     public long UpdatedAtUnixMs { get; init; }

@@ -30,7 +30,8 @@ public sealed record UpsertReadingSessionExperimentItemCommand(
     double LineHeight,
     double LetterSpacingEm,
     bool EditableByResearcher,
-    string? MaterialRunId = null);
+    string? MaterialRunId = null,
+    IReadOnlyList<ComprehensionQuestion>? ComprehensionQuiz = null);
 
 public sealed record UpdateParticipantViewportCommand(
     double ScrollProgress,

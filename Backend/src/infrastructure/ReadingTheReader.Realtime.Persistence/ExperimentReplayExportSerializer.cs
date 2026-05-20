@@ -187,6 +187,22 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             Notes = item.Intervention.Reason
         }));
 
+        if (exportDocument.Quiz?.Answers is { Count: > 0 } quizAnswers)
+        {
+            rows.AddRange(quizAnswers.Select(item => new ExperimentReplayCsvRow
+            {
+                RowType = "quiz-answer",
+                SessionId = sessionId,
+                SequenceNumber = item.SequenceNumber,
+                OccurredAtUnixMs = item.OccurredAtUnixMs,
+                EventType = item.MaterialItemId,
+                Source = item.MaterialRunId,
+                TokenId = item.QuestionId,
+                Details = item.SelectedOptionId,
+                Notes = item.IsCorrect ? "correct" : "incorrect"
+            }));
+        }
+
         rows.AddRange(exportDocument.Annotations.Select(item => new ExperimentReplayCsvRow
         {
             RowType = "annotation",

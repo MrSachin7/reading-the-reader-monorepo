@@ -38,4 +38,5 @@ public sealed class UpsertReadingSessionExperimentItemRequest
     public double LetterSpacingEm { get; set; }
     public bool EditableByResearcher { get; set; } = true;
     public string? MaterialRunId { get; set; }
+    public List<ReadingTheReader.WebApi.Contracts.ComprehensionQuestionDto>? ComprehensionQuiz { get; set; }
 }

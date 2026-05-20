@@ -2,6 +2,7 @@ using FastEndpoints;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.WebApi.Contracts;
 using ReadingTheReader.WebApi.Contracts.ExperimentSession;
 
 namespace ReadingTheReader.WebApi.ExperimentSessionEndpoints;
@@ -60,7 +61,8 @@ public sealed class UpsertReadingSessionEndpoint : Endpoint<UpsertReadingSession
                     item.LineHeight,
                     item.LetterSpacingEm,
                     item.EditableByResearcher,
-                    item.MaterialRunId)).ToArray(),
+                    item.MaterialRunId,
+                    ComprehensionQuestionMapping.ToDomain(item.ComprehensionQuiz))).ToArray(),
                 req.CurrentExperimentItemIndex,
                 req.OrderMode,
                 req.IsOneOff), ct);

@@ -26,6 +26,8 @@ import {
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
+import { QuizScreen } from "@/modules/pages/reading/quiz/QuizScreen"
+import { ThankYouScreen } from "@/modules/pages/reading/quiz/ThankYouScreen"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
 import type {
@@ -210,12 +212,28 @@ export function ReadingPage() {
     upsertReadingSession,
   ])
 
+  const [quizMaterialItemId, setQuizMaterialItemId] = useState<string | null>(null)
+
   const handleAdvancePastEnd = useCallback(async () => {
+    const currentItem = experimentSequencePosition?.currentItem
+    if (currentItem) {
+      const hasQuiz = (currentItem.comprehensionQuiz ?? []).length > 0
+      const quizDone = currentItem.quizStatus === "completed"
+      if (hasQuiz && !quizDone) {
+        setQuizMaterialItemId(currentItem.id)
+        return
+      }
+    }
     if (!experimentSequencePosition?.nextItem) {
       return
     }
     await transitionToExperimentItem(experimentSequencePosition.currentIndex + 1)
-  }, [experimentSequencePosition?.nextItem, experimentSequencePosition?.currentIndex, transitionToExperimentItem])
+  }, [
+    experimentSequencePosition?.currentItem,
+    experimentSequencePosition?.nextItem,
+    experimentSequencePosition?.currentIndex,
+    transitionToExperimentItem,
+  ])
 
   const handleRetreatPastStart = useCallback(async () => {
     if (!experimentSequencePosition?.previousItem) {
@@ -343,6 +361,36 @@ export function ReadingPage() {
     letterSpacingEm: liveReadingSession?.presentation.letterSpacingEm,
     editableByExperimenter: liveReadingSession?.presentation.editableByResearcher,
   })
+
+  const currentItem = experimentSequencePosition?.currentItem ?? null
+  const isLastItem =
+    Boolean(experimentSequencePosition) &&
+    experimentSequencePosition!.nextItem === null
+  const showThankYou =
+    isLastItem &&
+    currentItem?.quizStatus === "completed" &&
+    (currentItem?.comprehensionQuiz?.length ?? 0) > 0 &&
+    quizMaterialItemId === null
+
+  const activeQuizQuestions =
+    quizMaterialItemId && currentItem && currentItem.id === quizMaterialItemId
+      ? currentItem.comprehensionQuiz ?? []
+      : []
+
+  if (showThankYou) {
+    return <ThankYouScreen />
+  }
+
+  if (quizMaterialItemId && currentItem && activeQuizQuestions.length > 0) {
+    return (
+      <QuizScreen
+        materialItemId={currentItem.id}
+        materialTitle={currentItem.title}
+        questions={activeQuizQuestions}
+        onCompleted={() => setQuizMaterialItemId(null)}
+      />
+    )
+  }
 
   return (
     <div className="relative" data-reader-surface="true">

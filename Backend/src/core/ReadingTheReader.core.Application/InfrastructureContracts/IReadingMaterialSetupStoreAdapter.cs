@@ -9,4 +9,5 @@ public interface IReadingMaterialSetupStoreAdapter
     ValueTask<IReadOnlyCollection<ReadingMaterialSetup>> ListAsync(CancellationToken ct = default);
     ValueTask<ReadingMaterialSetup?> GetByIdAsync(string id, CancellationToken ct = default);
     ValueTask<ReadingMaterialSetup?> UpdateAsync(UpdateReadingMaterialSetupCommand command, CancellationToken ct = default);
+    ValueTask<bool> DeleteAsync(string id, CancellationToken ct = default);
 }

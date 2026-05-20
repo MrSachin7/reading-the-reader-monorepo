@@ -3,6 +3,7 @@ import type {
   ExperimentSessionSnapshot,
   ReadingInterventionCommitBoundary,
 } from "@/lib/experiment-session"
+import type { SubmitQuizAnswerEntry } from "@/lib/comprehension-quiz"
 import { baseApi } from "@/redux/api/base-api"
 
 export type ReplayExportFormat = "json" | "csv"
@@ -59,6 +60,11 @@ export type UpdateExperimentSetupTestingOverridesPayload = {
   forceReadingMaterialReady: boolean | null
 }
 
+export type SubmitQuizAnswersPayload = {
+  materialItemId: string
+  answers: SubmitQuizAnswerEntry[]
+}
+
 export type UpdateInterventionPolicyPayload = {
   layoutCommitBoundary: ReadingInterventionCommitBoundary
   layoutFallbackBoundary: ReadingInterventionCommitBoundary
@@ -78,6 +84,14 @@ export const experimentSessionApi = baseApi.injectEndpoints({
       query: (body) => ({
         url: "/experiment-session/reading-session",
         method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Experiment"],
+    }),
+    submitQuizAnswers: builder.mutation<ExperimentSessionSnapshot, SubmitQuizAnswersPayload>({
+      query: (body) => ({
+        url: "/experiment-session/quiz-answers",
+        method: "POST",
         body,
       }),
       invalidatesTags: ["Experiment"],
@@ -224,6 +238,7 @@ export const {
   useSaveExperimentReplayExportMutation,
   useStartExperimentSessionMutation,
   useStopExperimentSessionMutation,
+  useSubmitQuizAnswersMutation,
   useUpdateDecisionConfigurationMutation,
   useUpdateEyeMovementAnalysisConfigurationMutation,
   useUpdateExperimentSetupTestingOverridesMutation,
