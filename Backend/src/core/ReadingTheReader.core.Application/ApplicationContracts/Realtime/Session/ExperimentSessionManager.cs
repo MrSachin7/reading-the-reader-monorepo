@@ -76,6 +76,9 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<ScheduledInterventionEventRecord> _pendingScheduledInterventionEvents = [];
     private List<InterventionEventRecord> _pendingInterventionEvents = [];
     private List<QuizAnswerRecord> _pendingQuizAnswerEvents = [];
+    private List<QuizLifecycleRecord> _pendingQuizLifecycleEvents = [];
+    private List<QuizFocusRecord> _pendingQuizFocusEvents = [];
+    private List<QuizSelectionRecord> _pendingQuizSelectionEvents = [];
     private IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? _latestAttentionTokenStats;
     private WebcamSensingStatusSnapshot _webcamStatus = WebcamSensingStatusSnapshot.Default;
 

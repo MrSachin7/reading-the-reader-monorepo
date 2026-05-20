@@ -173,6 +173,38 @@ export function ReplayMetadataColumn({
                 </div>
               </div>
 
+              {frame.quiz?.isActive ? (
+                <div className="rounded-[1.2rem] border bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Quiz progress</p>
+                  <div className="mt-3 rounded-[1rem] border bg-muted/20 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant="outline">
+                        {frame.quiz.questionIndex !== null
+                          ? `Q${frame.quiz.questionIndex + 1}${frame.quiz.questionCount ? `/${frame.quiz.questionCount}` : ""}`
+                          : "Quiz"}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {frame.quiz.timeOnQuestionMs !== null
+                          ? formatReplayClock(frame.quiz.timeOnQuestionMs)
+                          : "-"}
+                      </span>
+                    </div>
+                    {frame.quiz.prompt ? (
+                      <p className="mt-3 text-sm leading-6">{frame.quiz.prompt}</p>
+                    ) : null}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Selection changes: {frame.quiz.selectionChangeCount}
+                      {frame.quiz.selectedOptionId
+                        ? ` · selected ${frame.quiz.selectedOptionId}`
+                        : " · no selection"}
+                      {frame.quiz.activeRegionType
+                        ? ` · looking at ${frame.quiz.activeRegionType}${frame.quiz.activeOptionId ? ` (${frame.quiz.activeOptionId})` : ""}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="rounded-[1.2rem] border bg-background/80 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Latest intervention</p>
                 <div className="mt-3">

@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain.Reading;
 
+
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 
 public sealed partial class ExperimentSessionManager
@@ -50,8 +51,15 @@ public sealed partial class ExperimentSessionManager
 
             var currentIndexForRecord = _liveReadingSession.CurrentExperimentItemIndex;
             var materialRunId = string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id : item.MaterialRunId;
+            var histories = command.SelectionHistories;
             foreach (var resolved in resolvedAnswers)
             {
+                QuizSelectionHistoryEntry? history = null;
+                if (histories is not null && histories.TryGetValue(resolved.QuestionId, out var found))
+                {
+                    history = found;
+                }
+
                 RecordQuizAnswerEvent(new QuizAnswerRecord(
                     NextSequenceNumber(),
                     resolved.AnsweredAtUnixMs,
@@ -60,7 +68,11 @@ public sealed partial class ExperimentSessionManager
                     currentIndexForRecord,
                     resolved.QuestionId,
                     resolved.SelectedOptionId,
-                    resolved.IsCorrect));
+                    resolved.IsCorrect,
+                    history?.QuestionShownAtUnixMs,
+                    history?.FirstSelectedAtUnixMs,
+                    history?.LastSelectedAtUnixMs,
+                    history?.SelectionChangeCount));
             }
 
             var updatedItems = experimentItems
@@ -104,6 +116,60 @@ public sealed partial class ExperimentSessionManager
         {
             return _quizAnswersByItemId.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         }
+    }
+
+    public ValueTask RecordQuizLifecycleEventAsync(QuizLifecycleEventCommand command, CancellationToken ct = default)
+    {
+        lock (_historyGate)
+        {
+            _pendingQuizLifecycleEvents.Add(new QuizLifecycleRecord(
+                NextSequenceNumber(),
+                command.OccurredAtUnixMs,
+                command.MaterialItemId,
+                command.EventType,
+                command.QuestionCount,
+                command.QuestionId,
+                command.QuestionIndex,
+                command.Prompt,
+                command.Layout,
+                command.Direction));
+            _hasPendingReplayPersistence = true;
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask RecordQuizFocusEventAsync(QuizFocusEventCommand command, CancellationToken ct = default)
+    {
+        lock (_historyGate)
+        {
+            _pendingQuizFocusEvents.Add(new QuizFocusRecord(
+                NextSequenceNumber(),
+                command.OccurredAtUnixMs,
+                command.MaterialItemId,
+                command.QuestionId,
+                command.ActiveRegionType,
+                command.ActiveOptionId));
+            _hasPendingReplayPersistence = true;
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask RecordQuizSelectionEventAsync(QuizSelectionEventCommand command, CancellationToken ct = default)
+    {
+        lock (_historyGate)
+        {
+            _pendingQuizSelectionEvents.Add(new QuizSelectionRecord(
+                NextSequenceNumber(),
+                command.OccurredAtUnixMs,
+                command.MaterialItemId,
+                command.QuestionId,
+                command.SelectedOptionId));
+            _hasPendingReplayPersistence = true;
+        }
+
+        return ValueTask.CompletedTask;
     }
 
     private void RecordQuizAnswerEvent(QuizAnswerRecord record)
@@ -155,8 +221,39 @@ public sealed partial class ExperimentSessionManager
 
 public sealed record SubmitQuizAnswersCommand(
     string MaterialItemId,
-    IReadOnlyList<SubmitQuizAnswerEntry> Answers);
+    IReadOnlyList<SubmitQuizAnswerEntry> Answers,
+    IReadOnlyDictionary<string, QuizSelectionHistoryEntry>? SelectionHistories = null);
 
 public sealed record SubmitQuizAnswerEntry(
     string QuestionId,
     string SelectedOptionId);
+
+public sealed record QuizSelectionHistoryEntry(
+    long? QuestionShownAtUnixMs,
+    long? FirstSelectedAtUnixMs,
+    long? LastSelectedAtUnixMs,
+    int SelectionChangeCount);
+
+public sealed record QuizLifecycleEventCommand(
+    string MaterialItemId,
+    string EventType,
+    long OccurredAtUnixMs,
+    int? QuestionCount = null,
+    string? QuestionId = null,
+    int? QuestionIndex = null,
+    string? Prompt = null,
+    QuizQuestionLayout? Layout = null,
+    string? Direction = null);
+
+public sealed record QuizFocusEventCommand(
+    string MaterialItemId,
+    string QuestionId,
+    string ActiveRegionType,
+    long OccurredAtUnixMs,
+    string? ActiveOptionId = null);
+
+public sealed record QuizSelectionEventCommand(
+    string MaterialItemId,
+    string QuestionId,
+    string SelectedOptionId,
+    long OccurredAtUnixMs);

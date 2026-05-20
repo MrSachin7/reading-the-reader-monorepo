@@ -18,6 +18,12 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask<LiveReadingSessionSnapshot> SubmitQuizAnswersAsync(SubmitQuizAnswersCommand command, CancellationToken ct = default);
 
+    ValueTask RecordQuizLifecycleEventAsync(QuizLifecycleEventCommand command, CancellationToken ct = default);
+
+    ValueTask RecordQuizFocusEventAsync(QuizFocusEventCommand command, CancellationToken ct = default);
+
+    ValueTask RecordQuizSelectionEventAsync(QuizSelectionEventCommand command, CancellationToken ct = default);
+
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
     ValueTask<ReadingInterventionPolicySnapshot> UpdateInterventionPolicyAsync(

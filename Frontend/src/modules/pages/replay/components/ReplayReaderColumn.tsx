@@ -1,10 +1,13 @@
 "use client"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import type { ReplayQuizFrame } from "@/lib/experiment-replay"
 import type { LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
+import type { GazeData } from "@/lib/gaze-socket"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
+import { ReplayQuizPanel } from "@/modules/pages/replay/components/ReplayQuizPanel"
 import type { ReplayReaderOptions } from "@/modules/pages/replay/types"
 
 type ReplayReaderColumnProps = {
@@ -14,6 +17,8 @@ type ReplayReaderColumnProps = {
   readingSession: LiveReadingSessionSnapshot
   readerOptions: ReplayReaderOptions
   remoteTokenAttention: RemoteTokenAttentionSnapshot | null
+  quiz: ReplayQuizFrame | null
+  gazeSample: GazeData | null
 }
 
 export function ReplayReaderColumn({
@@ -23,7 +28,13 @@ export function ReplayReaderColumn({
   readingSession,
   readerOptions,
   remoteTokenAttention,
+  quiz,
+  gazeSample,
 }: ReplayReaderColumnProps) {
+  if (quiz?.isActive) {
+    return <ReplayQuizPanel quiz={quiz} gaze={gazeSample} />
+  }
+
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
       {errorMessage ? (

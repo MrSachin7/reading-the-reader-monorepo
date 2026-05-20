@@ -172,6 +172,71 @@ export type InterventionEventRecord = {
   materialIndex?: number | null
 }
 
+export type QuizOptionBboxRecord = {
+  optionId: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type QuizQuestionLayoutRecord = {
+  promptX: number
+  promptY: number
+  promptWidth: number
+  promptHeight: number
+  optionBboxes: QuizOptionBboxRecord[]
+}
+
+export type QuizLifecycleEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs?: number | null
+  materialItemId: string
+  eventType: "quiz-started" | "quiz-question-shown" | "quiz-question-left" | "quiz-submitted" | string
+  questionCount?: number | null
+  questionId?: string | null
+  questionIndex?: number | null
+  prompt?: string | null
+  layout?: QuizQuestionLayoutRecord | null
+  direction?: string | null
+}
+
+export type QuizFocusEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs?: number | null
+  materialItemId: string
+  questionId: string
+  activeRegionType: "prompt" | "option" | "outside" | "none" | string
+  activeOptionId?: string | null
+}
+
+export type QuizSelectionEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs?: number | null
+  materialItemId: string
+  questionId: string
+  selectedOptionId: string
+}
+
+export type QuizAnswerEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs?: number | null
+  materialItemId: string
+  materialRunId?: string | null
+  materialIndex?: number | null
+  questionId: string
+  selectedOptionId: string
+  isCorrect: boolean
+  questionShownAtUnixMs?: number | null
+  firstSelectedAtUnixMs?: number | null
+  lastSelectedAtUnixMs?: number | null
+  selectionChangeCount?: number | null
+}
+
 export type ExperimentReplayExport = {
   manifest: ReplayManifest
   experiment: {
@@ -228,6 +293,12 @@ export type ExperimentReplayExport = {
     targetTokenId: string | null
     targetBlockId: string | null
   }>
+  quiz?: {
+    answers?: QuizAnswerEventRecord[]
+    lifecycleEvents?: QuizLifecycleEventRecord[] | null
+    focusEvents?: QuizFocusEventRecord[] | null
+    selectionEvents?: QuizSelectionEventRecord[] | null
+  } | null
 }
 
 export type ReplaySessionSnapshot = {
@@ -294,11 +365,29 @@ export type ReplayFrame = {
   scheduledInterventionRecord: ScheduledInterventionEventRecord | null
   interventionRecord: InterventionEventRecord | null
   lifecycleRecord: ExperimentLifecycleEventRecord | null
+  quiz: ReplayQuizFrame | null
+}
+
+export type ReplayQuizFrame = {
+  isActive: boolean
+  materialItemId: string
+  questionId: string | null
+  questionIndex: number | null
+  questionCount: number | null
+  prompt: string | null
+  layout: QuizQuestionLayoutRecord | null
+  selectedOptionId: string | null
+  activeRegionType: "prompt" | "option" | "outside" | "none" | string | null
+  activeOptionId: string | null
+  selectionChangeCount: number
+  timeOnQuestionMs: number | null
+  questionStartedAtMs: number | null
+  questionShownAtUnixMs: number | null
 }
 
 export type ReplayKeyEvent = {
   id: string
-  kind: "lifecycle" | "state" | "proposal" | "intervention" | "connection" | "recovery" | "face"
+  kind: "lifecycle" | "state" | "proposal" | "intervention" | "connection" | "recovery" | "face" | "quiz"
   timeMs: number
   title: string
   detail: string
@@ -652,6 +741,126 @@ function getReplayFacialObservations(replay: ExperimentReplayExport) {
 
 function getReplayFacialDifficultyEvents(replay: ExperimentReplayExport) {
   return replay.derived.facialDifficultyEvents ?? []
+}
+
+function getReplayQuizLifecycleEvents(replay: ExperimentReplayExport) {
+  return replay.quiz?.lifecycleEvents ?? []
+}
+
+function getReplayQuizFocusEvents(replay: ExperimentReplayExport) {
+  return replay.quiz?.focusEvents ?? []
+}
+
+function getReplayQuizSelectionEvents(replay: ExperimentReplayExport) {
+  return replay.quiz?.selectionEvents ?? []
+}
+
+function buildQuizFrame(
+  replay: ExperimentReplayExport,
+  currentTimeMs: number,
+  startedAtUnixMs: number
+): ReplayQuizFrame | null {
+  const lifecycleEvents = getReplayQuizLifecycleEvents(replay)
+  if (lifecycleEvents.length === 0) {
+    return null
+  }
+
+  const focusEvents = getReplayQuizFocusEvents(replay)
+  const selectionEvents = getReplayQuizSelectionEvents(replay)
+
+  // Find most-recent lifecycle event at or before currentTime
+  let activeStart: QuizLifecycleEventRecord | null = null
+  let activeShown: QuizLifecycleEventRecord | null = null
+  let activeShownTimeMs: number | null = null
+  let activeSubmitTimeMs: number | null = null
+  let activeMaterialItemId: string | null = null
+
+  for (const record of lifecycleEvents) {
+    const recordTimeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    if (recordTimeMs > currentTimeMs) {
+      break
+    }
+
+    if (record.eventType === "quiz-started") {
+      activeStart = record
+      activeShown = null
+      activeShownTimeMs = null
+      activeSubmitTimeMs = null
+      activeMaterialItemId = record.materialItemId
+    } else if (record.eventType === "quiz-question-shown") {
+      if (activeMaterialItemId && record.materialItemId === activeMaterialItemId) {
+        activeShown = record
+        activeShownTimeMs = recordTimeMs
+      }
+    } else if (record.eventType === "quiz-submitted") {
+      if (activeMaterialItemId && record.materialItemId === activeMaterialItemId) {
+        activeSubmitTimeMs = recordTimeMs
+      }
+    }
+  }
+
+  if (!activeStart || activeSubmitTimeMs !== null) {
+    return null
+  }
+  if (!activeShown || activeShownTimeMs === null) {
+    return null
+  }
+
+  const materialItemId = activeShown.materialItemId
+  const questionId = activeShown.questionId ?? null
+
+  // Most recent selection for this question
+  let selectedOptionId: string | null = null
+  let selectionChangeCount = 0
+  for (const record of selectionEvents) {
+    if (record.materialItemId !== materialItemId || record.questionId !== questionId) {
+      continue
+    }
+    const recordTimeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    if (recordTimeMs < activeShownTimeMs) {
+      continue
+    }
+    if (recordTimeMs > currentTimeMs) {
+      break
+    }
+    selectionChangeCount += 1
+    selectedOptionId = record.selectedOptionId
+  }
+
+  // Most recent focus event for this question
+  let activeRegionType: ReplayQuizFrame["activeRegionType"] = null
+  let activeOptionId: string | null = null
+  for (const record of focusEvents) {
+    if (record.materialItemId !== materialItemId || record.questionId !== questionId) {
+      continue
+    }
+    const recordTimeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    if (recordTimeMs < activeShownTimeMs) {
+      continue
+    }
+    if (recordTimeMs > currentTimeMs) {
+      break
+    }
+    activeRegionType = record.activeRegionType
+    activeOptionId = record.activeOptionId ?? null
+  }
+
+  return {
+    isActive: true,
+    materialItemId,
+    questionId,
+    questionIndex: activeShown.questionIndex ?? null,
+    questionCount: activeStart.questionCount ?? null,
+    prompt: activeShown.prompt ?? null,
+    layout: activeShown.layout ?? null,
+    selectedOptionId,
+    activeRegionType,
+    activeOptionId,
+    selectionChangeCount,
+    timeOnQuestionMs: activeShownTimeMs === null ? null : Math.max(0, currentTimeMs - activeShownTimeMs),
+    questionStartedAtMs: activeShownTimeMs,
+    questionShownAtUnixMs: activeShown.occurredAtUnixMs,
+  }
 }
 
 function buildDecisionStateAtTime(replay: ExperimentReplayExport, currentTimeMs: number): DecisionState {
@@ -1013,6 +1222,8 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     decisionState: buildDecisionStateAtTime(replay, currentTimeMs),
   }
 
+  const quiz = buildQuizFrame(replay, currentTimeMs, startedAtUnixMs)
+
   return {
     currentTimeMs,
     durationMs,
@@ -1031,6 +1242,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     scheduledInterventionRecord,
     interventionRecord,
     lifecycleRecord,
+    quiz,
   }
 }
 
@@ -1163,6 +1375,41 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
       detail:
         record.signal.summary ??
         (record.signal.cues.length > 0 ? record.signal.cues.join(" · ") : "No supporting cues recorded."),
+    })
+  }
+
+  const quizLifecycleEvents = getReplayQuizLifecycleEvents(replay)
+  for (const record of quizLifecycleEvents) {
+    const timeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
+    const title = (() => {
+      switch (record.eventType) {
+        case "quiz-started":
+          return "Quiz started"
+        case "quiz-question-shown":
+          return record.questionIndex !== null && record.questionIndex !== undefined
+            ? `Quiz question ${record.questionIndex + 1}`
+            : "Quiz question shown"
+        case "quiz-question-left":
+          return record.direction === "submit"
+            ? "Quiz question submitted"
+            : `Quiz question ${record.direction ?? "left"}`
+        case "quiz-submitted":
+          return "Quiz submitted"
+        default:
+          return record.eventType
+      }
+    })()
+    const detail = record.prompt
+      ? record.prompt
+      : record.questionId
+        ? `Question ${record.questionId}`
+        : record.materialItemId
+    events.push({
+      id: `quiz-${record.sequenceNumber}`,
+      kind: "quiz",
+      timeMs,
+      title,
+      detail,
     })
   }
 

@@ -43,5 +43,8 @@ public static class MessageTypes
     public const string PauseDecisionAutomation = "pauseDecisionAutomation";
     public const string ResumeDecisionAutomation = "resumeDecisionAutomation";
     public const string SetDecisionExecutionMode = "setDecisionExecutionMode";
+    public const string SubmitQuizLifecycleEvent = "submitQuizLifecycleEvent";
+    public const string SubmitQuizFocusEvent = "submitQuizFocusEvent";
+    public const string SubmitQuizSelectionEvent = "submitQuizSelectionEvent";
     public const string Error = "error";
 }

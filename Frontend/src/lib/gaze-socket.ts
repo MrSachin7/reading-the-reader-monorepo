@@ -1,4 +1,9 @@
 import type { CalibrationSessionSnapshot } from "@/lib/calibration"
+import type {
+  QuizFocusEventPayload,
+  QuizLifecycleEventPayload,
+  QuizSelectionEventPayload,
+} from "@/lib/comprehension-quiz"
 import {
   EMPTY_DECISION_CONFIGURATION,
   EMPTY_DECISION_STATE,
@@ -233,6 +238,18 @@ type ClientEnvelope =
       payload: {
         executionMode: string;
       };
+    }
+  | {
+      type: "submitQuizLifecycleEvent";
+      payload: QuizLifecycleEventPayload;
+    }
+  | {
+      type: "submitQuizFocusEvent";
+      payload: QuizFocusEventPayload;
+    }
+  | {
+      type: "submitQuizSelectionEvent";
+      payload: QuizSelectionEventPayload;
     };
 
 export interface ConnectionStats {
@@ -915,6 +932,21 @@ export function setDecisionExecutionMode(executionMode: string) {
     type: "setDecisionExecutionMode",
     payload: { executionMode },
   })
+}
+
+export function sendQuizLifecycleEvent(payload: QuizLifecycleEventPayload) {
+  connect()
+  send({ type: "submitQuizLifecycleEvent", payload })
+}
+
+export function sendQuizFocusEvent(payload: QuizFocusEventPayload) {
+  connect()
+  send({ type: "submitQuizFocusEvent", payload })
+}
+
+export function sendQuizSelectionEvent(payload: QuizSelectionEventPayload) {
+  connect()
+  send({ type: "submitQuizSelectionEvent", payload })
 }
 
 export function stopGazeSocket() {

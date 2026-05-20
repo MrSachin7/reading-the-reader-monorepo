@@ -3,7 +3,7 @@ import type {
   ExperimentSessionSnapshot,
   ReadingInterventionCommitBoundary,
 } from "@/lib/experiment-session"
-import type { SubmitQuizAnswerEntry } from "@/lib/comprehension-quiz"
+import type { QuizSelectionHistory, SubmitQuizAnswerEntry } from "@/lib/comprehension-quiz"
 import { baseApi } from "@/redux/api/base-api"
 
 export type ReplayExportFormat = "json" | "csv"
@@ -63,6 +63,7 @@ export type UpdateExperimentSetupTestingOverridesPayload = {
 export type SubmitQuizAnswersPayload = {
   materialItemId: string
   answers: SubmitQuizAnswerEntry[]
+  selectionHistories?: Record<string, QuizSelectionHistory>
 }
 
 export type UpdateInterventionPolicyPayload = {

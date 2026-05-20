@@ -493,6 +493,83 @@ public sealed record ExperimentReplayAnnotation(
     }
 }
 
+public sealed record QuizOptionBbox(
+    string OptionId,
+    float X,
+    float Y,
+    float Width,
+    float Height)
+{
+    public QuizOptionBbox Copy() => this with { };
+}
+
+public sealed record QuizQuestionLayout(
+    float PromptX,
+    float PromptY,
+    float PromptWidth,
+    float PromptHeight,
+    IReadOnlyList<QuizOptionBbox> OptionBboxes)
+{
+    public QuizQuestionLayout Copy()
+    {
+        return new QuizQuestionLayout(
+            PromptX,
+            PromptY,
+            PromptWidth,
+            PromptHeight,
+            OptionBboxes is null ? [] : [.. OptionBboxes.Select(item => item.Copy())]);
+    }
+}
+
+public sealed record QuizLifecycleRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    string MaterialItemId,
+    string EventType,
+    int? QuestionCount = null,
+    string? QuestionId = null,
+    int? QuestionIndex = null,
+    string? Prompt = null,
+    QuizQuestionLayout? Layout = null,
+    string? Direction = null)
+{
+    public QuizLifecycleRecord Copy()
+    {
+        return new QuizLifecycleRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            MaterialItemId,
+            EventType,
+            QuestionCount,
+            QuestionId,
+            QuestionIndex,
+            Prompt,
+            Layout?.Copy(),
+            Direction);
+    }
+}
+
+public sealed record QuizFocusRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    string MaterialItemId,
+    string QuestionId,
+    string ActiveRegionType,
+    string? ActiveOptionId = null)
+{
+    public QuizFocusRecord Copy() => this with { };
+}
+
+public sealed record QuizSelectionRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    string MaterialItemId,
+    string QuestionId,
+    string SelectedOptionId)
+{
+    public QuizSelectionRecord Copy() => this with { };
+}
+
 public sealed record QuizAnswerRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
@@ -501,7 +578,11 @@ public sealed record QuizAnswerRecord(
     int? MaterialIndex,
     string QuestionId,
     string SelectedOptionId,
-    bool IsCorrect)
+    bool IsCorrect,
+    long? QuestionShownAtUnixMs = null,
+    long? FirstSelectedAtUnixMs = null,
+    long? LastSelectedAtUnixMs = null,
+    int? SelectionChangeCount = null)
 {
     public QuizAnswerRecord Copy()
     {
@@ -510,12 +591,18 @@ public sealed record QuizAnswerRecord(
 }
 
 public sealed record ExperimentReplayQuiz(
-    IReadOnlyList<QuizAnswerRecord> Answers)
+    IReadOnlyList<QuizAnswerRecord> Answers,
+    IReadOnlyList<QuizLifecycleRecord>? LifecycleEvents = null,
+    IReadOnlyList<QuizFocusRecord>? FocusEvents = null,
+    IReadOnlyList<QuizSelectionRecord>? SelectionEvents = null)
 {
     public ExperimentReplayQuiz Copy()
     {
         return new ExperimentReplayQuiz(
-            Answers is null ? [] : [.. Answers.Select(item => item.Copy())]);
+            Answers is null ? [] : [.. Answers.Select(item => item.Copy())],
+            LifecycleEvents is null ? null : [.. LifecycleEvents.Select(item => item.Copy())],
+            FocusEvents is null ? null : [.. FocusEvents.Select(item => item.Copy())],
+            SelectionEvents is null ? null : [.. SelectionEvents.Select(item => item.Copy())]);
     }
 }
 

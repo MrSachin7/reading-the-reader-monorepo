@@ -124,6 +124,9 @@ public sealed partial class ExperimentSessionManager
             _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
             _pendingQuizAnswerEvents = [];
+            _pendingQuizLifecycleEvents = [];
+            _pendingQuizFocusEvents = [];
+            _pendingQuizSelectionEvents = [];
             _latestAttentionTokenStats = null;
         }
     }
@@ -431,6 +434,9 @@ public sealed partial class ExperimentSessionManager
         ScheduledInterventionEventRecord[] scheduledInterventionEvents;
         InterventionEventRecord[] interventionEvents;
         QuizAnswerRecord[] quizAnswerEvents;
+        QuizLifecycleRecord[] quizLifecycleEvents;
+        QuizFocusRecord[] quizFocusEvents;
+        QuizSelectionRecord[] quizSelectionEvents;
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? latestTokenStats;
 
         lock (_historyGate)
@@ -459,6 +465,9 @@ public sealed partial class ExperimentSessionManager
             scheduledInterventionEvents = _pendingScheduledInterventionEvents.Select(item => item.Copy()).ToArray();
             interventionEvents = _pendingInterventionEvents.Select(item => item.Copy()).ToArray();
             quizAnswerEvents = _pendingQuizAnswerEvents.Select(item => item.Copy()).ToArray();
+            quizLifecycleEvents = _pendingQuizLifecycleEvents.Select(item => item.Copy()).ToArray();
+            quizFocusEvents = _pendingQuizFocusEvents.Select(item => item.Copy()).ToArray();
+            quizSelectionEvents = _pendingQuizSelectionEvents.Select(item => item.Copy()).ToArray();
             latestTokenStats = _latestAttentionTokenStats is null
                 ? null
                 : _latestAttentionTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy());
@@ -479,6 +488,9 @@ public sealed partial class ExperimentSessionManager
             _pendingScheduledInterventionEvents = [];
             _pendingInterventionEvents = [];
             _pendingQuizAnswerEvents = [];
+            _pendingQuizLifecycleEvents = [];
+            _pendingQuizFocusEvents = [];
+            _pendingQuizSelectionEvents = [];
             _hasPendingReplayPersistence = false;
         }
 
@@ -507,7 +519,10 @@ public sealed partial class ExperimentSessionManager
                     webcamStatusEvents,
                     facialObservationEvents,
                     facialDifficultyEvents,
-                    quizAnswerEvents),
+                    quizAnswerEvents,
+                    quizLifecycleEvents,
+                    quizFocusEvents,
+                    quizSelectionEvents),
                 ct);
         }
         catch
@@ -530,6 +545,9 @@ public sealed partial class ExperimentSessionManager
                 _pendingScheduledInterventionEvents = [.. scheduledInterventionEvents.Select(item => item.Copy()), .. _pendingScheduledInterventionEvents];
                 _pendingInterventionEvents = [.. interventionEvents.Select(item => item.Copy()), .. _pendingInterventionEvents];
                 _pendingQuizAnswerEvents = [.. quizAnswerEvents.Select(item => item.Copy()), .. _pendingQuizAnswerEvents];
+                _pendingQuizLifecycleEvents = [.. quizLifecycleEvents.Select(item => item.Copy()), .. _pendingQuizLifecycleEvents];
+                _pendingQuizFocusEvents = [.. quizFocusEvents.Select(item => item.Copy()), .. _pendingQuizFocusEvents];
+                _pendingQuizSelectionEvents = [.. quizSelectionEvents.Select(item => item.Copy()), .. _pendingQuizSelectionEvents];
                 _hasPendingReplayPersistence = true;
             }
 

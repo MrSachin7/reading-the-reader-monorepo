@@ -327,6 +327,8 @@ export default function ReplayPage() {
           readingSession={readingSession}
           readerOptions={readerOptions}
           remoteTokenAttention={readingSession.attentionSummary}
+          quiz={frame.quiz ?? null}
+          gazeSample={frame.session.latestGazeSample}
         />
 
         <ReplayMetadataColumn

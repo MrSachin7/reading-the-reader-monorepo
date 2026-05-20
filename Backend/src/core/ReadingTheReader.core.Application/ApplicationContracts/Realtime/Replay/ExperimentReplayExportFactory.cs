@@ -23,7 +23,10 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null,
-        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null)
+        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null,
+        IReadOnlyList<QuizLifecycleRecord>? quizLifecycleEvents = null,
+        IReadOnlyList<QuizFocusRecord>? quizFocusEvents = null,
+        IReadOnlyList<QuizSelectionRecord>? quizSelectionEvents = null)
     {
         return Create(
             initialSnapshot,
@@ -45,7 +48,10 @@ public static class ExperimentReplayExportFactory
             scheduledInterventionEvents,
             interventionEvents,
             finalTokenStats,
-            quizAnswerEvents);
+            quizAnswerEvents,
+            quizLifecycleEvents,
+            quizFocusEvents,
+            quizSelectionEvents);
     }
 
     public static ExperimentReplayExport Create(
@@ -68,7 +74,10 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<ScheduledInterventionEventRecord> scheduledInterventionEvents,
         IReadOnlyList<InterventionEventRecord> interventionEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? finalTokenStats = null,
-        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null)
+        IReadOnlyList<QuizAnswerRecord>? quizAnswerEvents = null,
+        IReadOnlyList<QuizLifecycleRecord>? quizLifecycleEvents = null,
+        IReadOnlyList<QuizFocusRecord>? quizFocusEvents = null,
+        IReadOnlyList<QuizSelectionRecord>? quizSelectionEvents = null)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
         var isLiveExport = latestSnapshot.IsActive &&
@@ -206,9 +215,29 @@ public static class ExperimentReplayExportFactory
                     baselineAppearance),
                 readingSessionStates.Select(item => item.Copy()).ToArray()),
             [],
-            quizAnswerEvents is null
-                ? null
-                : new ExperimentReplayQuiz(quizAnswerEvents.Select(item => item.Copy()).ToArray()));
+            BuildQuizExport(quizAnswerEvents, quizLifecycleEvents, quizFocusEvents, quizSelectionEvents));
+    }
+
+    private static ExperimentReplayQuiz? BuildQuizExport(
+        IReadOnlyList<QuizAnswerRecord>? answers,
+        IReadOnlyList<QuizLifecycleRecord>? lifecycleEvents,
+        IReadOnlyList<QuizFocusRecord>? focusEvents,
+        IReadOnlyList<QuizSelectionRecord>? selectionEvents)
+    {
+        var hasAnyData = (answers?.Count ?? 0) > 0
+            || (lifecycleEvents?.Count ?? 0) > 0
+            || (focusEvents?.Count ?? 0) > 0
+            || (selectionEvents?.Count ?? 0) > 0;
+        if (!hasAnyData)
+        {
+            return null;
+        }
+
+        return new ExperimentReplayQuiz(
+            answers is null ? [] : [.. answers.Select(item => item.Copy())],
+            lifecycleEvents is null ? null : [.. lifecycleEvents.Select(item => item.Copy())],
+            focusEvents is null ? null : [.. focusEvents.Select(item => item.Copy())],
+            selectionEvents is null ? null : [.. selectionEvents.Select(item => item.Copy())]);
     }
 
     private static long? DetermineLastOccurredAtUnixMs(

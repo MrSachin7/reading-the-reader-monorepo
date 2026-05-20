@@ -76,6 +76,51 @@ public sealed record SetDecisionExecutionModeRealtimeCommand(
 
 public sealed record DisconnectClientRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
+public sealed record QuizOptionBboxPayload(string OptionId, float X, float Y, float Width, float Height);
+
+public sealed record QuizQuestionLayoutPayload(
+    float PromptX,
+    float PromptY,
+    float PromptWidth,
+    float PromptHeight,
+    List<QuizOptionBboxPayload>? OptionBboxes);
+
+public sealed record QuizLifecycleEventPayload(
+    string MaterialItemId,
+    string EventType,
+    long OccurredAtUnixMs,
+    int? QuestionCount,
+    string? QuestionId,
+    int? QuestionIndex,
+    string? Prompt,
+    QuizQuestionLayoutPayload? Layout,
+    string? Direction);
+
+public sealed record QuizFocusEventPayload(
+    string MaterialItemId,
+    string QuestionId,
+    string ActiveRegionType,
+    long OccurredAtUnixMs,
+    string? ActiveOptionId);
+
+public sealed record QuizSelectionEventPayload(
+    string MaterialItemId,
+    string QuestionId,
+    string SelectedOptionId,
+    long OccurredAtUnixMs);
+
+public sealed record SubmitQuizLifecycleEventRealtimeCommand(
+    string ConnectionId,
+    QuizLifecycleEventPayload Payload) : IRealtimeIngressCommand;
+
+public sealed record SubmitQuizFocusEventRealtimeCommand(
+    string ConnectionId,
+    QuizFocusEventPayload Payload) : IRealtimeIngressCommand;
+
+public sealed record SubmitQuizSelectionEventRealtimeCommand(
+    string ConnectionId,
+    QuizSelectionEventPayload Payload) : IRealtimeIngressCommand;
+
 public sealed record InvalidRealtimeCommand(
     string ConnectionId,
     string ErrorMessage) : IRealtimeIngressCommand;
@@ -160,6 +205,21 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Decision execution mode payload is invalid.",
                 parsed => new SetDecisionExecutionModeRealtimeCommand(connectionId, parsed.ExecutionMode)),
+            MessageTypes.SubmitQuizLifecycleEvent => Deserialize<QuizLifecycleEventPayload>(
+                payload,
+                connectionId,
+                "Quiz lifecycle event payload is invalid.",
+                parsed => new SubmitQuizLifecycleEventRealtimeCommand(connectionId, parsed)),
+            MessageTypes.SubmitQuizFocusEvent => Deserialize<QuizFocusEventPayload>(
+                payload,
+                connectionId,
+                "Quiz focus event payload is invalid.",
+                parsed => new SubmitQuizFocusEventRealtimeCommand(connectionId, parsed)),
+            MessageTypes.SubmitQuizSelectionEvent => Deserialize<QuizSelectionEventPayload>(
+                payload,
+                connectionId,
+                "Quiz selection event payload is invalid.",
+                parsed => new SubmitQuizSelectionEventRealtimeCommand(connectionId, parsed)),
             MessageTypes.ResearcherCommand => ParseResearcherCommand(connectionId, payload),
             _ => new UnsupportedRealtimeCommand(connectionId, messageType)
         };
