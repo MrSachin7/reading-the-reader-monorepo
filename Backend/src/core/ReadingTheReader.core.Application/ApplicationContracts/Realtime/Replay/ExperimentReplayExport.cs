@@ -498,7 +498,8 @@ public sealed record QuizOptionBbox(
     float X,
     float Y,
     float Width,
-    float Height)
+    float Height,
+    string? Text = null)
 {
     public QuizOptionBbox Copy() => this with { };
 }
@@ -508,7 +509,9 @@ public sealed record QuizQuestionLayout(
     float PromptY,
     float PromptWidth,
     float PromptHeight,
-    IReadOnlyList<QuizOptionBbox> OptionBboxes)
+    IReadOnlyList<QuizOptionBbox> OptionBboxes,
+    float? ViewportWidth = null,
+    float? ViewportHeight = null)
 {
     public QuizQuestionLayout Copy()
     {
@@ -517,7 +520,9 @@ public sealed record QuizQuestionLayout(
             PromptY,
             PromptWidth,
             PromptHeight,
-            OptionBboxes is null ? [] : [.. OptionBboxes.Select(item => item.Copy())]);
+            OptionBboxes is null ? [] : [.. OptionBboxes.Select(item => item.Copy())],
+            ViewportWidth,
+            ViewportHeight);
     }
 }
 

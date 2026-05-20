@@ -76,14 +76,16 @@ public sealed record SetDecisionExecutionModeRealtimeCommand(
 
 public sealed record DisconnectClientRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
-public sealed record QuizOptionBboxPayload(string OptionId, float X, float Y, float Width, float Height);
+public sealed record QuizOptionBboxPayload(string OptionId, float X, float Y, float Width, float Height, string? Text = null);
 
 public sealed record QuizQuestionLayoutPayload(
     float PromptX,
     float PromptY,
     float PromptWidth,
     float PromptHeight,
-    List<QuizOptionBboxPayload>? OptionBboxes);
+    List<QuizOptionBboxPayload>? OptionBboxes,
+    float? ViewportWidth = null,
+    float? ViewportHeight = null);
 
 public sealed record QuizLifecycleEventPayload(
     string MaterialItemId,

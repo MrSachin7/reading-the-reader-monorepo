@@ -178,6 +178,7 @@ export type QuizOptionBboxRecord = {
   y: number
   width: number
   height: number
+  text?: string | null
 }
 
 export type QuizQuestionLayoutRecord = {
@@ -186,6 +187,8 @@ export type QuizQuestionLayoutRecord = {
   promptWidth: number
   promptHeight: number
   optionBboxes: QuizOptionBboxRecord[]
+  viewportWidth?: number | null
+  viewportHeight?: number | null
 }
 
 export type QuizLifecycleEventRecord = {

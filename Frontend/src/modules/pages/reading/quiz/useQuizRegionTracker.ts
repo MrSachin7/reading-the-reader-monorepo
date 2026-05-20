@@ -121,6 +121,7 @@ export function useQuizRegionTracker({
       optionBboxes.push({
         optionId: option.id,
         ...rectToBbox(rect),
+        text: option.text,
       })
     }
 
@@ -130,6 +131,8 @@ export function useQuizRegionTracker({
       promptWidth: promptRect.width,
       promptHeight: promptRect.height,
       optionBboxes,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
     }
   }, [options])
 

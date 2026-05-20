@@ -173,7 +173,14 @@ export function ReadingPage() {
         : null,
     [liveContent, liveReadingSession]
   )
-  const canAdvancePastEnd = Boolean(experimentSequencePosition?.nextItem) && !isAdvancingExperimentText
+  const currentItemHasPendingQuiz = Boolean(
+    experimentSequencePosition?.currentItem &&
+      (experimentSequencePosition.currentItem.comprehensionQuiz?.length ?? 0) > 0 &&
+      experimentSequencePosition.currentItem.quizStatus !== "completed"
+  )
+  const canAdvancePastEnd =
+    (Boolean(experimentSequencePosition?.nextItem) || currentItemHasPendingQuiz) &&
+    !isAdvancingExperimentText
   const canRetreatPastStart = Boolean(experimentSequencePosition?.previousItem) && !isAdvancingExperimentText
 
   const transitionToExperimentItem = useCallback(async (targetIndex: number) => {

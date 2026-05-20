@@ -32,7 +32,13 @@ export function ReplayReaderColumn({
   gazeSample,
 }: ReplayReaderColumnProps) {
   if (quiz?.isActive) {
-    return <ReplayQuizPanel quiz={quiz} gaze={gazeSample} />
+    return (
+      <ReplayQuizPanel
+        quiz={quiz}
+        gaze={gazeSample}
+        participantViewport={readingSession.participantViewport}
+      />
+    )
   }
 
   return (
