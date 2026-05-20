@@ -2,12 +2,17 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Copy, FilePlus2, Pencil, Trash2 } from "lucide-react"
+import { Copy, Download, FilePlus2, Pencil, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getErrorMessage } from "@/lib/error-utils"
+import {
+  buildExperimentTemplateExport,
+  downloadJsonFile,
+  sanitizeExportFileName,
+} from "@/lib/setup-portability"
 import {
   type CreateExperimentSetupRequest,
   type ExperimentSetup,
@@ -92,6 +97,13 @@ export default function ExperimentTemplateLibraryPage() {
     [deleteExperimentSetup]
   )
 
+  const handleExport = React.useCallback((setup: ExperimentSetup) => {
+    downloadJsonFile(
+      `${sanitizeExportFileName(setup.name, "experiment-template")}.experiment-template.json`,
+      buildExperimentTemplateExport(setup)
+    )
+  }, [])
+
   return (
     <section className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -146,6 +158,7 @@ export default function ExperimentTemplateLibraryPage() {
             deletingId={deletingId}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onExport={handleExport}
           />
         </section>
       ) : null}
@@ -161,6 +174,7 @@ export default function ExperimentTemplateLibraryPage() {
             deletingId={deletingId}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onExport={handleExport}
           />
         </section>
       ) : null}
@@ -176,6 +190,7 @@ export default function ExperimentTemplateLibraryPage() {
             deletingId={deletingId}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onExport={handleExport}
           />
         </section>
       ) : null}
@@ -188,9 +203,10 @@ type TemplateGridProps = {
   deletingId: string | null
   onDuplicate: (setup: ExperimentSetup) => void
   onDelete: (id: string) => void
+  onExport: (setup: ExperimentSetup) => void
 }
 
-function TemplateGrid({ templates, deletingId, onDuplicate, onDelete }: TemplateGridProps) {
+function TemplateGrid({ templates, deletingId, onDuplicate, onDelete, onExport }: TemplateGridProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {templates.map((template) => (
@@ -224,6 +240,15 @@ function TemplateGrid({ templates, deletingId, onDuplicate, onDelete }: Template
             >
               <Copy className="h-3.5 w-3.5" />
               Duplicate
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => onExport(template)}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export
             </Button>
             <Button
               variant="outline"

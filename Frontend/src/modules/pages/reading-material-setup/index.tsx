@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { FONTS, type FontTheme } from "@/hooks/use-font-theme"
 import { getErrorMessage, getErrorStatus } from "@/lib/error-utils"
+import { parseReadingMaterialImport } from "@/lib/setup-portability"
 import { ComprehensionQuizEditor } from "@/modules/pages/reading-material-setup/components/ComprehensionQuizEditor"
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
@@ -268,6 +269,27 @@ export default function ReadingMaterialSetupPage() {
     [applyLocalDraft, draft]
   )
 
+  const handleJsonFileImport = React.useCallback(
+    async (file: File | null | undefined) => {
+      if (!file) {
+        return
+      }
+
+      try {
+        const imported = parseReadingMaterialImport(JSON.parse(await file.text()))
+        if (!imported) {
+          setSelectionError("That JSON file is not a valid reading material export.")
+          return
+        }
+
+        applyLocalDraft(imported, true)
+      } catch {
+        setSelectionError("That JSON file could not be read.")
+      }
+    },
+    [applyLocalDraft]
+  )
+
   const handleSave = React.useCallback(async () => {
     setSaveError(null)
 
@@ -313,13 +335,28 @@ export default function ReadingMaterialSetupPage() {
                 ← Material Library
               </Link>
             </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                {selectedSetupId ? `Editing: ${draft.name}` : "New material"}
-              </h1>
-              <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-                Paste Markdown or import a file, then store questions and presentation defaults together.
-              </p>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                  {selectedSetupId ? `Editing: ${draft.name}` : "New material"}
+                </h1>
+                <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
+                  Paste Markdown or import a file, then store questions and presentation defaults together.
+                </p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent/30">
+                <Upload className="h-4 w-4" />
+                Import JSON
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void handleJsonFileImport(event.target.files?.[0])
+                    event.currentTarget.value = ""
+                  }}
+                />
+              </label>
             </div>
           </div>
         </div>
