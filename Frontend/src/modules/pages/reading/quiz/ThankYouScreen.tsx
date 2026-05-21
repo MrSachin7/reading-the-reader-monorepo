@@ -2,7 +2,14 @@
 
 import { Check } from "lucide-react"
 
-export function ThankYouScreen() {
+import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
+import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
+
+type Props = {
+  session?: ExperimentSessionSnapshot | null
+}
+
+export function ThankYouScreen({ session = null }: Props) {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center px-6 py-10 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -12,6 +19,15 @@ export function ThankYouScreen() {
       <p className="mt-3 text-base text-muted-foreground">
         Your reading session is complete. The researcher will take it from here.
       </p>
+      {session ? (
+        <div className="mt-8 w-full">
+          <ExperimentCompletionActions
+            session={session}
+            source="participant-thank-you"
+            layout="stacked"
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

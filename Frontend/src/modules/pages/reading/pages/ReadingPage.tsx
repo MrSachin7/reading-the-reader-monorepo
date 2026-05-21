@@ -250,6 +250,30 @@ export function ReadingPage() {
     transitionToExperimentItem,
   ])
 
+  // After the participant submits a quiz, the backend advances currentExperimentItemIndex
+  // but does NOT touch the loaded reading content. If the snapshot now points at a different
+  // material than what's loaded, fire a transition so the next reading material actually shows.
+  // This is also a safety net for any other path that bumps the index without updating content.
+  useEffect(() => {
+    if (!liveReadingSession || !liveContent) return
+    if (liveReadingSession.activeQuizState) return
+    if (isAdvancingExperimentText) return
+
+    const items = liveReadingSession.experimentItems ?? []
+    const idx = liveReadingSession.currentExperimentItemIndex
+    if (idx === null || idx < 0 || idx >= items.length) return
+
+    const expectedItem = items[idx]
+    if (expectedItem.id === liveContent.experimentSetupItemId) return
+
+    void transitionToExperimentItem(idx)
+  }, [
+    liveReadingSession,
+    liveContent,
+    isAdvancingExperimentText,
+    transitionToExperimentItem,
+  ])
+
   const handleSubmitQuiz = useCallback(
     async (payload: {
       materialItemId: string
@@ -408,7 +432,7 @@ export function ReadingPage() {
     activeQuizState === null
 
   if (showThankYou) {
-    return <ThankYouScreen />
+    return <ThankYouScreen session={liveSession} />
   }
 
   return (
