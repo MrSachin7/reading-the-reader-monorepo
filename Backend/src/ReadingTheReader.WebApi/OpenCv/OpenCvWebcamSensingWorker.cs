@@ -4,12 +4,13 @@ using OpenCvSharp;
 using OpenCvSharp.Face;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.WebApi.OpenCv;
 
-public sealed class OpenCvWebcamSensingWorker : BackgroundService
+public sealed class OpenCvWebcamSensingWorker : BackgroundService, IFacialStateAdapter
 {
     private const int LeftEyeStart = 36;
     private const int LeftEyeEnd = 41;
@@ -20,7 +21,10 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService
     private const int MouthEnd = 67;
     private const int ChinIndex = 8;
 
-    private readonly ExperimentSessionManager _sessionManager;
+    public event EventHandler<FacialObservationSnapshot>? FacialObservationReceived;
+    public event EventHandler<GazeData>? GazeSampleDerived;
+    public event EventHandler<WebcamSensingStatusSnapshot>? StatusChanged;
+
     private readonly IExperimentSessionQueryService _sessionQueryService;
     private readonly OpenCvWebcamSensingOptions _options;
     private readonly string _contentRootPath;
@@ -32,12 +36,10 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService
     private FacemarkLBF? _facemark;
 
     public OpenCvWebcamSensingWorker(
-        ExperimentSessionManager sessionManager,
         IExperimentSessionQueryService sessionQueryService,
         IHostEnvironment hostEnvironment,
         IOptions<OpenCvWebcamSensingOptions> options)
     {
-        _sessionManager = sessionManager;
         _sessionQueryService = sessionQueryService;
         _contentRootPath = hostEnvironment.ContentRootPath;
         _options = options.Value;
@@ -158,17 +160,12 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService
                 }
 
                 var observation = BuildObservation(gray, faceRect.Value, landmarks, nowUnixMs);
-                await _sessionManager.UpdateFacialObservationAsync(observation, stoppingToken);
-
-                var difficulty = BuildDifficultySignal(observation, nowUnixMs);
-                await _sessionManager.UpdateFacialDifficultySignalAsync(difficulty, stoppingToken);
+                FacialObservationReceived?.Invoke(this, observation);
 
                 if (SensingModes.UsesWebcamGaze(snapshot.SensingMode))
                 {
-                    await _sessionManager.SubmitWebcamGazeSampleAsync(
-                        BuildWebcamGazeSample(gray, landmarks, faceRect.Value, nowUnixMs, observation.CaptureQuality),
-                        nowUnixMs,
-                        stoppingToken);
+                    GazeSampleDerived?.Invoke(this,
+                        BuildWebcamGazeSample(gray, landmarks, faceRect.Value, nowUnixMs, observation.CaptureQuality));
                 }
 
                 await PublishStatusAsync(new WebcamSensingStatusSnapshot(
@@ -307,16 +304,17 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService
         _previousNoseTip = null;
     }
 
-    private async Task PublishStatusAsync(WebcamSensingStatusSnapshot status, CancellationToken ct)
+    private Task PublishStatusAsync(WebcamSensingStatusSnapshot status, CancellationToken ct)
     {
         var normalized = status.Copy();
         if (string.Equals(_lastStatus, $"{normalized.Status}:{normalized.Detail}", StringComparison.Ordinal))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _lastStatus = $"{normalized.Status}:{normalized.Detail}";
-        await _sessionManager.UpdateWebcamSensingStatusAsync(normalized, ct);
+        StatusChanged?.Invoke(this, normalized);
+        return Task.CompletedTask;
     }
 
     private Rect? DetectPrimaryFace(Mat gray)
@@ -386,50 +384,6 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService
             quality,
             confidence,
             $"landmarks {landmarks.Length}, quality {quality:0.00}, blink {blinkLikelihood:0.00}, mouth {mouthTension:0.00}");
-    }
-
-    private static FacialDifficultySignalSnapshot BuildDifficultySignal(FacialObservationSnapshot observation, long observedAtUnixMs)
-    {
-        var cues = new List<string>();
-        var state = FacialDifficultyStates.Neutral;
-
-        if (observation.BlinkLikelihood >= 0.7)
-        {
-            cues.Add("blink-rate-up");
-        }
-
-        if (observation.MotionScore >= 0.28)
-        {
-            cues.Add("head-motion");
-        }
-
-        if (observation.MouthTension >= 0.52)
-        {
-            cues.Add("mouth-tension");
-        }
-
-        if (Math.Abs(observation.HeadOffsetX) >= 0.42 || Math.Abs(observation.HeadOffsetY) >= 0.42)
-        {
-            cues.Add("off-center-face");
-        }
-
-        if (cues.Count > 0)
-        {
-            state = FacialDifficultyStates.PossibleStruggle;
-        }
-        else if (observation.BlinkLikelihood < 0.26 && observation.MotionScore < 0.1 && observation.MouthTension < 0.22)
-        {
-            state = FacialDifficultyStates.PossibleEase;
-            cues.Add("steady-face");
-            cues.Add("low-motion");
-        }
-
-        return new FacialDifficultySignalSnapshot(
-            state,
-            Math.Clamp((observation.Confidence * 0.7d) + ((Math.Min(cues.Count, 3) / 3d) * 0.3d), 0, 1),
-            observedAtUnixMs,
-            cues,
-            cues.Count == 0 ? "No strong landmark-derived cue." : string.Join(", ", cues));
     }
 
     private static GazeData BuildWebcamGazeSample(Mat gray, Point2f[] landmarks, Rect faceRect, long capturedAtUnixMs, double quality)
