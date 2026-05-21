@@ -32,7 +32,7 @@ builder.Services.InstallApplicationModule(
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();
-builder.Services.AddHostedService<OpenCvWebcamSensingWorker>();
+builder.Services.InstallWebcamModule();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
