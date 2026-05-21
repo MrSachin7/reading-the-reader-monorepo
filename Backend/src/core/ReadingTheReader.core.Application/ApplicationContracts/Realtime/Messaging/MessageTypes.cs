@@ -46,5 +46,9 @@ public static class MessageTypes
     public const string SubmitQuizLifecycleEvent = "submitQuizLifecycleEvent";
     public const string SubmitQuizFocusEvent = "submitQuizFocusEvent";
     public const string SubmitQuizSelectionEvent = "submitQuizSelectionEvent";
+    public const string StartActiveQuiz = "startActiveQuiz";
+    public const string AdvanceQuizQuestion = "advanceQuizQuestion";
+    public const string RetreatQuizQuestion = "retreatQuizQuestion";
+    public const string SetQuizSelection = "setQuizSelection";
     public const string Error = "error";
 }

@@ -448,6 +448,7 @@ function ResearcherCurrentLiveBody({
           onExecutionModeChange={(executionMode) => setDecisionExecutionMode(executionMode)}
           experimentTextCount={readingSession.experimentItems.length}
           experimentItems={readingSession.experimentItems}
+          quizAnswersByItemId={readingSession.quizAnswersByItemId}
           currentExperimentTextIndex={currentExperimentTextIndex}
           canAdvanceExperimentText={
             currentExperimentTextIndex !== null &&
@@ -469,6 +470,7 @@ function ResearcherCurrentLiveBody({
           showReadingDynamics={readerOptions.showFixationHeatmap}
           tokenAttention={effectiveTokenAttention}
           onTokenAttentionChange={setTokenAttention}
+          participantName={session.participant?.name ?? null}
         />
 
         <LiveInterventionsColumn

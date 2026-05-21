@@ -1,5 +1,5 @@
 import type { CalibrationQuality, CalibrationSessionSnapshot } from "@/lib/calibration"
-import type { ComprehensionQuestion, QuizStatus } from "@/lib/comprehension-quiz"
+import type { ComprehensionAnswer, ComprehensionQuestion, QuizStatus } from "@/lib/comprehension-quiz"
 import type { InterventionParameterValues } from "@/lib/intervention-modules"
 import type { ReadingAttentionSummarySnapshot } from "@/lib/reading-attention-summary"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
@@ -482,6 +482,15 @@ export type LiveReadingSessionSnapshot = {
   latestIntervention: InterventionEventSnapshot | null
   recentInterventions: InterventionEventSnapshot[]
   attentionSummary: ReadingAttentionSummarySnapshot | null
+  activeQuizState: ActiveQuizState | null
+  quizAnswersByItemId: Record<string, ComprehensionAnswer[]>
+}
+
+export type ActiveQuizState = {
+  materialItemId: string
+  activeQuestionIndex: number
+  selectionsByQuestionId: Record<string, string>
+  quizPhase: "in-progress" | "submitted"
 }
 
 export type ExperimentSessionSnapshot = {
@@ -604,6 +613,8 @@ export const EMPTY_READING_SESSION: LiveReadingSessionSnapshot = {
   latestIntervention: null,
   recentInterventions: [],
   attentionSummary: null,
+  activeQuizState: null,
+  quizAnswersByItemId: {},
 }
 
 export const EMPTY_SIGNAL_SOURCES: SensingSignalSourcesSnapshot = {

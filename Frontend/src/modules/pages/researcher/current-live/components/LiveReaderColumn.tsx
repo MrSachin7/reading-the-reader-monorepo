@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
+import { QuizResultsMirrorPanel } from "@/modules/pages/researcher/current-live/components/QuizResultsMirrorPanel"
 import type { LiveMirrorTrustState, LiveReaderOptions } from "@/modules/pages/researcher/current-live/types"
 
 type LiveReaderColumnProps = {
@@ -20,6 +21,7 @@ type LiveReaderColumnProps = {
   showReadingDynamics: boolean
   tokenAttention: RemoteTokenAttentionSnapshot
   onTokenAttentionChange: (snapshot: RemoteTokenAttentionSnapshot) => void
+  participantName?: string | null
 }
 
 type ElementSize = {
@@ -73,6 +75,7 @@ export function LiveReaderColumn({
   showReadingDynamics,
   tokenAttention,
   onTokenAttentionChange,
+  participantName,
 }: LiveReaderColumnProps) {
   const { ref: stageHostRef, size: stageHostSize } = useElementSize<HTMLDivElement>()
   const participantViewport = readingSession.participantViewport
@@ -112,6 +115,38 @@ export function LiveReaderColumn({
     participantViewportWidth > 0 &&
     participantViewportHeight > 0
   const showExactMirror = canAttemptExactMirror && exactMirrorScale > 0
+
+  const activeQuizState = readingSession.activeQuizState ?? null
+  const activeQuizMaterial = activeQuizState
+    ? readingSession.experimentItems.find((item) => item.id === activeQuizState.materialItemId) ?? null
+    : null
+  const activeQuizQuestions = activeQuizMaterial?.comprehensionQuiz ?? []
+  const activeQuizMaterialTitle = activeQuizMaterial?.title ?? null
+
+  // Participant view shows ThankYouScreen when the last material's quiz has been submitted
+  // and there is no active quiz. Mirror that condition here so the researcher gets the
+  // results panel instead of staring at the final reading page.
+  const experimentItems = readingSession.experimentItems
+  const currentIndex = readingSession.currentExperimentItemIndex
+  const lastItem = experimentItems.length > 0 ? experimentItems[experimentItems.length - 1] : null
+  const isOnLastItem =
+    currentIndex !== null && currentIndex === experimentItems.length - 1
+  const participantOnThankYou =
+    activeQuizState === null &&
+    isOnLastItem &&
+    lastItem !== null &&
+    lastItem.quizStatus === "completed" &&
+    (lastItem.comprehensionQuiz?.length ?? 0) > 0
+
+  if (participantOnThankYou) {
+    return (
+      <QuizResultsMirrorPanel
+        experimentItems={experimentItems}
+        quizAnswersByItemId={readingSession.quizAnswersByItemId ?? {}}
+        participantName={participantName ?? null}
+      />
+    )
+  }
 
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
@@ -213,6 +248,10 @@ export function LiveReaderColumn({
                     embeddedSurfaceStyle="bare"
                     latestIntervention={readingSession.latestIntervention ?? null}
                     initialPresentation={readingSession.initialPresentation ?? null}
+                    activeQuizState={activeQuizState}
+                    comprehensionQuiz={activeQuizQuestions}
+                    activeQuizMaterialTitle={activeQuizMaterialTitle}
+                    quizIsInteractive={false}
                     frameClassName="h-full"
                     frameStyle={{
                       width: `${participantViewportWidth}px`,
@@ -272,6 +311,10 @@ export function LiveReaderColumn({
                 embeddedSurfaceStyle="bare"
                 latestIntervention={readingSession.latestIntervention ?? null}
                 initialPresentation={readingSession.initialPresentation ?? null}
+                activeQuizState={activeQuizState}
+                comprehensionQuiz={activeQuizQuestions}
+                activeQuizMaterialTitle={activeQuizMaterialTitle}
+                quizIsInteractive={false}
                 frameClassName="h-full"
                 frameStyle={{
                   width: "100%",

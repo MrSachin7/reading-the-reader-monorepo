@@ -24,6 +24,11 @@ type ReadingToolbarProps = {
   onDecreaseWidth: () => void;
   onReset: () => void;
   onEnterFocus: () => void;
+  /** When set, the toolbar hides typography controls and shows quiz progress instead. */
+  quizMode?: {
+    activeQuestionIndex: number;
+    totalQuestions: number;
+  } | null;
 };
 
 export function ReadingToolbar({
@@ -39,6 +44,7 @@ export function ReadingToolbar({
   onDecreaseWidth,
   onReset,
   onEnterFocus,
+  quizMode = null,
 }: ReadingToolbarProps) {
   const canDecreaseFont = allowPresentationAdjustments && fontSizePx > FONT_SIZE_MIN;
   const canIncreaseFont = allowPresentationAdjustments && fontSizePx < FONT_SIZE_MAX;
@@ -58,76 +64,91 @@ export function ReadingToolbar({
           </>
         ) : null}
 
-        <p className="text-sm text-muted-foreground">{estimatedTimeLabel}</p>
-
-        {experimentSetupName ? (
+        {quizMode ? (
           <>
+            {experimentSetupName ? (
+              <p className="text-sm text-muted-foreground">Material: {experimentSetupName}</p>
+            ) : null}
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
+            <p className="text-sm font-medium">
+              Quiz · Question {quizMode.activeQuestionIndex + 1} of {quizMode.totalQuestions}
+            </p>
+            <div className="ml-auto" />
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">{estimatedTimeLabel}</p>
+
+            {experimentSetupName ? (
+              <>
+                <Separator orientation="vertical" className="hidden h-6 md:block" />
+                <p className="text-sm text-muted-foreground">
+                  Material: {experimentSetupName}
+                </p>
+              </>
+            ) : null}
+
             <Separator orientation="vertical" className="hidden h-6 md:block" />
             <p className="text-sm text-muted-foreground">
-              Material: {experimentSetupName}
+              {allowPresentationAdjustments ? "Baseline adjustable" : "Baseline locked"}
             </p>
+
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={onDecreaseFont}
+                disabled={!canDecreaseFont}
+                aria-label="Decrease font size"
+              >
+                A-
+              </Button>
+              <span className="w-16 text-center text-xs text-muted-foreground">{fontSizePx}px</span>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={onIncreaseFont}
+                disabled={!canIncreaseFont}
+                aria-label="Increase font size"
+              >
+                A+
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={onDecreaseWidth}
+                disabled={!canDecreaseWidth}
+                aria-label="Decrease line width"
+              >
+                [
+              </Button>
+              <span className="w-16 text-center text-xs text-muted-foreground">{lineWidthPx}px</span>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={onIncreaseWidth}
+                disabled={!canIncreaseWidth}
+                aria-label="Increase line width"
+              >
+                ]
+              </Button>
+            </div>
+
+            <div className="ml-auto" />
+
+            <Button variant="secondary" size="sm" onClick={onReset} disabled={!allowPresentationAdjustments}>
+              Reset
+            </Button>
+            <Button size="sm" onClick={onEnterFocus}>
+              Focus
+            </Button>
           </>
-        ) : null}
-
-        <Separator orientation="vertical" className="hidden h-6 md:block" />
-        <p className="text-sm text-muted-foreground">
-          {allowPresentationAdjustments ? "Baseline adjustable" : "Baseline locked"}
-        </p>
-
-        <Separator orientation="vertical" className="hidden h-6 md:block" />
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={onDecreaseFont}
-            disabled={!canDecreaseFont}
-            aria-label="Decrease font size"
-          >
-            A-
-          </Button>
-          <span className="w-16 text-center text-xs text-muted-foreground">{fontSizePx}px</span>
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={onIncreaseFont}
-            disabled={!canIncreaseFont}
-            aria-label="Increase font size"
-          >
-            A+
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={onDecreaseWidth}
-            disabled={!canDecreaseWidth}
-            aria-label="Decrease line width"
-          >
-            [
-          </Button>
-          <span className="w-16 text-center text-xs text-muted-foreground">{lineWidthPx}px</span>
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={onIncreaseWidth}
-            disabled={!canIncreaseWidth}
-            aria-label="Increase line width"
-          >
-            ]
-          </Button>
-        </div>
-
-        <div className="ml-auto" />
-
-        <Button variant="secondary" size="sm" onClick={onReset} disabled={!allowPresentationAdjustments}>
-          Reset
-        </Button>
-        <Button size="sm" onClick={onEnterFocus}>
-          Focus
-        </Button>
+        )}
       </div>
     </div>
   );

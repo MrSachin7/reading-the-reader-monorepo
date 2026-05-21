@@ -250,6 +250,22 @@ type ClientEnvelope =
   | {
       type: "submitQuizSelectionEvent";
       payload: QuizSelectionEventPayload;
+    }
+  | {
+      type: "startActiveQuiz";
+      payload: { materialItemId: string };
+    }
+  | {
+      type: "advanceQuizQuestion";
+      payload: { materialItemId: string };
+    }
+  | {
+      type: "retreatQuizQuestion";
+      payload: { materialItemId: string };
+    }
+  | {
+      type: "setQuizSelection";
+      payload: { materialItemId: string; questionId: string; selectedOptionId: string };
     };
 
 export interface ConnectionStats {
@@ -947,6 +963,33 @@ export function sendQuizFocusEvent(payload: QuizFocusEventPayload) {
 export function sendQuizSelectionEvent(payload: QuizSelectionEventPayload) {
   connect()
   send({ type: "submitQuizSelectionEvent", payload })
+}
+
+export function startActiveQuiz(materialItemId: string) {
+  connect()
+  send({ type: "startActiveQuiz", payload: { materialItemId } })
+}
+
+export function advanceQuizQuestion(materialItemId: string) {
+  connect()
+  send({ type: "advanceQuizQuestion", payload: { materialItemId } })
+}
+
+export function retreatQuizQuestion(materialItemId: string) {
+  connect()
+  send({ type: "retreatQuizQuestion", payload: { materialItemId } })
+}
+
+export function setQuizSelection(
+  materialItemId: string,
+  questionId: string,
+  selectedOptionId: string
+) {
+  connect()
+  send({
+    type: "setQuizSelection",
+    payload: { materialItemId, questionId, selectedOptionId },
+  })
 }
 
 export function stopGazeSocket() {

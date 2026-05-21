@@ -4,13 +4,15 @@ import { ListChecks } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import type { ComprehensionAnswer } from "@/lib/comprehension-quiz"
 import type { ExperimentSequenceItemSnapshot } from "@/lib/experiment-session"
 
 type Props = {
   items: ExperimentSequenceItemSnapshot[]
+  quizAnswersByItemId?: Record<string, ComprehensionAnswer[]>
 }
 
-export function QuizProgressCard({ items }: Props) {
+export function QuizProgressCard({ items, quizAnswersByItemId }: Props) {
   const itemsWithQuiz = items.filter((item) => (item.comprehensionQuiz?.length ?? 0) > 0)
   if (itemsWithQuiz.length === 0) {
     return null
@@ -35,6 +37,10 @@ export function QuizProgressCard({ items }: Props) {
           {itemsWithQuiz.map((item, index) => {
             const total = item.comprehensionQuiz?.length ?? 0
             const completed = item.quizStatus === "completed"
+            const answers = quizAnswersByItemId?.[item.id] ?? null
+            const correctCount = answers
+              ? answers.reduce((sum, answer) => sum + (answer.isCorrect ? 1 : 0), 0)
+              : null
             return (
               <li
                 key={item.id}
@@ -45,7 +51,9 @@ export function QuizProgressCard({ items }: Props) {
                     {index + 1}. {item.title || "Untitled"}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {total} question{total === 1 ? "" : "s"}
+                    {completed && correctCount !== null
+                      ? `${correctCount} / ${total} correct`
+                      : `${total} question${total === 1 ? "" : "s"}`}
                   </p>
                 </div>
                 <Badge

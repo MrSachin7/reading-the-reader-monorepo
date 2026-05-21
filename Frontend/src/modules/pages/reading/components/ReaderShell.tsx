@@ -8,7 +8,14 @@ import { LiveGazeOverlay } from "@/modules/pages/gaze/components/LiveGazeOverlay
 import type { GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers";
 import type { GazeData } from "@/lib/gaze-socket";
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader";
+import { ReaderShellQuiz } from "@/modules/pages/reading/components/ReaderShellQuiz";
 import { ReadingToolbar } from "@/modules/pages/reading/components/ReadingToolbar";
+import type { ActiveQuizState } from "@/lib/experiment-session";
+import type {
+  ComprehensionQuestion,
+  QuizSelectionHistory,
+  SubmitQuizAnswerEntry,
+} from "@/lib/comprehension-quiz";
 import { countWords, formatEstimatedMinutes } from "@/modules/pages/reading/lib/readingMetrics";
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation";
 import { applyReadingPresentationPatch } from "@/modules/pages/reading/lib/readingPresentation";
@@ -105,6 +112,19 @@ type ReaderShellProps = {
    * is replaced by `presentation` (so the live segment always reflects the
    * current researcher-facing typography).
    */
+  activeQuizState?: ActiveQuizState | null;
+  /** Quiz questions for the currently-active material; consulted only when activeQuizState is set. */
+  comprehensionQuiz?: ComprehensionQuestion[] | null;
+  /** Title shown above the quiz prompt. Falls back to experimentSetupName. */
+  activeQuizMaterialTitle?: string | null;
+  /** Participant view sends commands; researcher mirror is read-only. */
+  quizIsInteractive?: boolean;
+  /** Participant submit handler (REST). The mirror leaves this undefined. */
+  onSubmitQuiz?: (payload: {
+    materialItemId: string;
+    answers: SubmitQuizAnswerEntry[];
+    selectionHistories: Record<string, QuizSelectionHistory>;
+  }) => Promise<void>;
 };
 
 const FONT_FAMILY_STYLES = {
@@ -222,6 +242,11 @@ export function ReaderShell({
   embeddedSurfaceStyle = "card",
   latestIntervention = null,
   initialPresentation = null,
+  activeQuizState = null,
+  comprehensionQuiz = null,
+  activeQuizMaterialTitle = null,
+  quizIsInteractive = false,
+  onSubmitQuiz,
 }: ReaderShellProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1112,6 +1137,14 @@ export function ReaderShell({
             lineWidthPx={presentation.lineWidthPx}
             allowPresentationAdjustments={canAdjustPresentation}
             showBackButton={showBackButton}
+            quizMode={
+              activeQuizState && (comprehensionQuiz?.length ?? 0) > 0
+                ? {
+                    activeQuestionIndex: activeQuizState.activeQuestionIndex,
+                    totalQuestions: comprehensionQuiz!.length,
+                  }
+                : null
+            }
             onIncreaseFont={() => updatePresentation({ fontSizePx: presentation.fontSizePx + 2 })}
             onDecreaseFont={() => updatePresentation({ fontSizePx: presentation.fontSizePx - 2 })}
             onIncreaseWidth={() => updatePresentation({ lineWidthPx: presentation.lineWidthPx + 20 })}
@@ -1132,6 +1165,30 @@ export function ReaderShell({
           />
         ) : null}
 
+        {activeQuizState ? (
+          <div
+            ref={hostRef}
+            className="flex flex-1 items-stretch justify-center overflow-hidden"
+          >
+            <div
+              ref={containerRef}
+              className={cn(
+                "relative h-full w-full overflow-y-auto overflow-x-hidden",
+                embeddedSurfaceStyle === "bare" ? "bg-transparent" : "bg-background/40"
+              )}
+              style={{ width: "100%", maxWidth: "100%" }}
+            >
+              <ReaderShellQuiz
+                materialItemId={activeQuizState.materialItemId}
+                materialTitle={activeQuizMaterialTitle ?? experimentSetupName ?? "Comprehension quiz"}
+                questions={comprehensionQuiz ?? []}
+                activeQuizState={activeQuizState}
+                isInteractive={quizIsInteractive}
+                onSubmit={onSubmitQuiz}
+              />
+            </div>
+          </div>
+        ) : (
         <div
           ref={hostRef}
           className={
@@ -1240,14 +1297,17 @@ export function ReaderShell({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            "shrink-0",
-            embeddedSurfaceStyle === "bare" ? "bg-transparent" : "border-t border-border/50 bg-background/80"
-          )}
-        >
-          {paginationFooter}
-        </div>
+        )}
+        {activeQuizState ? null : (
+          <div
+            className={cn(
+              "shrink-0",
+              embeddedSurfaceStyle === "bare" ? "bg-transparent" : "border-t border-border/50 bg-background/80"
+            )}
+          >
+            {paginationFooter}
+          </div>
+        )}
       </section>
     </div>
   );

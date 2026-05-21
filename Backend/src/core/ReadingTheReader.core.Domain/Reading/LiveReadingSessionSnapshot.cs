@@ -20,7 +20,9 @@ public sealed record LiveReadingSessionSnapshot(
     ReadingPresentationSnapshot? InitialPresentation = null,
     IReadOnlyList<ExperimentSequenceItemSnapshot>? ExperimentItems = null,
     int? CurrentExperimentItemIndex = null,
-    ExperimentRunSnapshot? ExperimentRun = null)
+    ExperimentRunSnapshot? ExperimentRun = null,
+    ActiveQuizState? ActiveQuizState = null,
+    IReadOnlyDictionary<string, IReadOnlyList<ComprehensionAnswer>>? QuizAnswersByItemId = null)
 {
     public static LiveReadingSessionSnapshot Empty { get; } = new(
         null,
@@ -65,6 +67,13 @@ public sealed record LiveReadingSessionSnapshot(
             InitialPresentation?.Copy(),
             ExperimentItems is null ? [] : [.. ExperimentItems.Select(item => item.Copy())],
             CurrentExperimentItemIndex,
-            ExperimentRun?.Copy());
+            ExperimentRun?.Copy(),
+            ActiveQuizState?.Copy(),
+            QuizAnswersByItemId is null
+                ? null
+                : QuizAnswersByItemId.ToDictionary(
+                    pair => pair.Key,
+                    pair => (IReadOnlyList<ComprehensionAnswer>)pair.Value.Select(answer => answer with { }).ToArray(),
+                    StringComparer.Ordinal));
     }
 }

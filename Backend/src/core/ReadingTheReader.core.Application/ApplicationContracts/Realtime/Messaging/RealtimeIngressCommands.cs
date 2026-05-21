@@ -123,6 +123,33 @@ public sealed record SubmitQuizSelectionEventRealtimeCommand(
     string ConnectionId,
     QuizSelectionEventPayload Payload) : IRealtimeIngressCommand;
 
+public sealed record StartActiveQuizPayload(string MaterialItemId);
+
+public sealed record AdvanceQuizQuestionPayload(string MaterialItemId);
+
+public sealed record RetreatQuizQuestionPayload(string MaterialItemId);
+
+public sealed record SetQuizSelectionPayload(
+    string MaterialItemId,
+    string QuestionId,
+    string SelectedOptionId);
+
+public sealed record StartActiveQuizRealtimeCommand(
+    string ConnectionId,
+    StartActiveQuizPayload Payload) : IRealtimeIngressCommand;
+
+public sealed record AdvanceQuizQuestionRealtimeCommand(
+    string ConnectionId,
+    AdvanceQuizQuestionPayload Payload) : IRealtimeIngressCommand;
+
+public sealed record RetreatQuizQuestionRealtimeCommand(
+    string ConnectionId,
+    RetreatQuizQuestionPayload Payload) : IRealtimeIngressCommand;
+
+public sealed record SetQuizSelectionRealtimeCommand(
+    string ConnectionId,
+    SetQuizSelectionPayload Payload) : IRealtimeIngressCommand;
+
 public sealed record InvalidRealtimeCommand(
     string ConnectionId,
     string ErrorMessage) : IRealtimeIngressCommand;
@@ -222,6 +249,26 @@ public static class RealtimeIngressCommandFactory
                 connectionId,
                 "Quiz selection event payload is invalid.",
                 parsed => new SubmitQuizSelectionEventRealtimeCommand(connectionId, parsed)),
+            MessageTypes.StartActiveQuiz => Deserialize<StartActiveQuizPayload>(
+                payload,
+                connectionId,
+                "Start active quiz payload is invalid.",
+                parsed => new StartActiveQuizRealtimeCommand(connectionId, parsed)),
+            MessageTypes.AdvanceQuizQuestion => Deserialize<AdvanceQuizQuestionPayload>(
+                payload,
+                connectionId,
+                "Advance quiz question payload is invalid.",
+                parsed => new AdvanceQuizQuestionRealtimeCommand(connectionId, parsed)),
+            MessageTypes.RetreatQuizQuestion => Deserialize<RetreatQuizQuestionPayload>(
+                payload,
+                connectionId,
+                "Retreat quiz question payload is invalid.",
+                parsed => new RetreatQuizQuestionRealtimeCommand(connectionId, parsed)),
+            MessageTypes.SetQuizSelection => Deserialize<SetQuizSelectionPayload>(
+                payload,
+                connectionId,
+                "Set quiz selection payload is invalid.",
+                parsed => new SetQuizSelectionRealtimeCommand(connectionId, parsed)),
             MessageTypes.ResearcherCommand => ParseResearcherCommand(connectionId, payload),
             _ => new UnsupportedRealtimeCommand(connectionId, messageType)
         };

@@ -147,6 +147,26 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                     MapToQuizSelectionCommand(selectionEvent.Payload), ct);
                 return;
 
+            case StartActiveQuizRealtimeCommand startActiveQuiz:
+                await _runtimeAuthority.StartActiveQuizAsync(startActiveQuiz.Payload.MaterialItemId, ct);
+                return;
+
+            case AdvanceQuizQuestionRealtimeCommand advanceQuiz:
+                await _runtimeAuthority.AdvanceActiveQuizQuestionAsync(advanceQuiz.Payload.MaterialItemId, ct);
+                return;
+
+            case RetreatQuizQuestionRealtimeCommand retreatQuiz:
+                await _runtimeAuthority.RetreatActiveQuizQuestionAsync(retreatQuiz.Payload.MaterialItemId, ct);
+                return;
+
+            case SetQuizSelectionRealtimeCommand setSelection:
+                await _runtimeAuthority.SetActiveQuizSelectionAsync(
+                    setSelection.Payload.MaterialItemId,
+                    setSelection.Payload.QuestionId,
+                    setSelection.Payload.SelectedOptionId,
+                    ct);
+                return;
+
             case DisconnectClientRealtimeCommand disconnect:
                 await _runtimeAuthority.UnsubscribeGazeDataAsync(disconnect.ConnectionId, ct);
                 await _readerObservationService.DisconnectParticipantViewAsync(disconnect.ConnectionId, ct);

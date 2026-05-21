@@ -24,6 +24,18 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask RecordQuizSelectionEventAsync(QuizSelectionEventCommand command, CancellationToken ct = default);
 
+    ValueTask<LiveReadingSessionSnapshot> StartActiveQuizAsync(string materialItemId, CancellationToken ct = default);
+
+    ValueTask<LiveReadingSessionSnapshot> AdvanceActiveQuizQuestionAsync(string materialItemId, CancellationToken ct = default);
+
+    ValueTask<LiveReadingSessionSnapshot> RetreatActiveQuizQuestionAsync(string materialItemId, CancellationToken ct = default);
+
+    ValueTask<LiveReadingSessionSnapshot> SetActiveQuizSelectionAsync(
+        string materialItemId,
+        string questionId,
+        string selectedOptionId,
+        CancellationToken ct = default);
+
     ValueTask<InterventionEventSnapshot?> ApplyInterventionAsync(ApplyInterventionCommand command, CancellationToken ct = default);
 
     ValueTask<ReadingInterventionPolicySnapshot> UpdateInterventionPolicyAsync(

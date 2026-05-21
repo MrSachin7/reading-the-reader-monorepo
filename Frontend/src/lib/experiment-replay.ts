@@ -679,6 +679,8 @@ function buildEmptyReadingSession(replay: ExperimentReplayExport): LiveReadingSe
     latestIntervention: null,
     recentInterventions: [],
     attentionSummary: null,
+    activeQuizState: null,
+    quizAnswersByItemId: {},
   }
 }
 

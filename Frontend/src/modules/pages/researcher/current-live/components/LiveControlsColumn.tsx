@@ -29,6 +29,7 @@ import type {
   SensingSignalSourcesSnapshot,
   WebcamSensingStatusSnapshot,
 } from "@/lib/experiment-session"
+import type { ComprehensionAnswer } from "@/lib/comprehension-quiz"
 import type { InterventionModuleDescriptor } from "@/lib/intervention-modules"
 import type { ReaderAppearanceSettings } from "@/lib/reader-appearance"
 import { cn } from "@/lib/utils"
@@ -78,6 +79,7 @@ type LiveControlsColumnProps = {
   onExecutionModeChange: (executionMode: string) => void
   experimentTextCount: number
   experimentItems: ExperimentSequenceItemSnapshot[]
+  quizAnswersByItemId?: Record<string, ComprehensionAnswer[]>
   currentExperimentTextIndex: number | null
   canAdvanceExperimentText: boolean
   isAdvancingExperimentText: boolean
@@ -119,6 +121,7 @@ export function LiveControlsColumn({
   onExecutionModeChange,
   experimentTextCount,
   experimentItems,
+  quizAnswersByItemId,
   currentExperimentTextIndex,
   canAdvanceExperimentText,
   isAdvancingExperimentText,
@@ -300,7 +303,7 @@ export function LiveControlsColumn({
               </Card>
             ) : null}
 
-            <QuizProgressCard items={experimentItems} />
+            <QuizProgressCard items={experimentItems} quizAnswersByItemId={quizAnswersByItemId} />
 
             <Card className="rounded-2xl bg-card/96 shadow-sm">
               <CardContent className="pt-6">

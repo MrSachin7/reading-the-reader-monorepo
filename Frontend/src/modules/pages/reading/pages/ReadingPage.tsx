@@ -10,6 +10,7 @@ import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import {
   registerParticipantView,
   sendMouseGazeSample,
+  startActiveQuiz,
   unregisterParticipantView,
   updateReadingGazeObservation,
   updateReadingContextPreservation,
@@ -26,7 +27,6 @@ import {
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
-import { QuizScreen } from "@/modules/pages/reading/quiz/QuizScreen"
 import { ThankYouScreen } from "@/modules/pages/reading/quiz/ThankYouScreen"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
 import type { GazeFocusState } from "@/modules/pages/reading/lib/useGazeTokenHighlight"
@@ -37,8 +37,14 @@ import type {
 } from "@/lib/experiment-session"
 import {
   useGetReaderShellSettingsQuery,
+  useSubmitQuizAnswersMutation,
   useUpsertReadingSessionMutation,
 } from "@/redux"
+import type {
+  ComprehensionQuestion,
+  QuizSelectionHistory,
+  SubmitQuizAnswerEntry,
+} from "@/lib/comprehension-quiz"
 import { getErrorMessage } from "@/lib/error-utils"
 
 function FullscreenGate({
@@ -87,6 +93,7 @@ export function ReadingPage() {
   const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const [upsertReadingSession] = useUpsertReadingSessionMutation()
+  const [submitQuizAnswers] = useSubmitQuizAnswersMutation()
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = getReaderShellViewSettings(
     readerShellSettings ?? READER_SHELL_SETTINGS_DEFAULTS,
@@ -219,15 +226,16 @@ export function ReadingPage() {
     upsertReadingSession,
   ])
 
-  const [quizMaterialItemId, setQuizMaterialItemId] = useState<string | null>(null)
-
   const handleAdvancePastEnd = useCallback(async () => {
     const currentItem = experimentSequencePosition?.currentItem
     if (currentItem) {
       const hasQuiz = (currentItem.comprehensionQuiz ?? []).length > 0
       const quizDone = currentItem.quizStatus === "completed"
       if (hasQuiz && !quizDone) {
-        setQuizMaterialItemId(currentItem.id)
+        // Hand the quiz off to the backend authoritative state machine. The next
+        // readingSessionChanged broadcast will arrive with activeQuizState populated
+        // and ReaderShell will swap into quiz mode automatically.
+        startActiveQuiz(currentItem.id)
         return
       }
     }
@@ -241,6 +249,21 @@ export function ReadingPage() {
     experimentSequencePosition?.currentIndex,
     transitionToExperimentItem,
   ])
+
+  const handleSubmitQuiz = useCallback(
+    async (payload: {
+      materialItemId: string
+      answers: SubmitQuizAnswerEntry[]
+      selectionHistories: Record<string, QuizSelectionHistory>
+    }) => {
+      await submitQuizAnswers({
+        materialItemId: payload.materialItemId,
+        answers: payload.answers,
+        selectionHistories: payload.selectionHistories,
+      }).unwrap()
+    },
+    [submitQuizAnswers]
+  )
 
   const handleRetreatPastStart = useCallback(async () => {
     if (!experimentSequencePosition?.previousItem) {
@@ -373,30 +396,19 @@ export function ReadingPage() {
   const isLastItem =
     Boolean(experimentSequencePosition) &&
     experimentSequencePosition!.nextItem === null
+  const activeQuizState = liveReadingSession?.activeQuizState ?? null
+  const activeQuizQuestions: ComprehensionQuestion[] =
+    activeQuizState && currentItem && currentItem.id === activeQuizState.materialItemId
+      ? currentItem.comprehensionQuiz ?? []
+      : []
   const showThankYou =
     isLastItem &&
     currentItem?.quizStatus === "completed" &&
     (currentItem?.comprehensionQuiz?.length ?? 0) > 0 &&
-    quizMaterialItemId === null
-
-  const activeQuizQuestions =
-    quizMaterialItemId && currentItem && currentItem.id === quizMaterialItemId
-      ? currentItem.comprehensionQuiz ?? []
-      : []
+    activeQuizState === null
 
   if (showThankYou) {
     return <ThankYouScreen />
-  }
-
-  if (quizMaterialItemId && currentItem && activeQuizQuestions.length > 0) {
-    return (
-      <QuizScreen
-        materialItemId={currentItem.id}
-        materialTitle={currentItem.title}
-        questions={activeQuizQuestions}
-        onCompleted={() => setQuizMaterialItemId(null)}
-      />
-    )
   }
 
   return (
@@ -434,6 +446,11 @@ export function ReadingPage() {
         onObservationChange={handleObservationChange}
         onContextPreservationChange={handleContextPreservationChange}
         latestIntervention={liveReadingSession?.latestIntervention ?? null}
+        activeQuizState={activeQuizState}
+        comprehensionQuiz={activeQuizQuestions}
+        activeQuizMaterialTitle={currentItem?.title ?? null}
+        quizIsInteractive
+        onSubmitQuiz={handleSubmitQuiz}
         initialPresentation={liveReadingSession?.initialPresentation ?? null}
       />
       {advanceError ? (
