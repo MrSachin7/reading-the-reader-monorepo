@@ -1434,30 +1434,47 @@ export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyE
 
   const quizLifecycleEvents = getReplayQuizLifecycleEvents(replay)
   for (const record of quizLifecycleEvents) {
+    // "Quiz question next" entries are noise — the corresponding quiz-question-shown for
+    // the next question is already on the timeline. Only keep meaningful navigation events.
+    if (record.eventType === "quiz-question-left" && record.direction !== "back" && record.direction !== "submit") {
+      continue
+    }
+
     const timeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
-    const title = (() => {
-      switch (record.eventType) {
-        case "quiz-started":
-          return "Quiz started"
-        case "quiz-question-shown":
-          return record.questionIndex !== null && record.questionIndex !== undefined
-            ? `Quiz question ${record.questionIndex + 1}`
-            : "Quiz question shown"
-        case "quiz-question-left":
-          return record.direction === "submit"
-            ? "Quiz question submitted"
-            : `Quiz question ${record.direction ?? "left"}`
-        case "quiz-submitted":
-          return "Quiz submitted"
-        default:
-          return record.eventType
-      }
-    })()
-    const detail = record.prompt
-      ? record.prompt
-      : record.questionId
-        ? `Question ${record.questionId}`
-        : record.materialItemId
+    let title: string
+    let detail = ""
+
+    switch (record.eventType) {
+      case "quiz-started":
+        title =
+          record.questionCount !== null && record.questionCount !== undefined
+            ? `Quiz started · ${record.questionCount} question${record.questionCount === 1 ? "" : "s"}`
+            : "Quiz started"
+        break
+      case "quiz-question-shown":
+        title =
+          record.questionIndex !== null && record.questionIndex !== undefined
+            ? `Question ${record.questionIndex + 1}`
+            : "Question shown"
+        detail = record.prompt ?? ""
+        break
+      case "quiz-question-left":
+        if (record.direction === "submit") {
+          title = "Submit pressed"
+        } else {
+          title =
+            record.questionIndex !== null && record.questionIndex !== undefined
+              ? `Returned to Question ${record.questionIndex + 1}`
+              : "Returned to previous question"
+        }
+        break
+      case "quiz-submitted":
+        title = "Quiz submitted"
+        break
+      default:
+        title = record.eventType
+    }
+
     events.push({
       id: `quiz-${record.sequenceNumber}`,
       kind: "quiz",

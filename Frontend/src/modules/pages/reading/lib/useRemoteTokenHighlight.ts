@@ -4,6 +4,7 @@ import { type RefObject, useEffect } from "react";
 
 type UseRemoteTokenHighlightParams = {
   containerRef: RefObject<HTMLElement | null>;
+  contentRef?: RefObject<HTMLElement | null>;
   activeTokenId: string | null;
   enabled?: boolean;
 };
@@ -47,6 +48,7 @@ function applyStyles(
 
 export function useRemoteTokenHighlight({
   containerRef,
+  contentRef,
   activeTokenId,
   enabled = true,
 }: UseRemoteTokenHighlightParams) {
@@ -67,8 +69,13 @@ export function useRemoteTokenHighlight({
       return;
     }
 
+    const contentRoot =
+      contentRef?.current ??
+      container.querySelector<HTMLElement>("[data-reader-content='true']") ??
+      container;
+
     const tokens = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
+      contentRoot.querySelectorAll<HTMLElement>("[data-token-id][data-token-kind='word']")
     );
     const activeIndex = tokens.findIndex((token) => token.dataset.tokenId === activeTokenId);
     if (activeIndex < 0) {
@@ -102,5 +109,5 @@ export function useRemoteTokenHighlight({
         clearStyles(neighbour);
       }
     };
-  }, [activeTokenId, containerRef, enabled]);
+  }, [activeTokenId, containerRef, contentRef, enabled]);
 }

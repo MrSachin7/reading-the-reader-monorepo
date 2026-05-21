@@ -1,6 +1,7 @@
 "use client"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
 import type { ReplayQuizFrame } from "@/lib/experiment-replay"
 import type { ActiveQuizState, LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
@@ -53,7 +54,18 @@ export function ReplayReaderColumn({
         </Alert>
       ) : null}
 
-      <div className="h-full overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="relative h-full overflow-hidden rounded-xl border bg-card shadow-sm">
+        {readerOptions.showFixationHeatmap ? (
+          <div className="pointer-events-none absolute right-4 top-4 z-10">
+            <span
+              className={cn(
+                "inline-flex rounded-full border border-accent/45 bg-accent/15 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-accent-foreground shadow-sm backdrop-blur"
+              )}
+            >
+              Token heat map
+            </span>
+          </div>
+        ) : null}
         <ReaderShell
           key={content.documentId}
           docId={content.documentId}
@@ -79,7 +91,7 @@ export function ReplayReaderColumn({
             activeTokenId: readingSession.focus.activeTokenId,
             activeSentenceId: readingSession.focus.activeSentenceId,
           }}
-          remoteTokenAttention={remoteTokenAttention}
+          remoteTokenAttention={readerOptions.showFixationHeatmap ? remoteTokenAttention : null}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}

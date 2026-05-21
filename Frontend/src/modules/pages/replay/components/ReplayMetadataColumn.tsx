@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Eye, ListChecks, Sparkles } from "lucide-react"
+import { ListChecks, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,7 +14,6 @@ import { formatEventKind, getEventTone } from "@/modules/pages/replay/utils"
 type ReplayMetadataColumnProps = {
   frame: ReplayFrame
   readingSession: LiveReadingSessionSnapshot
-  activeWord: string | null | undefined
   replayEvents: ReplayKeyEvent[]
   activeEventIndex: number
   onSeek: (timeMs: number) => void
@@ -43,7 +42,6 @@ function eventMatchesFilter(event: ReplayKeyEvent, filter: FilterKey) {
 export function ReplayMetadataColumn({
   frame,
   readingSession,
-  activeWord,
   replayEvents,
   activeEventIndex,
   onSeek,
@@ -51,11 +49,6 @@ export function ReplayMetadataColumn({
   const [filter, setFilter] = React.useState<FilterKey>("all")
 
   const participant = frame.session.participant
-  const focus = readingSession.focus
-  const focusLabel = focus.isInsideReadingArea
-    ? activeWord ?? "Inside reading area"
-    : "Outside reading area"
-
   const recentIntervention = readingSession.latestIntervention
   const recentInterventionFresh =
     recentIntervention !== null &&
@@ -73,6 +66,7 @@ export function ReplayMetadataColumn({
     ) <= RECENT_EVENT_WINDOW_MS
 
   const visibleEvents = replayEvents.filter((event) => eventMatchesFilter(event, filter))
+  const showNowCard = Boolean(frame.quiz?.isActive || (recentInterventionFresh && recentIntervention) || (recentContextFresh && recentContext))
 
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
@@ -96,6 +90,7 @@ export function ReplayMetadataColumn({
         </div>
 
         {/* "At this moment" card — surfaces only what's currently relevant. */}
+        {showNowCard ? (
         <Card className="rounded-2xl bg-card/96 shadow-sm">
           <CardContent className="space-y-3 pt-5">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -162,19 +157,9 @@ export function ReplayMetadataColumn({
                 </p>
               </div>
             ) : null}
-
-            <div className="rounded-xl border bg-muted/10 p-3">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Eye className="size-3.5" />
-                <span className="text-[10px] uppercase tracking-[0.18em]">Focus</span>
-              </div>
-              <p className="mt-1 text-sm font-medium">{focusLabel}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {readingSession.presentation.fontFamily}, {readingSession.presentation.fontSizePx}px
-              </p>
-            </div>
           </CardContent>
         </Card>
+        ) : null}
 
         {/* Timeline — fills the rest. */}
         <Card className="flex min-h-0 flex-1 flex-col rounded-2xl bg-card/96 shadow-sm">

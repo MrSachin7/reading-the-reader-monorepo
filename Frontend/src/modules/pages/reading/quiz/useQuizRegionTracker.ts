@@ -32,6 +32,11 @@ type Params = {
 const OUTSIDE_REGION: ActiveRegion = { type: "outside", optionId: null }
 const NONE_REGION: ActiveRegion = { type: "none", optionId: null }
 
+// Module-scope dedup so the lifecycle events fire once per (material) / (material+question)
+// even if the component remounts within the same page session (e.g. parent re-renders).
+const EMITTED_STARTED_MATERIALS = new Set<string>()
+const EMITTED_QUESTION_KEYS = new Set<string>()
+
 function rectToBbox(rect: DOMRect) {
   return {
     x: rect.left,
@@ -90,7 +95,23 @@ export function useQuizRegionTracker({
   const promptRef = useRef<HTMLElement | null>(null)
   const optionRefs = useRef(new Map<string, HTMLElement | null>())
   const activeRegionRef = useRef<ActiveRegion>(NONE_REGION)
-  const startedRef = useRef(false)
+  // Refs that always point to the latest props so callbacks can stay stable.
+  const optionsRef = useRef(options)
+  const promptTextRef = useRef(prompt)
+  const questionIndexRef = useRef(questionIndex)
+  const materialItemIdRef = useRef(materialItemId)
+  useEffect(() => {
+    optionsRef.current = options
+  }, [options])
+  useEffect(() => {
+    promptTextRef.current = prompt
+  }, [prompt])
+  useEffect(() => {
+    questionIndexRef.current = questionIndex
+  }, [questionIndex])
+  useEffect(() => {
+    materialItemIdRef.current = materialItemId
+  }, [materialItemId])
 
   const setPromptRef = useCallback((node: HTMLElement | null) => {
     promptRef.current = node
@@ -112,7 +133,7 @@ export function useQuizRegionTracker({
 
     const promptRect = promptNode.getBoundingClientRect()
     const optionBboxes: QuizOptionBbox[] = []
-    for (const option of options) {
+    for (const option of optionsRef.current) {
       const node = optionRefs.current.get(option.id)
       if (!node) {
         continue
@@ -134,14 +155,13 @@ export function useQuizRegionTracker({
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
     }
-  }, [options])
+  }, [])
 
-  // Emit quiz-started exactly once per quiz session
+  // Emit quiz-started exactly once per (materialItemId) — survives component remounts within a page session.
   useEffect(() => {
-    if (startedRef.current) {
-      return
-    }
-    startedRef.current = true
+    if (!materialItemId) return
+    if (EMITTED_STARTED_MATERIALS.has(materialItemId)) return
+    EMITTED_STARTED_MATERIALS.add(materialItemId)
     sendQuizLifecycleEvent({
       materialItemId,
       eventType: "quiz-started",
@@ -150,33 +170,37 @@ export function useQuizRegionTracker({
     })
   }, [materialItemId, totalQuestions])
 
-  // Emit quiz-question-shown when the question is mounted or its layout changes (resize)
+  // Emit quiz-question-shown once per (materialItemId+questionId), and on each resize while mounted.
   useEffect(() => {
+    if (!materialItemId || !questionId) return
+
+    const key = `${materialItemId}::${questionId}`
     const emitShown = () => {
-      // Wait one frame so the DOM is laid out before measuring
       const layout = captureLayout()
-      if (!layout) {
-        return
-      }
+      if (!layout) return
       sendQuizLifecycleEvent({
-        materialItemId,
+        materialItemId: materialItemIdRef.current,
         eventType: "quiz-question-shown",
         occurredAtUnixMs: Date.now(),
         questionId,
-        questionIndex,
-        prompt,
+        questionIndex: questionIndexRef.current,
+        prompt: promptTextRef.current,
         layout,
       })
     }
 
-    const frameId = window.requestAnimationFrame(emitShown)
+    let frameId: number | null = null
+    if (!EMITTED_QUESTION_KEYS.has(key)) {
+      EMITTED_QUESTION_KEYS.add(key)
+      frameId = window.requestAnimationFrame(emitShown)
+    }
     window.addEventListener("resize", emitShown)
 
     return () => {
-      window.cancelAnimationFrame(frameId)
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
       window.removeEventListener("resize", emitShown)
     }
-  }, [captureLayout, materialItemId, prompt, questionId, questionIndex])
+  }, [captureLayout, materialItemId, questionId])
 
   // Reset active region when the active question changes
   useEffect(() => {

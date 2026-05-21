@@ -280,6 +280,12 @@ export function ReplayControlsColumn({
                   onCheckedChange={(checked) => onReaderOptionChange("highlightTokensBeingLookedAt", checked)}
                 />
                 <ControlRow
+                  label="Show fixation heat map"
+                  description="Color tokens by accumulated fixation time and skim activity."
+                  checked={readerOptions.showFixationHeatmap}
+                  onCheckedChange={(checked) => onReaderOptionChange("showFixationHeatmap", checked)}
+                />
+                <ControlRow
                   label="Show LIX scores"
                   description="Display readability badges inside the reading view."
                   checked={readerOptions.showLixScores}

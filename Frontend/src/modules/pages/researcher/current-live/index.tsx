@@ -41,6 +41,7 @@ import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize"
 import { LiveControlsColumn } from "@/modules/pages/researcher/current-live/components/LiveControlsColumn"
 import { LiveInterventionsColumn } from "@/modules/pages/researcher/current-live/components/LiveInterventionsColumn"
 import { LiveReaderColumn } from "@/modules/pages/researcher/current-live/components/LiveReaderColumn"
+import { LiveReaderControlsSheet } from "@/modules/pages/researcher/current-live/components/LiveReaderControlsSheet"
 import type {
   ActiveLiveExperimentSession,
   LiveMirrorTrustState,
@@ -215,6 +216,7 @@ function ResearcherCurrentLiveBody({
   const persistedReaderOptions =
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
   const [localReaderOptions, setLocalReaderOptions] = useState<LiveReaderOptions | null>(null)
+  const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false)
   const fullscreen = useRequiredFullscreen({ autoRequest: true })
   const readerOptions = localReaderOptions ?? persistedReaderOptions
   const readerAppearance = normalizeReaderAppearance(readingSession.appearance)
@@ -446,6 +448,12 @@ function ResearcherCurrentLiveBody({
           onApplyPendingInterventionNow={handleApplyPendingInterventionNow}
         />
       </div>
+      <LiveReaderControlsSheet
+        open={isReaderControlsOpen}
+        onOpenChange={setIsReaderControlsOpen}
+        readerOptions={readerOptions}
+        onReaderOptionChange={setReaderOption}
+      />
     </main>
   )
 }

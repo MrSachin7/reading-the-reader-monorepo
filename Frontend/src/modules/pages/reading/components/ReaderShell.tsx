@@ -286,6 +286,7 @@ export function ReaderShell({
 
   useRemoteTokenHighlight({
     containerRef,
+    contentRef,
     activeTokenId: remoteFocus?.activeTokenId ?? null,
     enabled: Boolean(remoteFocus?.isInsideReadingArea) && highlightRemoteTokensBeingLookedAt,
   });
@@ -299,6 +300,7 @@ export function ReaderShell({
 
   useRemoteTokenAttentionHeatmap({
     containerRef,
+    contentRef,
     attention: remoteTokenAttention,
     enabled: Boolean(remoteTokenAttention),
   });

@@ -333,7 +333,6 @@ export default function ReplayPage() {
         <ReplayMetadataColumn
           frame={frame}
           readingSession={readingSession}
-          activeWord={activeWord}
           replayEvents={replayEvents}
           activeEventIndex={activeEventIndex}
           onSeek={handleSeek}
