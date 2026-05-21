@@ -2,12 +2,10 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { ReplayQuizFrame } from "@/lib/experiment-replay"
-import type { LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
-import type { GazeData } from "@/lib/gaze-socket"
+import type { ActiveQuizState, LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
-import { ReplayQuizPanel } from "@/modules/pages/replay/components/ReplayQuizPanel"
 import type { ReplayReaderOptions } from "@/modules/pages/replay/types"
 
 type ReplayReaderColumnProps = {
@@ -18,7 +16,6 @@ type ReplayReaderColumnProps = {
   readerOptions: ReplayReaderOptions
   remoteTokenAttention: RemoteTokenAttentionSnapshot | null
   quiz: ReplayQuizFrame | null
-  gazeSample: GazeData | null
 }
 
 export function ReplayReaderColumn({
@@ -29,17 +26,23 @@ export function ReplayReaderColumn({
   readerOptions,
   remoteTokenAttention,
   quiz,
-  gazeSample,
 }: ReplayReaderColumnProps) {
-  if (quiz?.isActive) {
-    return (
-      <ReplayQuizPanel
-        quiz={quiz}
-        gaze={gazeSample}
-        participantViewport={readingSession.participantViewport}
-      />
-    )
-  }
+  // When the recording is in a quiz window, hand a reconstructed activeQuizState to the same
+  // ReaderShell the live participant view uses. ReaderShell branches internally into the
+  // ReaderShellQuiz subcomponent — same typography, same theme, same layout as live.
+  const replayActiveQuizState: ActiveQuizState | null =
+    quiz?.isActive
+      ? {
+          materialItemId: quiz.materialItemId,
+          activeQuestionIndex: quiz.questionIndex ?? 0,
+          selectionsByQuestionId: quiz.selectionsByQuestionId,
+          quizPhase: "in-progress",
+        }
+      : null
+  const replayComprehensionQuiz = quiz?.isActive ? quiz.comprehensionQuiz : null
+  const replayQuizMaterialTitle = quiz?.isActive
+    ? readingSession.experimentItems.find((item) => item.id === quiz.materialItemId)?.title ?? content.title
+    : null
 
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
@@ -81,6 +84,10 @@ export function ReplayReaderColumn({
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}
           initialPresentation={readingSession.initialPresentation ?? null}
+          activeQuizState={replayActiveQuizState}
+          comprehensionQuiz={replayComprehensionQuiz}
+          activeQuizMaterialTitle={replayQuizMaterialTitle}
+          quizIsInteractive={false}
           frameClassName="mx-auto rounded-none border-0 shadow-none"
           frameStyle={{
             width: "100%",

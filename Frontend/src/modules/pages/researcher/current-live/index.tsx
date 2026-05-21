@@ -413,50 +413,11 @@ function ResearcherCurrentLiveBody({
       ) : null}
       <div className="mx-auto grid h-full w-full max-w-[1680px] min-h-0 gap-4 overflow-hidden xl:grid-cols-[18rem_minmax(0,1fr)_19rem]">
         <LiveControlsColumn
-          interventionModules={effectiveInterventionModules}
-          followParticipant={followParticipant}
           liveMonitoring={session.liveMonitoring}
-          webcamStatus={session.webcamStatus}
-          signalSources={session.signalSources}
-          latestFacialObservation={readingSession.latestFacialObservation}
-          latestFacialDifficultySignal={readingSession.latestFacialDifficultySignal}
-          mirrorTrustState={mirrorTrustState}
-          layoutGuardrail={readingSession.latestLayoutGuardrail}
-          decisionConfiguration={session.decisionConfiguration}
-          decisionState={session.decisionState}
-          externalProviderStatus={session.externalProviderStatus}
-          activeWord={activeWord}
           participantName={session.participant?.name ?? null}
           sampleRateHz={sampleRateHz}
           validityRate={validityRate}
           latencyMs={latencyMs}
-          readingDynamicsEnabled={readerOptions.showFixationHeatmap}
-          currentFixationDurationMs={
-            readerOptions.showFixationHeatmap ? effectiveTokenAttention.currentTokenDurationMs : null
-          }
-          fixatedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.fixatedTokenCount : 0}
-          skimmedTokenCount={readerOptions.showFixationHeatmap ? effectiveTokenAttention.skimmedTokenCount : 0}
-          appearance={readerAppearance}
-          presentation={presentation}
-          readerOptions={readerOptions}
-          onFollowParticipantChange={setFollowParticipant}
-          onReaderOptionChange={setReaderOption}
-          onApproveProposal={(proposalId) => approveDecisionProposal(proposalId)}
-          onRejectProposal={(proposalId) => rejectDecisionProposal(proposalId)}
-          onPauseAutomation={() => pauseDecisionAutomation()}
-          onResumeAutomation={() => resumeDecisionAutomation()}
-          onExecutionModeChange={(executionMode) => setDecisionExecutionMode(executionMode)}
-          experimentTextCount={readingSession.experimentItems.length}
-          experimentItems={readingSession.experimentItems}
-          quizAnswersByItemId={readingSession.quizAnswersByItemId}
-          currentExperimentTextIndex={currentExperimentTextIndex}
-          canAdvanceExperimentText={
-            currentExperimentTextIndex !== null &&
-            currentExperimentTextIndex < readingSession.experimentItems.length - 1
-          }
-          isAdvancingExperimentText={isAdvancingExperimentText}
-          experimentSequenceError={experimentSequenceError}
-          onAdvanceExperimentText={() => void handleAdvanceExperimentText()}
         />
 
         <LiveReaderColumn

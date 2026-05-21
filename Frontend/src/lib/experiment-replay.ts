@@ -380,12 +380,50 @@ export type ReplayQuizFrame = {
   prompt: string | null
   layout: QuizQuestionLayoutRecord | null
   selectedOptionId: string | null
+  selectionsByQuestionId: Record<string, string>
   activeRegionType: "prompt" | "option" | "outside" | "none" | string | null
   activeOptionId: string | null
   selectionChangeCount: number
   timeOnQuestionMs: number | null
   questionStartedAtMs: number | null
   questionShownAtUnixMs: number | null
+  /** Reconstructed quiz definition (prompt + options) from recorded quiz-question-shown events. */
+  comprehensionQuiz: import("@/lib/comprehension-quiz").ComprehensionQuestion[]
+}
+
+function reconstructComprehensionQuizForMaterial(
+  lifecycleEvents: ReadonlyArray<QuizLifecycleEventRecord>,
+  materialItemId: string
+): import("@/lib/comprehension-quiz").ComprehensionQuestion[] {
+  const byQuestionId = new Map<string, QuizLifecycleEventRecord>()
+  for (const event of lifecycleEvents) {
+    if (
+      event.materialItemId !== materialItemId ||
+      event.eventType !== "quiz-question-shown" ||
+      !event.questionId
+    ) {
+      continue
+    }
+    if (!byQuestionId.has(event.questionId)) {
+      byQuestionId.set(event.questionId, event)
+    }
+  }
+
+  const ordered = [...byQuestionId.values()].sort(
+    (left, right) => (left.questionIndex ?? 0) - (right.questionIndex ?? 0)
+  )
+
+  return ordered.map((event, index) => ({
+    id: event.questionId ?? `q-${index}`,
+    order: event.questionIndex ?? index,
+    prompt: event.prompt ?? "",
+    options: (event.layout?.optionBboxes ?? []).map((bbox) => ({
+      id: bbox.optionId,
+      text: bbox.text ?? bbox.optionId,
+    })),
+    // correctOptionId isn't recorded per event; replay rendering doesn't need it.
+    correctOptionId: "",
+  }))
 }
 
 export type ReplayKeyEvent = {
@@ -814,22 +852,31 @@ function buildQuizFrame(
   const materialItemId = activeShown.materialItemId
   const questionId = activeShown.questionId ?? null
 
-  // Most recent selection for this question
+  // Accumulate the most-recent selection for every question in this quiz session up to currentTime.
+  // This rebuilds the full activeQuizState.selectionsByQuestionId so ReaderShellQuiz can render the
+  // already-chosen options when the participant has navigated back to an earlier question.
+  const quizStartTimeMs = activeStart
+    ? resolveRecordTimeMs(startedAtUnixMs, activeStart.elapsedSinceStartMs, activeStart.occurredAtUnixMs)
+    : null
+  const selectionsByQuestionId: Record<string, string> = {}
   let selectedOptionId: string | null = null
   let selectionChangeCount = 0
   for (const record of selectionEvents) {
-    if (record.materialItemId !== materialItemId || record.questionId !== questionId) {
+    if (record.materialItemId !== materialItemId) {
       continue
     }
     const recordTimeMs = resolveRecordTimeMs(startedAtUnixMs, record.elapsedSinceStartMs, record.occurredAtUnixMs)
-    if (recordTimeMs < activeShownTimeMs) {
+    if (quizStartTimeMs !== null && recordTimeMs < quizStartTimeMs) {
       continue
     }
     if (recordTimeMs > currentTimeMs) {
       break
     }
-    selectionChangeCount += 1
-    selectedOptionId = record.selectedOptionId
+    selectionsByQuestionId[record.questionId] = record.selectedOptionId
+    if (record.questionId === questionId) {
+      selectionChangeCount += 1
+      selectedOptionId = record.selectedOptionId
+    }
   }
 
   // Most recent focus event for this question
@@ -859,12 +906,14 @@ function buildQuizFrame(
     prompt: activeShown.prompt ?? null,
     layout: activeShown.layout ?? null,
     selectedOptionId,
+    selectionsByQuestionId,
     activeRegionType,
     activeOptionId,
     selectionChangeCount,
     timeOnQuestionMs: activeShownTimeMs === null ? null : Math.max(0, currentTimeMs - activeShownTimeMs),
     questionStartedAtMs: activeShownTimeMs,
     questionShownAtUnixMs: activeShown.occurredAtUnixMs,
+    comprehensionQuiz: reconstructComprehensionQuizForMaterial(lifecycleEvents, materialItemId),
   }
 }
 
