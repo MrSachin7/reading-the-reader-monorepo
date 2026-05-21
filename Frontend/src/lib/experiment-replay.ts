@@ -434,6 +434,17 @@ export type ReplayKeyEvent = {
   detail: string
 }
 
+type ReplayAttentionAccumulator = {
+  activeEpisode: {
+    tokenId: string
+    startedAtMs: number
+  } | null
+  tokenStats: Map<string, ReadingAttentionTokenStats>
+}
+
+const REPLAY_SKIM_THRESHOLD_MS = 45
+const REPLAY_FIXATION_THRESHOLD_MS = 130
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -592,12 +603,29 @@ function buildReadingContent(content: ExperimentReplayExport["content"]): Readin
   }
 }
 
-function buildReadingContentFromMaterial(material: ExperimentMaterialRunSnapshot, createdAtUnixMs: number): ReadingContentSnapshot {
+function buildReplayMaterialDocumentId(
+  replay: ExperimentReplayExport,
+  material: ExperimentMaterialRunSnapshot
+) {
+  const experimentSetupId = replay.experiment.run?.sourceExperimentSetupId?.trim()
+  if (experimentSetupId) {
+    return `${experimentSetupId}:${material.id}`
+  }
+
+  return material.id
+}
+
+function buildReadingContentFromMaterial(
+  replay: ExperimentReplayExport,
+  material: ExperimentMaterialRunSnapshot,
+  createdAtUnixMs: number
+): ReadingContentSnapshot {
   return {
-    documentId: material.id,
+    documentId: buildReplayMaterialDocumentId(replay, material),
     title: material.title,
     markdown: material.markdown,
     sourceSetupId: material.sourceSetupId ?? null,
+    experimentSetupId: replay.experiment.run?.sourceExperimentSetupId ?? null,
     updatedAtUnixMs: createdAtUnixMs,
     usesSavedSetup: Boolean(material.sourceSetupId),
   }
@@ -1009,6 +1037,147 @@ function normalizeReadingAttentionSummary(
   }
 }
 
+function createReplayAttentionAccumulator(): ReplayAttentionAccumulator {
+  return {
+    activeEpisode: null,
+    tokenStats: new Map(),
+  }
+}
+
+function finalizeReplayAttentionEpisode(
+  accumulator: ReplayAttentionAccumulator,
+  endedAtMs: number
+) {
+  const episode = accumulator.activeEpisode
+  if (!episode) {
+    return
+  }
+
+  const durationMs = Math.max(endedAtMs - episode.startedAtMs, 0)
+  accumulator.activeEpisode = null
+
+  if (durationMs < REPLAY_SKIM_THRESHOLD_MS) {
+    return
+  }
+
+  const previous = accumulator.tokenStats.get(episode.tokenId) ?? {
+    fixationMs: 0,
+    fixationCount: 0,
+    skimCount: 0,
+    maxFixationMs: 0,
+    lastFixationMs: 0,
+  }
+  const isFixation = durationMs >= REPLAY_FIXATION_THRESHOLD_MS
+
+  accumulator.tokenStats.set(episode.tokenId, {
+    ...previous,
+    fixationMs: previous.fixationMs + (isFixation ? durationMs : 0),
+    fixationCount: previous.fixationCount + (isFixation ? 1 : 0),
+    skimCount: previous.skimCount + (isFixation ? 0 : 1),
+    maxFixationMs: isFixation
+      ? Math.max(previous.maxFixationMs, durationMs)
+      : previous.maxFixationMs,
+    lastFixationMs: isFixation ? durationMs : previous.lastFixationMs,
+  })
+}
+
+function buildReplayDerivedAttentionSummary(
+  replay: ExperimentReplayExport,
+  currentTimeMs: number
+): ReadingAttentionSummarySnapshot | null {
+  if (replay.derived.focusEvents.length === 0) {
+    return null
+  }
+
+  const accumulator = createReplayAttentionAccumulator()
+
+  for (const record of replay.derived.focusEvents) {
+    const recordTimeMs = resolveRecordTimeMs(
+      replay.experiment.startedAtUnixMs,
+      record.elapsedSinceStartMs,
+      record.occurredAtUnixMs
+    )
+
+    if (recordTimeMs > currentTimeMs) {
+      break
+    }
+
+    const tokenId =
+      record.focus.isInsideReadingArea && record.focus.activeTokenId
+        ? record.focus.activeTokenId
+        : null
+    const activeEpisode = accumulator.activeEpisode
+
+    if (!tokenId) {
+      finalizeReplayAttentionEpisode(accumulator, recordTimeMs)
+      continue
+    }
+
+    if (!activeEpisode) {
+      accumulator.activeEpisode = {
+        tokenId,
+        startedAtMs: recordTimeMs,
+      }
+      continue
+    }
+
+    if (activeEpisode.tokenId === tokenId) {
+      continue
+    }
+
+    finalizeReplayAttentionEpisode(accumulator, recordTimeMs)
+    accumulator.activeEpisode = {
+      tokenId,
+      startedAtMs: recordTimeMs,
+    }
+  }
+
+  const currentEpisode = accumulator.activeEpisode
+  const tokenStats = Object.fromEntries(
+    Array.from(accumulator.tokenStats.entries()).map(([tokenId, stats]) => [tokenId, { ...stats }])
+  ) as Record<string, ReadingAttentionTokenStats>
+
+  let currentTokenId: string | null = null
+  let currentTokenDurationMs: number | null = null
+
+  if (currentEpisode) {
+    currentTokenId = currentEpisode.tokenId
+    currentTokenDurationMs = Math.max(currentTimeMs - currentEpisode.startedAtMs, 0)
+
+    if (currentTokenDurationMs >= REPLAY_SKIM_THRESHOLD_MS) {
+      const previous = tokenStats[currentTokenId] ?? {
+        fixationMs: 0,
+        fixationCount: 0,
+        skimCount: 0,
+        maxFixationMs: 0,
+        lastFixationMs: 0,
+      }
+      const isFixation = currentTokenDurationMs >= REPLAY_FIXATION_THRESHOLD_MS
+
+      tokenStats[currentTokenId] = {
+        ...previous,
+        fixationMs: previous.fixationMs + (isFixation ? currentTokenDurationMs : 0),
+        skimCount: previous.skimCount + (isFixation ? 0 : 1),
+        maxFixationMs: isFixation
+          ? Math.max(previous.maxFixationMs, currentTokenDurationMs)
+          : previous.maxFixationMs,
+        lastFixationMs: isFixation ? currentTokenDurationMs : previous.lastFixationMs,
+      }
+    }
+  }
+
+  const statsList = Object.values(tokenStats)
+
+  return {
+    updatedAtUnixMs: replay.experiment.startedAtUnixMs + currentTimeMs,
+    tokenStats,
+    currentTokenId,
+    currentTokenDurationMs,
+    fixatedTokenCount: statsList.filter((stats) => stats.fixationMs >= REPLAY_FIXATION_THRESHOLD_MS).length,
+    skimmedTokenCount: statsList.filter((stats) => stats.skimCount > 0 && stats.fixationMs < REPLAY_FIXATION_THRESHOLD_MS).length,
+  }
+}
+
 export async function readExperimentReplayExportFile(file: File): Promise<ExperimentReplayExport> {
   let text: string
   if (file.name.endsWith(".json.gz")) {
@@ -1215,7 +1384,9 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
       }
     : readingSession.participantViewport
   readingSession.focus = focusRecord ? { ...focusRecord.focus } : readingSession.focus
-  readingSession.attentionSummary = attentionRecord ? normalizeReadingAttentionSummary(attentionRecord.summary, replay.derived.finalTokenStats) : null
+  readingSession.attentionSummary =
+    buildReplayDerivedAttentionSummary(replay, currentTimeMs) ??
+    (attentionRecord ? normalizeReadingAttentionSummary(attentionRecord.summary, replay.derived.finalTokenStats) : null)
   readingSession.latestFacialObservation = facialObservationRecord ? { ...facialObservationRecord.observation } : null
   readingSession.recentFacialDifficultySignals = recentFacialDifficultySignals
   readingSession.latestFacialDifficultySignal = recentFacialDifficultySignals[0] ?? null
@@ -1235,7 +1406,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   const runMaterials = replay.experiment.run?.materials ?? []
   if (activeMaterialIndex !== null && activeMaterialIndex >= 0 && activeMaterialIndex < runMaterials.length) {
     const activeMaterial = runMaterials[activeMaterialIndex]!
-    readingSession.content = buildReadingContentFromMaterial(activeMaterial, replay.experiment.run!.createdAtUnixMs)
+    readingSession.content = buildReadingContentFromMaterial(replay, activeMaterial, replay.experiment.run!.createdAtUnixMs)
     readingSession.currentExperimentItemIndex = activeMaterialIndex
     if (!readingSession.latestIntervention) {
       readingSession.presentation = buildReadingPresentation(activeMaterial.presentation)

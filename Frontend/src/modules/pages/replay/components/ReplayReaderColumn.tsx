@@ -90,6 +90,7 @@ export function ReplayReaderColumn({
             normalizedContentY: readingSession.focus.normalizedContentY,
             activeTokenId: readingSession.focus.activeTokenId,
             activeSentenceId: readingSession.focus.activeSentenceId,
+            updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
           }}
           remoteTokenAttention={readerOptions.showFixationHeatmap ? remoteTokenAttention : null}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
