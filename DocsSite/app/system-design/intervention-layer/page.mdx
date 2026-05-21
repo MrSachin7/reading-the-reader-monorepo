@@ -1,0 +1,29 @@
+import { Callout } from 'nextra/components'
+
+# Intervention Layer
+
+<Callout type="warning">
+  This page is a stub. Content will be added as the system design is documented.
+</Callout>
+
+## What This Page Will Cover
+
+The intervention layer receives a decision and applies it to the reading UI. Its primary responsibility is ensuring that adaptations are applied correctly — at the right moment, with reading position preserved.
+
+### Topics
+
+- Timing modes: Immediate, SentenceEnd, ParagraphEnd, PageTurn — when each is appropriate
+- Layout commit policy: how the viewport adjusts to keep the anchor point visible
+- Context preservation mechanics: word/line anchoring before and after layout change
+- Cooldown and guardrails: preventing intervention storms
+- Intervention event logging: timestamp, source, type, and outcome
+
+### Relation to Requirements
+
+- FR7 — Intervention Runtime (pluggable modules, declarative inputs)
+- FR9 — Context Preservation (anchor, viewport adjustment, failure logging)
+- NFR6 — Extensibility (additive only)
+
+### Answers Research Question
+
+This section directly addresses [RQ3](/research-design/research-questions/) — just-in-time micro-interventions without disrupting reading flow.

@@ -1,0 +1,59 @@
+# Key Concepts & Terminology
+
+Definitions for terms used consistently throughout the thesis. These are the stable names — if a concept appears in figures, tables, or code, it uses exactly the same word as defined here.
+
+---
+
+## Micro-Intervention
+
+A small, context-preserving change to typography or layout applied during an active reading session. Examples include adjustments to line spacing, font weight, or contrast. Micro-interventions must be:
+
+- **Minimal** — small enough not to visually startle the reader
+- **Precise** — applied to the right content region at the right moment
+- **Reversible** — the reading environment can return to its previous state
+
+*Originates from digital health and adaptive systems research (Persson et al., JMIR 2025).*
+
+---
+
+## Context Preservation
+
+The property of maintaining a reader's visual and cognitive place in a text during and after an intervention. A layout-changing intervention that fails context preservation forces the reader to search for their position, increasing cognitive load.
+
+In this system, context preservation is achieved by anchoring the currently read word or line before applying any layout change, then adjusting the viewport to keep that anchor visible.
+
+---
+
+## Decision Strategy
+
+The component responsible for deciding *when* and *what* intervention to apply. The system is designed so that decision strategies are interchangeable: a rule-based strategy, a human researcher, or an external AI provider can all occupy this role through the same interface.
+
+---
+
+## Sensing Layer
+
+The part of the system that acquires raw eye tracking data from hardware (Tobii), converts it to screen-space coordinates, and maps it to content regions (paragraph, line, word). The sensing layer outputs events — not decisions.
+
+---
+
+## Intervention Layer
+
+The part of the system that receives an intervention command and applies it to the reading UI. It is responsible for timing (when to commit the change), anchoring (preserving context), and logging (recording what happened and why).
+
+---
+
+## Researcher Mirror
+
+The secondary-screen interface that shows the researcher exactly what the participant sees, in real time, and allows the researcher to manually trigger interventions, override automated decisions, and monitor session health.
+
+---
+
+## Session Authority
+
+The backend owns the canonical state of an experiment session. Frontend clients and external providers observe and request changes; the backend decides what actually happens. This prevents race conditions and ensures a consistent audit log.
+
+---
+
+## External Decision Provider
+
+An optional third party — typically an AI service or analysis pipeline — that connects via WebSocket and suggests intervention triggers. The provider has no authority; it can request but the backend decides whether to apply.

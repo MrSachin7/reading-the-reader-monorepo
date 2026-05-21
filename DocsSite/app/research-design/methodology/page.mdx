@@ -1,0 +1,54 @@
+# Methodology
+
+This project follows a **software engineering–centred approach** informed by HCI, cognitive load theory, and adaptive interface research. It is not a user study thesis; it is a platform engineering thesis that produces a system capable of supporting user studies.
+
+## Four-Phase Structure
+
+### Phase 1 — Literature Review
+
+Study adaptive reading systems, eye-tracking–based reading models, and just-in-time micro-interventions, including prior work in the Reading the Reader project.
+
+Outputs: [Background & Related Work](/background/) section.
+
+---
+
+### Phase 2 — System Analysis
+
+Examine the existing application to identify architectural limitations and derive requirements for modularity, experimentation, and intervention flexibility.
+
+Outputs: [Requirements](/research-design/requirements/), [Initial Problem Statement](/introduction/initial-problem-statement/), [Final Problem Statement](/research-design/final-problem-statement/).
+
+---
+
+### Phase 3 — Architectural Design and Implementation
+
+Develop a modular architecture separating sensing, intervention logic, and user interface. Build the adaptive reading system iteratively with unit and integration testing.
+
+The architecture includes:
+- a central intervention interface supporting multiple decision sources
+- an experimenter view for observation and control
+- pluggable intervention modules with declared parameters
+
+Outputs: [System Design](/system-design/) section.
+
+---
+
+### Phase 4 — Evaluation
+
+Evaluate the system against the measurable objectives in the [Final Problem Statement](/research-design/final-problem-statement/) using:
+
+- usability studies (SUS, task-completion, think-aloud)
+- reading flow measurement
+- user experience assessment
+- intervention disruption metrics
+
+Outputs: [Evaluation & Results](/evaluation/), [Discussion](/discussion/).
+
+## Scientific Anchoring
+
+The approach is grounded in:
+
+- Software engineering methodology (module decomposition, interface design, test-driven development)
+- HCI evaluation methods (usability testing, SUS scoring)
+- Cognitive load theory (as the basis for intervention design constraints)
+- Reproducibility standards (provenance metadata in exports, version-stamped sessions)

@@ -1,23 +1,9 @@
 export default {
-  index: {
-    title: 'Overview'
-  },
-  'frontend-client-guide': {
-    title: 'Frontend Integration'
-  },
-  'provider-protocol': {
-    title: 'Provider Integration'
-  },
-  'eye-movement-analysis-provider': {
-    title: 'Eye Analyzer Modules'
-  },
-  'black-box-contract': {
-    title: 'Black-Box Contract'
-  },
-  'external-provider-gap-analysis': {
-    title: 'Provider Gap Analysis'
-  },
-  'external-provider-roadmap': {
-    title: 'Provider Roadmap'
-  }
+  index: { title: 'Overview' },
+  'provider-protocol': { title: 'Provider Protocol' },
+  'black-box-contract': { title: 'Black-Box Contract' },
+  'eye-movement-analysis-provider': { title: 'Eye Movement Analyzer' },
+  'frontend-client-guide': { title: 'Frontend Client Guide' },
+  'external-provider-gap-analysis': { title: 'Gap Analysis' },
+  'external-provider-roadmap': { title: 'Extension Roadmap' }
 }

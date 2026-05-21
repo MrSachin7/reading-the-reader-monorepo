@@ -1,0 +1,37 @@
+import { Callout } from 'nextra/components'
+
+# Motivation
+
+Reading practices have remained largely static despite major advances in interactive computing, sensing technologies, and adaptive systems. The **Reading the Reader (RtR)** project is an interdisciplinary research initiative that aims to improve reading performance, accessibility, and user comfort by dynamically adapting text presentation to individual readers. The project leverages real-time behavioural and physiological data — eye movements, fixations, and pupil dilation — to infer reading states and adjust typography and layout properties accordingly.
+
+The long-term goal of Reading the Reader is to develop adaptive reading systems that personalise text presentation in real time, supporting a wide range of readers, including individuals with reading difficulties or visual impairments. Prior work within the project combines methods from human–computer interaction, machine learning, cognitive science, and typographic design to explore how reading behaviour can be sensed, modelled, and supported through adaptive interfaces.
+
+## Why This Matters
+
+A key concept emerging from prior work is the use of **micro-interventions**: small, context-preserving changes to typography or layout that aim to support the reader without causing noticeable disruption. Examples include subtle adjustments to line spacing, font weight, or contrast based on inferred reading difficulty.
+
+While such interventions have shown promise, their integration into adaptive systems raises significant software engineering challenges, particularly with respect to **modularity, extensibility, and deployment**.
+
+## The Engineering Gap
+
+The existing Reading the Reader prototype integrates sensing, intervention logic, and user interface behaviour in a tightly coupled manner. Introducing new micro-intervention techniques or replacing existing decision logic requires extensive code changes and limits experimental flexibility.
+
+This thesis addresses that gap: not by building more AI, but by building the platform infrastructure that allows AI — or any other decision source — to be plugged in without disrupting the system.
+
+## Research Context
+
+<Callout type="info">
+  This thesis is part of the broader Reading the Reader research initiative at DTU Compute, supervised by Per Bækgaard.
+</Callout>
+
+| Reference | Summary |
+|---|---|
+| Ilyas et al., ETRA 2025 | Eye tracking signals as indicators of reading difficulty and cognitive load |
+| Jensen et al., ETRA 2025 | Context preservation through adaptive reading interventions |
+| Persson et al., JMIR 2025 | Design framework for micro-intervention software in digital health |
+| Rayner, 1998 | Foundational 20-year survey of eye movements in reading research |
+| Taylor, Medvidovic & Dashofy, 2014 | Modular architectures as the basis for extensible adaptive systems |
+
+---
+
+*Continue to [Initial Problem Statement](/introduction/initial-problem-statement/) to see how this motivation was translated into a research problem.*
