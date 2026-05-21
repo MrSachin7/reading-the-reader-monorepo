@@ -1,6 +1,7 @@
 "use client"
 
-import type { ReactNode } from "react"
+import * as React from "react"
+import { Eye, ListChecks, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,27 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { formatReplayClock, type ReplayFrame, type ReplayKeyEvent } from "@/lib/experiment-replay"
 import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
-import {
-  formatAbsoluteTime,
-  formatEventKind,
-  formatNumeric,
-  getEventTone,
-} from "@/modules/pages/replay/utils"
-
-function MetadataRow({
-  label,
-  value,
-}: {
-  label: string
-  value: ReactNode
-}) {
-  return (
-    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-4 px-4 py-3">
-      <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-sm leading-5 font-medium text-foreground">{value}</dd>
-    </div>
-  )
-}
+import { formatEventKind, getEventTone } from "@/modules/pages/replay/utils"
 
 type ReplayMetadataColumnProps = {
   frame: ReplayFrame
@@ -39,6 +20,26 @@ type ReplayMetadataColumnProps = {
   onSeek: (timeMs: number) => void
 }
 
+// How long an intervention / context-recovery counts as "happening now" from the current replay time.
+const RECENT_EVENT_WINDOW_MS = 6000
+
+type FilterKey = "all" | "quiz" | "intervention" | "lifecycle"
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "quiz", label: "Quiz" },
+  { key: "intervention", label: "Interventions" },
+  { key: "lifecycle", label: "Lifecycle" },
+]
+
+function eventMatchesFilter(event: ReplayKeyEvent, filter: FilterKey) {
+  if (filter === "all") return true
+  if (filter === "quiz") return event.kind === "quiz"
+  if (filter === "intervention") return event.kind === "intervention" || event.kind === "proposal"
+  if (filter === "lifecycle") return event.kind === "lifecycle" || event.kind === "state" || event.kind === "recovery" || event.kind === "connection"
+  return true
+}
+
 export function ReplayMetadataColumn({
   frame,
   readingSession,
@@ -47,294 +48,204 @@ export function ReplayMetadataColumn({
   activeEventIndex,
   onSeek,
 }: ReplayMetadataColumnProps) {
-  const screenResolution = frame.session.screen
-    ? `${frame.session.screen.physicalScreenWidthPx} x ${frame.session.screen.physicalScreenHeightPx} (DPR ${formatNumeric(frame.session.screen.devicePixelRatio, 2)})`
-    : "-"
-  const latestFacialObservation = readingSession.latestFacialObservation
-  const latestFacialDifficultySignal = readingSession.latestFacialDifficultySignal
-  const signalSources = frame.session.signalSources
-  const webcamStatus = frame.session.webcamStatus
+  const [filter, setFilter] = React.useState<FilterKey>("all")
+
+  const participant = frame.session.participant
+  const focus = readingSession.focus
+  const focusLabel = focus.isInsideReadingArea
+    ? activeWord ?? "Inside reading area"
+    : "Outside reading area"
+
+  const recentIntervention = readingSession.latestIntervention
+  const recentInterventionFresh =
+    recentIntervention !== null &&
+    frame.session.startedAtUnixMs > 0 &&
+    Math.abs(
+      (recentIntervention.appliedAtUnixMs - frame.session.startedAtUnixMs) - frame.currentTimeMs
+    ) <= RECENT_EVENT_WINDOW_MS
+
+  const recentContext = readingSession.latestContextPreservation
+  const recentContextFresh =
+    recentContext !== null &&
+    frame.session.startedAtUnixMs > 0 &&
+    Math.abs(
+      (recentContext.measuredAtUnixMs - frame.session.startedAtUnixMs) - frame.currentTimeMs
+    ) <= RECENT_EVENT_WINDOW_MS
+
+  const visibleEvents = replayEvents.filter((event) => eventMatchesFilter(event, filter))
 
   return (
     <div className="order-3 min-h-0 min-w-0 overflow-hidden xl:order-3">
-      <Card className="h-full min-h-0 rounded-[1.6rem] bg-card/96 shadow-sm">
-        <CardContent className="min-h-0 pt-6">
-          <ScrollArea className="h-64 xl:h-full">
-            <div className="space-y-4 pr-4">
-              <div className="overflow-hidden rounded-[1.2rem] border bg-background/80">
-                <dl className="divide-y">
-                  <MetadataRow label="Participant" value={frame.session.participant?.name ?? "Unknown"} />
-                  <MetadataRow label="Age" value={frame.session.participant?.age ?? "-"} />
-                  <MetadataRow label="Sex" value={frame.session.participant?.sex ?? "-"} />
-                  <MetadataRow
-                    label="Eye condition"
-                    value={frame.session.participant?.existingEyeCondition ?? "-"}
-                  />
-                  <MetadataRow
-                    label="Proficiency"
-                    value={frame.session.participant?.readingProficiency ?? "-"}
-                  />
-                  <MetadataRow
-                    label="Focus"
-                    value={
-                      readingSession.focus.isInsideReadingArea
-                        ? activeWord ?? "Inside area"
-                        : "Outside area"
-                    }
-                  />
-                  <MetadataRow
-                    label="Coordinates"
-                    value={
-                      readingSession.focus.isInsideReadingArea
-                        ? `${formatNumeric(readingSession.focus.normalizedContentX, 3)}, ${formatNumeric(readingSession.focus.normalizedContentY, 3)}`
-                        : "-"
-                    }
-                  />
-                  <MetadataRow
-                    label="Presentation"
-                    value={`${readingSession.presentation.fontFamily}, ${readingSession.presentation.fontSizePx}px`}
-                  />
-                  <MetadataRow label="Gaze source" value={signalSources.gazeSource} />
-                  <MetadataRow label="Face source" value={signalSources.faceSource} />
-                  <MetadataRow label="Webcam" value={webcamStatus.status} />
-                  <MetadataRow
-                    label="Page"
-                    value={`${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`}
-                  />
-                  <MetadataRow label="Screen" value={screenResolution} />
-                  <MetadataRow label="Eyetracker" value={frame.session.eyeTrackerDevice?.name ?? "-"} />
-                  <MetadataRow label="Samples" value={frame.session.receivedGazeSamples.toLocaleString()} />
-                  <MetadataRow
-                    label="Face state"
-                    value={latestFacialDifficultySignal ? latestFacialDifficultySignal.state : "-"}
-                  />
-                  <MetadataRow
-                    label="Face conf."
-                    value={latestFacialDifficultySignal ? formatNumeric(latestFacialDifficultySignal.confidence, 2) : "-"}
-                  />
-                </dl>
-              </div>
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        {/* Header strip — participant in one band, no card chrome. */}
+        <div className="rounded-2xl border bg-card/80 px-5 py-4 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Participant</p>
+          <p className="mt-1 truncate text-lg font-semibold">{participant?.name ?? "Unknown"}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {[
+              participant?.age != null ? `${participant.age}y` : null,
+              participant?.sex ?? null,
+              `Page ${readingSession.participantViewport.activePageIndex + 1}/${readingSession.participantViewport.pageCount}`,
+              frame.session.signalSources.gazeSource && frame.session.signalSources.gazeSource !== "none"
+                ? `gaze: ${frame.session.signalSources.gazeSource}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </div>
 
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Facial signal</p>
-                <div className="mt-3">
-                  {latestFacialDifficultySignal ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{latestFacialDifficultySignal.state}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(latestFacialDifficultySignal.observedAtUnixMs)}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6">
-                        {latestFacialDifficultySignal.summary ?? "Derived facial state available."}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Confidence {formatNumeric(latestFacialDifficultySignal.confidence, 2)}
-                        {latestFacialDifficultySignal.cues.length > 0
-                          ? ` · ${latestFacialDifficultySignal.cues.join(" · ")}`
-                          : ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No facial difficulty signal at this point in the replay.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Facial observation</p>
-                <div className="mt-3">
-                  {latestFacialObservation ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{latestFacialObservation.landmarkCount} landmarks</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(latestFacialObservation.capturedAtUnixMs)}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6">
-                        {latestFacialObservation.summary ?? "Low-level webcam face features captured."}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Blink {formatNumeric(latestFacialObservation.blinkLikelihood, 2)}
-                        {` · Motion ${formatNumeric(latestFacialObservation.motionScore, 2)}`}
-                        {` · Mouth tension ${formatNumeric(latestFacialObservation.mouthTension, 2)}`}
-                        {` · Capture quality ${formatNumeric(latestFacialObservation.captureQuality, 2)}`}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No facial observation at this point in the replay.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {frame.quiz?.isActive ? (
-                <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Quiz progress</p>
-                  <div className="mt-3 rounded-[1rem] border bg-muted/20 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <Badge variant="outline">
-                        {frame.quiz.questionIndex !== null
-                          ? `Q${frame.quiz.questionIndex + 1}${frame.quiz.questionCount ? `/${frame.quiz.questionCount}` : ""}`
-                          : "Quiz"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {frame.quiz.timeOnQuestionMs !== null
-                          ? formatReplayClock(frame.quiz.timeOnQuestionMs)
-                          : "-"}
-                      </span>
-                    </div>
-                    {frame.quiz.prompt ? (
-                      <p className="mt-3 text-sm leading-6">{frame.quiz.prompt}</p>
-                    ) : null}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Selection changes: {frame.quiz.selectionChangeCount}
-                      {frame.quiz.selectedOptionId
-                        ? ` · selected ${frame.quiz.selectedOptionId}`
-                        : " · no selection"}
-                      {frame.quiz.activeRegionType
-                        ? ` · looking at ${frame.quiz.activeRegionType}${frame.quiz.activeOptionId ? ` (${frame.quiz.activeOptionId})` : ""}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Latest intervention</p>
-                <div className="mt-3">
-                  {readingSession.latestIntervention ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{readingSession.latestIntervention.source}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(readingSession.latestIntervention.appliedAtUnixMs)}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6">{readingSession.latestIntervention.reason}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {readingSession.latestIntervention.appliedBoundary}
-                        {readingSession.latestIntervention.waitDurationMs !== null
-                          ? ` · waited ${readingSession.latestIntervention.waitDurationMs} ms`
-                          : ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No intervention yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Context recovery</p>
-                <div className="mt-3">
-                  {readingSession.latestContextPreservation ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{readingSession.latestContextPreservation.status}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(readingSession.latestContextPreservation.measuredAtUnixMs)}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6">
-                        {readingSession.latestContextPreservation.anchorSource}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {readingSession.latestContextPreservation.commitBoundary}
-                        {readingSession.latestContextPreservation.waitDurationMs !== null
-                          ? ` · waited ${readingSession.latestContextPreservation.waitDurationMs} ms`
-                          : ""}
-                        {readingSession.participantViewport.lastPageTurnAtUnixMs
-                          ? ` · last turn ${formatAbsoluteTime(readingSession.participantViewport.lastPageTurnAtUnixMs)}`
-                          : ""}
-                        {readingSession.latestContextPreservation.reason
-                          ? ` · ${readingSession.latestContextPreservation.reason}`
-                          : ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No context recovery event yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Pending intervention</p>
-                <div className="mt-3">
-                  {readingSession.pendingIntervention ? (
-                    <div className="rounded-[1rem] border bg-muted/20 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="outline">{readingSession.pendingIntervention.status}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatAbsoluteTime(readingSession.pendingIntervention.queuedAtUnixMs)}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6">
-                        {readingSession.pendingIntervention.intervention.reason}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {readingSession.pendingIntervention.requestedBoundary}
-                        {readingSession.pendingIntervention.fallbackBoundary
-                          ? ` · fallback ${readingSession.pendingIntervention.fallbackBoundary}`
-                          : ""}
-                        {readingSession.pendingIntervention.waitDurationMs !== null
-                          ? ` · waited ${readingSession.pendingIntervention.waitDurationMs} ms`
-                          : ""}
-                        {readingSession.pendingIntervention.resolutionReason
-                          ? ` · ${readingSession.pendingIntervention.resolutionReason}`
-                          : ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                      No queued intervention at this point in the replay.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {replayEvents.length > 0 ? (
-                <div className="rounded-[1.2rem] border bg-background/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Timeline</p>
-                  <div className="mt-3 space-y-3">
-                    {replayEvents.map((event, index) => {
-                      const isActive = index === activeEventIndex
-
-                      return (
-                        <button
-                          key={event.id}
-                          type="button"
-                          className={cn(
-                            "block w-full rounded-[1.1rem] border p-3 text-left transition-colors",
-                            getEventTone(event.kind, isActive)
-                          )}
-                          onClick={() => onSeek(event.timeMs)}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <Badge variant={isActive ? "default" : "outline"}>{formatEventKind(event.kind)}</Badge>
-                            <span className="text-xs text-muted-foreground">{formatReplayClock(event.timeMs)}</span>
-                          </div>
-                          <p className="mt-3 text-sm font-medium">{event.title}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{event.detail}</p>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ) : null}
+        {/* "At this moment" card — surfaces only what's currently relevant. */}
+        <Card className="rounded-2xl bg-card/96 shadow-sm">
+          <CardContent className="space-y-3 pt-5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Sparkles className="size-3.5" />
+              <span className="text-[10px] uppercase tracking-[0.22em]">At this moment</span>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+
+            {frame.quiz?.isActive ? (
+              <div className="rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="outline">
+                    {frame.quiz.questionIndex !== null
+                      ? `Q${frame.quiz.questionIndex + 1}${frame.quiz.questionCount ? `/${frame.quiz.questionCount}` : ""}`
+                      : "Quiz"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {frame.quiz.timeOnQuestionMs !== null
+                      ? formatReplayClock(frame.quiz.timeOnQuestionMs)
+                      : "—"}
+                  </span>
+                </div>
+                {frame.quiz.prompt ? (
+                  <p className="mt-3 text-sm leading-6">{frame.quiz.prompt}</p>
+                ) : null}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {frame.quiz.selectedOptionId
+                    ? `Selected — ${frame.quiz.selectedOptionId}`
+                    : "No selection yet"}
+                  {frame.quiz.selectionChangeCount > 0
+                    ? ` · ${frame.quiz.selectionChangeCount} change${frame.quiz.selectionChangeCount === 1 ? "" : "s"}`
+                    : ""}
+                  {frame.quiz.activeRegionType
+                    ? ` · looking at ${frame.quiz.activeRegionType}${frame.quiz.activeOptionId ? ` (${frame.quiz.activeOptionId})` : ""}`
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+
+            {recentInterventionFresh && recentIntervention ? (
+              <div className="rounded-xl border border-amber-400/30 bg-amber-500/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="outline">Intervention · {recentIntervention.source}</Badge>
+                </div>
+                <p className="mt-2 text-sm leading-6">{recentIntervention.reason}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {recentIntervention.appliedBoundary}
+                  {recentIntervention.waitDurationMs !== null
+                    ? ` · waited ${recentIntervention.waitDurationMs} ms`
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+
+            {recentContextFresh && recentContext ? (
+              <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="outline">Context — {recentContext.status}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {recentContext.anchorSource}
+                  {recentContext.waitDurationMs !== null
+                    ? ` · waited ${recentContext.waitDurationMs} ms`
+                    : ""}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="rounded-xl border bg-muted/10 p-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Eye className="size-3.5" />
+                <span className="text-[10px] uppercase tracking-[0.18em]">Focus</span>
+              </div>
+              <p className="mt-1 text-sm font-medium">{focusLabel}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {readingSession.presentation.fontFamily}, {readingSession.presentation.fontSizePx}px
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Timeline — fills the rest. */}
+        <Card className="flex min-h-0 flex-1 flex-col rounded-2xl bg-card/96 shadow-sm">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 pt-5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ListChecks className="size-3.5" />
+              <span className="text-[10px] uppercase tracking-[0.22em]">Timeline</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                {visibleEvents.length} of {replayEvents.length}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    filter === key
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted/40"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="space-y-2 pr-3">
+                {visibleEvents.length === 0 ? (
+                  <p className="rounded-xl border border-dashed bg-muted/10 p-4 text-center text-xs text-muted-foreground">
+                    No events for this filter.
+                  </p>
+                ) : (
+                  visibleEvents.map((event) => {
+                    const originalIndex = replayEvents.indexOf(event)
+                    const isActive = originalIndex === activeEventIndex
+                    return (
+                      <button
+                        key={event.id}
+                        type="button"
+                        className={cn(
+                          "block w-full rounded-xl border px-3 py-2 text-left transition-colors",
+                          getEventTone(event.kind, isActive)
+                        )}
+                        onClick={() => onSeek(event.timeMs)}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant={isActive ? "default" : "outline"} className="text-[10px]">
+                            {formatEventKind(event.kind)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            {formatReplayClock(event.timeMs)}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-medium">{event.title}</p>
+                        {event.detail ? (
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.detail}</p>
+                        ) : null}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
