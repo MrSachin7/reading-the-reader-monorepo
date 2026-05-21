@@ -1,0 +1,30 @@
+import { Callout } from 'nextra/components'
+
+# Reader Shell & UI
+
+<Callout type="warning">
+  This page is a stub. Content will be added as the system design is documented.
+</Callout>
+
+## What This Page Will Cover
+
+The Reader Shell is the participant-facing reading surface. The Researcher Mirror is its real-time reflection on a secondary screen. Together they form the UI layer of the adaptive system.
+
+### Topics
+
+- Reader Shell architecture: how Markdown content is rendered and how visual presets are applied
+- How interventions arrive at the frontend: WebSocket envelope → Redux → component re-render
+- Context preservation from the frontend perspective: anchor tracking, smooth scroll
+- Researcher Mirror: how it stays in sync with the participant view
+- Session health indicators: sample rate, validity, latency shown to the researcher
+- Manual intervention controls available in the researcher interface
+
+### Answers Research Question
+
+This section directly addresses [RQ4](/research-design/research-questions/) — researcher observation and real-time interaction with the participant session.
+
+### Key Files
+
+- `Frontend/src/modules/pages/reading/components/ReaderShell.tsx`
+- `Frontend/src/modules/pages/researcher/current-live/index.tsx`
+- `Frontend/src/lib/gaze-socket.ts`

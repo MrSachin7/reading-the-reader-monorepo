@@ -1,0 +1,20 @@
+import { Cards } from 'nextra/components'
+
+# API Endpoints
+
+All REST endpoints are served under `/api`. The backend also exposes a WebSocket surface at `/ws` for live session traffic — see [Provider Protocol](/integration/provider-protocol/) and [Frontend Client Guide](/integration/frontend-client-guide/) for that surface.
+
+<Cards>
+  <Cards.Card title="Reading Material Setups" href="/reference/api-endpoints/reading-material-setups/">
+    CRUD endpoints for reading material configuration.
+  </Cards.Card>
+  <Cards.Card title="Participant" href="/reference/api-endpoints/participant/">
+    Endpoints for creating and managing experiment participants.
+  </Cards.Card>
+  <Cards.Card title="Eye Trackers" href="/reference/api-endpoints/eyetrackers/">
+    Endpoints for device detection, selection, and licensing.
+  </Cards.Card>
+  <Cards.Card title="Reader Shell Settings" href="/reference/api-endpoints/reader-shell-settings/">
+    Endpoints for visual preset and intervention configuration.
+  </Cards.Card>
+</Cards>

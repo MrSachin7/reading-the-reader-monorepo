@@ -1,0 +1,28 @@
+import { Callout } from 'nextra/components'
+
+# Decision Layer
+
+<Callout type="warning">
+  This page is a stub. Content will be added as the system design is documented.
+</Callout>
+
+## What This Page Will Cover
+
+The decision layer is the architectural centrepiece of the thesis: the seam that makes decision strategies interchangeable. It receives sensing events and produces intervention requests without knowing how the intervention will be applied.
+
+### Topics
+
+- The decision strategy abstraction: what the interface looks like and what it guarantees
+- Built-in strategies: manual (researcher-triggered), rule-based (threshold-based), hybrid
+- External provider mode: how a third party plugs in via `/ws/provider` without gaining session authority
+- Strategy lifecycle: how strategies are enabled, disabled, and switched per session
+- Logging: how the origin and rationale of each intervention decision is recorded
+
+### Key Files
+
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionManager.cs`
+- `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`
+
+### Answers Research Question
+
+This section directly addresses [RQ1](/research-design/research-questions/) (modular architecture) and [RQ2](/research-design/research-questions/) (AI and human-controlled intervention in the same system).

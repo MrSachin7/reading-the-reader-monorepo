@@ -1,0 +1,26 @@
+import { Callout } from 'nextra/components'
+
+# Sensing Layer
+
+<Callout type="warning">
+  This page is a stub. Content will be added as the system design is documented.
+</Callout>
+
+## What This Page Will Cover
+
+The sensing layer is responsible for acquiring, converting, and mapping raw eye tracking data so that the rest of the system can act on it without knowing anything about the hardware.
+
+### Topics
+
+- Tobii SDK integration: device detection, licensing, streaming
+- Coordinate conversion: normalized device coordinates → screen space
+- Content mapping: screen coordinates → reading content regions (paragraph, line, word)
+- The `IEyeTrackerAdapter` interface and how it decouples hardware from application logic
+- Mouse mode: how synthetic gaze samples exercise the full pipeline without Tobii hardware
+- Latency characteristics: where delay is introduced and how it is measured
+
+### Key Files
+
+- `Backend/src/infrastructure/ReadingTheReader.TobiiEyetracker/TobiiEyeTrackerAdapter.cs`
+- `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/IEyeTrackerAdapter.cs`
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Sensing/IEyeTrackerService.cs`

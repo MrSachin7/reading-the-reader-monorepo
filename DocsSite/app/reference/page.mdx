@@ -1,0 +1,23 @@
+import { Cards } from 'nextra/components'
+
+# Reference
+
+Technical lookup material. Use these pages when you need to find a specific API endpoint, understand the export format schema, or orient yourself in the repository structure. These are not meant to be read linearly.
+
+<Cards>
+  <Cards.Card title="API Endpoints" href="/reference/api-endpoints/">
+    All REST endpoints grouped by resource: reading materials, participants, eye trackers, and reader shell settings.
+  </Cards.Card>
+  <Cards.Card title="Export Format" href="/reference/export-format-specification/">
+    The full replay export schema — fields, types, and version history.
+  </Cards.Card>
+  <Cards.Card title="Data Compression" href="/reference/data-compression/">
+    How export size is managed: compression strategies and trade-offs.
+  </Cards.Card>
+  <Cards.Card title="Session Recovery" href="/reference/recovery-architecture/">
+    How session state is checkpointed and recovered after unexpected disconnections.
+  </Cards.Card>
+  <Cards.Card title="Repository Structure" href="/reference/repository-structure/">
+    How the monorepo is organised and where each concern lives.
+  </Cards.Card>
+</Cards>

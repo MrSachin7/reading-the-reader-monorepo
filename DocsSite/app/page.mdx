@@ -1,77 +1,69 @@
-import { Callout, Cards } from 'nextra/components'
+import { Cards, Callout } from 'nextra/components'
 
-# Reading the Reader Docs
+# Reading the Reader
 
-Reading the Reader is a researcher-operated adaptive reading platform. It connects to Tobii eye trackers, runs controlled reading sessions, mirrors the participant view in real time, and applies context-aware micro-interventions while preserving an architecture that future teams can extend.
+**An adaptive reading platform built as an MSc thesis at DTU Compute.**
 
-<Callout type="info">
-  This standalone docs app is the hosted copy of the full project documentation currently maintained under the repository `docs/` folder.
-</Callout>
+The system connects to Tobii eye trackers, runs controlled reading sessions, mirrors the participant view to a researcher screen in real time, and applies context-preserving micro-interventions — all through a modular architecture designed so future teams can swap decision strategies and intervention modules without touching the core.
 
-## Monorepo Structure
+---
 
-```mermaid
-flowchart LR
-  Backend["Backend/.NET Web API"] --> Docs["DocsSite/"]
-  Frontend["Frontend/Next.js app"] --> Docs
-  Decision["Decision-Maker/Python mock provider"] --> Docs
-  Docs --> Pages["GitHub Pages"]
-```
-
-## Applications
-
-- `Backend/`: ASP.NET Core backend, realtime runtime, provider protocol, Tobii integration, persistence, and replay/export support.
-- `Frontend/`: researcher and participant-facing Next.js application.
-- `Decision-Maker/`: Python mock external decision provider.
-- `DocsSite/`: standalone static documentation app hosted separately from the frontend.
-
-## Start Here
+## Who are you?
 
 <Cards>
-  <Cards.Card title="Platform Overview" href="/overview/platform-overview/">
-    What the project is, who it is for, and how the main pieces fit together.
+  <Cards.Card title="Thesis committee / examiner" href="/introduction/">
+    Start with the Introduction, then follow the thesis narrative: Background → Research Design → System Design → Evaluation → Discussion.
   </Cards.Card>
-  <Cards.Card title="Supported Capabilities" href="/overview/supported-capabilities/">
-    Current features, supported workflows, and explicit scope boundaries.
+  <Cards.Card title="Researcher running an experiment" href="/running-the-system/running-an-experiment/">
+    Jump straight to the step-by-step experiment guide. See Local Setup if the system isn't running yet.
   </Cards.Card>
-  <Cards.Card title="Local Setup" href="/development/local-setup/">
-    How to run the frontend, backend, mock provider, and docs site locally.
+  <Cards.Card title="Developer or new contributor" href="/system-design/architecture-overview/">
+    Start with the Architecture Overview, then Local Setup, then the API Reference.
   </Cards.Card>
-  <Cards.Card title="Backend Architecture" href="/backend/architecture/">
-    Full backend architecture document, including transport surfaces, orchestration, and persistence.
-  </Cards.Card>
-  <Cards.Card title="Frontend Integration" href="/integration/frontend-client-guide/">
-    Full browser-facing REST and WebSocket integration guide for `/api` and `/ws`.
-  </Cards.Card>
-  <Cards.Card title="Provider Integration" href="/integration/provider-protocol/">
-    Full external AI provider integration handoff for `/ws/provider`.
-  </Cards.Card>
-  <Cards.Card title="Black-Box Contract" href="/integration/black-box-contract/">
-    Full black-box contract with concrete request, payload, and sequence examples.
-  </Cards.Card>
-  <Cards.Card title="Data Export Analysis" href="/backend/data-export-analysis/">
-    What replay/export currently contains, what replay actually consumes, and where the gaps are.
-  </Cards.Card>
-  <Cards.Card title="Calibration & Validation" href="/project/calibration-validation/">
-    Calibration and validation rationale, quality thresholds, and experimenter guidance.
-  </Cards.Card>
-  <Cards.Card title="Requirements" href="/project/requirements/">
-    Full user stories, functional requirements, non-functional requirements, and actor descriptions.
-  </Cards.Card>
-  <Cards.Card title="Thesis Proposal" href="/project/thesis-proposal/">
-    Full thesis framing, objectives, research questions, planned methods, and references.
+  <Cards.Card title="External AI / provider team" href="/integration/">
+    Start with the Provider Protocol and Black-Box Contract. The Gap Analysis covers what's needed to connect a real provider.
   </Cards.Card>
 </Cards>
 
-## Docs Index
+---
 
-- `backend/` in the repo contains architecture and integration notes for the backend runtime.
-- `frontend/` in the repo contains calibration, requirements, and thesis-planning material.
-- The docs site keeps app-owned copies of those documents so they can be hosted independently on GitHub Pages.
+## Thesis Narrative
 
-## Recommended Reading Paths
+The documentation follows the IMRAD structure of the thesis report. Read these sections in order for the full research narrative.
 
-- New contributor: start with [/overview/platform-overview/](/overview/platform-overview/), then [/overview/repository-structure/](/overview/repository-structure/), then [/development/local-setup/](/development/local-setup/).
-- Frontend or researcher workflow work: read [/overview/supported-capabilities/](/overview/supported-capabilities/), then [/integration/frontend-client-guide/](/integration/frontend-client-guide/).
-- Backend or architecture work: read [/backend/architecture/](/backend/architecture/), then [/backend/data-export-analysis/](/backend/data-export-analysis/), then [/backend/architecture-proposal/](/backend/architecture-proposal/).
-- External AI team: read [/integration/provider-protocol/](/integration/provider-protocol/), then [/integration/black-box-contract/](/integration/black-box-contract/), then [/integration/external-provider-roadmap/](/integration/external-provider-roadmap/).
+<Cards>
+  <Cards.Card title="1. Introduction" href="/introduction/">
+    What this project is, why it exists, and the initial problem statement.
+  </Cards.Card>
+  <Cards.Card title="2. Background & Related Work" href="/background/">
+    Eye tracking research, adaptive reading systems, and existing tools.
+  </Cards.Card>
+  <Cards.Card title="3. Research Design" href="/research-design/">
+    Final problem statement, research questions, methodology, and requirements.
+  </Cards.Card>
+  <Cards.Card title="4. System Design" href="/system-design/">
+    Architecture, layer breakdown, data flow, and design decisions.
+  </Cards.Card>
+  <Cards.Card title="5. Evaluation & Results" href="/evaluation/">
+    Calibration, capabilities, data export analysis, and experiment results.
+  </Cards.Card>
+  <Cards.Card title="6. Discussion" href="/discussion/">
+    Findings, comparison to related work, limitations, future work, and conclusion.
+  </Cards.Card>
+</Cards>
+
+---
+
+## Operational Sections
+
+<Cards>
+  <Cards.Card title="Running the System" href="/running-the-system/">
+    Local setup, running experiments, mock services, and testing.
+  </Cards.Card>
+  <Cards.Card title="Integration & Extension" href="/integration/">
+    Provider protocol, black-box contract, gap analysis, and extension roadmap.
+  </Cards.Card>
+  <Cards.Card title="Reference" href="/reference/">
+    API endpoints, export format, data compression, session recovery, and repository structure.
+  </Cards.Card>
+</Cards>

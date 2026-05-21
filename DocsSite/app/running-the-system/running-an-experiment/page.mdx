@@ -1,0 +1,72 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Running an Experiment
+
+A step-by-step walkthrough of the full researcher workflow — from launching the system to exporting session data.
+
+<Callout type="info">
+  This guide assumes the system is running locally. See [Local Setup](/running-the-system/local-setup/) first if you haven't started the services yet.
+</Callout>
+
+## Prerequisites
+
+- Backend running on `http://localhost:5190`
+- Frontend running on `http://localhost:3000`
+- Tobii eye tracker connected (or mouse mode enabled for demos)
+- Reading material configured (see [Reading Material Setups](/reference/api-endpoints/reading-material-setups/))
+
+## Workflow
+
+<Steps>
+
+### Open the Experiment Dashboard
+
+Navigate to `http://localhost:3000` and open the Experiment page from the sidebar.
+
+### Select the Eye Tracker
+
+In the Eye Tracker Setup step, the system will detect connected devices automatically. Select your Tobii device and upload the license file when prompted.
+
+For demos without hardware, enable **Mouse Mode** — pointer coordinates will be sent as synthetic gaze samples through the same pipeline.
+
+### Calibrate
+
+Run the built-in calibration workflow. The system will block session start until calibration quality meets the required threshold.
+
+Review calibration metrics on the results screen before proceeding.
+
+### Configure the Session
+
+- Select a participant (or create a new one)
+- Choose reading material
+- Set visual presets (contrast, typography, line spacing)
+- Choose a decision strategy: No Intervention, Manual, Automated, or Hybrid
+
+### Start the Session
+
+Open the **Researcher Mirror** at `http://localhost:3000/researcher/current-live` on a second screen.
+
+Start the session from the Experiment Dashboard. The participant reading surface opens at `http://localhost:3000/reading`.
+
+### Monitor and Intervene
+
+From the Researcher Mirror you can:
+- Observe the participant view in real time
+- See system health: sample rate, validity, latency
+- Manually trigger interventions
+- Override or disable automated decisions
+
+### Stop and Export
+
+Stop the session from the Experiment Dashboard. Export the session data in JSON or CSV format for analysis.
+
+</Steps>
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Session start blocked | Calibration not completed | Re-run calibration and confirm quality |
+| Eye tracker not detected | Device not connected or driver issue | Check USB connection; restart backend |
+| Mirror not updating | WebSocket disconnected | Refresh the researcher mirror page |
+| Export missing data | Session stopped before all data flushed | Wait 2–3 seconds after stopping before exporting |

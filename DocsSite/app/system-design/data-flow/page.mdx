@@ -1,0 +1,27 @@
+import { Callout } from 'nextra/components'
+
+# Data Flow & Contracts
+
+<Callout type="warning">
+  This page is a stub. Content will be added as the system design is documented.
+</Callout>
+
+## What This Page Will Cover
+
+How data moves through the system from gaze acquisition to UI update, and the contracts that hold the frontend and backend in sync.
+
+### Topics
+
+- End-to-end data path: Tobii → backend sensing → decision → intervention command → WebSocket → frontend → reader UI
+- REST vs. WebSocket: which operations use which transport and why
+- WebSocket envelope format: message type names, payload shapes, versioning
+- Frontend/backend contract alignment: how TypeScript types mirror C# records manually
+- Session state propagation: `ExperimentSessionSnapshot` and how it travels
+- High-frequency gaze data: why it stays out of Redux and flows through refs and rAF loops
+
+### Key Files
+
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Messaging/MessageTypes.cs`
+- `Frontend/src/lib/gaze-socket.ts`
+- `Frontend/src/lib/experiment-session.ts`
+- `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`

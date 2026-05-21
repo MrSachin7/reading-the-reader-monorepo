@@ -1,0 +1,42 @@
+import { Callout } from 'nextra/components'
+
+# Final Problem Statement
+
+<Callout type="info">
+  This is the refined problem statement derived after the literature review and system analysis. See [Initial Problem Statement](/introduction/initial-problem-statement/) for how the problem was first framed.
+</Callout>
+
+## Objectives
+
+The thesis sets out to:
+
+1. **Design a modular software architecture** for an adaptive reading application that clearly separates:
+   - sensing
+   - decision-making strategies for micro-interventions
+   - user interface adaptation
+
+2. **Implement a full adaptive reading application** that supports just-in-time micro-interventions aimed at enhancing legibility.
+
+3. **Develop a researcher observation paradigm** that mirrors the test subject's reading view in real time and allows micro-interventions to be applied from a secondary screen.
+
+4. **Validate the proposed system** using standard software engineering and HCI practices, including user studies and usability metrics focused on:
+   - perceived readability
+   - smoothness of interaction
+   - perceived disruption
+
+5. **Produce architectural documentation and design guidelines** to support future development and experimentation within the Reading the Reader project.
+
+## Measurable Sub-Points
+
+| Objective | Measurable Criterion |
+|---|---|
+| Modular architecture | Sensing, decision, and UI layers are independently swappable without modifying adjacent modules |
+| Micro-interventions | Interventions are applied with less than 100ms end-to-end latency from gaze signal to UI commit |
+| Researcher observation | Live mirror updates within one frame of the participant view |
+| Usability validation | SUS score ≥ 70 in researcher-facing workflow evaluation |
+| Context preservation | Reading position is maintained within one visible line during layout-changing interventions |
+| Documentation | Architecture can be understood and extended by a new team member without author guidance |
+
+---
+
+*Continue to [Research Questions](/research-design/research-questions/) to see the specific questions this thesis answers.*
