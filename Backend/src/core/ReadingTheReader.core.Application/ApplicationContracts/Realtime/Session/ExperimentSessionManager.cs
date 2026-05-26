@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
@@ -32,8 +33,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private readonly IDecisionStrategyCoordinator _decisionStrategyCoordinator;
     private readonly IAnalysisProviderGateway _analysisProviderGateway;
     private readonly IExternalProviderGateway _externalProviderGateway;
-    private readonly IAnalysisProviderConnectionRegistry _analysisProviderConnectionRegistry;
-    private readonly IProviderConnectionRegistry _providerConnectionRegistry;
+    private readonly IModuleProviderCoordinator _moduleProviderCoordinator;
     private readonly ISensingModeSettingsService _sensingModeSettingsService;
     private readonly CalibrationOptions _calibrationOptions;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
@@ -96,8 +96,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         IDecisionStrategyCoordinator decisionStrategyCoordinator,
         IAnalysisProviderGateway analysisProviderGateway,
         IExternalProviderGateway externalProviderGateway,
-        IAnalysisProviderConnectionRegistry analysisProviderConnectionRegistry,
-        IProviderConnectionRegistry providerConnectionRegistry,
+        IModuleProviderCoordinator moduleProviderCoordinator,
         ISensingModeSettingsService sensingModeSettingsService)
     {
         _eyeTrackerAdapter = eyeTrackerAdapter;
@@ -113,8 +112,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         _decisionStrategyCoordinator = decisionStrategyCoordinator;
         _analysisProviderGateway = analysisProviderGateway;
         _externalProviderGateway = externalProviderGateway;
-        _analysisProviderConnectionRegistry = analysisProviderConnectionRegistry;
-        _providerConnectionRegistry = providerConnectionRegistry;
+        _moduleProviderCoordinator = moduleProviderCoordinator;
         _sensingModeSettingsService = sensingModeSettingsService;
     }
 
@@ -142,8 +140,8 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
                 ? session.IsActive && (!_gazeSubscribers.IsEmpty || ShouldPublishToExternalProvider() || ShouldPublishToExternalAnalysisProvider())
                 : Volatile.Read(ref _isHardwareTracking) == 1,
             _gazeSubscribers.Count);
-        var externalProviderStatus = BuildExternalProviderStatusSnapshot(_providerConnectionRegistry);
-        var eyeMovementAnalysisProviderStatus = BuildEyeMovementAnalysisProviderStatusSnapshot(_analysisProviderConnectionRegistry);
+        var externalProviderStatus = BuildExternalProviderStatusSnapshot(_moduleProviderCoordinator);
+        var eyeMovementAnalysisProviderStatus = BuildEyeMovementAnalysisProviderStatusSnapshot(_moduleProviderCoordinator);
         var analysisObservedAtUnixMs = _eyeMovementAnalysisRuntimeState.LatestObservation?.ObservedAtUnixMs
             ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -187,8 +185,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private bool ShouldPublishToExternalProvider()
     {
         return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal) &&
-               _providerConnectionRegistry.TryGetActiveProvider(out var provider) &&
-               provider is not null;
+               _moduleProviderCoordinator.IsExternalActive(InterventionsModuleIds.ModuleId);
     }
 
 
@@ -359,41 +356,38 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     }
 
     private static ExternalProviderStatusSnapshot BuildExternalProviderStatusSnapshot(
-        IProviderConnectionRegistry providerConnectionRegistry)
+        IModuleProviderCoordinator coordinator)
     {
-        if (!providerConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        var provider = coordinator.GetActiveProvider(InterventionsModuleIds.ModuleId);
+        if (provider is null)
         {
             return ExternalProviderStatusSnapshot.Disconnected.Copy();
         }
 
+        var caps = provider.GetModuleCapabilities(InterventionsModuleIds.ModuleId);
         return new ExternalProviderStatusSnapshot(
             true,
-            string.IsNullOrWhiteSpace(provider.Status) ? ProviderConnectionStatuses.Active : provider.Status,
+            "active",
             NormalizeNullableText(provider.ProviderId),
             NormalizeNullableText(provider.DisplayName),
-            provider.Capabilities.SupportsAdvisoryExecution,
-            provider.Capabilities.SupportsAutonomousExecution,
-            provider.Capabilities.SupportedInterventionModuleIds is null
-                ? []
-                : provider.Capabilities.SupportedInterventionModuleIds
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.Ordinal)
-                    .ToArray(),
+            caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAdvisoryExecution),
+            caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAutonomousExecution),
+            caps.GetList(InterventionsModuleCapabilityKeys.SupportedInterventionModuleIds),
             provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
     }
 
     private static EyeMovementAnalysisProviderStatusSnapshot BuildEyeMovementAnalysisProviderStatusSnapshot(
-        IAnalysisProviderConnectionRegistry providerConnectionRegistry)
+        IModuleProviderCoordinator coordinator)
     {
-        if (!providerConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        var provider = coordinator.GetActiveProvider(FixationAnalysisModuleIds.ModuleId);
+        if (provider is null)
         {
             return EyeMovementAnalysisProviderStatusSnapshot.Disconnected.Copy();
         }
 
         return new EyeMovementAnalysisProviderStatusSnapshot(
             true,
-            string.IsNullOrWhiteSpace(provider.Status) ? "active" : provider.Status,
+            "active",
             NormalizeNullableText(provider.ProviderId),
             NormalizeNullableText(provider.DisplayName),
             provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);

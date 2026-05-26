@@ -6,20 +6,21 @@ using ReadingTheReader.core.Application.InfrastructureContracts;
 
 namespace ReadingTheReader.RealtimeMessenger;
 
-public sealed class ExternalAnalysisProviderRealtimeMessenger : IExternalAnalysisProviderTransportAdapter
+public sealed class ModuleProviderRealtimeMessenger : IModuleProviderTransportAdapter
 {
-    private readonly AnalysisProviderWebSocketConnectionManager _connections;
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public ExternalAnalysisProviderRealtimeMessenger(AnalysisProviderWebSocketConnectionManager connections)
+    private readonly ModuleProviderWebSocketConnectionManager _connections;
+
+    public ModuleProviderRealtimeMessenger(ModuleProviderWebSocketConnectionManager connections)
     {
         _connections = connections;
     }
 
-    public async ValueTask SendToProviderAsync<TPayload>(
+    public async ValueTask SendEnvelopeAsync<TPayload>(
         string connectionId,
         string messageType,
         TPayload payload,
@@ -33,16 +34,16 @@ public sealed class ExternalAnalysisProviderRealtimeMessenger : IExternalAnalysi
             return;
         }
 
-        var envelope = new AnalysisProviderRealtimeEnvelope<TPayload>(
+        var envelope = new ModuleProviderEnvelope<TPayload>(
             messageType,
-            AnalysisProviderProtocolVersions.V1,
+            ModuleProviderProtocolVersions.V1,
             providerId,
             sessionId,
             correlationId,
             DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             payload);
 
-        var json = JsonSerializer.Serialize(envelope, _jsonOptions);
+        var json = JsonSerializer.Serialize(envelope, JsonOptions);
         var bytes = Encoding.UTF8.GetBytes(json);
 
         try

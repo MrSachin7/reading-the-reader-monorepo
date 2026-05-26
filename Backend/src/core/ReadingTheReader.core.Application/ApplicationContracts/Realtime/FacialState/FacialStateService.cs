@@ -33,13 +33,29 @@ public sealed class FacialStateService : IHostedService
         return Task.CompletedTask;
     }
 
+    public async ValueTask IngestObservationAsync(FacialObservationSnapshot observation, CancellationToken ct = default)
+    {
+        await _sessionManager.UpdateFacialObservationAsync(observation, ct);
+        await _sessionManager.UpdateFacialDifficultySignalAsync(
+            ClassifyDifficultySignal(observation, observation.CapturedAtUnixMs), ct);
+    }
+
+    public ValueTask IngestGazeSampleAsync(GazeData gaze, long? capturedAtUnixMs = null, CancellationToken ct = default)
+    {
+        var effectiveCapturedAtUnixMs = capturedAtUnixMs ?? gaze.DeviceTimeStamp / 1000;
+        return _sessionManager.SubmitWebcamGazeSampleAsync(gaze, effectiveCapturedAtUnixMs, ct);
+    }
+
+    public ValueTask IngestStatusAsync(WebcamSensingStatusSnapshot status, CancellationToken ct = default)
+    {
+        return _sessionManager.UpdateWebcamSensingStatusAsync(status, ct).AsValueTask();
+    }
+
     private async void OnFacialObservationReceived(object? sender, FacialObservationSnapshot observation)
     {
         try
         {
-            await _sessionManager.UpdateFacialObservationAsync(observation);
-            await _sessionManager.UpdateFacialDifficultySignalAsync(
-                ClassifyDifficultySignal(observation, observation.CapturedAtUnixMs));
+            await IngestObservationAsync(observation);
         }
         catch (Exception ex)
         {
@@ -51,7 +67,7 @@ public sealed class FacialStateService : IHostedService
     {
         try
         {
-            await _sessionManager.SubmitWebcamGazeSampleAsync(gaze, gaze.DeviceTimeStamp / 1000);
+            await IngestGazeSampleAsync(gaze);
         }
         catch (Exception ex)
         {
@@ -63,7 +79,7 @@ public sealed class FacialStateService : IHostedService
     {
         try
         {
-            await _sessionManager.UpdateWebcamSensingStatusAsync(status);
+            await IngestStatusAsync(status);
         }
         catch (Exception ex)
         {
@@ -107,5 +123,19 @@ public sealed class FacialStateService : IHostedService
             observedAtUnixMs,
             cues,
             cues.Count == 0 ? "No strong landmark-derived cue." : string.Join(", ", cues));
+    }
+}
+
+internal static class ValueTaskExtensions
+{
+    public static ValueTask AsValueTask<T>(this ValueTask<T> task)
+    {
+        if (task.IsCompletedSuccessfully)
+        {
+            _ = task.Result;
+            return ValueTask.CompletedTask;
+        }
+
+        return new ValueTask(task.AsTask());
     }
 }

@@ -3,7 +3,7 @@ using System.Net.WebSockets;
 
 namespace ReadingTheReader.RealtimeMessenger;
 
-public sealed class AnalysisProviderWebSocketConnectionManager
+public sealed class ModuleProviderWebSocketConnectionManager
 {
     private readonly ConcurrentDictionary<string, WebSocket> _sockets = new();
 
@@ -27,4 +27,8 @@ public sealed class AnalysisProviderWebSocketConnectionManager
         socket = null;
         return false;
     }
+
+    public IEnumerable<WebSocket> All => _sockets.Values;
+
+    public int Count => _sockets.Count;
 }

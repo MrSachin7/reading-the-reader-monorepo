@@ -15,9 +15,9 @@ It describes:
 There are two different realtime boundaries in this system:
 
 - Browser clients use `/ws`
-- External AI providers use `/ws/provider`
+- External module providers use `/ws/module-provider`
 
-Do not reuse the browser protocol for the AI provider. The external provider is a separate actor with a separate contract.
+Do not reuse the browser protocol for the module provider. The external provider is a separate actor with a separate contract.
 
 Current backend role split:
 
@@ -29,8 +29,8 @@ Current backend role split:
 
 Your module should:
 
-1. Open a WebSocket connection to `/ws/provider`.
-2. Register itself with `providerHello`.
+1. Open a WebSocket connection to `/ws/module-provider`.
+2. Register itself with `providerHello` and include `moduleId = "interventions"`.
 3. Keep the connection alive with `providerHeartbeat`.
 4. Consume provider-facing session and reading signals from the backend.
 5. Produce either:
@@ -96,8 +96,8 @@ This endpoint is useful for diagnostics, manual recovery, or cold-start sanity c
 
 ### WebSocket endpoint
 
-- Local dev: `ws://localhost:5190/ws/provider`
-- HTTPS dev/prod: `wss://<host>/ws/provider`
+- Local dev: `ws://localhost:5190/ws/module-provider`
+- HTTPS dev/prod: `wss://<host>/ws/module-provider`
 
 ### Authentication
 
@@ -121,8 +121,8 @@ Every provider message uses this envelope:
 
 ```json
 {
-  "type": "providerHello",
-  "protocolVersion": "provider.v1",
+  "messageType": "providerHello",
+  "moduleId": "interventions",
   "providerId": "my-ai-provider",
   "sessionId": null,
   "correlationId": null,
@@ -133,8 +133,8 @@ Every provider message uses this envelope:
 
 ### Envelope fields
 
-- `type`: required message type
-- `protocolVersion`: required, currently `provider.v1`
+- `messageType`: required message type
+- `moduleId`: required module identifier — use `"interventions"` for AI decision providers
 - `providerId`: provider identity when known
 - `sessionId`: active experiment session id when relevant
 - `correlationId`: correlation id for a decision request/response chain
@@ -486,7 +486,7 @@ sequenceDiagram
 
     Provider->>API: GET /api/intervention-modules
     Provider->>API: GET /api/experiment-session (optional cold start)
-    Provider->>WS: Connect /ws/provider
+    Provider->>WS: Connect /ws/module-provider
     Provider->>WS: providerHello
     WS-->>Provider: providerWelcome
     loop every few seconds

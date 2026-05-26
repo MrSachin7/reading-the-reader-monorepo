@@ -284,12 +284,12 @@ Example response:
 
 Endpoint:
 
-- `ws://localhost:5190/ws/provider`
-- `wss://<host>/ws/provider`
+- `ws://localhost:5190/ws/module-provider`
+- `wss://<host>/ws/module-provider`
 
-Protocol version:
+All external module types connect to this single endpoint. The `moduleId` field in the envelope routes each message to the correct module handler.
 
-- `provider.v1`
+For AI decision providers, use `moduleId = "interventions"`.
 
 ### 3.5 Provider envelope
 
@@ -297,8 +297,8 @@ Example envelope:
 
 ```json
 {
-  "type": "providerHello",
-  "protocolVersion": "provider.v1",
+  "messageType": "providerHello",
+  "moduleId": "interventions",
   "providerId": "my-ai-provider",
   "sessionId": null,
   "correlationId": null,
@@ -306,11 +306,12 @@ Example envelope:
   "payload": {
     "providerId": "my-ai-provider",
     "displayName": "My AI Provider",
-    "protocolVersion": "provider.v1",
     "authToken": "shared-secret-here",
-    "supportsAdvisoryExecution": true,
-    "supportsAutonomousExecution": true,
-    "supportedInterventionModuleIds": ["font-size", "line-height"]
+    "capabilities": {
+      "supportsAdvisoryExecution": "true",
+      "supportsAutonomousExecution": "true",
+      "supportedInterventionModuleIds": "font-size,line-height"
+    }
   }
 }
 ```
@@ -329,8 +330,8 @@ Example request:
 
 ```json
 {
-  "type": "providerHello",
-  "protocolVersion": "provider.v1",
+  "messageType": "providerHello",
+  "moduleId": "interventions",
   "providerId": "my-ai-provider",
   "sessionId": null,
   "correlationId": null,
@@ -338,11 +339,12 @@ Example request:
   "payload": {
     "providerId": "my-ai-provider",
     "displayName": "My AI Provider",
-    "protocolVersion": "provider.v1",
     "authToken": "shared-secret-here",
-    "supportsAdvisoryExecution": true,
-    "supportsAutonomousExecution": true,
-    "supportedInterventionModuleIds": ["font-size", "line-height"]
+    "capabilities": {
+      "supportsAdvisoryExecution": "true",
+      "supportsAutonomousExecution": "true",
+      "supportedInterventionModuleIds": "font-size,line-height"
+    }
   }
 }
 ```
@@ -1453,7 +1455,7 @@ The backend guarantees:
 
 The external AI module guarantees:
 
-- It will send only provider-protocol messages on `/ws/provider`.
+- It will send only provider-protocol messages on `/ws/module-provider`.
 - It will keep `providerId`, `sessionId`, `correlationId`, and timestamps stable across its requests.
 - It will not attempt to bypass backend validation.
 
@@ -1472,8 +1474,8 @@ sequenceDiagram
     ExternalAI->>Backend: GET /api/intervention-modules
     Backend-->>ExternalAI: supported module catalogue
 
-    ExternalAI->>Backend: WebSocket connect /ws/provider
-    ExternalAI->>Backend: providerHello
+    ExternalAI->>Backend: WebSocket connect /ws/module-provider
+    ExternalAI->>Backend: providerHello (moduleId: "interventions")
     Backend-->>ExternalAI: providerWelcome
 
     loop while connected
@@ -1509,10 +1511,8 @@ The backend must not assume:
 
 ## 10. Versioning Rule
 
-Current provider protocol version:
+The module provider framework uses `moduleId` to route messages. Each module can evolve its message contracts independently.
 
-- `provider.v1`
-
-If the contract changes incompatibly, the protocol version must change instead of silently overloading the same message format.
+If the interventions module contract changes incompatibly, update the capability discovery docs and bump the relevant message type names rather than silently overloading existing types.
 
 

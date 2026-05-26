@@ -603,4 +603,43 @@ Adopt the following architectural policy:
 4. Calibration is part of the sensing boundary, not a standalone top-level application module.
 5. Additional .NET projects are optional future optimizations, not the first refactor step.
 
+## Implemented: Module Provider Framework
+
+The Module Provider Framework is an implemented example of the architecture direction described in this proposal. It demonstrates that the external integration seam can be made generic and stable without touching the session manager, the intervention runtime, or the frontend.
+
+### What Was Built
+
+Before the framework, each external integration required its own WebSocket endpoint, connection manager, ingress service, and transport adapter interface. Adding the fixation-analysis provider was a direct copy of the interventions provider stack.
+
+The framework replaces that parallel structure with:
+
+- One endpoint: `/ws/module-provider`
+- One coordinator: `IModuleProviderCoordinator`
+- One transport adapter interface: `IModuleProviderTransportAdapter`
+- One gateway: `IModuleProviderGateway`
+- Per-module inbound handlers: `IModuleProviderInboundHandler`
+- Per-module outbound publishers implementing named gateway interfaces
+
+### How It Relates to This Proposal
+
+The framework puts two of the architectural principles from this document into practice:
+
+**Seam stability over structural duplication.** The framework gives every module — current or future — the same registration and messaging contract. The backend session manager does not change when a new module is added.
+
+**Capability bags over type-checked switches.** Providers declare capability flags in a string-keyed dictionary. The session manager reads flags. No switch statements on module types.
+
+### What It Does Not Change
+
+The framework is a transport-layer concern. It does not resolve the ownership problems in the application layer described earlier in this document:
+
+- The domain layer is still thin.
+- Normalization rules still live in application contracts.
+- The session manager still carries too many concerns.
+
+Those remain the open architectural work described in the refactoring proposals above.
+
+### Reference
+
+- [/system-design/module-provider-framework/](/system-design/module-provider-framework/)
+- [/integration/adding-a-new-module/](/integration/adding-a-new-module/)
 
