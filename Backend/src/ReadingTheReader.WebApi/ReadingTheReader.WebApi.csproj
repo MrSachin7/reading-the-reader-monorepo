@@ -79,6 +79,21 @@
       <_ContentIncludedByDefault Remove="data\live-experiments\4c005a08898e4c1883a9819dc06e1693\experiment-session-live.json" />
       <_ContentIncludedByDefault Remove="data\live-experiments\629ac8f3f53e46afa912f1f9628a5f9b\experiment-session-live.json" />
       <_ContentIncludedByDefault Remove="data\live-experiments\ad1eb473b14f49378efa8654fe0ec3d4\experiment-session-live.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779275949996.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779276596734.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779276846579.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779278011397.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779353821382.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779354416489.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779356249737.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779361094233.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779362009217.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779362651624.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779782855652.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779783901094.json" />
+      <_ContentIncludedByDefault Remove="data\saved-files\satish-1779784621661.json" />
+      <_ContentIncludedByDefault Remove="data\latest\experiment-session-export-processed.json" />
+      <_ContentIncludedByDefault Remove="data\latest\experiment-session-export.json" />
     </ItemGroup>
 
     <ItemGroup>

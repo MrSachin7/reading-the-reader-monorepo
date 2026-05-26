@@ -1,27 +1,22 @@
 "use client"
 
 import * as React from "react"
-import { Eye, ListChecks, Sparkles } from "lucide-react"
+import { ListChecks } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { formatReplayClock, type ReplayFrame, type ReplayKeyEvent } from "@/lib/experiment-replay"
 import type { LiveReadingSessionSnapshot } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
-import { formatEventKind, getEventTone } from "@/modules/pages/replay/utils"
+import { formatEventKind, getEventKindDotColor, getEventTone } from "@/modules/pages/replay/utils"
 
 type ReplayMetadataColumnProps = {
   frame: ReplayFrame
   readingSession: LiveReadingSessionSnapshot
-  activeWord: string | null | undefined
   replayEvents: ReplayKeyEvent[]
   activeEventIndex: number
   onSeek: (timeMs: number) => void
 }
-
-// How long an intervention / context-recovery counts as "happening now" from the current replay time.
-const RECENT_EVENT_WINDOW_MS = 6000
 
 type FilterKey = "all" | "quiz" | "intervention" | "lifecycle"
 
@@ -43,7 +38,6 @@ function eventMatchesFilter(event: ReplayKeyEvent, filter: FilterKey) {
 export function ReplayMetadataColumn({
   frame,
   readingSession,
-  activeWord,
   replayEvents,
   activeEventIndex,
   onSeek,
@@ -51,27 +45,6 @@ export function ReplayMetadataColumn({
   const [filter, setFilter] = React.useState<FilterKey>("all")
 
   const participant = frame.session.participant
-  const focus = readingSession.focus
-  const focusLabel = focus.isInsideReadingArea
-    ? activeWord ?? "Inside reading area"
-    : "Outside reading area"
-
-  const recentIntervention = readingSession.latestIntervention
-  const recentInterventionFresh =
-    recentIntervention !== null &&
-    frame.session.startedAtUnixMs > 0 &&
-    Math.abs(
-      (recentIntervention.appliedAtUnixMs - frame.session.startedAtUnixMs) - frame.currentTimeMs
-    ) <= RECENT_EVENT_WINDOW_MS
-
-  const recentContext = readingSession.latestContextPreservation
-  const recentContextFresh =
-    recentContext !== null &&
-    frame.session.startedAtUnixMs > 0 &&
-    Math.abs(
-      (recentContext.measuredAtUnixMs - frame.session.startedAtUnixMs) - frame.currentTimeMs
-    ) <= RECENT_EVENT_WINDOW_MS
-
   const visibleEvents = replayEvents.filter((event) => eventMatchesFilter(event, filter))
 
   return (
@@ -94,87 +67,6 @@ export function ReplayMetadataColumn({
               .join(" · ")}
           </p>
         </div>
-
-        {/* "At this moment" card — surfaces only what's currently relevant. */}
-        <Card className="rounded-2xl bg-card/96 shadow-sm">
-          <CardContent className="space-y-3 pt-5">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Sparkles className="size-3.5" />
-              <span className="text-[10px] uppercase tracking-[0.22em]">At this moment</span>
-            </div>
-
-            {frame.quiz?.isActive ? (
-              <div className="rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Badge variant="outline">
-                    {frame.quiz.questionIndex !== null
-                      ? `Q${frame.quiz.questionIndex + 1}${frame.quiz.questionCount ? `/${frame.quiz.questionCount}` : ""}`
-                      : "Quiz"}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {frame.quiz.timeOnQuestionMs !== null
-                      ? formatReplayClock(frame.quiz.timeOnQuestionMs)
-                      : "—"}
-                  </span>
-                </div>
-                {frame.quiz.prompt ? (
-                  <p className="mt-3 text-sm leading-6">{frame.quiz.prompt}</p>
-                ) : null}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {frame.quiz.selectedOptionId
-                    ? `Selected — ${frame.quiz.selectedOptionId}`
-                    : "No selection yet"}
-                  {frame.quiz.selectionChangeCount > 0
-                    ? ` · ${frame.quiz.selectionChangeCount} change${frame.quiz.selectionChangeCount === 1 ? "" : "s"}`
-                    : ""}
-                  {frame.quiz.activeRegionType
-                    ? ` · looking at ${frame.quiz.activeRegionType}${frame.quiz.activeOptionId ? ` (${frame.quiz.activeOptionId})` : ""}`
-                    : ""}
-                </p>
-              </div>
-            ) : null}
-
-            {recentInterventionFresh && recentIntervention ? (
-              <div className="rounded-xl border border-amber-400/30 bg-amber-500/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Badge variant="outline">Intervention · {recentIntervention.source}</Badge>
-                </div>
-                <p className="mt-2 text-sm leading-6">{recentIntervention.reason}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {recentIntervention.appliedBoundary}
-                  {recentIntervention.waitDurationMs !== null
-                    ? ` · waited ${recentIntervention.waitDurationMs} ms`
-                    : ""}
-                </p>
-              </div>
-            ) : null}
-
-            {recentContextFresh && recentContext ? (
-              <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <Badge variant="outline">Context — {recentContext.status}</Badge>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {recentContext.anchorSource}
-                  {recentContext.waitDurationMs !== null
-                    ? ` · waited ${recentContext.waitDurationMs} ms`
-                    : ""}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="rounded-xl border bg-muted/10 p-3">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Eye className="size-3.5" />
-                <span className="text-[10px] uppercase tracking-[0.18em]">Focus</span>
-              </div>
-              <p className="mt-1 text-sm font-medium">{focusLabel}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {readingSession.presentation.fontFamily}, {readingSession.presentation.fontSizePx}px
-              </p>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Timeline — fills the rest. */}
         <Card className="flex min-h-0 flex-1 flex-col rounded-2xl bg-card/96 shadow-sm">
@@ -220,23 +112,34 @@ export function ReplayMetadataColumn({
                         key={event.id}
                         type="button"
                         className={cn(
-                          "block w-full rounded-xl border px-3 py-2 text-left transition-colors",
+                          "flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
                           getEventTone(event.kind, isActive)
                         )}
                         onClick={() => onSeek(event.timeMs)}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant={isActive ? "default" : "outline"} className="text-[10px]">
-                            {formatEventKind(event.kind)}
-                          </Badge>
-                          <span className="text-[11px] text-muted-foreground tabular-nums">
-                            {formatReplayClock(event.timeMs)}
-                          </span>
+                        <span
+                          className={cn(
+                            "mt-1.5 size-1.5 shrink-0 rounded-full",
+                            getEventKindDotColor(event.kind)
+                          )}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                              {formatEventKind(event.kind)}
+                            </span>
+                            <span className="ml-auto shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                              {formatReplayClock(event.timeMs)}
+                            </span>
+                          </div>
+                          <p className="mt-1 break-words text-sm font-medium leading-5">{event.title}</p>
+                          {event.detail ? (
+                            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-4 text-muted-foreground">
+                              {event.detail}
+                            </p>
+                          ) : null}
                         </div>
-                        <p className="mt-1.5 truncate text-sm font-medium">{event.title}</p>
-                        {event.detail ? (
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.detail}</p>
-                        ) : null}
                       </button>
                     )
                   })

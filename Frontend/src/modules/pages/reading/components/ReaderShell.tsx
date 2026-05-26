@@ -125,6 +125,10 @@ type ReaderShellProps = {
     answers: SubmitQuizAnswerEntry[];
     selectionHistories: Record<string, QuizSelectionHistory>;
   }) => Promise<void>;
+  /** Quiz region the gaze is currently inside (mirror/replay only — participant view leaves this null). */
+  quizFocusedRegion?: "prompt" | "option" | null;
+  /** When quizFocusedRegion is "option", the id of the focused option. */
+  quizFocusedOptionId?: string | null;
 };
 
 const FONT_FAMILY_STYLES = {
@@ -247,6 +251,8 @@ export function ReaderShell({
   activeQuizMaterialTitle = null,
   quizIsInteractive = false,
   onSubmitQuiz,
+  quizFocusedRegion = null,
+  quizFocusedOptionId = null,
 }: ReaderShellProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -286,6 +292,7 @@ export function ReaderShell({
 
   useRemoteTokenHighlight({
     containerRef,
+    contentRef,
     activeTokenId: remoteFocus?.activeTokenId ?? null,
     enabled: Boolean(remoteFocus?.isInsideReadingArea) && highlightRemoteTokensBeingLookedAt,
   });
@@ -299,6 +306,7 @@ export function ReaderShell({
 
   useRemoteTokenAttentionHeatmap({
     containerRef,
+    contentRef,
     attention: remoteTokenAttention,
     enabled: Boolean(remoteTokenAttention),
   });
@@ -1185,6 +1193,8 @@ export function ReaderShell({
                 activeQuizState={activeQuizState}
                 isInteractive={quizIsInteractive}
                 onSubmit={onSubmitQuiz}
+                focusedRegion={quizFocusedRegion}
+                focusedOptionId={quizFocusedOptionId}
               />
             </div>
           </div>

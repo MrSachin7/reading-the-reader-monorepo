@@ -41,25 +41,34 @@ export function formatEventKind(kind: ReplayKeyEvent["kind"]) {
 
 export function getEventTone(kind: ReplayKeyEvent["kind"], active: boolean) {
   if (active) {
-    return "border-sky-400/50 bg-sky-500/10 text-sky-950 dark:text-sky-100"
+    return "border-primary/50 bg-primary/5"
   }
+  return "border-border/60 bg-background/80 hover:bg-muted/40"
+}
 
+/**
+ * Returns a Tailwind class for a small color dot indicating the event kind. Keeps the
+ * card body neutral so the timeline doesn't feel like a rainbow when many events stack.
+ */
+export function getEventKindDotColor(kind: ReplayKeyEvent["kind"]) {
   switch (kind) {
     case "face":
-      return "border-slate-400/30 bg-slate-500/10"
+      return "bg-slate-400"
     case "intervention":
-      return "border-amber-400/30 bg-amber-500/10"
+      return "bg-amber-400"
     case "connection":
-      return "border-emerald-400/30 bg-emerald-500/10"
+      return "bg-emerald-400"
     case "lifecycle":
-      return "border-violet-400/30 bg-violet-500/10"
+      return "bg-violet-400"
     case "recovery":
-      return "border-cyan-400/30 bg-cyan-500/10"
+      return "bg-cyan-400"
     case "state":
-      return "border-slate-400/30 bg-slate-500/10"
+      return "bg-slate-400"
     case "quiz":
-      return "border-fuchsia-400/30 bg-fuchsia-500/10"
+      return "bg-fuchsia-400"
+    case "proposal":
+      return "bg-indigo-400"
     default:
-      return "border-border bg-background/80"
+      return "bg-muted-foreground"
   }
 }

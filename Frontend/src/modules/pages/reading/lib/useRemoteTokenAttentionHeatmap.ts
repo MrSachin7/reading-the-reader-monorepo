@@ -11,6 +11,7 @@ export type RemoteTokenAttentionSnapshot = ReadingAttentionSummarySnapshot;
 
 type UseRemoteTokenAttentionHeatmapParams = {
   containerRef: RefObject<HTMLElement | null>;
+  contentRef?: RefObject<HTMLElement | null>;
   attention: RemoteTokenAttentionSnapshot | null;
   enabled?: boolean;
 };
@@ -81,6 +82,7 @@ function applyHeatmapStyles(
 
 export function useRemoteTokenAttentionHeatmap({
   containerRef,
+  contentRef,
   attention,
   enabled = true,
 }: UseRemoteTokenAttentionHeatmapParams) {
@@ -101,8 +103,13 @@ export function useRemoteTokenAttentionHeatmap({
       return;
     }
 
+    const contentRoot =
+      contentRef?.current ??
+      container.querySelector<HTMLElement>("[data-reader-content='true']") ??
+      container;
+
     for (const [tokenId, stats] of Object.entries(attention.tokenStats)) {
-      const element = container.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
+      const element = contentRoot.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
       if (!element) {
         continue;
       }
@@ -115,5 +122,5 @@ export function useRemoteTokenAttentionHeatmap({
         clearStyles(element);
       }
     };
-  }, [attention, containerRef, enabled]);
+  }, [attention, containerRef, contentRef, enabled]);
 }

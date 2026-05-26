@@ -328,12 +328,13 @@ export default function ReplayPage() {
           readerOptions={readerOptions}
           remoteTokenAttention={readingSession.attentionSummary}
           quiz={frame.quiz ?? null}
+          sessionFinished={frame.sessionFinished ?? null}
+          latestGazeSample={frame.session.latestGazeSample}
         />
 
         <ReplayMetadataColumn
           frame={frame}
           readingSession={readingSession}
-          activeWord={activeWord}
           replayEvents={replayEvents}
           activeEventIndex={activeEventIndex}
           onSeek={handleSeek}

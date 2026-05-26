@@ -31,6 +31,12 @@ public sealed partial class ExperimentSessionManager
         try
         {
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            // Carry forward QuizStatus by id so completed quizzes from earlier materials
+            // don't get reset to "not-started" when the frontend transitions to the next text.
+            var existingQuizStatusByItemId = (_liveReadingSession.ExperimentItems ?? Array.Empty<ExperimentSequenceItemSnapshot>())
+                .GroupBy(item => item.Id, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First().QuizStatus, StringComparer.Ordinal);
+
             var normalizedExperimentItems = command.ExperimentItems is null
                 ? []
                 : command.ExperimentItems
@@ -39,20 +45,28 @@ public sealed partial class ExperimentSessionManager
                         !string.IsNullOrWhiteSpace(item.Title) &&
                         !string.IsNullOrWhiteSpace(item.Markdown))
                     .OrderBy(item => item.Order)
-                    .Select(item => new ExperimentSequenceItemSnapshot(
-                        item.Id.Trim(),
-                        item.Order,
-                        item.Title.Trim(),
-                        item.Markdown,
-                        string.IsNullOrWhiteSpace(item.SourceSetupId) ? null : item.SourceSetupId.Trim(),
-                        item.FontFamily.Trim(),
-                        item.FontSizePx,
-                        item.LineWidthPx,
-                        item.LineHeight,
-                        item.LetterSpacingEm,
-                        item.EditableByResearcher,
-                        string.IsNullOrWhiteSpace(item.MaterialRunId) ? item.Id.Trim() : item.MaterialRunId.Trim(),
-                        item.ComprehensionQuiz))
+                    .Select(item =>
+                    {
+                        var trimmedId = item.Id.Trim();
+                        var preservedQuizStatus = existingQuizStatusByItemId.TryGetValue(trimmedId, out var status)
+                            ? status
+                            : QuizStatuses.NotStarted;
+                        return new ExperimentSequenceItemSnapshot(
+                            trimmedId,
+                            item.Order,
+                            item.Title.Trim(),
+                            item.Markdown,
+                            string.IsNullOrWhiteSpace(item.SourceSetupId) ? null : item.SourceSetupId.Trim(),
+                            item.FontFamily.Trim(),
+                            item.FontSizePx,
+                            item.LineWidthPx,
+                            item.LineHeight,
+                            item.LetterSpacingEm,
+                            item.EditableByResearcher,
+                            string.IsNullOrWhiteSpace(item.MaterialRunId) ? trimmedId : item.MaterialRunId.Trim(),
+                            item.ComprehensionQuiz,
+                            preservedQuizStatus);
+                    })
                     .ToArray();
             int? normalizedCurrentExperimentItemIndex = null;
             if (normalizedExperimentItems.Length > 0)
