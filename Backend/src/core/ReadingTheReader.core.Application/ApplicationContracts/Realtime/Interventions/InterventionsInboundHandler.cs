@@ -5,7 +5,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain.Decisioning;
 using ReadingTheReader.core.Domain.Reading;
 
-namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
+namespace ReadingTheReader.core.Application.ApplicationContracts.   Realtime.Interventions;
 
 public sealed class InterventionsInboundHandler : IModuleInboundHandler
 {
