@@ -38,6 +38,9 @@ type Props = {
   isInteractive: boolean
   /** Called by the participant view on Submit. Mirror does not call this. */
   onSubmit?: (payload: SubmitAnswersPayload) => Promise<void>
+  /** Visual ring on prompt/option that the gaze is on (replay / observer views only). */
+  focusedRegion?: "prompt" | "option" | null
+  focusedOptionId?: string | null
 }
 
 function emptyHistory(): QuizSelectionHistory {
@@ -56,6 +59,8 @@ export function ReaderShellQuiz({
   activeQuizState,
   isInteractive,
   onSubmit,
+  focusedRegion = null,
+  focusedOptionId = null,
 }: Props) {
   const activeIndex = Math.min(Math.max(activeQuizState.activeQuestionIndex, 0), questions.length - 1)
   const activeQuestion = questions[activeIndex] ?? null
@@ -196,7 +201,14 @@ export function ReaderShellQuiz({
       </div>
 
       <div className="flex-1 space-y-6">
-        <h2 ref={setPromptRef} className="text-2xl font-semibold leading-tight">
+        <h2
+          ref={setPromptRef}
+          className={`rounded-lg text-2xl font-semibold leading-tight transition-shadow ${
+            focusedRegion === "prompt"
+              ? "ring-2 ring-amber-400/70 ring-offset-2 ring-offset-background"
+              : ""
+          }`}
+        >
           {activeQuestion.prompt}
         </h2>
 
@@ -207,12 +219,15 @@ export function ReaderShellQuiz({
         >
           {activeQuestion.options.map((option) => {
             const isSelected = option.id === activeSelection
+            const isGazedAt = focusedRegion === "option" && focusedOptionId === option.id
             return (
               <label
                 key={option.id}
                 ref={(node) => setOptionRef(option.id, node)}
                 htmlFor={`quiz-option-${option.id}`}
                 className={`flex items-center gap-3 rounded-2xl border p-4 transition-colors ${
+                  isGazedAt ? "ring-2 ring-amber-400/70 ring-offset-2 ring-offset-background" : ""
+                } ${
                   isSelected ? "border-primary bg-primary/5" : "border-border"
                 } ${isInteractive ? "cursor-pointer hover:bg-muted/40" : "cursor-default opacity-95"}`}
               >

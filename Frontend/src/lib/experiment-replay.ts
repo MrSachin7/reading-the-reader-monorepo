@@ -369,6 +369,21 @@ export type ReplayFrame = {
   interventionRecord: InterventionEventRecord | null
   lifecycleRecord: ExperimentLifecycleEventRecord | null
   quiz: ReplayQuizFrame | null
+  sessionFinished: ReplaySessionFinishedFrame | null
+}
+
+export type ReplaySessionFinishedResult = {
+  materialItemId: string
+  materialTitle: string
+  comprehensionQuiz: import("@/lib/comprehension-quiz").ComprehensionQuestion[]
+  answersByQuestionId: Record<string, QuizAnswerEventRecord>
+  totalQuestions: number
+  correctCount: number
+}
+
+export type ReplaySessionFinishedFrame = {
+  finishedAtMs: number
+  results: ReplaySessionFinishedResult[]
 }
 
 export type ReplayQuizFrame = {
@@ -1448,6 +1463,9 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
   }
 
   const quiz = buildQuizFrame(replay, currentTimeMs, startedAtUnixMs)
+  const sessionFinished = quiz?.isActive
+    ? null
+    : buildSessionFinishedFrame(replay, currentTimeMs, startedAtUnixMs)
 
   return {
     currentTimeMs,
@@ -1468,7 +1486,80 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     interventionRecord,
     lifecycleRecord,
     quiz,
+    sessionFinished,
   }
+}
+
+function buildSessionFinishedFrame(
+  replay: ExperimentReplayExport,
+  currentTimeMs: number,
+  startedAtUnixMs: number
+): ReplaySessionFinishedFrame | null {
+  const lifecycleEvents = getReplayQuizLifecycleEvents(replay)
+  if (lifecycleEvents.length === 0) return null
+
+  // Find each material that has a quiz-submitted event at or before currentTime.
+  const submittedTimeByMaterialId = new Map<string, number>()
+  for (const event of lifecycleEvents) {
+    if (event.eventType !== "quiz-submitted") continue
+    const timeMs = resolveRecordTimeMs(startedAtUnixMs, event.elapsedSinceStartMs, event.occurredAtUnixMs)
+    if (timeMs > currentTimeMs) continue
+    if (!submittedTimeByMaterialId.has(event.materialItemId)) {
+      submittedTimeByMaterialId.set(event.materialItemId, timeMs)
+    }
+  }
+  if (submittedTimeByMaterialId.size === 0) return null
+
+  // Determine which materials have quizzes from lifecycle events (those with quiz-started).
+  const quizMaterials = new Set<string>()
+  for (const event of lifecycleEvents) {
+    if (event.eventType === "quiz-started") {
+      quizMaterials.add(event.materialItemId)
+    }
+  }
+
+  // Session is "finished" when every quiz-material has been submitted by currentTime.
+  for (const materialId of quizMaterials) {
+    if (!submittedTimeByMaterialId.has(materialId)) {
+      return null
+    }
+  }
+
+  const finishedAtMs = Math.max(...submittedTimeByMaterialId.values())
+
+  // Build per-material results.
+  const answers = replay.quiz?.answers ?? []
+  const runMaterials = replay.experiment.run?.materials ?? []
+  const materialTitleById = new Map(runMaterials.map((m) => [m.id, m.title] as const))
+
+  const results: ReplaySessionFinishedResult[] = []
+  for (const [materialId, _submittedTimeMs] of submittedTimeByMaterialId.entries()) {
+    const comprehensionQuiz = reconstructComprehensionQuizForMaterial(lifecycleEvents, materialId)
+    if (comprehensionQuiz.length === 0) continue
+
+    const answersForMaterial = answers.filter((a) => a.materialItemId === materialId)
+    const answersByQuestionId: Record<string, QuizAnswerEventRecord> = {}
+    let correctCount = 0
+    for (const answer of answersForMaterial) {
+      if (!answersByQuestionId[answer.questionId]) {
+        answersByQuestionId[answer.questionId] = answer
+        if (answer.isCorrect) correctCount += 1
+      }
+    }
+
+    results.push({
+      materialItemId: materialId,
+      materialTitle: materialTitleById.get(materialId) ?? materialId,
+      comprehensionQuiz,
+      answersByQuestionId,
+      totalQuestions: comprehensionQuiz.length,
+      correctCount,
+    })
+  }
+
+  if (results.length === 0) return null
+
+  return { finishedAtMs, results }
 }
 
 export function buildReplayKeyEvents(replay: ExperimentReplayExport): ReplayKeyEvent[] {
