@@ -1,9 +1,8 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using ReadingTheReader.core.Application;
-using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
-using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.Realtime.Persistence;
 using ReadingTheReader.TobiiEyetracker;
 using ReadingTheReader.WebApi.OpenCv;
@@ -15,10 +14,8 @@ var calibrationOptions = builder.Configuration.GetSection(CalibrationOptions.Sec
     ?? new CalibrationOptions();
 var experimentSetupTestingOptions = builder.Configuration.GetSection(ExperimentSetupTestingOptions.SectionName).Get<ExperimentSetupTestingOptions>()
     ?? new ExperimentSetupTestingOptions();
-var externalProviderOptions = builder.Configuration.GetSection(ExternalProviderOptions.SectionName).Get<ExternalProviderOptions>()
-    ?? new ExternalProviderOptions();
-var externalAnalysisProviderOptions = builder.Configuration.GetSection(ExternalAnalysisProviderOptions.SectionName).Get<ExternalAnalysisProviderOptions>()
-    ?? new ExternalAnalysisProviderOptions();
+var moduleProviderOptions = builder.Configuration.GetSection(ModuleProviderOptions.SectionName).Get<ModuleProviderOptions>()
+    ?? new ModuleProviderOptions();
 builder.Services.Configure<OpenCvWebcamSensingOptions>(
     builder.Configuration.GetSection(OpenCvWebcamSensingOptions.SectionName));
 
@@ -26,9 +23,8 @@ builder.Services.Configure<OpenCvWebcamSensingOptions>(
 builder.Services.InstallTobiiEyeTrackerModule();
 builder.Services.InstallApplicationModule(
     calibrationOptions,
-    experimentSetupTestingOptions,
-    externalProviderOptions,
-    externalAnalysisProviderOptions);
+    experimentSetupTestingOptions);
+builder.Services.InstallModuleProviderFramework(moduleProviderOptions);
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 
 builder.Services.AddWebSocketServices();

@@ -2,6 +2,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using OpenCvSharp;
 using OpenCvSharp.Face;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.FacialState;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
@@ -26,6 +28,7 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService, IFacialStateA
     public event EventHandler<WebcamSensingStatusSnapshot>? StatusChanged;
 
     private readonly IExperimentSessionQueryService _sessionQueryService;
+    private readonly IModuleProviderCoordinator _moduleCoordinator;
     private readonly OpenCvWebcamSensingOptions _options;
     private readonly string _contentRootPath;
     private VideoCapture? _capture;
@@ -37,10 +40,12 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService, IFacialStateA
 
     public OpenCvWebcamSensingWorker(
         IExperimentSessionQueryService sessionQueryService,
+        IModuleProviderCoordinator moduleCoordinator,
         IHostEnvironment hostEnvironment,
         IOptions<OpenCvWebcamSensingOptions> options)
     {
         _sessionQueryService = sessionQueryService;
+        _moduleCoordinator = moduleCoordinator;
         _contentRootPath = hostEnvironment.ContentRootPath;
         _options = options.Value;
     }
@@ -55,6 +60,21 @@ public sealed class OpenCvWebcamSensingWorker : BackgroundService, IFacialStateA
                 {
                     await PublishStatusAsync(WebcamSensingStatusSnapshot.Default, stoppingToken);
                     await Task.Delay(1_000, stoppingToken);
+                    continue;
+                }
+
+                if (_moduleCoordinator.IsExternalActive(FacialStateModuleIds.ModuleId))
+                {
+                    ReleaseCapture();
+                    await PublishStatusAsync(new WebcamSensingStatusSnapshot(
+                        false,
+                        WebcamSensingStatuses.Idle,
+                        null,
+                        DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        0,
+                        0,
+                        "External facial-state provider is active; OpenCV sensing paused."), stoppingToken);
+                    await Task.Delay(500, stoppingToken);
                     continue;
                 }
 

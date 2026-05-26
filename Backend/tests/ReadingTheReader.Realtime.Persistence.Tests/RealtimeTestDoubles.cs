@@ -4,6 +4,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Analysis;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
@@ -11,6 +12,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sensing;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Application.InfrastructureContracts;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;
 
@@ -46,22 +48,9 @@ public sealed class RealtimeTestDoubles
         sensingModeSettingsService ??= new InMemorySensingModeSettingsService();
         var interventionModuleRegistry = new ReadingInterventionModuleRegistry(BuiltInReadingInterventionModules.All);
         var interventionRuntime = new FakeReadingInterventionRuntime();
-        var externalProviderOptions = new ExternalProviderOptions
-        {
-            SharedSecret = "test-provider-secret",
-            HeartbeatTimeoutMilliseconds = 12_000
-        };
-        var providerRegistry = new ProviderConnectionRegistry(externalProviderOptions);
-        var externalProviderTransport = new FakeExternalProviderTransportAdapter();
-        var externalProviderGateway = new ExternalProviderGateway(providerRegistry, externalProviderTransport);
-        var externalAnalysisProviderOptions = new ExternalAnalysisProviderOptions
-        {
-            SharedSecret = "test-analysis-provider-secret",
-            HeartbeatTimeoutMilliseconds = 12_000
-        };
-        var analysisProviderRegistry = new AnalysisProviderConnectionRegistry(externalAnalysisProviderOptions);
-        var externalAnalysisProviderTransport = new FakeExternalAnalysisProviderTransportAdapter();
-        var analysisProviderGateway = new AnalysisProviderGateway(analysisProviderRegistry, externalAnalysisProviderTransport);
+        var externalProviderGateway = new FakeExternalProviderGateway();
+        var analysisProviderGateway = new FakeAnalysisProviderGateway();
+        var moduleProviderCoordinator = new FakeModuleProviderCoordinator();
         var analysisStrategyRegistry = new EyeMovementAnalysisStrategyRegistry(
             [
                 new BuiltInEyeMovementAnalysisStrategy(),
@@ -90,34 +79,26 @@ public sealed class RealtimeTestDoubles
             strategyCoordinator,
             analysisProviderGateway,
             externalProviderGateway,
-            analysisProviderRegistry,
-            providerRegistry,
+            moduleProviderCoordinator,
             sensingModeSettingsService);
         var readerObservationService = new ReaderObservationService(sessionManager);
         var ingress = new ExperimentCommandIngress(
             sessionManager,
             readerObservationService,
             broadcaster);
-        var providerIngress = new ProviderIngressService(
-            providerRegistry,
-            sessionManager,
-            sessionManager,
-            broadcaster,
-            externalProviderOptions);
 
         return new RuntimeHarness(
             sessionManager,
             ingress,
-            providerIngress,
             eyeTrackerAdapter,
             broadcaster,
             stateStore,
             replayExportStore,
             replayRecoveryStore,
             interventionRuntime,
-            providerRegistry,
-            externalProviderTransport,
-            externalProviderOptions);
+            externalProviderGateway,
+            analysisProviderGateway,
+            moduleProviderCoordinator);
     }
 
     public sealed class InMemorySensingModeSettingsService : ISensingModeSettingsService
@@ -148,28 +129,19 @@ public sealed class RealtimeTestDoubles
     public sealed record RuntimeHarness(
         ExperimentSessionManager SessionManager,
         ExperimentCommandIngress Ingress,
-        ProviderIngressService ProviderIngress,
         FakeEyeTrackerAdapter EyeTrackerAdapter,
         FakeClientBroadcasterAdapter Broadcaster,
         FakeExperimentStateStoreAdapter StateStore,
         FakeExperimentReplayExportStoreAdapter ReplayExportStore,
         FakeExperimentReplayRecoveryStoreAdapter ReplayRecoveryStore,
         FakeReadingInterventionRuntime InterventionRuntime,
-        ProviderConnectionRegistry ProviderRegistry,
-        FakeExternalProviderTransportAdapter ExternalProviderTransport,
-        ExternalProviderOptions ExternalProviderOptions);
+        FakeExternalProviderGateway ExternalProviderGateway,
+        FakeAnalysisProviderGateway AnalysisProviderGateway,
+        FakeModuleProviderCoordinator ModuleProviderCoordinator);
 
     public sealed record BroadcastMessage(string MessageType, object? Payload);
 
     public sealed record DirectMessage(string ConnectionId, string MessageType, object? Payload);
-
-    public sealed record ProviderTransportMessage(
-        string ConnectionId,
-        string MessageType,
-        object? Payload,
-        string? ProviderId,
-        string? SessionId,
-        string? CorrelationId);
 
     public sealed class FakeClientBroadcasterAdapter : IClientBroadcasterAdapter
     {
@@ -195,55 +167,73 @@ public sealed class RealtimeTestDoubles
         }
     }
 
-    public sealed class FakeExternalProviderTransportAdapter : IExternalProviderTransportAdapter
+    public sealed class FakeExternalProviderGateway : IExternalProviderGateway
     {
-        private readonly ConcurrentQueue<ProviderTransportMessage> _messages = new();
+        private readonly ConcurrentQueue<GazeData> _gazeSamples = new();
 
-        public IReadOnlyCollection<ProviderTransportMessage> Messages => _messages.ToArray();
+        public IReadOnlyCollection<GazeData> GazeSamples => _gazeSamples.ToArray();
 
-        public ValueTask SendToProviderAsync<TPayload>(
-            string connectionId,
+        public ValueTask PublishDecisionContextAsync(DecisionContextSnapshot context, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishSessionSnapshotAsync(ExperimentSessionSnapshot snapshot, CancellationToken ct = default) => ValueTask.CompletedTask;
+
+        public ValueTask PublishGazeSampleAsync(Guid? sessionId, GazeData gazeData, CancellationToken ct = default)
+        {
+            _gazeSamples.Enqueue(gazeData);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask PublishReadingFocusChangedAsync(Guid? sessionId, ReadingFocusSnapshot focus, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishViewportChangedAsync(Guid? sessionId, ParticipantViewportSnapshot viewport, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishAttentionSummaryChangedAsync(Guid? sessionId, ReadingAttentionSummarySnapshot summary, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishInterventionEventAsync(Guid? sessionId, InterventionEventSnapshot interventionEvent, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishDecisionUpdateAsync(Guid? sessionId, DecisionRealtimeUpdateSnapshot update, CancellationToken ct = default) => ValueTask.CompletedTask;
+    }
+
+    public sealed class FakeAnalysisProviderGateway : IAnalysisProviderGateway
+    {
+        public ValueTask PublishSessionSnapshotAsync(ExperimentSessionSnapshot snapshot, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishGazeSampleAsync(Guid? sessionId, GazeData gazeData, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishReadingObservationAsync(Guid? sessionId, ReadingGazeObservationSnapshot observation, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishViewportChangedAsync(Guid? sessionId, ParticipantViewportSnapshot viewport, CancellationToken ct = default) => ValueTask.CompletedTask;
+        public ValueTask PublishStateChangedAsync(Guid? sessionId, EyeMovementAnalysisSnapshot analysis, CancellationToken ct = default) => ValueTask.CompletedTask;
+    }
+
+    public sealed class FakeModuleProviderGateway : IModuleProviderGateway
+    {
+        public bool HasActiveProvider(string moduleId) => false;
+
+        public ValueTask<bool> PublishAsync<TPayload>(
+            string moduleId,
             string messageType,
             TPayload payload,
-            string? providerId = null,
-            string? sessionId = null,
-            string? correlationId = null,
+            ModuleProviderPublishContext? context = null,
             CancellationToken ct = default)
         {
-            _messages.Enqueue(new ProviderTransportMessage(
-                connectionId,
-                messageType,
-                payload,
-                providerId,
-                sessionId,
-                correlationId));
-            return ValueTask.CompletedTask;
+            return ValueTask.FromResult(false);
         }
     }
 
-    public sealed class FakeExternalAnalysisProviderTransportAdapter : IExternalAnalysisProviderTransportAdapter
+    public sealed class FakeModuleProviderCoordinator : IModuleProviderCoordinator
     {
-        private readonly ConcurrentQueue<ProviderTransportMessage> _messages = new();
+        private readonly Dictionary<string, ModuleProviderConnectionRecord> _providers = new(StringComparer.Ordinal);
 
-        public IReadOnlyCollection<ProviderTransportMessage> Messages => _messages.ToArray();
+        public event EventHandler<ModuleProviderSourceChangedEventArgs>? SourceChanged;
 
-        public ValueTask SendToProviderAsync<TPayload>(
-            string connectionId,
-            string messageType,
-            TPayload payload,
-            string? providerId = null,
-            string? sessionId = null,
-            string? correlationId = null,
-            CancellationToken ct = default)
+        public bool IsExternalActive(string moduleId) => _providers.ContainsKey(moduleId);
+
+        public ModuleProviderConnectionRecord? GetActiveProvider(string moduleId) =>
+            _providers.TryGetValue(moduleId, out var record) ? record : null;
+
+        public void SetActiveProvider(string moduleId, ModuleProviderConnectionRecord record)
         {
-            _messages.Enqueue(new ProviderTransportMessage(
-                connectionId,
-                messageType,
-                payload,
-                providerId,
-                sessionId,
-                correlationId));
-            return ValueTask.CompletedTask;
+            _providers[moduleId] = record;
+            SourceChanged?.Invoke(this, new ModuleProviderSourceChangedEventArgs(moduleId, record));
+        }
+
+        public void RemoveProvider(string moduleId)
+        {
+            _providers.Remove(moduleId);
+            SourceChanged?.Invoke(this, new ModuleProviderSourceChangedEventArgs(moduleId, null));
         }
     }
 

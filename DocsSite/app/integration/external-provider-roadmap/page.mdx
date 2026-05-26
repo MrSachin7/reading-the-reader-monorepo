@@ -1,52 +1,100 @@
-# External Provider Roadmap
+# External Module Provider Roadmap
 
-This page turns the external-provider planning work into a compact roadmap for future contributors.
+This page describes what has been implemented in the Module Provider Framework and what remains as future work.
 
-## Phase 1: Freeze the protocol
+## Implemented
 
-- keep `/ws/provider` as the dedicated provider boundary
-- keep versioned JSON envelopes
-- keep backend authority over proposal lifecycle and intervention application
-- document every provider message type and actor rule
+### Phase 1: Generic connection layer
 
-## Phase 2: Registration and health
+The `/ws/module-provider` endpoint replaces the previous per-integration endpoints (`/ws/provider`, `/ws/analysis-provider`). All external modules connect through a single transport boundary.
 
-- validate provider hello and shared-secret auth
-- track provider capabilities and last heartbeat
-- reject duplicate or invalid registrations cleanly
+The endpoint handles:
+- connection accept
+- envelope deserialization
+- routing to the correct per-module inbound handler by `moduleId`
 
-## Phase 3: Real gateway behavior
+### Phase 2: Registration and capability tracking
 
-- route the `external` decision path through an actual provider gateway
-- support advisory proposal submission
-- support autonomous apply requests with backend validation
+`ModuleProviderConnectionRegistry` handles:
+- provider hello validation
+- shared-secret authentication
+- capability bag storage
+- heartbeat tracking
+- duplicate registration rejection
+- clean disconnect
 
-## Phase 4: Stronger backend-owned decision inputs
+`IModuleProviderCoordinator` exposes the coordinator interface to application services: `IsExternalActive(moduleId)` and `GetActiveProvider(moduleId)`.
 
-- keep provider-relevant session state projected from backend authority
-- avoid making the external provider depend on researcher-browser-only timing behavior
+### Phase 3: Decision provider integration
 
-## Phase 5: Fallback and resilience
+The interventions module (`moduleId = "interventions"`) supports:
+- advisory proposal submission through `InterventionsInboundHandler`
+- autonomous apply requests with backend validation
+- outbound signal publishing through `InterventionsOutboundPublisher`
 
-- detect stale or disconnected providers
-- disable unsafe autonomous behavior when provider health is lost
-- preserve researcher control when the provider is degraded
+### Phase 4: Fixation analysis integration
 
-## Phase 6: Researcher visibility
+The fixation-analysis module (`moduleId = "fixation-analysis"`) supports:
+- external eye movement analysis result ingestion through `FixationAnalysisInboundHandler`
+- outbound gaze sample and session snapshot publishing through `FixationAnalysisOutboundPublisher`
 
-- surface provider health in the authoritative session snapshot
-- surface provider state in the researcher UI
+### Phase 5: Backend-owned session projection
 
-## Phase 7: Export and replay provenance
+Session state published to external providers is derived from backend authority — not from browser-side timing behavior. The `providerDecisionContext` and `providerSessionSnapshot` messages carry backend-computed snapshots.
 
-- preserve provider proposal ids, rationale, execution mode, and resolution history in export/replay data
+### Phase 6: Researcher visibility
 
-## Phase 8: Documentation freeze
+Provider health is surfaced in the authoritative experiment snapshot:
+- `externalProviderStatus` — interventions provider connection state and capabilities
+- `eyeMovementAnalysisProviderStatus` — analysis provider connection state
 
-- keep provider docs complete enough that another team can build against the contract without rediscovering the architecture
+Both are broadcast when provider state changes, so the researcher UI reflects live connection health.
 
-## Recommended Companion Pages
+## Not Yet Implemented
 
+### Stale heartbeat enforcement
+
+The registry tracks `LastHeartbeatAtUnixMs` but does not currently enforce automatic degradation when a provider stops sending heartbeats.
+
+Recommended behavior: if `now - LastHeartbeatAtUnixMs > HeartbeatTimeoutMilliseconds`, the coordinator should treat the provider as stale and disable autonomous execution until the heartbeat resumes.
+
+### Initial snapshot on registration
+
+After `providerWelcome`, the backend does not automatically push a full session snapshot to the new provider. If your provider needs the current session state immediately after connecting, call `GET /api/experiment-session` once after registration or wait for the first scheduled signal.
+
+### Replay and export provenance
+
+Provider correlation IDs and proposal rationale are tracked in the session decision state, but the export schema does not yet capture every provider-side field from the original payload.
+
+### Provider status event stream back to provider
+
+The backend does not currently emit a dedicated status update when the provider's own health is changed. The `providerStatusChanged` message type exists in constants but is not yet reliably emitted.
+
+## Future Directions
+
+### Adding a third module
+
+The framework is designed for this. Adding a new module requires:
+- a module ID constant
+- an inbound handler implementing `IModuleProviderInboundHandler`
+- an outbound publisher implementing a named gateway interface
+- a module installer
+
+The session manager, the WebSocket configuration, and the connection registry do not need changes.
+
+See [/integration/adding-a-new-module/](/integration/adding-a-new-module/) for the full walkthrough.
+
+### Multi-provider per module
+
+The current registry enforces one active provider per module. If a future research scenario requires parallel providers (e.g. A/B comparison of two AI decision models), the registry and coordinator would need to be extended to support multiple concurrent connections per module.
+
+### Cross-module correlation
+
+Currently each module receives signals independently. A future design might route correlated signals across modules — for example, letting the fixation-analysis provider inform the interventions provider about fixation events before the backend evaluates the decision strategy.
+
+## Companion Pages
+
+- [/system-design/module-provider-framework/](/system-design/module-provider-framework/)
 - [/integration/provider-protocol/](/integration/provider-protocol/)
 - [/integration/black-box-contract/](/integration/black-box-contract/)
-- [/backend/data-export-analysis/](/backend/data-export-analysis/)
+- [/integration/adding-a-new-module/](/integration/adding-a-new-module/)

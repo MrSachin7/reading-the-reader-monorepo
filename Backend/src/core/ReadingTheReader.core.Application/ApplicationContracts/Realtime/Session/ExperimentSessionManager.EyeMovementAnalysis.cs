@@ -178,8 +178,7 @@ public sealed partial class ExperimentSessionManager
     private bool ShouldPublishToExternalAnalysisProvider()
     {
         return string.Equals(_eyeMovementAnalysisConfiguration.ProviderId, EyeMovementAnalysisProviderIds.External, StringComparison.Ordinal) &&
-               _analysisProviderConnectionRegistry.TryGetActiveProvider(out var provider) &&
-               provider is not null;
+               _moduleProviderCoordinator.IsExternalActive(FixationAnalysisModuleIds.ModuleId);
     }
 
     private bool HasAuthoritativeEyeMovementAnalysisState()
@@ -208,7 +207,8 @@ public sealed partial class ExperimentSessionManager
             throw new InvalidOperationException("Analysis provider session id does not match the active experiment session.");
         }
 
-        if (!_analysisProviderConnectionRegistry.TryGetActiveProvider(out var provider) || provider is null)
+        var provider = _moduleProviderCoordinator.GetActiveProvider(FixationAnalysisModuleIds.ModuleId);
+        if (provider is null)
         {
             throw new InvalidOperationException("No active analysis provider is registered.");
         }

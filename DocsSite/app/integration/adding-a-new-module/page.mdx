@@ -1,0 +1,287 @@
+# Adding a New External Module
+
+This guide walks through adding a third external module to the Module Provider Framework. It assumes the framework is already installed and that you understand the existing interventions and fixation-analysis modules as reference implementations.
+
+For background on the framework design, see [/system-design/module-provider-framework/](/system-design/module-provider-framework/).
+
+## What a Module Is
+
+A module is a named integration point that an external software process can connect to through `/ws/module-provider`. Each module has:
+
+- a unique string ID (e.g. `"interventions"`, `"fixation-analysis"`)
+- a set of capability keys it expects providers to declare
+- an inbound handler that processes messages from the external provider
+- an outbound publisher that the application layer calls to push signals out
+
+## Step 1: Define the Module ID and Capability Keys
+
+Create a constants file under the relevant application namespace.
+
+```csharp
+namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.MyModule;
+
+public static class MyModuleIds
+{
+    public const string ModuleId = "my-module";
+}
+
+public static class MyModuleCapabilityKeys
+{
+    public const string SupportsFeatureX = "supportsFeatureX";
+    public const string SupportedOutputKinds = "supportedOutputKinds";
+}
+```
+
+The module ID must be:
+- lowercase kebab-case
+- unique across all modules
+- stable — it is sent over the wire by external providers
+
+## Step 2: Define the Message Types
+
+Create message type constants for inbound (provider-to-backend) and outbound (backend-to-provider) messages.
+
+```csharp
+public static class MyModuleInboundMessageTypes
+{
+    public const string SubmitResult = "myModuleSubmitResult";
+}
+
+public static class MyModuleOutboundMessageTypes
+{
+    public const string SessionSnapshot = "myModuleSessionSnapshot";
+    public const string TriggerInput = "myModuleTriggerInput";
+}
+```
+
+## Step 3: Implement the Inbound Handler
+
+The inbound handler processes messages from the external provider.
+
+```csharp
+public sealed class MyModuleInboundHandler : IModuleProviderInboundHandler
+{
+    private readonly IExperimentSessionManager _sessionManager;
+    private readonly IModuleProviderCoordinator _coordinator;
+
+    public MyModuleInboundHandler(
+        IExperimentSessionManager sessionManager,
+        IModuleProviderCoordinator coordinator)
+    {
+        _sessionManager = sessionManager;
+        _coordinator = coordinator;
+    }
+
+    public string ModuleId => MyModuleIds.ModuleId;
+
+    public async ValueTask HandleAsync(
+        string messageType,
+        string payload,
+        ModuleProviderContext context,
+        CancellationToken ct = default)
+    {
+        switch (messageType)
+        {
+            case MyModuleInboundMessageTypes.SubmitResult:
+                await HandleSubmitResultAsync(payload, context, ct);
+                break;
+        }
+    }
+
+    private async ValueTask HandleSubmitResultAsync(
+        string payload,
+        ModuleProviderContext context,
+        CancellationToken ct)
+    {
+        var provider = _coordinator.GetActiveProvider(MyModuleIds.ModuleId);
+        if (provider is null) return;
+
+        var command = JsonSerializer.Deserialize<MyModuleResultPayload>(
+            payload,
+            JsonOptions.CamelCase);
+        if (command is null) return;
+
+        await _sessionManager.ApplyMyModuleResultAsync(command, ct);
+    }
+}
+```
+
+Key rules:
+- Do not trust the payload without validating the provider connection first.
+- Use the `ModuleProviderContext.ProviderId` to confirm the message came from the expected provider.
+- Forward validated commands to `IExperimentSessionManager` methods — do not apply state changes from the handler directly.
+
+## Step 4: Define the Outbound Publisher Interface
+
+Define a semantically named interface in the application layer. This interface is what application services depend on.
+
+```csharp
+namespace ReadingTheReader.core.Application.InfrastructureContracts;
+
+public interface IMyModuleGateway
+{
+    ValueTask PublishTriggerInputAsync(
+        Guid? sessionId,
+        MyModuleTriggerInputSnapshot input,
+        CancellationToken ct = default);
+}
+```
+
+## Step 5: Implement the Outbound Publisher
+
+The publisher translates application-layer method calls into generic `IModuleProviderGateway.PublishAsync()` calls.
+
+```csharp
+public sealed class MyModuleOutboundPublisher : IMyModuleGateway
+{
+    private readonly IModuleProviderGateway _gateway;
+
+    public MyModuleOutboundPublisher(IModuleProviderGateway gateway)
+    {
+        _gateway = gateway;
+    }
+
+    public async ValueTask PublishTriggerInputAsync(
+        Guid? sessionId,
+        MyModuleTriggerInputSnapshot input,
+        CancellationToken ct = default)
+    {
+        await _gateway.PublishAsync(
+            MyModuleIds.ModuleId,
+            MyModuleOutboundMessageTypes.TriggerInput,
+            input,
+            sessionId.HasValue
+                ? new ModuleProviderPublishContext(SessionId: sessionId.Value.ToString("D"))
+                : null,
+            ct);
+    }
+}
+```
+
+## Step 6: Inject into the Session Manager
+
+If the session manager needs to call your gateway, inject `IMyModuleGateway` into `ExperimentSessionManager` alongside the existing gateways.
+
+```csharp
+private readonly IMyModuleGateway _myModuleGateway;
+```
+
+If the session manager only needs to know whether the module is active (not write to it), use `IModuleProviderCoordinator.IsExternalActive(MyModuleIds.ModuleId)` instead of injecting a gateway.
+
+## Step 7: Register in DI
+
+Add a module installer:
+
+```csharp
+public static class MyModuleInstaller
+{
+    public static IServiceCollection InstallMyModule(this IServiceCollection services)
+    {
+        services.AddSingleton<IModuleProviderInboundHandler, MyModuleInboundHandler>();
+        services.AddSingleton<IMyModuleGateway, MyModuleOutboundPublisher>();
+        return services;
+    }
+}
+```
+
+Call it from `Program.cs` or the relevant application installer:
+
+```csharp
+services.InstallMyModule();
+```
+
+## Step 8: Write the External Provider
+
+Your external provider connects to `/ws/module-provider` using the standard module provider envelope.
+
+### Envelope format
+
+```json
+{
+  "messageType": "moduleProviderHello",
+  "moduleId": "my-module",
+  "providerId": "my-provider-id",
+  "sessionId": null,
+  "correlationId": null,
+  "sentAtUnixMs": 1710000000000,
+  "payload": {}
+}
+```
+
+### Hello payload
+
+```json
+{
+  "providerId": "my-provider-id",
+  "displayName": "My External Module",
+  "authToken": "shared-secret",
+  "capabilities": {
+    "supportsFeatureX": "true",
+    "supportedOutputKinds": "kind-a,kind-b"
+  }
+}
+```
+
+### After registration
+
+Once registered, your provider receives outbound messages from the backend with `moduleId = "my-module"`. Send inbound messages with the same module ID.
+
+## Step 9: Write a Fake for Tests
+
+Add a fake coordinator entry in your test harness:
+
+```csharp
+harness.ModuleProviderCoordinator.SetActiveProvider(
+    MyModuleIds.ModuleId,
+    new ModuleProviderConnectionRecord(
+        "conn-1",
+        "my-test-provider",
+        "My Test Provider",
+        [MyModuleIds.ModuleId],
+        DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        new Dictionary<string, ModuleCapabilities>
+        {
+            [MyModuleIds.ModuleId] = new ModuleCapabilities(new Dictionary<string, string?>
+            {
+                [MyModuleCapabilityKeys.SupportsFeatureX] = "true"
+            })
+        }));
+```
+
+Then create the inbound handler directly:
+
+```csharp
+var handler = new MyModuleInboundHandler(harness.SessionManager, harness.ModuleProviderCoordinator);
+await handler.HandleAsync(
+    MyModuleInboundMessageTypes.SubmitResult,
+    JsonSerializer.Serialize(payload, camelCaseOptions),
+    new ModuleProviderContext("conn-1", "my-test-provider", MyModuleIds.ModuleId, sessionId, null, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+```
+
+## What You Do Not Need to Change
+
+- `ModuleProviderWebSocketConfiguration` — it already routes by module ID
+- `ModuleProviderConnectionRegistry` — it already supports multiple module IDs per connection
+- `ExperimentSessionManager` constructor — add only the gateway injection if you need outbound publishing
+- Any existing module handler — each handler is isolated
+
+## Checklist
+
+- [ ] Module ID constant defined
+- [ ] Capability key constants defined
+- [ ] Inbound message type constants defined
+- [ ] Outbound message type constants defined
+- [ ] Inbound handler implemented and registered as `IModuleProviderInboundHandler`
+- [ ] Outbound gateway interface defined in `InfrastructureContracts`
+- [ ] Outbound publisher implemented and registered
+- [ ] Session manager updated with gateway injection if needed
+- [ ] External provider connects to `/ws/module-provider` with correct `moduleId`
+- [ ] Test fake wired through `FakeModuleProviderCoordinator.SetActiveProvider()`
+- [ ] At least one integration test covering inbound message → session state change
+
+## Companion Pages
+
+- [/system-design/module-provider-framework/](/system-design/module-provider-framework/)
+- [/integration/provider-protocol/](/integration/provider-protocol/)
+- [/integration/black-box-contract/](/integration/black-box-contract/)

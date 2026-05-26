@@ -1,0 +1,282 @@
+# Module Provider Framework
+
+## Purpose
+
+This document describes the Module Provider Framework — a backend architectural feature that gives external software modules a single, uniform connection point to the Reading the Reader runtime.
+
+The framework replaces a collection of ad-hoc per-provider WebSocket endpoints and ingress services with one generic connection layer. All external module types — decision providers, analysis providers, or future integrations — connect through the same transport boundary, register with the same coordinator, and receive the same lifecycle guarantees.
+
+This is an important thesis architecture claim: the framework demonstrates that the system can accept new external capabilities without touching the session manager, the intervention runtime, or the frontend.
+
+## Problem It Solves
+
+Before the framework existed, every external integration required:
+
+- a dedicated WebSocket endpoint (e.g. `/ws/provider`, `/ws/analysis-provider`)
+- a dedicated connection manager
+- a dedicated ingress service
+- a dedicated set of message type constants
+- a dedicated infrastructure transport adapter interface
+
+Adding a new module meant adding a full parallel stack. None of this was generic.
+
+The framework collapses all of that into:
+
+- one endpoint: `/ws/module-provider`
+- one coordinator: `IModuleProviderCoordinator`
+- one transport adapter: `IModuleProviderTransportAdapter`
+- one gateway: `IModuleProviderGateway`
+- one connection record shape: `ModuleProviderConnectionRecord`
+- one per-module capability bag: `ModuleCapabilities`
+
+## Key Abstractions
+
+### `IModuleProviderCoordinator`
+
+The coordinator is the session manager's view of the provider layer. It answers two questions:
+
+- Is there an active external provider for this module?
+- What capabilities does the active provider have?
+
+```csharp
+public interface IModuleProviderCoordinator
+{
+    bool IsExternalActive(string moduleId);
+    ModuleProviderConnectionRecord? GetActiveProvider(string moduleId);
+    event EventHandler<ModuleProviderSourceChangedEventArgs>? SourceChanged;
+}
+```
+
+The session manager only calls `IModuleProviderCoordinator`. It never holds a direct reference to transport adapters or connection registries.
+
+### `ModuleProviderConnectionRecord`
+
+A snapshot of a connected provider's identity and capabilities. Immutable once created.
+
+Fields:
+- `ConnectionId` — the transport-level connection identifier
+- `ProviderId` — the provider's self-declared identity string
+- `DisplayName` — human-readable label for researcher UI
+- `ModuleIds` — the module IDs this provider claimed to support at registration
+- `RegisteredAtUnixMs` — when the provider connected
+- `LastHeartbeatAtUnixMs` — when the last heartbeat was received
+- `CapabilitiesByModule` — a dictionary from module ID to a `ModuleCapabilities` bag
+
+Helper: `GetModuleCapabilities(string moduleId)` — returns the capabilities for the requested module, or an empty bag if none.
+
+### `ModuleCapabilities`
+
+A lightweight string-keyed property bag for provider capabilities. No fixed schema — each module defines its own capability key constants.
+
+Helpers:
+- `HasFlag(key)` — returns true if the value is `"true"` (case-insensitive)
+- `GetString(key)` — returns the raw string value or null
+- `GetList(key)` — splits the value on commas and returns a list
+
+The capability bag is intentionally untyped so the framework does not need to be changed when a new module introduces new capabilities.
+
+### `IModuleProviderGateway`
+
+The session manager's write path to the provider layer. Used to push signal updates outward.
+
+```csharp
+public interface IModuleProviderGateway
+{
+    bool HasActiveProvider(string moduleId);
+    ValueTask<bool> PublishAsync<TPayload>(
+        string moduleId,
+        string messageType,
+        TPayload payload,
+        ModuleProviderPublishContext? context = null,
+        CancellationToken ct = default);
+}
+```
+
+The generic `PublishAsync` method dispatches outbound messages to whichever transport connection is active for the given module. If no provider is connected, it returns false and does nothing.
+
+### `ModuleProviderContext`
+
+The inbound routing context passed to every inbound message handler.
+
+```csharp
+public sealed record ModuleProviderContext(
+    string ConnectionId,
+    string ProviderId,
+    string ModuleId,
+    string? SessionId,
+    string? CorrelationId,
+    long ReceivedAtUnixMs);
+```
+
+This context is supplied by the transport layer and tells the handler which provider sent the message and which module they're acting as.
+
+### `IModuleProviderInboundHandler`
+
+The contract for per-module message handlers. One handler exists per module.
+
+```csharp
+public interface IModuleProviderInboundHandler
+{
+    string ModuleId { get; }
+    ValueTask HandleAsync(string messageType, string payload, ModuleProviderContext context, CancellationToken ct = default);
+}
+```
+
+The transport layer routes inbound messages to the right handler by matching `context.ModuleId` to a registered handler's `ModuleId`.
+
+### `IModuleProviderTransportAdapter`
+
+The infrastructure interface owned by the application layer. Gives the coordinator and gateway access to the transport without depending on WebSocket specifics.
+
+```csharp
+public interface IModuleProviderTransportAdapter
+{
+    bool HasActiveConnection(string moduleId);
+    ValueTask<bool> SendAsync<TPayload>(
+        string moduleId,
+        string messageType,
+        TPayload payload,
+        ModuleProviderPublishContext? context = null,
+        CancellationToken ct = default);
+}
+```
+
+## Architecture Diagram
+
+```
+External Provider
+       │
+       ▼
+  /ws/module-provider
+       │
+       ▼
+ModuleProviderWebSocketConfiguration
+  - accept connection
+  - deserialize envelope
+  - route by moduleId
+       │
+       ├──► IModuleProviderInboundHandler (interventions)
+       │         └─► ExperimentSessionManager.SubmitExternalDecisionProposalAsync()
+       │
+       └──► IModuleProviderInboundHandler (fixation-analysis)
+                 └─► ExperimentSessionManager.ApplyExternalEyeMovementAnalysisAsync()
+
+ExperimentSessionManager
+  - reads IModuleProviderCoordinator for status and capabilities
+  - writes IModuleProviderGateway to push signal updates outward
+
+IModuleProviderGateway
+  └─► IModuleProviderTransportAdapter (infrastructure)
+           └─► ModuleProviderWebSocketConnectionManager
+                    └─► WebSocket.SendAsync()
+```
+
+## Current Module IDs
+
+Two module IDs are registered by default:
+
+### `interventions`
+
+Defined in `InterventionsModuleIds.ModuleId`.
+
+Capability keys:
+- `InterventionsModuleCapabilityKeys.SupportsAdvisoryExecution`
+- `InterventionsModuleCapabilityKeys.SupportsAutonomousExecution`
+- `InterventionsModuleCapabilityKeys.SupportedInterventionModuleIds`
+
+Inbound handler: `InterventionsInboundHandler`
+
+Outbound publisher: `InterventionsOutboundPublisher` (implements `IExternalProviderGateway`)
+
+### `fixation-analysis`
+
+Defined in `FixationAnalysisModuleIds.ModuleId`.
+
+Inbound handler: `FixationAnalysisInboundHandler`
+
+Outbound publisher: `FixationAnalysisOutboundPublisher` (implements `IAnalysisProviderGateway`)
+
+## How Session Manager Consumes the Framework
+
+The session manager does not have any knowledge of individual module types. It uses two generic access patterns:
+
+### Capability check
+
+```csharp
+private bool ShouldPublishToExternalProvider()
+{
+    return string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.External, StringComparison.Ordinal) &&
+           _moduleProviderCoordinator.IsExternalActive(InterventionsModuleIds.ModuleId);
+}
+```
+
+### Status projection
+
+```csharp
+private static ExternalProviderStatusSnapshot BuildExternalProviderStatusSnapshot(
+    IModuleProviderCoordinator coordinator)
+{
+    var provider = coordinator.GetActiveProvider(InterventionsModuleIds.ModuleId);
+    if (provider is null) return ExternalProviderStatusSnapshot.Disconnected.Copy();
+    var caps = provider.GetModuleCapabilities(InterventionsModuleIds.ModuleId);
+    return new ExternalProviderStatusSnapshot(
+        true, "active",
+        provider.ProviderId,
+        provider.DisplayName,
+        caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAdvisoryExecution),
+        caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAutonomousExecution),
+        caps.GetList(InterventionsModuleCapabilityKeys.SupportedInterventionModuleIds),
+        provider.LastHeartbeatAtUnixMs > 0 ? provider.LastHeartbeatAtUnixMs : null);
+}
+```
+
+This pattern means: adding a new module does not require any change to `ExperimentSessionManager`.
+
+## Publisher-As-Interface Pattern
+
+Each module defines its own high-level gateway interface (`IExternalProviderGateway`, `IAnalysisProviderGateway`). The publisher class implementing that interface is registered by the module installer and injected into application services.
+
+This means:
+- Application services depend on semantically named interfaces, not on a generic message bus.
+- The framework's generic machinery is hidden behind the module-specific interface boundary.
+- Replacing the transport does not change application-level code.
+
+## DI Registration
+
+The framework is installed through `ModuleProviderFrameworkInstaller.InstallModuleProviderFramework()`:
+
+```csharp
+services.AddSingleton<ModuleProviderConnectionRegistry>();
+services.AddSingleton<IModuleProviderConnectionRegistry>(sp =>
+    sp.GetRequiredService<ModuleProviderConnectionRegistry>());
+services.AddSingleton<IModuleProviderCoordinator>(sp =>
+    sp.GetRequiredService<ModuleProviderConnectionRegistry>());
+```
+
+Each module then installs its handler and publisher:
+
+```csharp
+services.AddSingleton<IModuleProviderInboundHandler, InterventionsInboundHandler>();
+services.AddSingleton<IExternalProviderGateway, InterventionsOutboundPublisher>();
+```
+
+## Why This Is Architecturally Defensible
+
+The framework achieves several thesis claims simultaneously:
+
+1. **The endpoint boundary is a single, stable seam.** External modules do not change how they connect regardless of what the session manager does internally.
+
+2. **New modules do not require core changes.** Adding a third module requires only a new handler, a new publisher, and a new installer — not a new endpoint or a new session manager method.
+
+3. **Capabilities drive behavior, not type checks.** The coordinator returns capability bags. The session manager reads flags. No switch statements on module types.
+
+4. **Testing is isolated.** Tests use `FakeModuleProviderCoordinator` to simulate connected providers without any transport plumbing. The inbound handlers can be exercised directly with serialized payloads and a `ModuleProviderContext`.
+
+5. **Backend authority is preserved.** The framework routes external requests inward to the session manager, which validates and applies them. External providers cannot bypass the authority boundary.
+
+## Companion Pages
+
+- [/system-design/decision-layer/](/system-design/decision-layer/)
+- [/integration/adding-a-new-module/](/integration/adding-a-new-module/)
+- [/integration/provider-protocol/](/integration/provider-protocol/)
+- [/integration/black-box-contract/](/integration/black-box-contract/)

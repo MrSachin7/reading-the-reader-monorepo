@@ -1,8 +1,8 @@
 namespace ReadingTheReader.core.Application.InfrastructureContracts;
 
-public interface IExternalProviderTransportAdapter
+public interface IModuleProviderTransportAdapter
 {
-    ValueTask SendToProviderAsync<TPayload>(
+    ValueTask SendEnvelopeAsync<TPayload>(
         string connectionId,
         string messageType,
         TPayload payload,

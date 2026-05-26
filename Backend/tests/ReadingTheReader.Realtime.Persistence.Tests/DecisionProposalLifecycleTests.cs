@@ -1,9 +1,11 @@
+using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventions;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
-using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 using Xunit;
 
@@ -162,7 +164,7 @@ public sealed class DecisionProposalLifecycleTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
-        await RegisterProviderAsync(harness);
+        RegisterProvider(harness);
 
         await harness.SessionManager.UpdateDecisionConfigurationAsync(
             new DecisionConfigurationSnapshot(
@@ -184,35 +186,32 @@ public sealed class DecisionProposalLifecycleTests
                 1,
                 0));
 
-        Assert.Contains(
-            harness.ExternalProviderTransport.Messages,
-            message => message.MessageType == ProviderMessageTypes.ProviderSessionSnapshot);
-        Assert.Contains(
-            harness.ExternalProviderTransport.Messages,
-            message => message.MessageType == ProviderMessageTypes.ProviderDecisionContext);
-
         var sessionId = harness.SessionManager.GetCurrentSnapshot().SessionId!.Value.ToString("D");
-        var result = await harness.ProviderIngress.HandleAsync(new ProviderSubmitProposalRealtimeCommand(
-            "conn-1",
-            new ProviderSubmitProposalRealtimePayload(
-                "mock-python",
-                sessionId,
-                "corr-101",
-                Guid.NewGuid().ToString("D"),
-                DecisionExecutionModes.Advisory,
-                "Sustained fixation suggests a small font size increase.",
-                "token dwell time > 1200 ms",
-                1_710_000_004_000,
-                new ProviderProposedInterventionRealtimePayload(
-                    ReadingInterventionModuleIds.FontSize,
-                    "attention-summary",
-                    "Increase font size to reduce strain.",
-                    new ProviderReadingPresentationPatchRealtimePayload(null, 20, null, null, null, null),
-                    new ProviderReaderAppearancePatchRealtimePayload(null, null, null),
-                    new Dictionary<string, string?> { ["fontSizePx"] = "20" }))));
-
-        Assert.False(result.ShouldCloseConnection);
-        Assert.Empty(result.Responses);
+        var handler = CreateInterventionsHandler(harness);
+        var proposalPayload = SerializePayload(new
+        {
+            providerId = "mock-python",
+            sessionId,
+            correlationId = "corr-101",
+            proposalId = Guid.NewGuid().ToString("D"),
+            executionMode = DecisionExecutionModes.Advisory,
+            rationale = "Sustained fixation suggests a small font size increase.",
+            signalSummary = "token dwell time > 1200 ms",
+            providerObservedAtUnixMs = 1_710_000_004_000L,
+            proposedIntervention = new
+            {
+                moduleId = ReadingInterventionModuleIds.FontSize,
+                trigger = "attention-summary",
+                reason = "Increase font size to reduce strain.",
+                presentation = new { fontFamily = (string?)null, fontSizePx = 20, lineWidthPx = (int?)null, lineHeight = (double?)null, letterSpacingEm = (double?)null, editableByResearcher = (bool?)null },
+                appearance = new { themeMode = (string?)null, palette = (string?)null, appFont = (string?)null },
+                parameters = new Dictionary<string, string?> { ["fontSizePx"] = "20" }
+            }
+        });
+        await handler.HandleAsync(
+            InterventionsInboundMessageTypes.SubmitProposal,
+            proposalPayload,
+            new ModuleProviderContext("conn-1", "mock-python", InterventionsModuleIds.ModuleId, sessionId, "corr-101", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
 
         var update = GetLatestDecisionUpdate(harness);
 
@@ -228,7 +227,7 @@ public sealed class DecisionProposalLifecycleTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
-        await RegisterProviderAsync(harness);
+        RegisterProvider(harness);
 
         await harness.SessionManager.UpdateDecisionConfigurationAsync(
             new DecisionConfigurationSnapshot(
@@ -242,26 +241,30 @@ public sealed class DecisionProposalLifecycleTests
             0));
 
         var sessionId = harness.SessionManager.GetCurrentSnapshot().SessionId!.Value.ToString("D");
-        var result = await harness.ProviderIngress.HandleAsync(new ProviderRequestAutonomousApplyRealtimeCommand(
-            "conn-1",
-            new ProviderRequestAutonomousApplyRealtimePayload(
-                "mock-python",
-                sessionId,
-                "corr-202",
-                DecisionExecutionModes.Autonomous,
-                "External provider matched the autonomous condition.",
-                "token dwell time > 1200 ms",
-                1_710_000_005_000,
-                new ProviderProposedInterventionRealtimePayload(
-                    ReadingInterventionModuleIds.FontSize,
-                    "attention-summary",
-                    "Increase font size to reduce strain.",
-                    new ProviderReadingPresentationPatchRealtimePayload(null, 20, null, null, null, null),
-                    new ProviderReaderAppearancePatchRealtimePayload(null, null, null),
-                    new Dictionary<string, string?> { ["fontSizePx"] = "20" }))));
-
-        Assert.False(result.ShouldCloseConnection);
-        Assert.Empty(result.Responses);
+        var handler = CreateInterventionsHandler(harness);
+        var applyPayload = SerializePayload(new
+        {
+            providerId = "mock-python",
+            sessionId,
+            correlationId = "corr-202",
+            executionMode = DecisionExecutionModes.Autonomous,
+            rationale = "External provider matched the autonomous condition.",
+            signalSummary = "token dwell time > 1200 ms",
+            providerObservedAtUnixMs = 1_710_000_005_000L,
+            requestedIntervention = new
+            {
+                moduleId = ReadingInterventionModuleIds.FontSize,
+                trigger = "attention-summary",
+                reason = "Increase font size to reduce strain.",
+                presentation = new { fontFamily = (string?)null, fontSizePx = 20, lineWidthPx = (int?)null, lineHeight = (double?)null, letterSpacingEm = (double?)null, editableByResearcher = (bool?)null },
+                appearance = new { themeMode = (string?)null, palette = (string?)null, appFont = (string?)null },
+                parameters = new Dictionary<string, string?> { ["fontSizePx"] = "20" }
+            }
+        });
+        await handler.HandleAsync(
+            InterventionsInboundMessageTypes.RequestAutonomousApply,
+            applyPayload,
+            new ModuleProviderContext("conn-1", "mock-python", InterventionsModuleIds.ModuleId, sessionId, "corr-202", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
 
         var update = GetLatestDecisionUpdate(harness);
 
@@ -282,7 +285,7 @@ public sealed class DecisionProposalLifecycleTests
         var harness = RealtimeTestDoubles.CreateHarness();
         await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
         await harness.SessionManager.StartSessionAsync();
-        await RegisterProviderAsync(harness);
+        RegisterProvider(harness);
 
         await harness.SessionManager.UpdateDecisionConfigurationAsync(
             new DecisionConfigurationSnapshot(
@@ -305,26 +308,44 @@ public sealed class DecisionProposalLifecycleTests
         });
 
         Assert.Contains(
-            harness.ExternalProviderTransport.Messages,
-            message => message.MessageType == ProviderMessageTypes.ProviderGazeSample
-                       && message.Payload is GazeData gaze
-                       && gaze.DeviceTimeStamp == 123);
+            harness.ExternalProviderGateway.GazeSamples,
+            gaze => gaze.DeviceTimeStamp == 123);
     }
 
-    private static async Task RegisterProviderAsync(RealtimeTestDoubles.RuntimeHarness harness)
+    private static void RegisterProvider(RealtimeTestDoubles.RuntimeHarness harness)
     {
-        var result = await harness.ProviderIngress.HandleAsync(new ProviderHelloRealtimeCommand(
-            "conn-1",
-            new ProviderHelloRealtimePayload(
+        var caps = new ModuleCapabilities(new Dictionary<string, string?>
+        {
+            [InterventionsModuleCapabilityKeys.SupportsAdvisoryExecution] = "true",
+            [InterventionsModuleCapabilityKeys.SupportsAutonomousExecution] = "true",
+            [InterventionsModuleCapabilityKeys.SupportedInterventionModuleIds] = ReadingInterventionModuleIds.FontSize
+        });
+        harness.ModuleProviderCoordinator.SetActiveProvider(
+            InterventionsModuleIds.ModuleId,
+            new ModuleProviderConnectionRecord(
+                "conn-1",
                 "mock-python",
                 "Mock Python Provider",
-                ProviderProtocolVersions.V1,
-                harness.ExternalProviderOptions.SharedSecret,
-                true,
-                true,
-                [ReadingInterventionModuleIds.FontSize])));
+                [InterventionsModuleIds.ModuleId],
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                new Dictionary<string, ModuleCapabilities>
+                {
+                    [InterventionsModuleIds.ModuleId] = caps
+                }));
+    }
 
-        Assert.False(result.ShouldCloseConnection);
+    private static InterventionsInboundHandler CreateInterventionsHandler(RealtimeTestDoubles.RuntimeHarness harness)
+    {
+        return new InterventionsInboundHandler(
+            harness.SessionManager,
+            harness.ModuleProviderCoordinator,
+            new RealtimeTestDoubles.FakeModuleProviderGateway());
+    }
+
+    private static string SerializePayload<T>(T payload)
+    {
+        return JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
     }
 
     private static DecisionRealtimeUpdateSnapshot GetLatestDecisionUpdate(RealtimeTestDoubles.RuntimeHarness harness)
