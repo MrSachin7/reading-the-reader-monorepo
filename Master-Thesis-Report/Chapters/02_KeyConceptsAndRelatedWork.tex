@@ -1,0 +1,89 @@
+\section{Key Concepts and Related Works}
+
+\subsection{Key Concepts for Adaptive Reading Analytics}
+This section defines the core concepts underlying the thesis. Definitions are grounded in primary and project-aligned sources.
+
+\subsubsection{Adaptive Reading System}
+The “Reading the Reader” concept assumes a closed-loop system that senses gaze-related signals (including pupil size) during reading, extracts higher-level events (fixations, saccades, regressions), classifies reading state or style, and triggers typographic interventions in real time \cite{ref1}.
+
+\subsubsection{Micro-Interventions and Just-in-Time Adaptation}
+The project proposal defines “micro-interventions” as small, context-preserving changes to typography or layout (e.g., spacing or contrast adjustments) designed to support reading without disrupting flow \cite{ref2}.  
+
+Within broader HCI literature, microintervention systems are described as structured, designed small actions embedded into systems, where timing, narrative coherence, and personalization influence overall user experience \cite{ref2}.  
+
+In this thesis, just-in-time adaptation is defined operationally as an intervention policy that triggers based on short temporal windows of online gaze and interaction features, while controlling for:
+\begin{itemize}
+    \item Intervention cost (risk of disruption),
+    \item Recovery behavior (time required to resume reading).
+\end{itemize}
+
+\subsubsection{Context Preservation and Recovery Metrics}
+Recent ETRA 2025 work frames context preservation as interface functionality that enables readers to resume reading quickly after typographic changes. It introduces the metric Reading Resume Time (RRT) and compares four intervention designs: Popup, Undo, Notification, and Gradual \cite{ref2}.  
+
+Results indicate that a Gradual intervention combined with highlighting yields the fastest recovery time and highest user preference. This demonstrates that intervention form factor and transition smoothness significantly affect usability.  
+
+In this thesis, context preservation is treated as a first-class design goal with measurable outcomes:
+\begin{itemize}
+    \item Reading Resume Time (RRT),
+    \item Gaze stabilization time,
+    \item Regression bursts following change.
+\end{itemize}
+
+\subsection{Related Academic Work}
+
+\subsubsection{Context Preservation and Intervention Design}
+The ETRA 2025 paper on context preservation formalizes a key HCI challenge: adaptive reading interfaces can either assist or hinder reading depending on how changes are introduced and how recovery is supported. In a within-subject study with 22 participants, significant differences in RRT were reported across intervention types \cite{ref2}.  
+
+This supports the thesis argument that intervention design is a measurable system behavior that must be architecturally supported through stable integration hooks and logging mechanisms.
+
+\subsubsection{Reading Analytics for Emerging Content Types}
+An ETRA 2025 study comparing AI-generated and human-authored texts collected gaze data from 13 participants and applied I2MC for fixation identification. The study also analyzed pupil dilation and reading speed \cite{ref2}.  
+
+Findings demonstrate:
+\begin{enumerate}
+    \item Gaze metrics are sensitive to subtle content differences,
+    \item Experimental reproducibility requires modular and transparent data pipelines.
+\end{enumerate}
+
+\subsection{Market Landscape of Tools and Products}
+
+\subsubsection{Comparison of Tools}
+
+\begin{longtable}{p{3cm}p{3cm}p{2.5cm}p{4cm}p{2.5cm}}
+\toprule
+Category & Vendor / Product & Delivery Model & Capabilities & Pricing Signal \\
+\midrule
+Screen-based eye tracker & Tobii Pro Fusion & Hardware & Up to 250 Hz sampling; fixation/saccade detection; pupil diameter recording \cite{ref3} & Quote-based \cite{ref3} \\
+Screen-based eye tracker & EyeLink 1000 Plus & Hardware & Binocular sampling up to 2000 Hz; research integration support \cite{ref4} & Quote request \cite{ref5} \\
+Lower-cost eye tracker & GazePoint GP3 HD & Hardware + Software & 150 Hz sampling; research-grade positioning \cite{ref6} & \$2,650 hardware-only \cite{ref6} \\
+Wearable eye tracking & Pupil Labs Neon & Hardware & Academic pricing; complete research system \cite{ref7} & €5,515 academic \cite{ref7} \\
+Remote webcam tracking & RealEye & SaaS & Subscription plans; data export; panel workflow \cite{ref8} & Panelists \$15 \cite{ref9} \\
+Experiment software & Tobii Pro Lab & Desktop software & Experiment design + recording + analysis \cite{ref10} & Trial available \cite{ref10} \\
+Reading assessment & Lexplore & Service + Hardware & AI-based reading assessment \cite{ref11} & Quote-based \cite{ref12} \\
+Accessibility device & OrCam Read 3 & Hardware & Reads printed/digital text aloud \cite{ref13} & \$116/month option \cite{ref13} \\
+Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus; Text Spacing; read-aloud \cite{ref14} & Included \cite{ref14} \\
+E-reading customization & Amazon Kindle settings & Device feature & Font size and appearance adjustments \cite{ref15} & Included with device \cite{ref15} \\
+\bottomrule
+\end{longtable}
+
+\subsection{Gaps and Opportunities}
+
+\subsubsection{Architecture Gap: Experimentability}
+The project proposal highlights that tightly coupled prototypes hinder systematic comparison of interventions and decision strategies. Empirical findings show that intervention design materially affects recovery and user preference \cite{ref2, ref16}.  
+
+\textbf{Opportunity:} Design the adaptation engine with hot-swappable intervention modules and auditable logging to enable:
+\begin{itemize}
+    \item Systematic A/B testing,
+    \item Replay-based evaluation,
+    \item Real-time override capabilities,
+    \item Transparent experimental comparison.
+\end{itemize}
+
+\subsection{Conclusion}
+The reviewed literature and market landscape collectively demonstrate that adaptive reading systems require:
+\begin{enumerate}
+    \item Robust gaze-processing pipelines,
+    \item Carefully designed intervention mechanisms,
+    \item Context-preservation metrics,
+    \item Modular, experiment-ready architectures.
+\end{enumerate}

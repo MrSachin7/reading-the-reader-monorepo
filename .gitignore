@@ -39,3 +39,25 @@ DocsSite/out/
 
 # Backend runtime data and local experiment outputs
 Backend/src/ReadingTheReader.WebApi/data/
+
+# ============================================================
+# LaTeX build artifacts (Master-Thesis-Report/)
+# Scoped to the thesis subtree so PDFs elsewhere are unaffected.
+# ============================================================
+Master-Thesis-Report/*.aux
+Master-Thesis-Report/*.fls
+Master-Thesis-Report/*.log
+Master-Thesis-Report/*.out
+Master-Thesis-Report/*.toc
+Master-Thesis-Report/*.lof
+Master-Thesis-Report/*.lot
+Master-Thesis-Report/*.bbl
+Master-Thesis-Report/*.blg
+Master-Thesis-Report/*.bcf
+Master-Thesis-Report/*.run.xml
+Master-Thesis-Report/*.fdb_latexmk
+Master-Thesis-Report/*.synctex.gz
+Master-Thesis-Report/*.xdv
+Master-Thesis-Report/*.pdf
+Master-Thesis-Report/_minted-*/
+Master-Thesis-Report/bibliography.tex.bak
