@@ -7,6 +7,49 @@
 
 ---
 
+# Stakeholders and User Roles
+
+The system is designed to serve three distinct actors, each with a clearly defined role in the conduct of a reading experiment.
+
+---
+
+## 1. Researcher
+
+The **Researcher** is the primary human operator and the stakeholder around whose workflow the platform is principally organised.
+In the context of a controlled reading study, the researcher is responsible for the complete experimental lifecycle: preparing reading materials and experiment templates, enrolling participants and recording their demographic attributes, ensuring the sensing hardware is correctly connected and calibrated, and conducting the session from start to finish.
+
+During an active session, the researcher operates from a physically separate screen, observing the participant's reading behaviour through a mirrored live view without being present at the participant's display.
+From this interface, the researcher must be able to monitor session health, manually apply typographic interventions, approve or reject proposals submitted by an automated decision strategy, pause and resume automated decision-making, and advance the participant through a multi-item reading sequence.
+Once a session concludes, the researcher must be able to export session data for external analysis and replay recorded sessions to review gaze behaviour and intervention history at a later point.
+
+Because the researcher coordinates every aspect of an experiment, minimising operator cognitive load is a primary concern.
+A guided, step-by-step setup workflow with explicit readiness gating and a unified live control panel are therefore core requirements, not peripheral usability enhancements.
+
+---
+
+## 2. Test Subject
+
+The **Test Subject** is the person recruited by the researcher to take part in a reading experiment.
+Their role within the system is deliberately narrow: they read Markdown-formatted text presented in the reading interface while their gaze behaviour is recorded.
+The test subject does not interact with system configuration, session management, or any researcher-facing controls.
+
+During a session, the test subject may be exposed to typographic adaptations — changes to font size, line width, line height, letter spacing, font family, colour palette, or theme mode — applied by the researcher or by an automated strategy.
+A critical requirement arising from this role is that such adaptations must not disrupt reading flow or cause the test subject to lose their place in the text, as perceptible disruption would confound the experimental results.
+Following each reading item, the test subject may also be asked to answer comprehension quiz questions, the results of which are recorded as part of the session data.
+
+---
+
+## 3. External Module Provider
+
+The **External Module Provider** is an out-of-process software agent that connects to the platform, declares its capabilities, receives structured context containing gaze observations and session state, and returns commands such as intervention recommendations or derived fixation events.
+
+A central research motivation for this platform is the ability to evaluate different decision and analysis strategies under comparable experimental conditions.
+This actor motivates the need for a stable and documented integration protocol so that different strategies — rule-based, machine-learning-based, or otherwise — can be substituted without changes to the core system.
+The platform must support a range of execution modes, from fully autonomous application of proposals to researcher-gated approval, so that the degree of automation can itself be varied as an experimental condition.
+The system must also continue operating normally if a provider disconnects mid-session, ensuring that a provider failure does not abort an ongoing experiment.
+
+---
+
 # User Stories
 
 The following user stories describe the expected behaviour of the system from the perspective of its primary actors: the **Test Subject**, the **Researcher**, and the **External Module Provider**.
@@ -514,114 +557,10 @@ This property is required to support development, demonstration, and CI testing 
 
 ---
 
-# Actor Descriptions
-
-This section identifies the primary and secondary actors interacting with the adaptive reading system.
-
----
-
-## 1. Test Subject (Reader)
-
-The **Test Subject** is the participant who reads text within the adaptive reading application while connected to the eye tracker.
-
-The Test Subject:
-
-* Reads Markdown-formatted text presented in the reading interface
-* Is exposed to visual presentation settings and adaptive micro-interventions
-* Answers comprehension quiz questions after each reading item
-* Does not interact with system configuration or technical setup
-* Should experience minimal disruption, preserved reading context, and smooth flow
-
-From a system design perspective, the Test Subject interacts only with the **participant reading interface**, which must prioritize usability, legibility, and cognitive comfort.
-
----
-
-## 2. Researcher (Experimenter)
-
-The **Researcher** is responsible for conducting and managing experimental sessions.
-
-The Researcher:
-
-* Launches and configures the system
-* Selects the eye tracker and provides license credentials
-* Creates and manages reading materials and experiment templates
-* Configures visual presentation settings and intervention policy
-* Observes the participant's reading view through the researcher mirror
-* Manually applies interventions or approves/rejects decision proposals
-* Pauses and resumes automated decision-making
-* Advances the participant through multi-item reading sequences
-* Starts and stops sessions, and exports session data
-* Reviews past sessions using the replay playback system
-
-The system must minimise setup complexity and provide clear status indicators at every stage.
-
----
-
-## 3. Eye Tracker Device (Tobii Hardware)
-
-The **Eye Tracker Device** is an external hardware actor providing real-time gaze and pupil data via USB.
-
-The Eye Tracker:
-
-* Streams gaze coordinates, timestamps, and validity signals
-* Requires proper license provisioning
-* May connect or disconnect dynamically
-* Acts as the primary sensing source for adaptive behaviour when active
-
-Architecturally, the device interacts with the system exclusively through the **sensing layer** via a hardware adapter interface.
-
----
-
-## 4. Intervention Module (Pluggable Component)
-
-The **Intervention Module** represents a logical actor within the system architecture.
-
-Each intervention module:
-
-* Receives structured execution context (current presentation and appearance state, gaze-to-content mapping)
-* Produces a presentation or appearance update command
-* Must be addable without modifying existing code
-* May be triggered manually, rule-based, or via an automated strategy
-
-The system ships with eight built-in modules (font family, font size, line width, line height, letter spacing, theme mode, colour palette, participant edit lock) and is designed for additional modules to be registered additively.
-
----
-
-## 🆕 5. External Module Provider
-
-The **External Module Provider** is an out-of-process actor that connects to the system over a dedicated WebSocket endpoint to supply pluggable decision logic or eye movement analysis.
-
-An external module provider:
-
-* Connects to the module provider gateway and declares its capabilities
-* Receives structured context envelopes (gaze observations, session state, analysis results)
-* Returns commands (e.g., intervention recommendations, fixation events) to the core system
-* Must tolerate disconnection and reconnection without disrupting the running session
-* Communicates via a documented, stable protocol
-
-This actor enables AI-driven decision models and specialised analysis algorithms to be integrated without any changes to the core application.
-
----
-
-## 6. Session & Data Consumer (Post-Processing Actor)
-
-The **Data Consumer** represents the downstream actor (e.g., researcher, analyst, or analysis software) that consumes exported session data.
-
-This actor:
-
-* Receives structured JSON/CSV exports containing gaze samples, intervention events, fixation data, quiz results, and session metadata
-* Uses session metadata and logs for reproducibility and further analysis
-* May load exports back into the application for replay-based review
-
----
-
 # Summary
 
-The system supports six primary actors:
+The system supports three primary actors:
 
-1. **Test Subject** — End-user experiencing adaptive reading
-2. **Researcher** — Experiment conductor and system operator
-3. **Eye Tracker Device** — External sensing hardware
-4. **Intervention Module** — Pluggable adaptation logic component
-5. **External Module Provider** — Out-of-process AI/analysis provider
-6. **Data Consumer** — Post-session analysis stakeholder
+1. **Researcher** — Experiment conductor and primary system operator
+2. **Test Subject** — Study participant experiencing adaptive reading
+3. **External Module Provider** — Out-of-process agent supplying decision logic or analysis
