@@ -1,14 +1,19 @@
 # Adaptive Reading System — Requirements
 
+> **Revision note (2026-05):** This page has been updated to reflect the system as built.
+> Changes from the original draft are marked with ~~strikethrough~~ (removed/corrected) or 🆕 (newly added).
+> User story 20 (runtime annotations) was not implemented and has been removed.
+> FR5.1 has been corrected: PDF support was scoped out; the system supports Markdown only.
+
 ---
 
 # User Stories
 
-The following user stories describe the expected behaviour of the system from the perspective of its primary actors: the **Test Subject** and the **Researcher**.
+The following user stories describe the expected behaviour of the system from the perspective of its primary actors: the **Test Subject**, the **Researcher**, and the **External Module Provider**.
 
 ---
 
-# A. Eye Tracker Integration and Calibration
+## A. Eye Tracker Integration and Calibration
 
 1. **As a researcher**, I want the system to automatically detect connected eye trackers, so that I do not need to configure hardware manually.
 
@@ -22,9 +27,9 @@ The following user stories describe the expected behaviour of the system from th
 
 ---
 
-# B. Reading and Presentation
+## B. Reading and Presentation
 
-6. **As a test subject**, I want to read text (plain text or PDF) within the application, so that experiments can use realistic material.
+6. **As a test subject**, I want to read ~~text (plain text or PDF)~~ Markdown-formatted text within the application, so that experiments can use realistic material.
 
 7. **As a test subject**, I want visual presentation presets (contrast, background, typography), so that reading remains comfortable.
 
@@ -32,9 +37,9 @@ The following user stories describe the expected behaviour of the system from th
 
 ---
 
-# C. Real-Time Observation and Control
+## C. Real-Time Observation and Control
 
-9. **As a researcher**, I want a second-screen interface that mirrors the subject’s reading view in real time, so that I can observe the session accurately.
+9. **As a researcher**, I want a second-screen interface that mirrors the subject's reading view in real time, so that I can observe the session accurately.
 
 10. **As a researcher**, I want to manually trigger or override micro-interventions, so that I can compare human-controlled and automated behaviour.
 
@@ -42,7 +47,7 @@ The following user stories describe the expected behaviour of the system from th
 
 ---
 
-# D. Automated Decision Strategies
+## D. Automated Decision Strategies
 
 12. **As a system**, I want to support multiple decision strategies (AI-based, rule-based, manual), so that intervention triggering is interchangeable.
 
@@ -50,7 +55,7 @@ The following user stories describe the expected behaviour of the system from th
 
 ---
 
-# E. Context Preservation and Reading Flow
+## E. Context Preservation and Reading Flow
 
 14. **As a test subject**, I want my place in the text to remain visually stable when an intervention changes layout, so that reading flow is not disrupted.
 
@@ -58,30 +63,99 @@ The following user stories describe the expected behaviour of the system from th
 
 ---
 
-# F. Minimal Setup and Operational Simplicity
+## F. Minimal Setup and Operational Simplicity
 
 16. **As a researcher**, I want to run the entire system from a single application launch, so that setup hazards are minimized.
 
-17. **As a researcher**, I want a guided session workflow
-    (device → license → calibration → content → session), so that I avoid configuration errors.
+17. **As a researcher**, I want a guided session workflow (device → license → calibration → content → session), so that I avoid configuration errors.
 
 ---
 
-# G. Data Logging and Export
+## G. Data Logging and Export
 
 18. **As a researcher**, I want to export session data in JSON and CSV formats, so that I can analyze it in external tools.
 
-19. **As a researcher**, I want session exports to include:
+19. **As a researcher**, I want session exports to include gaze data, intervention events, configuration metadata, and calibration results, so that experiments are reproducible.
 
-* gaze data
-* intervention events
-* configuration metadata
-* calibration results
-* annotations
+---
 
-so that experiments are reproducible.
+## 🆕 H. Sensing Mode and Hardware Abstraction
 
-20. **As a researcher**, I want to annotate sessions during runtime, so that qualitative observations are preserved.
+20. **As a researcher**, I want to run the system using mouse-cursor simulation instead of a physical eye tracker, so that I can develop, demonstrate, and test the platform without hardware present.
+
+21. **As a researcher**, I want to switch the active sensing source (Tobii eye tracker, mouse simulation, or webcam) without restarting the application, so that different input configurations can be evaluated.
+
+---
+
+## 🆕 I. Reading Material and Experiment Content Management
+
+22. **As a researcher**, I want to create, edit, and delete named reading materials with Markdown content, so that experiments can use curated texts without modifying source files.
+
+23. **As a researcher**, I want to attach comprehension quiz questions to a reading material, so that participant understanding can be assessed after each reading item.
+
+24. **As a researcher**, I want to define named experiment templates that specify an ordered sequence of reading materials, so that multi-item sessions are reproducible and reusable.
+
+25. **As a researcher**, I want to advance the participant to the next reading item in a sequence from the researcher control panel, so that I can pace the session without participant involvement.
+
+---
+
+## 🆕 J. Comprehension Assessment
+
+26. **As a test subject**, I want to answer multiple-choice comprehension questions after reading, so that the researcher can measure how well I understood the material.
+
+27. **As a researcher**, I want comprehension quiz results to be recorded in the session export, so that reading performance can be correlated with gaze behaviour and intervention history.
+
+28. **As a researcher**, I want to navigate quiz questions forward and backward from the control panel, so that I can manage the quiz flow independently of the participant.
+
+---
+
+## 🆕 K. Decision Proposal Approval and Automation Control
+
+29. **As a researcher**, I want decision strategies to submit proposals for my approval before an intervention is applied, so that I remain in control during semi-automated sessions.
+
+30. **As a researcher**, I want to approve or reject individual decision proposals in real time from the control panel, so that I can filter inappropriate intervention suggestions.
+
+31. **As a researcher**, I want to pause and resume automated decision-making during a session, so that I can take manual control at any point without reconfiguring the strategy.
+
+---
+
+## 🆕 L. Eye Movement Analysis
+
+32. **As a system**, I want to detect fixations and saccades from the raw gaze stream, so that higher-level reading behaviour signals are available to decision strategies.
+
+33. **As a researcher**, I want to plug in an external fixation analysis algorithm via a WebSocket connection, so that I can replace the built-in fixation detector with a custom or ML-based model.
+
+---
+
+## 🆕 M. External Module Provider Integration
+
+34. **As an external module provider**, I want to connect to the running system over a WebSocket, declare my capabilities, receive session context, and send back commands, so that I can supply AI-driven decision logic or custom analysis without modifying the core application.
+
+35. **As a researcher**, I want the system to continue operating normally if an external module provider disconnects, so that a provider crash does not abort the experiment.
+
+---
+
+## 🆕 N. Session Replay
+
+36. **As a researcher**, I want to replay a recorded session in the application with full gaze-path reconstruction and intervention event markers, so that I can review session behaviour after the fact.
+
+37. **As a researcher**, I want to control replay playback speed (0.5×–2×) and scrub to any point on the timeline, so that I can efficiently navigate long sessions.
+
+38. **As a researcher**, I want to browse and reload previously saved session exports from within the application, so that I do not need to manage files manually between reviews.
+
+---
+
+## 🆕 O. State Recovery
+
+39. **As a system**, I want to checkpoint the current session state to disk at regular intervals, so that an unexpected application restart does not result in total data loss.
+
+40. **As a researcher**, I want the system to detect and offer to restore a previously interrupted session on startup, so that I can recover from crashes without losing the session record.
+
+---
+
+## 🆕 P. Per-Context Reader Shell Settings
+
+41. **As a researcher**, I want to configure typography and appearance settings independently for the participant reading view, the researcher mirror view, and the replay view, so that each context can be optimised without affecting the others.
 
 ---
 
@@ -89,18 +163,17 @@ so that experiments are reproducible.
 
 ---
 
-# FR1 — System Execution and Setup
+## FR1 — System Execution and Setup
 
 * **FR1.1** The system shall be executable through a single application launch or command.
 
 * **FR1.2** The system shall guide the researcher through a structured setup workflow.
 
-* **FR1.3** The system shall prevent session start until mandatory setup steps
-  (device selection, license validation, calibration) are completed successfully.
+* **FR1.3** The system shall prevent session start until mandatory setup steps (device selection, license validation, calibration) are completed successfully.
 
 ---
 
-# FR2 — Eye Tracker Detection and Licensing
+## FR2 — Eye Tracker Detection and Licensing
 
 * **FR2.1** The system shall detect connected eye trackers dynamically.
 
@@ -112,9 +185,9 @@ so that experiments are reproducible.
 
 ---
 
-# FR3 — Calibration Integration
+## FR3 — Calibration Integration
 
-* **FR3.1** The system shall integrate the official SDK calibration workflow.
+* **FR3.1** The system shall integrate the official Tobii SDK calibration workflow.
 
 * **FR3.2** The system shall display calibration quality metrics.
 
@@ -122,48 +195,50 @@ so that experiments are reproducible.
 
 * **FR3.4** The system shall allow recalibration between participants.
 
+* **FR3.5** The system shall support multiple calibration point presets (5-point, 9-point, 13-point) selectable by the researcher.
+
 ---
 
-# FR4 — Gaze Data Acquisition and Mapping
+## FR4 — Gaze Data Acquisition and Mapping
 
 * **FR4.1** The system shall stream gaze samples in real time.
 
 * **FR4.2** The system shall convert normalized gaze coordinates into screen-space coordinates.
 
-* **FR4.3** The system shall map gaze coordinates to content regions
-  (e.g., paragraph, line, or word).
+* **FR4.3** The system shall map gaze coordinates to content regions (e.g., paragraph, line, or word).
 
 * **FR4.4** The system shall expose gaze-to-content events via a stable internal interface.
 
 ---
 
-# FR5 — Reading Content and Presentation
+## FR5 — Reading Content and Presentation
 
-* **FR5.1** The system shall support loading and rendering plain text and PDF documents.
+* **FR5.1** ~~The system shall support loading and rendering plain text and PDF documents.~~
+  **FR5.1 (revised)** The system shall support loading and rendering Markdown-formatted documents. PDF support is explicitly out of scope.
 
-* **FR5.2** The system shall provide multiple visual presets optimized for readability.
+* **FR5.2** The system shall provide multiple visual presets optimized for readability, including font family, font size, line width, line height, letter spacing, colour palette, and theme mode.
 
 * **FR5.3** The system shall allow the researcher to lock visual presets per session.
 
-* **FR5.4** Rendering shall maintain consistent coordinate references for mapping.
+* **FR5.4** Rendering shall maintain consistent coordinate references for gaze-to-content mapping.
 
 ---
 
-# FR6 — Researcher Interface (Second Screen)
+## FR6 — Researcher Interface (Second Screen)
 
-* **FR6.1** The system shall provide a live mirrored view of the subject’s reading interface.
+* **FR6.1** The system shall provide a live mirrored view of the subject's reading interface.
 
-* **FR6.2** The researcher interface shall display system health indicators:
-
-  * sample rate
-  * validity rate
-  * latency
+* **FR6.2** The researcher interface shall display gaze health indicators (validity rate).
 
 * **FR6.3** The researcher shall be able to trigger manual interventions from this interface.
 
+* **FR6.4** The researcher interface shall display the intervention history for the current session.
+
+* **FR6.5** The researcher interface shall display pending decision proposals and provide approve/reject controls.
+
 ---
 
-# FR7 — Intervention Runtime
+## FR7 — Intervention Runtime
 
 * **FR7.1** The system shall support pluggable intervention modules.
 
@@ -173,9 +248,11 @@ so that experiments are reproducible.
 
 * **FR7.4** The runtime shall support manual, automated, and hybrid triggering.
 
+* **FR7.5** The system shall ship at least the following built-in intervention modules: font family, font size, line width, line height, letter spacing, theme mode, colour palette, and participant edit lock.
+
 ---
 
-# FR8 — Decision Strategy Abstraction
+## FR8 — Decision Strategy Abstraction
 
 * **FR8.1** The system shall support interchangeable decision strategies.
 
@@ -183,9 +260,13 @@ so that experiments are reproducible.
 
 * **FR8.3** The system shall log the origin and rationale of each intervention event.
 
+* **FR8.4** The system shall support a rule-based decision strategy as a built-in option.
+
+* **FR8.5** The system shall support an external decision strategy that delegates decisions to a connected module provider.
+
 ---
 
-# FR9 — Context Preservation
+## FR9 — Context Preservation
 
 * **FR9.1** The system shall anchor the currently read text region during layout-changing interventions.
 
@@ -195,37 +276,33 @@ so that experiments are reproducible.
 
 ---
 
-# FR10 — Latency and Real-Time Performance
+## FR10 — Real-Time Performance Monitoring
 
-* **FR10.1** The system shall measure end-to-end latency from gaze acquisition to intervention trigger.
+* **FR10.1** The gaze validity rate shall be available to the researcher interface in real time.
 
-* **FR10.2** Latency statistics shall be displayed in the researcher interface.
-
-* **FR10.3** The sensing-to-intervention pipeline shall minimize buffering and avoid unnecessary blocking operations.
+* **FR10.2** The sensing-to-intervention pipeline shall minimize buffering and avoid unnecessary blocking operations.
 
 ---
 
-# FR11 — Experimental Control
+## FR11 — Experimental Control
 
-* **FR11.1** The system shall support predefined session modes:
-
-* No intervention (control)
-
-* Manual-only
-
-* Automated-only
-
-* Hybrid
+* **FR11.1** The system shall support the following session modes:
+  * No intervention (control)
+  * Manual-only
+  * Automated-only
+  * Hybrid (automated with researcher approval)
 
 * **FR11.2** The active experimental condition shall be logged.
 
+* **FR11.3** The researcher shall be able to pause and resume automated decision-making at any point during a session.
+
 ---
 
-# FR12 — Logging and Export
+## FR12 — Logging and Export
 
 * **FR12.1** The system shall log raw gaze samples.
 
-* **FR12.2** The system shall log derived gaze events.
+* **FR12.2** The system shall log derived gaze events (fixations, saccades).
 
 * **FR12.3** The system shall log intervention events with timestamps and source.
 
@@ -233,102 +310,254 @@ so that experiments are reproducible.
 
 * **FR12.5** Exported data shall include schema versioning and session metadata.
 
+* **FR12.6** Previously saved exports shall be listable and loadable from within the application.
+
+---
+
+## 🆕 FR13 — Comprehension Quiz
+
+* **FR13.1** The system shall allow researchers to attach multiple-choice comprehension questions to a reading material during setup.
+
+* **FR13.2** The system shall present the quiz to the participant at the end of a reading item.
+
+* **FR13.3** The system shall record quiz answers, correctness, and response timing in the session record.
+
+* **FR13.4** The researcher shall be able to navigate quiz questions and manage the quiz lifecycle from the researcher control panel.
+
+---
+
+## 🆕 FR14 — Reading Material Library
+
+* **FR14.1** The system shall provide a persistent library of named reading materials.
+
+* **FR14.2** Researchers shall be able to create, read, update, and delete reading materials through the application UI.
+
+* **FR14.3** Each reading material shall carry a title, description, Markdown content body, and an optional set of comprehension questions.
+
+---
+
+## 🆕 FR15 — Experiment Setup Templates
+
+* **FR15.1** The system shall allow researchers to define named experiment templates specifying an ordered sequence of reading items.
+
+* **FR15.2** Each reading item in a template shall reference a reading material and may carry per-item presentation configuration.
+
+* **FR15.3** Templates shall be persistable and reusable across sessions.
+
+---
+
+## 🆕 FR16 — Multi-Item Session Sequencing
+
+* **FR16.1** A reading session may contain more than one reading item drawn from an experiment template.
+
+* **FR16.2** The researcher shall be able to advance the participant to the next reading item from the researcher control panel.
+
+* **FR16.3** Each reading item transition shall be recorded as a session event.
+
+---
+
+## 🆕 FR17 — Sensing Mode Configuration
+
+* **FR17.1** The system shall support at least three sensing modes: Tobii eye tracker, mouse-cursor simulation, and webcam.
+
+* **FR17.2** The active sensing mode shall be selectable by the researcher without restarting the application.
+
+* **FR17.3** Mouse-cursor simulation shall produce gaze data compatible with all downstream pipeline stages so that the full system can be exercised without hardware.
+
+---
+
+## 🆕 FR18 — Eye Movement Analysis Layer
+
+* **FR18.1** The system shall derive fixation events from the raw gaze stream using a built-in velocity-based algorithm.
+
+* **FR18.2** The system shall support replacement of the built-in fixation detector with an external analysis provider.
+
+* **FR18.3** Derived fixation and saccade data shall be made available to decision strategies and logged in the session record.
+
+---
+
+## 🆕 FR19 — External Module Provider Framework
+
+* **FR19.1** The system shall expose a WebSocket endpoint that external processes can connect to and register as module providers.
+
+* **FR19.2** A module provider shall declare its capabilities upon connection; the system shall route relevant context to it accordingly.
+
+* **FR19.3** The system shall continue operating if a module provider disconnects; the affected strategy shall fall back gracefully.
+
+* **FR19.4** The module provider protocol shall be documented and stable so that third parties can implement compatible providers.
+
+---
+
+## 🆕 FR20 — Decision Proposal Approval Workflow
+
+* **FR20.1** A decision strategy shall be configurable to emit proposals rather than applying interventions directly.
+
+* **FR20.2** Pending proposals shall be surfaced to the researcher in the control panel for explicit approval or rejection.
+
+* **FR20.3** The researcher shall be able to switch the execution mode between fully automated and proposal-gated at any point during a session.
+
+---
+
+## 🆕 FR21 — Session Replay Playback
+
+* **FR21.1** The system shall reconstruct a recorded session in the reading interface using a saved export file.
+
+* **FR21.2** Replay shall support play/pause and variable playback speed (at minimum 0.5×, 1×, and 2×).
+
+* **FR21.3** The researcher shall be able to scrub the replay timeline to any point and navigate between key events.
+
+* **FR21.4** Intervention events shall be marked on the replay timeline.
+
+---
+
+## 🆕 FR22 — Session State Recovery
+
+* **FR22.1** The system shall checkpoint the current session state to disk at configurable intervals during an active experiment.
+
+* **FR22.2** On startup, the system shall detect and offer to restore any interrupted session found in the checkpoint store.
+
+---
+
+## 🆕 FR23 — Per-Context Reader Shell Settings
+
+* **FR23.1** The system shall maintain independent typography and appearance settings for each of the following contexts: participant reading view, researcher mirror view, and replay view.
+
+* **FR23.2** Changes to settings in one context shall not affect the settings of any other context.
+
+* **FR23.3** Per-context settings shall be persisted across sessions.
+
+---
+
+## 🆕 FR24 — Facial State Sensing (Optional)
+
+* **FR24.1** When the webcam sensing mode is active, the system shall capture facial state observations (e.g., expressions indicative of reading difficulty).
+
+* **FR24.2** Facial state observations shall be made available to decision strategies as supplementary context.
+
+* **FR24.3** Facial state sensing shall be optional and shall not be required for any other system function.
+
 ---
 
 # Non-Functional Requirements (NFR)
 
 ---
 
-# NFR1 — Modularity
+## NFR1 — Modularity
 
 The system shall maintain strict separation between:
 
 * sensing
-* mapping
+* eye movement analysis
 * decision strategies
-* intervention rendering
+* intervention modules
 * researcher interface
 * session management
 
----
-
-# NFR2 — Low Latency
-
-The architecture shall be optimized for **near real-time processing** suitable for just-in-time micro-interventions.
+Each boundary shall be expressed as an interface in the application layer; concrete implementations shall live in separate modules and be substitutable without changes to the core.
 
 ---
 
-# NFR3 — Usability
+## NFR2 — Low Latency
 
-The system shall minimize setup complexity and reduce experimenter cognitive load through:
-
-* guided workflows
-* clear status indicators
+The sensing-to-intervention pipeline shall be optimised for near real-time processing suitable for just-in-time micro-interventions.
+High-frequency gaze data shall not pass through the REST layer; it shall be delivered over the persistent WebSocket channel.
 
 ---
 
-# NFR4 — Reliability
+## NFR3 — Usability
+
+The system shall minimise setup complexity and reduce experimenter cognitive load through:
+
+* a guided multi-step session workflow with clear progress indicators
+* explicit readiness gating (session cannot start with incomplete setup)
+* a single-screen researcher control panel for all live session controls
+
+---
+
+## NFR4 — Reliability
 
 The system shall fail gracefully in case of:
 
-* device disconnection
-* invalid license
-* streaming failure
+* eye tracker disconnection
+* invalid or missing license
+* gaze streaming failure
+* external module provider disconnection
+
+In each case the system shall log the failure, surface a status indicator to the researcher, and continue operating in a degraded mode where possible.
 
 ---
 
-# NFR5 — Reproducibility
+## NFR5 — Reproducibility
 
-All session parameters, calibration metrics, intervention settings, and system versions shall be recorded to enable replication.
-
----
-
-# NFR6 — Extensibility
-
-Adding new intervention types or decision strategies shall require **only additive code** and shall not require modification of existing modules.
+All session parameters, calibration metrics, intervention settings, decision strategy configuration, and system version information shall be recorded so that a session can be understood and reproduced from its export alone.
 
 ---
 
-# Actor Description
+## NFR6 — Extensibility
+
+Adding new intervention modules, decision strategies, or eye movement analysis algorithms shall require only additive code changes and shall not require modification of existing modules or the core application layer.
+The module provider framework shall allow external processes to supply new decision and analysis logic without any changes to the core codebase.
+
+---
+
+## 🆕 NFR7 — Recoverability
+
+The system shall protect against data loss from unexpected crashes by periodically persisting session state to disk.
+The recovery mechanism shall be transparent to the researcher and shall not interfere with normal session operation.
+
+---
+
+## 🆕 NFR8 — Hardware Independence (Testability)
+
+The system shall be fully operable without physical eye-tracking hardware by using mouse-cursor simulation or other software-based sensing modes.
+This property is required to support development, demonstration, and CI testing on machines without Tobii hardware attached.
+
+---
+
+# Actor Descriptions
 
 This section identifies the primary and secondary actors interacting with the adaptive reading system.
 
 ---
 
-# 1. Test Subject (Reader)
+## 1. Test Subject (Reader)
 
 The **Test Subject** is the participant who reads text within the adaptive reading application while connected to the eye tracker.
 
 The Test Subject:
 
-* Reads the presented text (plain text or PDF content)
-* Is exposed to visual presets and adaptive micro-interventions
+* Reads Markdown-formatted text presented in the reading interface
+* Is exposed to visual presentation settings and adaptive micro-interventions
+* Answers comprehension quiz questions after each reading item
 * Does not interact with system configuration or technical setup
 * Should experience minimal disruption, preserved reading context, and smooth flow
 
-From a system design perspective, the Test Subject interacts only with the **subject reading interface**, which must prioritize usability, legibility, and cognitive comfort.
+From a system design perspective, the Test Subject interacts only with the **participant reading interface**, which must prioritize usability, legibility, and cognitive comfort.
 
 ---
 
-# 2. Researcher (Experimenter)
+## 2. Researcher (Experimenter)
 
 The **Researcher** is responsible for conducting and managing experimental sessions.
 
 The Researcher:
 
 * Launches and configures the system
-* Selects and licenses the eye tracker
-* Loads reading material
-* Chooses visual presets and intervention configurations
-* Observes the subject’s reading view through the second-screen mirror
-* Manually applies or overrides micro-interventions
-* Starts/stops sessions and exports data
+* Selects the eye tracker and provides license credentials
+* Creates and manages reading materials and experiment templates
+* Configures visual presentation settings and intervention policy
+* Observes the participant's reading view through the researcher mirror
+* Manually applies interventions or approves/rejects decision proposals
+* Pauses and resumes automated decision-making
+* Advances the participant through multi-item reading sequences
+* Starts and stops sessions, and exports session data
+* Reviews past sessions using the replay playback system
 
-The system must minimize setup complexity and provide clear status indicators.
+The system must minimise setup complexity and provide clear status indicators at every stage.
 
 ---
 
-# 3. Eye Tracker Device (Tobii Hardware)
+## 3. Eye Tracker Device (Tobii Hardware)
 
 The **Eye Tracker Device** is an external hardware actor providing real-time gaze and pupil data via USB.
 
@@ -337,47 +566,62 @@ The Eye Tracker:
 * Streams gaze coordinates, timestamps, and validity signals
 * Requires proper license provisioning
 * May connect or disconnect dynamically
-* Acts as the primary sensing source for adaptive behaviour
+* Acts as the primary sensing source for adaptive behaviour when active
 
-Architecturally, the device interacts with the system exclusively through the **sensing module**.
+Architecturally, the device interacts with the system exclusively through the **sensing layer** via a hardware adapter interface.
 
 ---
 
-# 4. Intervention Module (Pluggable Component)
+## 4. Intervention Module (Pluggable Component)
 
 The **Intervention Module** represents a logical actor within the system architecture.
 
 Each intervention module:
 
-* Receives structured input (e.g., gaze-to-content mapping, reading state)
-* Produces UI adaptation commands (e.g., font size change, contrast adjustment)
+* Receives structured execution context (current presentation and appearance state, gaze-to-content mapping)
+* Produces a presentation or appearance update command
 * Must be addable without modifying existing code
-* May be triggered manually, rule-based, or automated
+* May be triggered manually, rule-based, or via an automated strategy
 
-This actor reflects the architectural requirement of **modularity and extensibility**.
+The system ships with eight built-in modules (font family, font size, line width, line height, letter spacing, theme mode, colour palette, participant edit lock) and is designed for additional modules to be registered additively.
 
 ---
 
-# 5. Session & Data Consumer (Post-Processing Actor)
+## 🆕 5. External Module Provider
+
+The **External Module Provider** is an out-of-process actor that connects to the system over a dedicated WebSocket endpoint to supply pluggable decision logic or eye movement analysis.
+
+An external module provider:
+
+* Connects to the module provider gateway and declares its capabilities
+* Receives structured context envelopes (gaze observations, session state, analysis results)
+* Returns commands (e.g., intervention recommendations, fixation events) to the core system
+* Must tolerate disconnection and reconnection without disrupting the running session
+* Communicates via a documented, stable protocol
+
+This actor enables AI-driven decision models and specialised analysis algorithms to be integrated without any changes to the core application.
+
+---
+
+## 6. Session & Data Consumer (Post-Processing Actor)
 
 The **Data Consumer** represents the downstream actor (e.g., researcher, analyst, or analysis software) that consumes exported session data.
 
 This actor:
 
-* Receives structured JSON/CSV exports
-* Uses session metadata and logs for reproducibility
-* Analyzes gaze data, intervention timing, and reading behaviour
+* Receives structured JSON/CSV exports containing gaze samples, intervention events, fixation data, quiz results, and session metadata
+* Uses session metadata and logs for reproducibility and further analysis
+* May load exports back into the application for replay-based review
 
 ---
 
 # Summary
 
-The system therefore supports five primary actors:
+The system supports six primary actors:
 
 1. **Test Subject** — End-user experiencing adaptive reading
 2. **Researcher** — Experiment conductor and system operator
 3. **Eye Tracker Device** — External sensing hardware
 4. **Intervention Module** — Pluggable adaptation logic component
-5. **Data Consumer** — Post-session analysis stakeholder
-
-
+5. **External Module Provider** — Out-of-process AI/analysis provider
+6. **Data Consumer** — Post-session analysis stakeholder
