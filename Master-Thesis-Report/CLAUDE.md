@@ -125,6 +125,17 @@ Plagiarism in Denmark is treated as exam cheating and can result in
   "Tab.\ 2", "Sec.\ 4.1", "Eq.\ 7", "App.\ A" (use `~` for
   non-breaking spaces: `Fig.~3`).
 - In result tables, mark performance direction with ↑ / ↓ in headers.
+- **Proactively suggest diagrams.** When prose is about to describe
+  something a reader would understand faster as a picture — a system
+  architecture, a sequence of interactions, a use case, a state
+  machine, a data flow, a taxonomy, a timeline, a comparison matrix —
+  pause and tell the user a diagram would likely help here, name the
+  diagram type (e.g. "UML sequence diagram", "C4 container diagram",
+  "use-case diagram"), and let the user decide whether to add one.
+  Do not silently generate or commit diagrams; the user owns that
+  decision. Common triggers: use case descriptions, multi-step
+  protocols, module/component relationships, before/after comparisons,
+  and any explanation that leans on the word "then" more than twice.
 
 ### 2.5 LaTeX hygiene
 
@@ -137,6 +148,33 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 - Reference with `\ref{}` / `\cref{}`, never hard-code "Section 4".
 - Avoid `\textbf` and `\emph` for emphasis in body text; reserve them
   for term-introduction.
+
+### 2.6 Prose construction
+
+- **Paragraph shape.** Each paragraph: (1) topic sentence stating the
+  claim, (2) 2–4 pieces of cited evidence or worked reasoning,
+  (3) analysis connecting evidence to the claim, (4) transition or
+  closing. Single-sentence paragraphs are a smell; so are paragraphs
+  longer than ~12 lines.
+- **Synthesise, do not list.** In Background & Related Work, integrate
+  multiple sources per paragraph around a theme. One-paragraph-per-paper
+  is an annotated bibliography, not a literature review.
+- **Tense.** Established results and definitions: present
+  ("a saccade is..."). Prior studies and our own methods/results: past
+  ("Rayner showed...", "we measured..."). Future work: future or modal
+  ("we will evaluate...", "this could be extended...").
+- **Attribution verbs carry epistemic weight.** Prefer precise verbs:
+  *demonstrated, measured, reported, argued, proposed, replicated,
+  failed to replicate, challenged, hypothesised*. Avoid flat
+  *said / showed / found* when something stronger fits, and never
+  upgrade a *proposed* to a *demonstrated*.
+- **Separate result from interpretation.** In Evaluation, state what
+  the data show without explaining why. Interpretation, comparison
+  with literature, and threats to validity belong in Discussion.
+- **Chapter transitions.** End every chapter with a 3–5 sentence
+  summary of what was established, followed by one sentence pointing
+  to the next chapter's purpose. The Conclusion is exempt and
+  introduces no new content (see §2.1).
 
 ---
 
@@ -186,6 +224,29 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 - Changing the problem statement or research questions — flag.
 - Editing chapter 2 (already contains user-written content) — flag
   the planned diff before applying.
+
+### 3.6 Two-stage writing workflow (operationalises §1.1)
+
+When asked to write or expand a prose section that requires citations,
+do not produce paragraphs in a single pass. Hallucinated citations
+sneak in when prose and evidence are generated together. This
+reinforces §3.1 and §3.2.
+
+**Stage 1 — evidence scaffold.** Reply with a bullet outline:
+- Each bullet = one claim the section will make.
+- Beside each bullet, name the supporting source by its existing
+  `bibliography.bib` key, OR mark `\todo{cite}` if no source is on
+  hand, OR mark "author argument" if it is our own claim.
+- Stop and show this to the user. Do not write prose yet.
+
+**Stage 2 — prose.** Only after the user confirms the scaffold (or
+supplies missing sources), convert each bullet into a paragraph
+following §2.6. Every `\cite{}` in the prose must trace back to a
+key that appeared in the approved scaffold.
+
+Exceptions where Stage 1 can be skipped: fixing typos, tightening
+existing sentences, mechanical LaTeX edits, or sections the user has
+explicitly told you to draft in one shot.
 
 ---
 
