@@ -1224,8 +1224,6 @@ export function ReaderShell({
             onPointerEnter={revealScrollbarTemporarily}
             onScroll={revealScrollbarTemporarily}
           >
-            {remoteFocusMarker}
-
             <div
               ref={contentRef}
               data-reader-content="true"
@@ -1243,6 +1241,7 @@ export function ReaderShell({
                 letterSpacing: `${presentation.letterSpacingEm}em`,
               }}
             >
+              {remoteFocusMarker}
               <MarkdownReader
                 blocks={tokenizedBlocks}
                 showLixScores={showLixScores}

@@ -4,8 +4,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import type { ReplayQuizFrame, ReplaySessionFinishedFrame } from "@/lib/experiment-replay"
 import type { ActiveQuizState, LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
-import type { GazeData } from "@/lib/gaze-socket"
-import { calculateGazePoint, type GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
@@ -21,12 +19,6 @@ type ReplayReaderColumnProps = {
   remoteTokenAttention: RemoteTokenAttentionSnapshot | null
   quiz: ReplayQuizFrame | null
   sessionFinished: ReplaySessionFinishedFrame | null
-  latestGazeSample: GazeData | null
-}
-
-function gazePointFromSample(sample: GazeData | null): GazePoint | null {
-  if (!sample) return null
-  return calculateGazePoint(sample)
 }
 
 export function ReplayReaderColumn({
@@ -38,7 +30,6 @@ export function ReplayReaderColumn({
   remoteTokenAttention,
   quiz,
   sessionFinished,
-  latestGazeSample,
 }: ReplayReaderColumnProps) {
   // After the participant has finished the experiment in the recording, swap the reader column
   // to a results panel — mirroring how the live participant view shows ThankYou and the
@@ -79,9 +70,6 @@ export function ReplayReaderColumn({
       ? quiz.activeRegionType
       : null
 
-  const gazePoint = gazePointFromSample(latestGazeSample)
-  const hasRecentGaze = gazePoint !== null
-
   return (
     <div className="order-1 min-h-0 min-w-0 overflow-hidden xl:order-2">
       {errorMessage ? (
@@ -111,7 +99,7 @@ export function ReplayReaderColumn({
           experimentSetupName={content.title}
           preserveContextOnIntervention={readerOptions.preserveContextOnIntervention}
           highlightContext={readerOptions.highlightContext}
-          displayGazePosition={readerOptions.displayGazePosition}
+          displayGazePosition={false}
           enableLiveGazeTracking={false}
           highlightTokensBeingLookedAt={false}
           highlightRemoteTokensBeingLookedAt={readerOptions.highlightTokensBeingLookedAt}
@@ -131,8 +119,6 @@ export function ReplayReaderColumn({
           }}
           remoteTokenAttention={readerOptions.showFixationHeatmap ? remoteTokenAttention : null}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
-          gazeOverlayPoint={gazePoint}
-          gazeOverlayHasRecentPoint={hasRecentGaze}
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}
           initialPresentation={readingSession.initialPresentation ?? null}
