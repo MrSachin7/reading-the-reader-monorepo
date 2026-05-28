@@ -2,27 +2,92 @@
 \label{ch:methodology}
 
 \section{Research and Engineering Approach}
-% E.g. Design Science Research, iterative software engineering,
-% justification for the chosen process model.
+\label{sec:research-approach}
+
+This thesis is a platform engineering thesis: its primary contribution is a designed and implemented software artifact --- a researcher-operated adaptive reading platform --- rather than an empirical study of human reading behaviour.
+The research approach therefore combines software engineering methodology with human-centred design principles, structured to produce both a working system and a defensible architectural argument.
+
+We follow a four-phase process that moves from problem framing to artifact construction to evaluation.
+In the first phase, we review the existing literature on adaptive reading systems, eye-tracking-based reading models, and just-in-time micro-interventions, establishing the conceptual foundations and identifying gaps in existing tools and platforms.
+In the second phase, we conduct a system analysis to identify the requirements that a research-capable adaptive reading platform must satisfy, with particular attention to modularity, experimental control, and the ability to compare interchangeable intervention and decision strategies.
+In the third phase, we design and implement the platform iteratively, making architectural decisions that are explicitly justified against the requirements and against the modular design goals of the thesis.
+In the fourth phase, we evaluate the resulting system against the measurable objectives stated in the final problem statement, assessing both technical correctness and the degree to which the architecture supports the research scenarios it was designed for.
+
+This approach is appropriate for the research goals for two reasons.
+First, the primary open question is not whether adaptive reading interventions are effective for readers --- that is a question for a future user study conducted with this platform --- but whether a modular, extensible architecture for such interventions can be built and defended.
+Second, the artifact itself is the instrument: the quality of the architecture is both the subject of the research question and the means by which future empirical studies become possible.
+The methodology therefore treats system design decisions as first-class research outputs that must be motivated, documented, and evaluated, not merely implemented.
 
 \section{Requirements Elicitation}
-% How requirements were gathered (supervisor input, literature, prior
-% prototypes, stakeholder discussions).
+\label{sec:requirements-elicitation}
+
+Requirements for this platform were derived through a process of reverse engineering and structured system analysis rather than up-front specification.
+Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{ref1} and the findings of the literature review to identify what a research-capable platform must be able to do.
+This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
+
+User stories were written from the perspective of the three identified actors --- the researcher, the test subject, and the external module provider --- and were used as the primary vehicle for communicating behavioural expectations across the team.
+Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
+
+We note that this elicitation approach is a deliberate consequence of the thesis type.
+Because the contribution is an artifact, the requirements serve a dual purpose: they establish what the system must do, and they provide the criteria against which the architectural design decisions in \cref{ch:design} are later justified.
 
 \section{Development Process}
-% Iteration cadence, version control strategy, monorepo workflow,
-% CI/CD, code review, testing strategy.
+\label{sec:development-process}
+
+The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality --- from sensing to decision to intervention to researcher interface --- rather than building one layer at a time.
+This approach allowed each increment to be tested end-to-end and prevented the accumulation of untested integration assumptions across layers.
+
+The codebase is organised as a monorepo containing five sub-projects: the frontend application, the backend API and realtime server, the documentation site, a reference decision-maker, and a reference eye-movement analyser.
+This structure allowed shared conventions and contracts to be maintained across components without requiring a separate package registry, while keeping each sub-project independently buildable and deployable.
+
+Version control was managed using Git with GitHub as the remote host.
+Two independent continuous integration pipelines were configured using GitHub Actions: the frontend pipeline runs on Ubuntu using Bun and validates every change to the \texttt{Frontend/} directory with a full production build; the backend pipeline runs on Windows --- required by the Tobii SDK dependency --- and validates every change to \texttt{Backend/} by restoring dependencies, building the solution in Release configuration, and running the xUnit test suite.
+Changes were introduced through pull requests, providing a lightweight code-review step between the two authors before merging to the main branch.
+
+The full codebase is published on GitHub and released under the MIT License, making it freely available for inspection, reuse, and extension by future researchers and developers.
+This decision reflects the open-science orientation of the work: because the architecture and the integration contracts are themselves research contributions, making the source openly accessible is necessary for those contributions to be reproducible and verifiable by others.
 
 \section{Evaluation Strategy}
-% How success is measured: functional correctness, performance,
-% developer experience (DX), reproducibility. Forward-reference to
-% Chapter~\ref{ch:evaluation}.
+\label{sec:evaluation-strategy}
+
+The evaluation of this thesis addresses two distinct questions: whether the system functions correctly as a platform for reading experiments, and whether the architecture satisfies the modularity and extensibility goals that motivate the design.
+
+For functional correctness, we evaluate the system against the functional requirements defined in \cref{ch:requirements}, verifying that each requirement is met through a combination of automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, and inspection of exported session data.
+For architectural quality, we evaluate the degree to which the modular boundaries between sensing, decision-making, intervention execution, and user interface hold in the implemented system, and whether the external module provider integration contract is sufficient for a third-party provider to connect without modifying the core application.
+
+We do not conduct a user study of reading behaviour within the scope of this thesis.
+The platform is designed to enable such studies, but evaluating the effectiveness of specific typographic interventions on reading comprehension or fatigue is a separate research question that requires a dedicated experiment with recruited participants and an approved study protocol.
+That question is explicitly outside the scope of this work, as discussed in \cref{ch:introduction}.
 
 \section{Tools and Technologies}
-% Concrete stack: monorepo tooling (Nx/Turborepo/...), languages,
-% frameworks, gaze pipeline libraries, etc. This is the correct place
-% for Docker / Kafka / Spring / build-tool discussion --- not Chapter~2.
+\label{sec:tools-and-technologies}
+
+The frontend application is built with Next.js~16 and React~19 using TypeScript~5 in strict mode.
+State management uses Redux Toolkit with RTK Query for server-side data fetching and Tailwind CSS~v4 for styling.
+The frontend is built and served using Bun~1.3, which is also used as the package manager and test runner.
+
+The backend is built on .NET~10 with C\# using ASP.NET Core as the HTTP and WebSocket host.
+REST endpoints are implemented with FastEndpoints~8, and session data is exported using CsvHelper~33 for CSV serialisation alongside the built-in \texttt{System.Text.Json} for JSON.
+The Tobii Research SDK (\texttt{Tobii.Research.x64}~1.11) provides the hardware integration layer for eye-tracker communication and is a Windows-only dependency \cite{ref3}.
+
+Reading content is authored in Markdown.
+PDF support was considered but explicitly scoped out in favour of a simpler, tokenisation-friendly format that allows reliable gaze-to-word mapping without the coordinate complexity of PDF rendering.
+
+Both sub-projects are validated on every push to the main branch via GitHub Actions.
+The backend pipeline runs on a Windows runner to satisfy the Tobii SDK requirement; the frontend pipeline runs on Ubuntu.
 
 \section{Ethical Considerations}
-% Eye-tracking data is sensitive: consent, anonymisation, storage,
-% GDPR, ethical approval status.
+\label{sec:ethical-considerations}
+
+Eye-tracking data is sensitive by nature: it captures where a person directs their attention, moment by moment, and can in principle be used to infer cognitive states, reading difficulties, or other personal characteristics beyond the scope of any individual experiment.
+Collecting such data from study participants therefore requires careful handling.
+
+Within this platform, all session data --- including raw gaze samples, demographic attributes, and comprehension results --- remains under the direct control of the researcher who operates the system.
+No data is transmitted to external servers; all storage is local to the machine on which the backend is running.
+Participant attributes collected at enrolment --- name, age, sex, existing eye conditions, and reading proficiency --- are stored only within the session record and are not shared outside the system.
+
+Before deploying this platform in a real study, the researcher is responsible for obtaining informed consent from each participant, ensuring that participants understand what data is collected and how it will be used, and complying with applicable data protection regulations, including the General Data Protection Regulation (GDPR) as it applies at DTU.
+The platform does not implement consent workflows directly; this responsibility rests with the researcher and, where required, an institutional ethics review process.
+
+The system includes a mouse-cursor simulation mode that produces synthetic gaze data without engaging a hardware eye tracker.
+This mode is used exclusively for development and demonstration purposes and does not involve any participant data.
