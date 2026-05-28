@@ -8,18 +8,29 @@ The stories served as the primary elicitation artefact: they were reviewed with 
 Tab.~\ref{tab:us} presents a representative selection of the elicited stories.
 Stories are grouped by actor and labelled for traceability; the full backlog is maintained on the project documentation site.
 
-\begin{table}[htbp]
+\begingroup
 \small
-\centering
-\caption{%
-Representative user stories elicited through stakeholder discussions,
-grouped by actor.%
-}
-\label{tab:us}
-\begin{tabularx}{\linewidth}{@{} l X @{}}
+\begin{longtable}{@{} p{0.10\linewidth} p{0.87\linewidth} @{}}
+\caption{Representative user stories elicited through stakeholder discussions, grouped by actor.}
+\label{tab:us} \\
 \toprule
 \textbf{ID} & \textbf{Story} \\
 \midrule
+\endfirsthead
+
+\multicolumn{2}{c}{\tablename~\thetable{} --- continued} \\
+\toprule
+\textbf{ID} & \textbf{Story} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{2}{r}{\footnotesize Continued on next page} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
 \multicolumn{2}{l}{\textit{Researcher --- Preparation}} \\
 \midrule
 US-R1  & As a researcher, I want a guided step-by-step setup workflow so that I can prepare an experiment without missing critical steps. \\[2pt]
@@ -36,7 +47,6 @@ US-R8  & As a researcher, I want to manually apply a typographic intervention at
 US-R9  & As a researcher, I want to approve or reject automated intervention proposals so that I retain control over what the participant experiences. \\[2pt]
 US-R10 & As a researcher, I want to include a non-adaptive control condition so that I can compare adaptive and baseline reading experiences within the same platform. \\[2pt]
 US-R11 & As a researcher, I want to compare two different decision strategies across sessions so that I can evaluate which produces better reading outcomes. \\[2pt]
-US-R12 & As a researcher, I want to advance the participant through the reading sequence so that I control the pacing of the experiment. \\
 \midrule
 \multicolumn{2}{l}{\textit{Researcher --- Post-Session}} \\
 \midrule
@@ -54,7 +64,6 @@ US-P3  & As a participant, I want to answer comprehension questions after each r
 US-E1  & As an external module provider, I want to connect to the platform over a documented protocol so that I can supply decision logic without modifying the core system. \\[2pt]
 US-E2  & As an external module provider, I want to receive structured context envelopes so that I can base decisions on accurate, up-to-date gaze and session state. \\[2pt]
 US-E3  & As an external module provider, I want my disconnection to be handled gracefully so that an ongoing session is not interrupted by a provider failure. \\
-\bottomrule
-\end{tabularx}
-\end{table}
 
+\end{longtable}
+\endgroup

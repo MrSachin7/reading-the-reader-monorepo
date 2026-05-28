@@ -14,14 +14,15 @@ natural phases of system use: \textit{Setup \& Calibration}, \textit{Content Man
 The system involves five actors.
 The \textbf{Researcher} is the primary operator and is associated with fifteen of the
 twenty-two use cases, spanning all five bands.
-The \textbf{Participant} interacts with the system only during the live and post-session
-phases, reading text and answering comprehension questions.
+The \textbf{Participant} is involved in three use cases: they fixate on calibration
+points during setup, read the presented text during the live phase, and answer
+comprehension questions at the end of each reading item.
 The \textbf{Eye Tracker Device} is a hardware actor that contributes a single
 high-frequency use case: streaming raw gaze samples into the pipeline.
-The \textbf{External Module Provider} is an out-of-process actor that connects over a
-dedicated WebSocket protocol to supply decision logic or eye-movement analysis.
-Finally, the \textbf{Data Consumer} represents any downstream stakeholder --- analyst,
-collaborator, or analysis script --- that accesses exported session records.
+The \textbf{External Module Provider} is an out-of-process actor that connects to the
+platform over a dedicated integration interface to supply decision logic or eye-movement analysis.
+Finally, the \textbf{Data Consumer} represents any downstream stakeholder (analyst,
+collaborator, or analysis script) that accesses exported session records.
 
 The following four scenarios trace representative paths through the diagram, covering
 all five bands and motivating the functional requirements in
@@ -180,7 +181,7 @@ Sec.~\ref{sec:functional-requirements}.
 
 %% ── Associations ─────────────────────────────────────────────────────────
 % Researcher → all researcher use cases
-\foreach \t in {uc-detect, uc-calibrate, uc-license,
+\foreach \t in {uc-detect, uc-license,
                 uc-materials, uc-templates, uc-config,
                 uc-sensing, uc-start,
                 uc-monitor, uc-intervene, uc-decision,
@@ -190,6 +191,7 @@ Sec.~\ref{sec:functional-requirements}.
 }
 
 % Participant → participant use cases
+\draw (participant) -- (uc-calibrate);
 \draw (participant) -- (uc-read);
 \draw (participant) -- (uc-answer);
 
@@ -249,16 +251,18 @@ optional set of comprehension questions.
 \textit{Define Experiment Template} then assembles an ordered sequence of those
 materials into a reusable session plan; individual items may carry their own
 typographic defaults.
-Global session parameters --- intervention policy, execution mode, and decision
-strategy selection --- are fixed through \textit{Configure Session Settings}.
+Global session parameters (intervention policy, execution mode, and decision
+strategy selection) are fixed through \textit{Configure Session Settings}.
 
 Hardware setup follows.
 The researcher connects the Tobii eye tracker and uses \textit{Detect \& Select
 Eye Tracker} to identify and activate the device.
-\textit{Validate Device License} provisions the SDK licence before any gaze data
+\textit{Validate Device License} provisions the device licence before any gaze data
 is permitted to flow.
-\textit{Perform Calibration} runs the full SDK point-collection and validation
-workflow; the researcher reviews the resulting quality metrics and may repeat the
+\textit{Perform Calibration} runs the calibration point-collection and validation
+workflow; the participant fixates on each calibration point in turn while the
+system records the correspondence between gaze signal and screen position.
+The researcher reviews the resulting quality metrics and may repeat the
 procedure if the accuracy threshold is not met.
 All three hardware steps must pass before the session-start control becomes
 available.
@@ -280,11 +284,11 @@ This use case carries a \texttt{<<include>>} dependency on \textit{Perform
 Calibration}, enforcing that the calibration gate from UC-1 has been passed.
 
 Once the session is live, the Eye Tracker Device continuously executes
-\textit{Stream Gaze Samples}, feeding high-frequency coordinates to the backend
-over the persistent WebSocket channel.
+\textit{Stream Gaze Samples}, feeding high-frequency gaze coordinates to the
+system in real time.
 The Participant executes \textit{Read Presented Text} on their screen while the
 researcher uses \textit{Monitor Live Session} to observe the mirrored view,
-live gaze-token highlighting, and a rolling attention-summary heatmap.
+live gaze highlighting, and a rolling attention summary.
 
 The configured decision strategy processes the incoming gaze and eye-movement
 analysis signals.
@@ -296,8 +300,6 @@ via \textit{Apply Manual Intervention}.
 In all cases the context-preservation mechanism anchors the participant's reading
 position so that layout changes do not disorient them.
 
-When a reading item ends, the researcher uses \textit{Advance Reading Item} to
-progress to the next item in the template.
 Where comprehension assessment is required, \textit{Manage Comprehension Quiz}
 is activated; this use case carries a \texttt{<<include>>} dependency on
 \textit{Answer Comprehension Quiz} on the participant's side, and response
@@ -314,9 +316,8 @@ Fig.~\ref{fig:use-case-diagram}: \textit{Connect as Module Provider} and
 
 A researcher wishes to evaluate a custom fixation-detection model or an
 AI-driven reading-difficulty classifier without modifying the core application.
-They launch the external process --- for example, one of the Python sample
-providers included in the repository --- and point it at the platform's dedicated
-module-provider WebSocket endpoint.
+They launch a compatible external process and connect it to the platform's
+dedicated module-provider integration interface.
 Upon connection the provider executes \textit{Connect as Module Provider},
 declaring its capabilities to the system: whether it processes raw gaze samples
 and returns fixation events, or whether it receives decision context and returns
@@ -331,7 +332,7 @@ If the provider disconnects unexpectedly the session is not interrupted: the
 platform logs the event and continues with the mode that was active before the
 provider connected.
 This scenario demonstrates that the extensibility requirement is fulfilled at
-the protocol level --- new decision and analysis algorithms are delivered as
+the protocol level: new decision and analysis algorithms are delivered as
 separate processes communicating over a documented interface, and the core
 codebase is left unmodified.
 This scenario motivates FR18 (Eye-Movement Analysis Layer) and FR19 (External Module Provider Framework).
@@ -350,7 +351,7 @@ makes it available for retrieval.
 The record bundles raw gaze samples, derived fixation and saccade events, all
 intervention events with source attribution and timestamps, comprehension quiz
 results, calibration metadata, and the complete typographic configuration,
-packaged in both JSON and CSV formats.
+in a structured machine-readable format.
 
 The researcher may then load any saved export into the platform via
 \textit{Replay Recorded Session}, which reconstructs the reading interface with

@@ -100,6 +100,12 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 - British or American English — pick one and stay consistent.
 - Spelling counts toward the grade. Run a spell-check before
   declaring a section done.
+- **Em dash discipline.** Do not use em dashes (`---`) in prose
+  parentheticals. Use parentheses `(...)` instead. Reserve `---` for
+  label separators in table/section headings (e.g. `FR1 --- System
+  Execution`) and for a colon-like introduction only when a colon
+  would also be grammatically correct. Never use double em dashes
+  wrapping a list or appositive in body text.
 
 ### 2.3 Citations & references
 

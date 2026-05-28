@@ -14,7 +14,7 @@ The researcher is the primary human operator and the stakeholder around whose wo
 In the context of a controlled reading study, the researcher is responsible for the complete experimental lifecycle: preparing reading materials and experiment templates, enrolling participants and recording their demographic attributes, ensuring the sensing hardware is correctly connected and calibrated, and conducting the session from start to finish.
 
 During an active session, the researcher operates from a physically separate screen, observing the participant's reading behaviour through a mirrored live view without being present at the participant's display.
-From this interface, the researcher must be able to monitor session health, manually apply typographic interventions, approve or reject proposals submitted by an automated decision strategy, pause and resume automated decision-making, and advance the participant through a multi-item reading sequence.
+From this interface, the researcher must be able to monitor session health, manually apply typographic interventions, approve or reject proposals submitted by an automated decision strategy, and pause and resume automated decision-making.
 Once a session concludes, the researcher must be able to export session data for external analysis and replay recorded sessions to review gaze behaviour and intervention history at a later point.
 
 Because the researcher coordinates every aspect of an experiment, minimising operator cognitive load is a primary concern.
@@ -27,17 +27,17 @@ The test subject is the person recruited by the researcher to take part in a rea
 Their role within the system is deliberately narrow: they read Markdown-formatted text presented in the reading interface while their gaze behaviour is recorded.
 The test subject does not interact with system configuration, session management, or any researcher-facing controls.
 
-During a session, the test subject may be exposed to typographic adaptations --- changes to font size, line width, line height, letter spacing, font family, colour palette, or theme mode --- applied by the researcher or by an automated strategy.
+During a session, the test subject may be exposed to typographic adaptations (changes to font size, line width, line height, letter spacing, font family, colour palette, or theme mode) applied by the researcher or by an automated strategy.
 A critical requirement arising from this role is that such adaptations must not disrupt reading flow or cause the test subject to lose their place in the text, as perceptible disruption would confound the experimental results.
 Following each reading item, the test subject may also be asked to answer comprehension quiz questions, the results of which are recorded as part of the session data.
 
 \subsection{External Module Provider}
 \label{sec:stakeholder-provider}
 
-The external module provider is an out-of-process software agent that connects to the platform, declares its capabilities, receives structured context containing gaze observations and session state, and returns commands such as intervention recommendations or derived fixation events.
+The external module provider is a third-party process that connects to the platform to supply decision logic or eye-movement analysis without requiring modifications to the core system.
 
 A central research motivation for this platform is the ability to evaluate different decision and analysis strategies under comparable experimental conditions.
-This actor motivates the need for a stable and documented integration protocol so that different strategies --- rule-based, machine-learning-based, or otherwise --- can be substituted without changes to the core system.
+This actor motivates the need for a stable and documented integration protocol so that different strategies (rule-based, machine-learning-based, or otherwise) can be substituted without changes to the core system.
 The platform must support a range of execution modes, from fully autonomous application of proposals to researcher-gated approval, so that the degree of automation can itself be varied as an experimental condition.
 The system must also continue operating normally if a provider disconnects mid-session, ensuring that a provider failure does not abort an ongoing experiment.
 
@@ -52,7 +52,7 @@ A key requirement arising from this actor is that the system must handle device 
 \subsection{Data Consumer}
 \label{sec:stakeholder-consumer}
 
-The data consumer represents the downstream actor --- an analyst, a collaborator, or an automated analysis script --- that processes the records produced at the end of a session.
+The data consumer represents the downstream actor (an analyst, a collaborator, or an automated analysis script) that processes the records produced at the end of a session.
 This actor does not interact with the running system; their interest is in the structure, completeness, and reproducibility of the exported artefacts.
 The requirement that follows is that every session export must be self-contained: it must bundle raw gaze samples, derived events, all intervention records with source attribution and timestamps, comprehension results, and calibration metadata in a machine-readable format so that the full experimental sequence can be reconstructed without access to the live application.
 The data consumer also motivates the replay interface, which allows the same exported record to be loaded back into the platform for visual review.

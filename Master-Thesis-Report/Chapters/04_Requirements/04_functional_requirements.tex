@@ -67,7 +67,7 @@ FR2.4 & The system shall handle device disconnect events gracefully without
 % ── FR3 ─────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR3 — Calibration Integration}} \\
 \midrule
-FR3.1 & The system shall integrate the Tobii SDK calibration workflow,
+FR3.1 & The system shall integrate the eye tracker's calibration workflow,
         including point collection and validation phases. & M \\
 FR3.2 & The system shall display calibration quality metrics and indicate
         pass or fail to the researcher before session start. & M \\
@@ -76,7 +76,7 @@ FR3.3 & The system shall store calibration metadata in the session record for
 FR3.4 & The system shall allow recalibration between participants without
         restarting the application. & M \\
 FR3.5 & The system shall support selectable calibration point presets
-        (5-point, 9-point, and 13-point). & S \\
+        with varying point densities. & S \\
 \midrule
 
 % ── FR4 ─────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ FR5.4 & The rendering engine shall maintain stable, consistent coordinate
 \multicolumn{3}{l}{\textit{FR6 — Researcher Interface (Second Screen)}} \\
 \midrule
 FR6.1 & The system shall provide a live mirrored view of the participant's
-        reading interface, updated in real time over the WebSocket channel. & M \\
+        reading interface, updated in real time. & M \\
 FR6.2 & The researcher interface shall display the current gaze-validity
         rate as a health indicator. & M \\
 FR6.3 & The researcher shall be able to apply any registered intervention
@@ -128,7 +128,7 @@ FR6.5 & The researcher interface shall surface pending decision proposals
 \multicolumn{3}{l}{\textit{FR7 — Intervention Runtime}} \\
 \midrule
 FR7.1 & The system shall support pluggable intervention modules that are
-        discovered and invoked through a common registry interface. & M \\
+        discoverable and invokable without modifying the core runtime. & M \\
 FR7.2 & New intervention modules shall be addable without modifying any
         existing module or the core runtime. & M \\
 FR7.3 & Each intervention module shall declare its supported parameters
@@ -159,10 +159,11 @@ FR8.5 & The system shall support an external decision strategy that delegates
 \multicolumn{3}{l}{\textit{FR9 — Context Preservation}} \\
 \midrule
 FR9.1 & During a layout-changing intervention the system shall identify the
-        token currently being read and use it as an anchor for viewport
-        adjustment. & M \\
-FR9.2 & The viewport shall scroll automatically to restore the anchored token
-        to its pre-intervention visual position after the change is applied. & M \\
+        participant's current reading position and preserve it across the
+        presentation change. & M \\
+FR9.2 & The reading view shall adjust automatically so that the participant's
+        identified reading position is restored to the same visual location
+        after the change is applied. & M \\
 FR9.3 & Context-preservation failures shall be logged in the session record. & M \\
 \midrule
 
@@ -171,9 +172,6 @@ FR9.3 & Context-preservation failures shall be logged in the session record. & M
 \midrule
 FR10.1 & The gaze-validity rate shall be computed continuously and made
          available to the researcher interface without perceptible delay. & S \\
-FR10.2 & The sensing-to-decision pipeline shall avoid unnecessary buffering
-         and blocking operations so that intervention latency remains
-         suitable for just-in-time adaptation. & M \\
 \midrule
 
 % ── FR11 ────────────────────────────────────────────────────────
@@ -244,9 +242,7 @@ FR15.3 & Templates shall be persisted and reusable across multiple sessions. & S
 \midrule
 FR16.1 & A reading session may contain more than one reading item drawn
          from an experiment template. & S \\
-FR16.2 & The researcher shall advance the participant to the next item from
-         the researcher control panel. & S \\
-FR16.3 & Each reading-item transition shall be recorded as a timestamped
+FR16.2 & Each reading-item transition shall be recorded as a timestamped
          event in the session log. & S \\
 \midrule
 
@@ -257,16 +253,16 @@ FR17.1 & The system shall support at least three sensing modes: Tobii eye
          tracker, mouse-cursor simulation, and webcam. & M \\
 FR17.2 & The researcher shall be able to switch the active sensing mode
          without restarting the application. & M \\
-FR17.3 & Mouse-cursor simulation shall produce gaze data structurally
-         compatible with all downstream pipeline stages so that the
-         full system can be operated and tested without hardware. & M \\
+FR17.3 & Mouse-cursor simulation shall produce gaze data compatible with all
+         system capabilities so that the full platform can be operated and
+         tested without physical eye-tracking hardware. & M \\
 \midrule
 
 % ── FR18 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR18 — Eye-Movement Analysis Layer}} \\
 \midrule
 FR18.1 & The system shall derive fixation events from the raw gaze stream
-         using a built-in velocity-based algorithm. & M \\
+         using a built-in algorithm. & M \\
 FR18.2 & The system shall support replacement of the built-in fixation
          detector with an external analysis provider connected via the
          module-provider framework. & M \\
@@ -278,8 +274,8 @@ FR18.3 & Fixation and saccade data produced by the analysis layer shall
 % ── FR19 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR19 — External Module Provider Framework}} \\
 \midrule
-FR19.1 & The system shall expose a dedicated WebSocket endpoint to which
-         external processes can connect and register as module providers. & M \\
+FR19.1 & The system shall expose a dedicated integration interface through
+         which external processes can connect and register as module providers. & M \\
 FR19.2 & A provider shall declare its capabilities on connection; the system
          shall route the appropriate context envelopes to it and apply its
          commands through standard validation and logging paths. & M \\
@@ -307,8 +303,8 @@ FR20.3 & The researcher shall be able to switch the execution mode between
 \midrule
 FR21.1 & The system shall reconstruct a recorded session in the reading
          interface from a saved export file. & S \\
-FR21.2 & Replay shall support play/pause and variable playback speed (at
-         minimum 0.5\texttimes{}, 1\texttimes{}, and 2\texttimes{}). & S \\
+FR21.2 & Replay shall support play/pause and at least three configurable
+         playback speed levels. & S \\
 FR21.3 & The researcher shall be able to scrub the replay timeline and
          navigate between recorded key events. & S \\
 FR21.4 & Applied intervention events shall be marked on the replay timeline. & S \\
@@ -317,10 +313,10 @@ FR21.4 & Applied intervention events shall be marked on the replay timeline. & S
 % ── FR22 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR22 — Session State Recovery}} \\
 \midrule
-FR22.1 & The system shall checkpoint the current session state to persistent
-         storage at regular intervals during an active experiment. & S \\
-FR22.2 & On startup, the system shall detect an interrupted session in the
-         checkpoint store and offer the researcher the option to restore it. & S \\
+FR22.1 & The system shall periodically persist the current session state to
+         durable storage during an active experiment. & S \\
+FR22.2 & On startup, the system shall detect an interrupted session and offer
+         the researcher the option to restore it. & S \\
 \midrule
 
 % ── FR23 ────────────────────────────────────────────────────────

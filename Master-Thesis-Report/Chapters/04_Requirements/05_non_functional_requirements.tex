@@ -50,10 +50,10 @@ NFR1 & Modularity &
 \midrule
 
 NFR2 & Low Latency &
-  The sensing-to-decision pipeline shall be optimised for near real-time
-  processing.
-  High-frequency gaze data shall not pass through the REST layer; it shall
-  travel exclusively over the persistent WebSocket channel. &
+  The system shall process gaze data with sufficiently low latency for
+  just-in-time intervention delivery.
+  High-frequency gaze data shall be handled through a dedicated real-time
+  channel, separate from general request-response communication. &
   Micro-interventions must be applied while the trigger condition is still
   present; multi-hundred-millisecond delays would invalidate the
   intervention rationale. & M \\
