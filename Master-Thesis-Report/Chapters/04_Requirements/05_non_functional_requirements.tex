@@ -6,30 +6,33 @@ overall quality attributes of the system.
 They were derived from the architectural goals stated in the problem statement
 and from the operational constraints imposed by a researcher-run eye-tracking
 experiment.
+Priorities follow the same MoSCoW scheme as Tab.~\ref{tab:fr}; not all
+non-functional requirements are equally critical to the core thesis contribution.
 
 \begingroup
 \small
 \begin{longtable}{%
-  p{0.08\linewidth}
-  p{0.20\linewidth}
-  p{0.37\linewidth}
-  p{0.27\linewidth}
+  p{0.07\linewidth}
+  p{0.18\linewidth}
+  p{0.33\linewidth}
+  p{0.25\linewidth}
+  p{0.05\linewidth}
 }
-\caption{Non-functional requirements with rationale.}
+\caption{Non-functional requirements with rationale and MoSCoW priority.}
 \label{tab:nfr} \\
 \toprule
-\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} \\
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} & \textbf{Pri.} \\
 \midrule
 \endfirsthead
 
-\multicolumn{4}{c}{\tablename~\thetable{} — continued} \\
+\multicolumn{5}{c}{\tablename~\thetable{} — continued} \\
 \toprule
-\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} \\
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} & \textbf{Pri.} \\
 \midrule
 \endhead
 
 \midrule
-\multicolumn{4}{r}{\footnotesize Continued on next page} \\
+\multicolumn{5}{r}{\footnotesize Continued on next page} \\
 \endfoot
 
 \bottomrule
@@ -41,9 +44,9 @@ NFR1 & Modularity &
   researcher interface, and session management.
   Each boundary shall be expressed as an interface in the application layer;
   concrete implementations shall be substitutable without changes to the core. &
-  The thesis contribution is the defensible architecture itself.
-  Strict layer separation ensures that the modularity claim can be demonstrated
-  by substituting components at test time. \\
+  Motivated by the future research teams stakeholder
+  (Sec.~\ref{sec:stakeholders}); the modularity claim must be demonstrable
+  by substituting components at test time. & M \\
 \midrule
 
 NFR2 & Low Latency &
@@ -52,16 +55,17 @@ NFR2 & Low Latency &
   High-frequency gaze data shall not pass through the REST layer; it shall
   travel exclusively over the persistent WebSocket channel. &
   Micro-interventions must be applied while the trigger condition is still
-  present; multi-hundred-millisecond delays would invalidate the intervention
-  rationale. \\
+  present; multi-hundred-millisecond delays would invalidate the
+  intervention rationale. & M \\
 \midrule
 
 NFR3 & Usability &
   The system shall reduce experimenter cognitive load through a guided
   multi-step setup workflow, explicit readiness gating, and a unified
   control panel for all live session actions. &
-  Researcher-facing complexity is a practical threat to experiment validity;
-  setup errors caused by a confusing interface affect data quality. \\
+  See Researcher actor (Sec.~\ref{sec:stakeholder-researcher});
+  minimising operator cognitive load is identified there as a core
+  requirement, not a peripheral usability enhancement. & S \\
 \midrule
 
 NFR4 & Reliability &
@@ -70,7 +74,7 @@ NFR4 & Reliability &
   logging the failure, surfacing a status indicator to the researcher,
   and continuing in a degraded mode where possible. &
   An experiment session cannot be re-run if a crash causes data loss or
-  disturbs the participant mid-reading. \\
+  disturbs the participant mid-reading. & M \\
 \midrule
 
 NFR5 & Reproducibility &
@@ -78,8 +82,9 @@ NFR5 & Reproducibility &
   decision-strategy configuration, and system version information shall
   be captured in the session export so that a session can be understood
   and reproduced from that record alone. &
-  Reproducibility is a core requirement of scientific experimentation;
-  incomplete records prevent validation of results. \\
+  See Data Consumer actor (Sec.~\ref{sec:stakeholder-consumer});
+  their need for self-contained, complete session records is the direct
+  source of this constraint. & M \\
 \midrule
 
 NFR6 & Extensibility &
@@ -88,8 +93,8 @@ NFR6 & Extensibility &
   not require modification of existing modules or the core layer.
   External processes shall be connectable as module providers without
   any changes to the codebase. &
-  Future teams or collaborators must be able to supply AI-driven decision
-  logic or novel sensors without owning or rebuilding the core platform. \\
+  See External Module Provider actor (Sec.~\ref{sec:stakeholder-provider});
+  the stable integration protocol requirement is motivated there. & M \\
 \midrule
 
 NFR7 & Recoverability &
@@ -99,7 +104,7 @@ NFR7 & Recoverability &
   startup without manual intervention by the researcher. &
   Hardware and software faults during a live session with a human
   participant are disruptive; even partial data recovery preserves the
-  experimental record. \\
+  experimental record. & M \\
 \midrule
 
 NFR8 & Hardware Independence &
@@ -108,7 +113,7 @@ NFR8 & Hardware Independence &
   no code changes required. &
   Development, CI verification, and demonstrations must be possible on
   machines without Tobii hardware attached; this property also enables
-  testing of all architectural layers in isolation. \\
+  testing of all architectural layers in isolation. & C \\
 
 \end{longtable}
 \endgroup

@@ -1,3 +1,30 @@
 \section{Constraints}
-% Hardware (eye-tracker capabilities), monorepo / deployment, ethics.
+\label{sec:constraints}
 
+This section identifies the fixed external limitations that bound the design and deployment of the platform.
+Unlike non-functional requirements, which are quality targets the system is designed to meet, constraints are given conditions that the system must accept without modification.
+
+\subsection*{C1 — Hardware and Operating System}
+
+Real experimental sessions require the Tobii eye tracker to be connected to a Windows host.
+The Tobii Research SDK \cite{ref3}, which provides the gaze data acquisition API used by the sensing layer, is distributed as a Windows-only binary with no Linux or macOS equivalent.
+Mouse-cursor simulation and webcam-based gaze estimation are available on any platform and cover development, automated testing, and demonstration scenarios, but neither substitutes for calibrated Tobii hardware in a controlled experiment context.
+This constraint applies only to the backend host; the participant display and the researcher control panel run in any modern browser and are platform-independent.
+
+\subsection*{C2 — Reading Content Format}
+
+The platform accepts reading material exclusively in Markdown format.
+PDF, HTML, LaTeX, and other rich document formats are out of scope.
+This constraint was agreed with the project supervisors and simplifies both the content authoring workflow and the gaze-to-content mapping layer, which requires a predictable, reflowable text structure.
+
+\subsection*{C3 — AI and Decision Logic Scope}
+
+End-to-end AI decision logic is outside the scope of this implementation.
+The system exposes a documented integration protocol through which external processes can connect as module providers and supply decision recommendations or eye-movement analysis results.
+The architectural responsibility of this thesis is to make such integration possible and well-defined; the algorithms themselves are the domain of future contributors or external research teams.
+
+\subsection*{C4 — Ethics and Data Privacy}
+
+Gaze coordinates, session metadata, and comprehension responses constitute personal data under the General Data Protection Regulation (GDPR).
+The system does not implement participant consent collection; this is the researcher's procedural responsibility and is handled outside the application prior to each session, typically through a written consent form.
+The researcher is also responsible for data retention, anonymisation, and disposal in accordance with applicable institutional and regulatory requirements.

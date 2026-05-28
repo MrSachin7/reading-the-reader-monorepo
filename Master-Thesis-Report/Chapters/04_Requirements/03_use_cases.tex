@@ -262,6 +262,7 @@ workflow; the researcher reviews the resulting quality metrics and may repeat th
 procedure if the accuracy threshold is not met.
 All three hardware steps must pass before the session-start control becomes
 available.
+This scenario motivates FR2 (Eye-Tracker Detection and Licensing), FR3 (Calibration Integration), FR5 (Reading Content and Presentation), FR14 (Reading Material Library), and FR15 (Experiment Setup Templates).
 
 \subsection{UC-2: Launching and Conducting a Live Reading Session}
 \label{sec:uc2}
@@ -301,6 +302,7 @@ Where comprehension assessment is required, \textit{Manage Comprehension Quiz}
 is activated; this use case carries a \texttt{<<include>>} dependency on
 \textit{Answer Comprehension Quiz} on the participant's side, and response
 timing is recorded before the session continues.
+This scenario motivates FR1 (System Execution and Setup), FR4 (Gaze Data Acquisition and Mapping), FR6 (Researcher Interface), FR7 (Intervention Runtime), FR8 (Decision-Strategy Abstraction), FR9 (Context Preservation), FR11 (Experimental Control), FR13 (Comprehension Quiz), FR16 (Multi-Item Session Sequencing), and FR17 (Sensing Mode Configuration).
 
 \subsection{UC-3: Integrating an External Module Provider}
 \label{sec:uc3}
@@ -332,6 +334,7 @@ This scenario demonstrates that the extensibility requirement is fulfilled at
 the protocol level --- new decision and analysis algorithms are delivered as
 separate processes communicating over a documented interface, and the core
 codebase is left unmodified.
+This scenario motivates FR18 (Eye-Movement Analysis Layer) and FR19 (External Module Provider Framework).
 
 \subsection{UC-4: Reviewing and Exporting Session Data}
 \label{sec:uc4}
@@ -362,6 +365,7 @@ Data} to retrieve the record for offline analysis.
 Because the export alone is sufficient to reconstruct the full sequence of
 sensing, analysis, and intervention events, this use case is the primary
 mechanism through which the reproducibility requirement is satisfied.
+This scenario motivates FR10 (Real-Time Performance Monitoring), FR12 (Logging and Export), FR21 (Session Replay Playback), and FR22 (Session State Recovery).
 
 % ---------------------------------------------------------------
 

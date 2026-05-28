@@ -180,6 +180,13 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 
 ## 3. Working protocol for Claude sessions
 
+### 3.0 Git commits — never do this automatically
+
+- **Never run `git commit` unless the user explicitly asks.**
+- Never run `git add` + `git commit` as a follow-up to an edit without being asked.
+- After applying changes, stop at the build verification step.
+- If the user wants to commit, they will say so.
+
 ### 3.1 Before writing prose
 
 1. Check what is already in the chapter — do not rewrite work without
