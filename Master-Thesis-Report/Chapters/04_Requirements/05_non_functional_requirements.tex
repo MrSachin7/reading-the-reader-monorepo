@@ -7,20 +7,34 @@ They were derived from the architectural goals stated in the problem statement
 and from the operational constraints imposed by a researcher-run eye-tracking
 experiment.
 
-\begin{table}[htbp]
-\centering
+\begingroup
 \small
-\caption{Non-functional requirements with rationale.}
-\label{tab:nfr}
-\begin{tabularx}{\linewidth}{%
+\begin{longtable}{%
   p{0.08\linewidth}
-  p{0.22\linewidth}
-  p{0.30\linewidth}
-  X
+  p{0.20\linewidth}
+  p{0.37\linewidth}
+  p{0.27\linewidth}
 }
+\caption{Non-functional requirements with rationale.}
+\label{tab:nfr} \\
 \toprule
 \textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} \\
 \midrule
+\endfirsthead
+
+\multicolumn{4}{c}{\tablename~\thetable{} — continued} \\
+\toprule
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{4}{r}{\footnotesize Continued on next page} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
 NFR1 & Modularity &
   The system shall maintain strictly separate bounded layers for sensing,
   eye-movement analysis, decision strategies, intervention execution,
@@ -31,6 +45,7 @@ NFR1 & Modularity &
   Strict layer separation ensures that the modularity claim can be demonstrated
   by substituting components at test time. \\
 \midrule
+
 NFR2 & Low Latency &
   The sensing-to-decision pipeline shall be optimised for near real-time
   processing.
@@ -40,6 +55,7 @@ NFR2 & Low Latency &
   present; multi-hundred-millisecond delays would invalidate the intervention
   rationale. \\
 \midrule
+
 NFR3 & Usability &
   The system shall reduce experimenter cognitive load through a guided
   multi-step setup workflow, explicit readiness gating, and a unified
@@ -47,6 +63,7 @@ NFR3 & Usability &
   Researcher-facing complexity is a practical threat to experiment validity;
   setup errors caused by a confusing interface affect data quality. \\
 \midrule
+
 NFR4 & Reliability &
   The system shall fail gracefully on eye-tracker disconnection, invalid
   license, gaze-stream interruption, and external-provider disconnection:
@@ -55,6 +72,7 @@ NFR4 & Reliability &
   An experiment session cannot be re-run if a crash causes data loss or
   disturbs the participant mid-reading. \\
 \midrule
+
 NFR5 & Reproducibility &
   All session parameters, calibration metrics, intervention settings,
   decision-strategy configuration, and system version information shall
@@ -63,6 +81,7 @@ NFR5 & Reproducibility &
   Reproducibility is a core requirement of scientific experimentation;
   incomplete records prevent validation of results. \\
 \midrule
+
 NFR6 & Extensibility &
   Adding new intervention modules, decision strategies, or eye-movement
   analysis algorithms shall require only additive code changes and shall
@@ -72,6 +91,7 @@ NFR6 & Extensibility &
   Future teams or collaborators must be able to supply AI-driven decision
   logic or novel sensors without owning or rebuilding the core platform. \\
 \midrule
+
 NFR7 & Recoverability &
   The system shall periodically persist session state to disk during an
   active experiment.
@@ -81,6 +101,7 @@ NFR7 & Recoverability &
   participant are disruptive; even partial data recovery preserves the
   experimental record. \\
 \midrule
+
 NFR8 & Hardware Independence &
   The system shall be fully operable without a physical eye tracker by
   using mouse-cursor simulation or another software sensing mode, with
@@ -88,7 +109,6 @@ NFR8 & Hardware Independence &
   Development, CI verification, and demonstrations must be possible on
   machines without Tobii hardware attached; this property also enables
   testing of all architectural layers in isolation. \\
-\bottomrule
-\end{tabularx}
-\end{table}
 
+\end{longtable}
+\endgroup
