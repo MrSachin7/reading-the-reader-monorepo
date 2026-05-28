@@ -1,0 +1,345 @@
+\section{Functional Requirements}
+\label{sec:functional-requirements}
+
+Tab.~\ref{tab:fr} lists the functional requirements for the system, grouped by
+concern and prioritised using the MoSCoW method, where \textbf{M} = Must Have,
+\textbf{S} = Should Have, and \textbf{C} = Could Have.
+Requirements labelled \textbf{M} are non-negotiable for the platform to fulfil
+its thesis contribution; those labelled \textbf{S} enhance experimental quality
+and researcher usability; those labelled \textbf{C} are optional enhancements
+that were implemented as an extension of the core design.
+
+\begingroup
+\small
+\begin{longtable}{%
+  p{0.12\linewidth}
+  p{0.73\linewidth}
+  p{0.07\linewidth}
+}
+\caption{Functional requirements with MoSCoW priority.}
+\label{tab:fr} \\
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Pri.} \\
+\midrule
+\endfirsthead
+
+\multicolumn{3}{c}{\tablename~\thetable{} — continued} \\
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Pri.} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{3}{r}{\footnotesize Continued on next page} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+% ── FR1 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR1 — System Execution and Setup}} \\
+\midrule
+FR1.1 & The system shall be launchable through a single startup command. & M \\
+FR1.2 & The system shall guide the researcher through a structured, multi-step
+        setup workflow with explicit progress indicators. & M \\
+FR1.3 & The system shall prevent session start until device selection, license
+        validation, and calibration are all completed successfully. & M \\
+\midrule
+
+% ── FR2 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR2 — Eye-Tracker Detection and Licensing}} \\
+\midrule
+FR2.1 & The system shall detect connected Tobii eye trackers dynamically on
+        startup and on reconnection. & M \\
+FR2.2 & The system shall allow the researcher to select exactly one active
+        device from the detected set. & M \\
+FR2.3 & The system shall require a valid device license before enabling gaze
+        data streaming. & M \\
+FR2.4 & The system shall handle device disconnect events gracefully without
+        crashing or losing session data. & M \\
+\midrule
+
+% ── FR3 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR3 — Calibration Integration}} \\
+\midrule
+FR3.1 & The system shall integrate the Tobii SDK calibration workflow,
+        including point collection and validation phases. & M \\
+FR3.2 & The system shall display calibration quality metrics and indicate
+        pass or fail to the researcher before session start. & M \\
+FR3.3 & The system shall store calibration metadata in the session record for
+        reproducibility. & M \\
+FR3.4 & The system shall allow recalibration between participants without
+        restarting the application. & M \\
+FR3.5 & The system shall support selectable calibration point presets
+        (5-point, 9-point, and 13-point). & S \\
+\midrule
+
+% ── FR4 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR4 — Gaze Data Acquisition and Mapping}} \\
+\midrule
+FR4.1 & The system shall stream gaze samples in real time from the active
+        sensing source. & M \\
+FR4.2 & The system shall convert normalised gaze coordinates into screen-space
+        coordinates. & M \\
+FR4.3 & The system shall map gaze coordinates to content tokens
+        (word-level granularity) in the reading interface. & M \\
+FR4.4 & The system shall expose gaze-to-content mapping events via a stable
+        internal interface to downstream analysis and decision layers. & M \\
+\midrule
+
+% ── FR5 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR5 — Reading Content and Presentation}} \\
+\midrule
+FR5.1 & The system shall load and render Markdown-formatted documents;
+        PDF support is explicitly out of scope. & M \\
+FR5.2 & The system shall support at least the following typographic
+        dimensions: font family, font size, line width, line height,
+        letter spacing, colour palette, and theme mode. & M \\
+FR5.3 & The system shall allow the researcher to lock the typographic
+        configuration for a session so that participant-side changes
+        are prevented. & M \\
+FR5.4 & The rendering engine shall maintain stable, consistent coordinate
+        references so that gaze-to-content mapping remains valid after
+        presentation changes. & M \\
+\midrule
+
+% ── FR6 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR6 — Researcher Interface (Second Screen)}} \\
+\midrule
+FR6.1 & The system shall provide a live mirrored view of the participant's
+        reading interface, updated in real time over the WebSocket channel. & M \\
+FR6.2 & The researcher interface shall display the current gaze-validity
+        rate as a health indicator. & M \\
+FR6.3 & The researcher shall be able to apply any registered intervention
+        module manually from the control panel at any time during a
+        session. & M \\
+FR6.4 & The researcher interface shall display a chronological log of all
+        intervention events applied during the current session. & S \\
+FR6.5 & The researcher interface shall surface pending decision proposals
+        and provide approve and reject controls for hybrid execution mode. & S \\
+\midrule
+
+% ── FR7 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR7 — Intervention Runtime}} \\
+\midrule
+FR7.1 & The system shall support pluggable intervention modules that are
+        discovered and invoked through a common registry interface. & M \\
+FR7.2 & New intervention modules shall be addable without modifying any
+        existing module or the core runtime. & M \\
+FR7.3 & Each intervention module shall declare its supported parameters
+        and validate inputs before execution. & M \\
+FR7.4 & The runtime shall support manual, automated, and hybrid (proposal-gated)
+        triggering of interventions. & M \\
+FR7.5 & The system shall provide at least the following built-in intervention
+        modules: font family, font size, line width, line height, letter spacing,
+        theme mode, colour palette, and participant-edit lock. & M \\
+\midrule
+
+% ── FR8 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR8 — Decision-Strategy Abstraction}} \\
+\midrule
+FR8.1 & The system shall support interchangeable decision strategies
+        selectable per session. & M \\
+FR8.2 & The system shall allow enabling and disabling a strategy without
+        restarting the application. & M \\
+FR8.3 & The system shall log the origin, parameters, and rationale of each
+        intervention event. & M \\
+FR8.4 & The system shall provide a built-in rule-based decision strategy
+        configurable via session settings. & M \\
+FR8.5 & The system shall support an external decision strategy that delegates
+        intervention decisions to a connected module provider. & M \\
+\midrule
+
+% ── FR9 ─────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR9 — Context Preservation}} \\
+\midrule
+FR9.1 & During a layout-changing intervention the system shall identify the
+        token currently being read and use it as an anchor for viewport
+        adjustment. & M \\
+FR9.2 & The viewport shall scroll automatically to restore the anchored token
+        to its pre-intervention visual position after the change is applied. & M \\
+FR9.3 & Context-preservation failures shall be logged in the session record. & M \\
+\midrule
+
+% ── FR10 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR10 — Real-Time Performance Monitoring}} \\
+\midrule
+FR10.1 & The gaze-validity rate shall be computed continuously and made
+         available to the researcher interface without perceptible delay. & S \\
+FR10.2 & The sensing-to-decision pipeline shall avoid unnecessary buffering
+         and blocking operations so that intervention latency remains
+         suitable for just-in-time adaptation. & M \\
+\midrule
+
+% ── FR11 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR11 — Experimental Control}} \\
+\midrule
+FR11.1 & The system shall support at least four configurable execution modes:
+         control (no intervention), manual-only, automated-only, and hybrid
+         (automated with researcher-approval gate). & M \\
+FR11.2 & The active execution mode and any mid-session changes to it shall be
+         recorded in the session log. & M \\
+FR11.3 & The researcher shall be able to pause and resume automated
+         decision-making at any point during a live session. & S \\
+\midrule
+
+% ── FR12 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR12 — Logging and Export}} \\
+\midrule
+FR12.1 & The system shall log all raw gaze samples with timestamps and
+         validity flags. & M \\
+FR12.2 & The system shall log derived eye-movement events (fixations and
+         saccades) produced by the analysis layer. & M \\
+FR12.3 & The system shall log all intervention events with timestamp,
+         source (manual, rule-based, or external provider), and applied
+         parameters. & M \\
+FR12.4 & The system shall export session data in both JSON and CSV formats. & M \\
+FR12.5 & Exported data shall include schema versioning, session metadata,
+         calibration results, and presentation configuration. & M \\
+FR12.6 & Previously saved exports shall be listable and reloadable from
+         within the application without manual file management. & S \\
+\midrule
+
+% ── FR13 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR13 — Comprehension Quiz}} \\
+\midrule
+FR13.1 & Reading materials shall support an attached set of multiple-choice
+         comprehension questions defined at setup time. & S \\
+FR13.2 & The system shall present the quiz to the participant at the end of
+         a reading item, under researcher control. & S \\
+FR13.3 & Quiz answers, correctness, and response timing shall be recorded
+         in the session export. & S \\
+FR13.4 & The researcher shall be able to navigate quiz questions and manage
+         the quiz lifecycle from the control panel. & S \\
+\midrule
+
+% ── FR14 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR14 — Reading Material Library}} \\
+\midrule
+FR14.1 & The system shall maintain a persistent library of named reading
+         materials accessible through the researcher UI. & S \\
+FR14.2 & The researcher shall be able to create, read, update, and delete
+         reading materials without editing files directly. & S \\
+FR14.3 & Each reading material shall carry a title, a description, a
+         Markdown content body, and an optional comprehension quiz. & S \\
+\midrule
+
+% ── FR15 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR15 — Experiment Setup Templates}} \\
+\midrule
+FR15.1 & The system shall allow researchers to define named experiment
+         templates specifying an ordered sequence of reading items. & S \\
+FR15.2 & Each item in a template shall reference one reading material and
+         may carry item-specific typographic configuration. & S \\
+FR15.3 & Templates shall be persisted and reusable across multiple sessions. & S \\
+\midrule
+
+% ── FR16 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR16 — Multi-Item Session Sequencing}} \\
+\midrule
+FR16.1 & A reading session may contain more than one reading item drawn
+         from an experiment template. & S \\
+FR16.2 & The researcher shall advance the participant to the next item from
+         the researcher control panel. & S \\
+FR16.3 & Each reading-item transition shall be recorded as a timestamped
+         event in the session log. & S \\
+\midrule
+
+% ── FR17 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR17 — Sensing Mode Configuration}} \\
+\midrule
+FR17.1 & The system shall support at least three sensing modes: Tobii eye
+         tracker, mouse-cursor simulation, and webcam. & M \\
+FR17.2 & The researcher shall be able to switch the active sensing mode
+         without restarting the application. & M \\
+FR17.3 & Mouse-cursor simulation shall produce gaze data structurally
+         compatible with all downstream pipeline stages so that the
+         full system can be operated and tested without hardware. & M \\
+\midrule
+
+% ── FR18 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR18 — Eye-Movement Analysis Layer}} \\
+\midrule
+FR18.1 & The system shall derive fixation events from the raw gaze stream
+         using a built-in velocity-based algorithm. & M \\
+FR18.2 & The system shall support replacement of the built-in fixation
+         detector with an external analysis provider connected via the
+         module-provider framework. & M \\
+FR18.3 & Fixation and saccade data produced by the analysis layer shall
+         be made available to decision strategies and included in the
+         session export. & M \\
+\midrule
+
+% ── FR19 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR19 — External Module Provider Framework}} \\
+\midrule
+FR19.1 & The system shall expose a dedicated WebSocket endpoint to which
+         external processes can connect and register as module providers. & M \\
+FR19.2 & A provider shall declare its capabilities on connection; the system
+         shall route the appropriate context envelopes to it and apply its
+         commands through standard validation and logging paths. & M \\
+FR19.3 & A provider disconnection shall not interrupt the running experiment;
+         the affected strategy shall degrade gracefully and the event shall
+         be logged. & M \\
+FR19.4 & The module-provider protocol shall be documented so that third
+         parties can implement compatible providers independently. & M \\
+\midrule
+
+% ── FR20 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR20 — Decision-Proposal Approval Workflow}} \\
+\midrule
+FR20.1 & A decision strategy shall be configurable to emit proposals for
+         researcher approval rather than applying interventions directly. & S \\
+FR20.2 & Pending proposals shall be surfaced to the researcher in the control
+         panel with approve and reject controls. & S \\
+FR20.3 & The researcher shall be able to switch the execution mode between
+         fully automated and proposal-gated at any point during a session
+         without reconfiguring the strategy. & S \\
+\midrule
+
+% ── FR21 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR21 — Session Replay Playback}} \\
+\midrule
+FR21.1 & The system shall reconstruct a recorded session in the reading
+         interface from a saved export file. & S \\
+FR21.2 & Replay shall support play/pause and variable playback speed (at
+         minimum 0.5\texttimes{}, 1\texttimes{}, and 2\texttimes{}). & S \\
+FR21.3 & The researcher shall be able to scrub the replay timeline and
+         navigate between recorded key events. & S \\
+FR21.4 & Applied intervention events shall be marked on the replay timeline. & S \\
+\midrule
+
+% ── FR22 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR22 — Session State Recovery}} \\
+\midrule
+FR22.1 & The system shall checkpoint the current session state to persistent
+         storage at regular intervals during an active experiment. & S \\
+FR22.2 & On startup, the system shall detect an interrupted session in the
+         checkpoint store and offer the researcher the option to restore it. & S \\
+\midrule
+
+% ── FR23 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR23 — Per-Context Reader Shell Settings}} \\
+\midrule
+FR23.1 & The system shall maintain independent typographic and appearance
+         settings for the participant reading view, the researcher mirror
+         view, and the replay view. & S \\
+FR23.2 & Changes to settings in one context shall not affect any other
+         context. & S \\
+FR23.3 & Per-context settings shall be persisted across sessions. & S \\
+\midrule
+
+% ── FR24 ────────────────────────────────────────────────────────
+\multicolumn{3}{l}{\textit{FR24 — Facial State Sensing (Optional)}} \\
+\midrule
+FR24.1 & When the webcam sensing mode is active, the system shall capture
+         facial state observations and make them available to decision
+         strategies as supplementary context. & C \\
+FR24.2 & Facial state sensing shall be strictly optional; no other system
+         function shall depend on it. & C \\
+
+\end{longtable}
+\endgroup
+
+% ---------------------------------------------------------------
+

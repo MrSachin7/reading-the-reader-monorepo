@@ -1,0 +1,367 @@
+\section{Use Cases and Scenarios}
+\label{sec:use-cases}
+
+Fig.~\ref{fig:use-case-diagram} provides a complete overview of the system's use cases
+and their actor associations.
+The diagram uses standard UML use case notation: stick figures are actors, ovals are
+individual use cases, solid lines are associations, and dashed arrows labelled
+\texttt{<<include>>} indicate that one use case necessarily invokes another as part
+of its execution.
+The twenty-two use cases are organised into five horizontal bands that reflect the
+natural phases of system use: \textit{Setup \& Calibration}, \textit{Content Management},
+\textit{Session Configuration}, \textit{Live Session}, and \textit{Post-Session}.
+
+The system involves five actors.
+The \textbf{Researcher} is the primary operator and is associated with fifteen of the
+twenty-two use cases, spanning all five bands.
+The \textbf{Participant} interacts with the system only during the live and post-session
+phases, reading text and answering comprehension questions.
+The \textbf{Eye Tracker Device} is a hardware actor that contributes a single
+high-frequency use case: streaming raw gaze samples into the pipeline.
+The \textbf{External Module Provider} is an out-of-process actor that connects over a
+dedicated WebSocket protocol to supply decision logic or eye-movement analysis.
+Finally, the \textbf{Data Consumer} represents any downstream stakeholder --- analyst,
+collaborator, or analysis script --- that accesses exported session records.
+
+The following four scenarios trace representative paths through the diagram, covering
+all five bands and motivating the functional requirements in
+Sec.~\ref{sec:functional-requirements}.
+
+\usetikzlibrary{shapes.geometric}
+
+\begin{figure}[p]
+\centering
+\resizebox{0.96\linewidth}{!}{%
+\begin{tikzpicture}[
+  %% ── Styles ───────────────────────────────────────────────────────────────
+  uc/.style={
+    draw, ellipse, thick,
+    text width=2.7cm, align=center,
+    font=\small, inner sep=3pt,
+    minimum height=1.05cm
+  },
+  inc/.style={
+    ->, dashed, >=latex, thick,
+    font=\scriptsize
+  },
+  lbl/.style={
+    anchor=north west,
+    font=\scriptsize\itshape,
+    text=gray!70!black
+  },
+]
+
+%% ── Group bands (drawn first so they sit behind everything) ──────────────
+% Setup band
+\fill[gray!9, rounded corners=4pt]
+  (0.8, 21.6) rectangle (16.2, 25.2);
+\node[lbl] at (1.0, 25.2) {Setup \& Calibration};
+
+% Content management band
+\fill[gray!5, rounded corners=4pt]
+  (0.8, 18.1) rectangle (16.2, 21.4);
+\node[lbl] at (1.0, 21.4) {Content Management};
+
+% Session configuration band
+\fill[gray!9, rounded corners=4pt]
+  (0.8, 14.9) rectangle (16.2, 17.9);
+\node[lbl] at (1.0, 17.9) {Session Configuration};
+
+% Live session band
+\fill[gray!5, rounded corners=4pt]
+  (0.8, 8.7) rectangle (16.2, 14.7);
+\node[lbl] at (1.0, 14.7) {Live Session};
+
+% Post-session band
+\fill[gray!9, rounded corners=4pt]
+  (0.8, 0.5) rectangle (16.2, 8.5);
+\node[lbl] at (1.0, 8.5) {Post-Session};
+
+%% ── System boundary (drawn on top of bands) ──────────────────────────────
+\draw[very thick, rounded corners=8pt]
+  (0.8, 0.5) rectangle (16.2, 25.2);
+\node[font=\normalsize\bfseries, above=2pt] at (8.5, 25.2)
+  {Reading the Reader Platform};
+
+%% ── Use cases ────────────────────────────────────────────────────────────
+% Row: Setup (y = 23.5)
+\node[uc] (uc-detect)    at (4.0,  23.5) {Detect \& Select\\Eye Tracker};
+\node[uc] (uc-calibrate) at (8.5,  23.5) {Perform\\Calibration};
+\node[uc] (uc-license)   at (13.0, 23.5) {Validate Device\\License};
+
+% Row: Content management (y = 19.8)
+\node[uc] (uc-materials) at (4.0,  19.8) {Manage Reading\\Materials};
+\node[uc] (uc-templates) at (8.5,  19.8) {Define Experiment\\Template};
+\node[uc] (uc-config)    at (13.0, 19.8) {Configure Session\\Settings};
+
+% Row: Session configuration (y = 16.4)
+\node[uc] (uc-sensing)   at (5.0,  16.4) {Configure\\Sensing Mode};
+\node[uc] (uc-start)     at (12.0, 16.4) {Start Experiment\\Session};
+
+% Row: Live session — primary (y = 13.2)
+\node[uc] (uc-monitor)   at (4.0,  13.2) {Monitor Live\\Session};
+\node[uc] (uc-intervene) at (8.5,  13.2) {Apply Manual\\Intervention};
+\node[uc] (uc-decision)  at (13.0, 13.2) {Control Decision\\Automation};
+
+% Row: Live session — secondary (y = 10.1)
+\node[uc] (uc-advance)   at (4.0,  10.1) {Advance\\Reading Item};
+\node[uc] (uc-quiz)      at (8.5,  10.1) {Manage\\Comprehension Quiz};
+\node[uc] (uc-stream)    at (13.0, 10.1) {Stream\\Gaze Samples};
+
+% Row: Post-session — participant / provider (y = 7.1)
+\node[uc] (uc-read)      at (4.0,  7.1) {Read\\Presented Text};
+\node[uc] (uc-answer)    at (8.5,  7.1) {Answer\\Comprehension Quiz};
+\node[uc] (uc-connect)   at (13.0, 7.1) {Connect as\\Module Provider};
+
+% Row: Post-session — export / provide (y = 4.2)
+\node[uc] (uc-export)    at (4.0,  4.2) {Export\\Session Data};
+\node[uc] (uc-replay)    at (8.5,  4.2) {Replay Recorded\\Session};
+\node[uc] (uc-provide)   at (13.0, 4.2) {Provide Decision\\or Analysis};
+
+% Row: Access (y = 1.7)
+\node[uc] (uc-access)    at (8.5,  1.7) {Access\\Exported Data};
+
+%% ── Actors ───────────────────────────────────────────────────────────────
+% Macro shorthand: draw stick figure centred at (#3,#4), label #5
+% Researcher — left, vertically centred on their use cases
+\def\rX{-1.5} \def\rY{15.0}
+\draw[thick] (\rX,     \rY+2.0) circle (0.42);      % head
+\draw[thick] (\rX,     \rY+1.58) -- (\rX,  \rY+0.5); % body
+\draw[thick] (\rX,     \rY+0.5)  -- (\rX-0.42, \rY-0.25); % L leg
+\draw[thick] (\rX,     \rY+0.5)  -- (\rX+0.42, \rY-0.25); % R leg
+\draw[thick] (\rX,     \rY+1.25) -- (\rX-0.48, \rY+0.80); % L arm
+\draw[thick] (\rX,     \rY+1.25) -- (\rX+0.48, \rY+0.80); % R arm
+\node[font=\small\bfseries, align=center, below] at (\rX, \rY-0.35) {Researcher};
+\coordinate (researcher) at (\rX, \rY+1.0);
+
+% Participant — left, lower
+\def\pX{-1.5} \def\pY{5.5}
+\draw[thick] (\pX,     \pY+2.0) circle (0.42);
+\draw[thick] (\pX,     \pY+1.58) -- (\pX,  \pY+0.5);
+\draw[thick] (\pX,     \pY+0.5)  -- (\pX-0.42, \pY-0.25);
+\draw[thick] (\pX,     \pY+0.5)  -- (\pX+0.42, \pY-0.25);
+\draw[thick] (\pX,     \pY+1.25) -- (\pX-0.48, \pY+0.80);
+\draw[thick] (\pX,     \pY+1.25) -- (\pX+0.48, \pY+0.80);
+\node[font=\small\bfseries, align=center, below] at (\pX, \pY-0.35) {Participant};
+\coordinate (participant) at (\pX, \pY+1.0);
+
+% Eye Tracker Device — right, top
+\def\eX{18.2} \def\eY{23.5}
+\draw[thick] (\eX,     \eY+0.42) circle (0.42);
+\draw[thick] (\eX,     \eY)      -- (\eX,  \eY-1.0);
+\draw[thick] (\eX,     \eY-1.0)  -- (\eX-0.42, \eY-1.75);
+\draw[thick] (\eX,     \eY-1.0)  -- (\eX+0.42, \eY-1.75);
+\draw[thick] (\eX,     \eY-0.32) -- (\eX-0.48, \eY-0.72);
+\draw[thick] (\eX,     \eY-0.32) -- (\eX+0.48, \eY-0.72);
+\node[font=\small\bfseries, align=center, below] at (\eX, \eY-2.1) {Eye Tracker\\Device};
+\coordinate (eyetracker) at (\eX, \eY+0.42);
+
+% External Module Provider — right, middle
+\def\mX{18.2} \def\mY{10.0}
+\draw[thick] (\mX,     \mY+0.42) circle (0.42);
+\draw[thick] (\mX,     \mY)      -- (\mX,  \mY-1.0);
+\draw[thick] (\mX,     \mY-1.0)  -- (\mX-0.42, \mY-1.75);
+\draw[thick] (\mX,     \mY-1.0)  -- (\mX+0.42, \mY-1.75);
+\draw[thick] (\mX,     \mY-0.32) -- (\mX-0.48, \mY-0.72);
+\draw[thick] (\mX,     \mY-0.32) -- (\mX+0.48, \mY-0.72);
+\node[font=\small\bfseries, align=center, below] at (\mX, \mY-2.1) {External Module\\Provider};
+\coordinate (extprovider) at (\mX, \mY+0.42);
+
+% Data Consumer — right, bottom
+\def\dX{18.2} \def\dY{2.0}
+\draw[thick] (\dX,     \dY+0.42) circle (0.42);
+\draw[thick] (\dX,     \dY)      -- (\dX,  \dY-1.0);
+\draw[thick] (\dX,     \dY-1.0)  -- (\dX-0.42, \dY-1.75);
+\draw[thick] (\dX,     \dY-1.0)  -- (\dX+0.42, \dY-1.75);
+\draw[thick] (\dX,     \dY-0.32) -- (\dX-0.48, \dY-0.72);
+\draw[thick] (\dX,     \dY-0.32) -- (\dX+0.48, \dY-0.72);
+\node[font=\small\bfseries, align=center, below] at (\dX, \dY-2.1) {Data\\Consumer};
+\coordinate (dataconsumer) at (\dX, \dY+0.42);
+
+%% ── Associations ─────────────────────────────────────────────────────────
+% Researcher → all researcher use cases
+\foreach \t in {uc-detect, uc-calibrate, uc-license,
+                uc-materials, uc-templates, uc-config,
+                uc-sensing, uc-start,
+                uc-monitor, uc-intervene, uc-decision,
+                uc-advance, uc-quiz,
+                uc-export, uc-replay} {
+  \draw (researcher) -- (\t);
+}
+
+% Participant → participant use cases
+\draw (participant) -- (uc-read);
+\draw (participant) -- (uc-answer);
+
+% Eye Tracker Device → stream gaze
+\draw (eyetracker) -- (uc-stream);
+
+% External Module Provider → provider use cases
+\draw (extprovider) -- (uc-connect);
+\draw (extprovider) -- (uc-provide);
+
+% Data Consumer → access exported data
+\draw (dataconsumer) -- (uc-access);
+
+%% ── Include relationships ────────────────────────────────────────────────
+% Manage Comprehension Quiz includes Answer Comprehension Quiz
+\draw[inc] (uc-quiz)
+  to[bend left=18]
+  node[right=1pt, font=\scriptsize] {\texttt{<<include>>}}
+  (uc-answer);
+
+% Start Experiment Session includes Perform Calibration
+\draw[inc] (uc-start)
+  to[bend right=22]
+  node[below=1pt, font=\scriptsize, sloped] {\texttt{<<include>>}}
+  (uc-calibrate);
+
+% Export Session Data includes Access Exported Data
+\draw[inc] (uc-export)
+  to[bend left=15]
+  node[right=1pt, font=\scriptsize] {\texttt{<<include>>}}
+  (uc-access);
+
+\end{tikzpicture}%
+}
+\caption{%
+UML use case diagram for the Reading the Reader platform.
+Solid lines denote actor--use-case associations;
+dashed arrows denote \texttt{<<include>>} dependencies.
+Use cases are grouped into five bands:
+Setup \& Calibration, Content Management, Session Configuration,
+Live Session, and Post-Session.%
+}
+\label{fig:use-case-diagram}
+\end{figure}
+
+\subsection{UC-1: Preparing an Experiment}
+\label{sec:uc1}
+
+This scenario traces the \textit{Content Management} and \textit{Setup \&
+Calibration} bands of Fig.~\ref{fig:use-case-diagram}, covering all work a
+researcher does before a participant arrives.
+
+The preparation begins with the reading library.
+Using \textit{Manage Reading Materials}, the researcher creates one or more
+materials, each carrying a Markdown content body, descriptive metadata, and an
+optional set of comprehension questions.
+\textit{Define Experiment Template} then assembles an ordered sequence of those
+materials into a reusable session plan; individual items may carry their own
+typographic defaults.
+Global session parameters --- intervention policy, execution mode, and decision
+strategy selection --- are fixed through \textit{Configure Session Settings}.
+
+Hardware setup follows.
+The researcher connects the Tobii eye tracker and uses \textit{Detect \& Select
+Eye Tracker} to identify and activate the device.
+\textit{Validate Device License} provisions the SDK licence before any gaze data
+is permitted to flow.
+\textit{Perform Calibration} runs the full SDK point-collection and validation
+workflow; the researcher reviews the resulting quality metrics and may repeat the
+procedure if the accuracy threshold is not met.
+All three hardware steps must pass before the session-start control becomes
+available.
+
+\subsection{UC-2: Launching and Conducting a Live Reading Session}
+\label{sec:uc2}
+
+This scenario spans the \textit{Session Configuration} and \textit{Live Session}
+bands and involves three actors: the Researcher, the Participant, and the Eye
+Tracker Device.
+
+The researcher selects the active sensing source via \textit{Configure Sensing
+Mode}: a physical Tobii device for a real experiment, or mouse-cursor simulation
+when running a demonstration without hardware.
+\textit{Start Experiment Session} then simultaneously opens the participant
+reading interface on a second screen and activates the researcher control panel.
+This use case carries a \texttt{<<include>>} dependency on \textit{Perform
+Calibration}, enforcing that the calibration gate from UC-1 has been passed.
+
+Once the session is live, the Eye Tracker Device continuously executes
+\textit{Stream Gaze Samples}, feeding high-frequency coordinates to the backend
+over the persistent WebSocket channel.
+The Participant executes \textit{Read Presented Text} on their screen while the
+researcher uses \textit{Monitor Live Session} to observe the mirrored view,
+live gaze-token highlighting, and a rolling attention-summary heatmap.
+
+The configured decision strategy processes the incoming gaze and eye-movement
+analysis signals.
+In automated mode it applies typographic changes directly; in hybrid mode it
+emits a proposal that the researcher acts on through \textit{Control Decision
+Automation}.
+The researcher may also bypass the strategy entirely and apply an immediate change
+via \textit{Apply Manual Intervention}.
+In all cases the context-preservation mechanism anchors the participant's reading
+position so that layout changes do not disorient them.
+
+When a reading item ends, the researcher uses \textit{Advance Reading Item} to
+progress to the next item in the template.
+Where comprehension assessment is required, \textit{Manage Comprehension Quiz}
+is activated; this use case carries a \texttt{<<include>>} dependency on
+\textit{Answer Comprehension Quiz} on the participant's side, and response
+timing is recorded before the session continues.
+
+\subsection{UC-3: Integrating an External Module Provider}
+\label{sec:uc3}
+
+This scenario involves the External Module Provider actor and the two
+\textit{Post-Session} band use cases on the right side of
+Fig.~\ref{fig:use-case-diagram}: \textit{Connect as Module Provider} and
+\textit{Provide Decision or Analysis}.
+
+A researcher wishes to evaluate a custom fixation-detection model or an
+AI-driven reading-difficulty classifier without modifying the core application.
+They launch the external process --- for example, one of the Python sample
+providers included in the repository --- and point it at the platform's dedicated
+module-provider WebSocket endpoint.
+Upon connection the provider executes \textit{Connect as Module Provider},
+declaring its capabilities to the system: whether it processes raw gaze samples
+and returns fixation events, or whether it receives decision context and returns
+intervention recommendations.
+
+For the remainder of the live session the provider executes \textit{Provide
+Decision or Analysis} on an ongoing basis.
+Commands it returns pass through the same parameter-validation and
+intervention-logging path as built-in strategies, and therefore appear
+identically in the session record and in the researcher's control panel.
+If the provider disconnects unexpectedly the session is not interrupted: the
+platform logs the event and continues with the mode that was active before the
+provider connected.
+This scenario demonstrates that the extensibility requirement is fulfilled at
+the protocol level --- new decision and analysis algorithms are delivered as
+separate processes communicating over a documented interface, and the core
+codebase is left unmodified.
+
+\subsection{UC-4: Reviewing and Exporting Session Data}
+\label{sec:uc4}
+
+This scenario covers the remaining \textit{Post-Session} use cases and involves
+both the Researcher and the Data Consumer actor.
+
+When a session ends the researcher uses \textit{Export Session Data} to produce
+a structured session record.
+This use case carries a \texttt{<<include>>} dependency on \textit{Access Exported
+Data}: the export operation both writes the artefact to the server and immediately
+makes it available for retrieval.
+The record bundles raw gaze samples, derived fixation and saccade events, all
+intervention events with source attribution and timestamps, comprehension quiz
+results, calibration metadata, and the complete typographic configuration,
+packaged in both JSON and CSV formats.
+
+The researcher may then load any saved export into the platform via
+\textit{Replay Recorded Session}, which reconstructs the reading interface with
+animated gaze-path playback, intervention markers on the timeline, and
+variable-speed playback controls.
+Previously saved exports are listed in the application and are reloadable without
+manual file management, satisfying the need to review multiple sessions across a
+study.
+
+Independently of the researcher, a Data Consumer executes \textit{Access Exported
+Data} to retrieve the record for offline analysis.
+Because the export alone is sufficient to reconstruct the full sequence of
+sensing, analysis, and intervention events, this use case is the primary
+mechanism through which the reproducibility requirement is satisfied.
+
+% ---------------------------------------------------------------
+

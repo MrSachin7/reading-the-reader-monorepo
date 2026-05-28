@@ -1,0 +1,94 @@
+\section{Non-Functional Requirements}
+\label{sec:non-functional-requirements}
+
+Tab.~\ref{tab:nfr} presents the non-functional requirements that govern the
+overall quality attributes of the system.
+They were derived from the architectural goals stated in the problem statement
+and from the operational constraints imposed by a researcher-run eye-tracking
+experiment.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Non-functional requirements with rationale.}
+\label{tab:nfr}
+\begin{tabularx}{\linewidth}{%
+  p{0.08\linewidth}
+  p{0.22\linewidth}
+  p{0.30\linewidth}
+  X
+}
+\toprule
+\textbf{ID} & \textbf{Quality attribute} & \textbf{Requirement} & \textbf{Rationale} \\
+\midrule
+NFR1 & Modularity &
+  The system shall maintain strictly separate bounded layers for sensing,
+  eye-movement analysis, decision strategies, intervention execution,
+  researcher interface, and session management.
+  Each boundary shall be expressed as an interface in the application layer;
+  concrete implementations shall be substitutable without changes to the core. &
+  The thesis contribution is the defensible architecture itself.
+  Strict layer separation ensures that the modularity claim can be demonstrated
+  by substituting components at test time. \\
+\midrule
+NFR2 & Low Latency &
+  The sensing-to-decision pipeline shall be optimised for near real-time
+  processing.
+  High-frequency gaze data shall not pass through the REST layer; it shall
+  travel exclusively over the persistent WebSocket channel. &
+  Micro-interventions must be applied while the trigger condition is still
+  present; multi-hundred-millisecond delays would invalidate the intervention
+  rationale. \\
+\midrule
+NFR3 & Usability &
+  The system shall reduce experimenter cognitive load through a guided
+  multi-step setup workflow, explicit readiness gating, and a unified
+  control panel for all live session actions. &
+  Researcher-facing complexity is a practical threat to experiment validity;
+  setup errors caused by a confusing interface affect data quality. \\
+\midrule
+NFR4 & Reliability &
+  The system shall fail gracefully on eye-tracker disconnection, invalid
+  license, gaze-stream interruption, and external-provider disconnection:
+  logging the failure, surfacing a status indicator to the researcher,
+  and continuing in a degraded mode where possible. &
+  An experiment session cannot be re-run if a crash causes data loss or
+  disturbs the participant mid-reading. \\
+\midrule
+NFR5 & Reproducibility &
+  All session parameters, calibration metrics, intervention settings,
+  decision-strategy configuration, and system version information shall
+  be captured in the session export so that a session can be understood
+  and reproduced from that record alone. &
+  Reproducibility is a core requirement of scientific experimentation;
+  incomplete records prevent validation of results. \\
+\midrule
+NFR6 & Extensibility &
+  Adding new intervention modules, decision strategies, or eye-movement
+  analysis algorithms shall require only additive code changes and shall
+  not require modification of existing modules or the core layer.
+  External processes shall be connectable as module providers without
+  any changes to the codebase. &
+  Future teams or collaborators must be able to supply AI-driven decision
+  logic or novel sensors without owning or rebuilding the core platform. \\
+\midrule
+NFR7 & Recoverability &
+  The system shall periodically persist session state to disk during an
+  active experiment.
+  An interrupted session shall be detectable and restorable on the next
+  startup without manual intervention by the researcher. &
+  Hardware and software faults during a live session with a human
+  participant are disruptive; even partial data recovery preserves the
+  experimental record. \\
+\midrule
+NFR8 & Hardware Independence &
+  The system shall be fully operable without a physical eye tracker by
+  using mouse-cursor simulation or another software sensing mode, with
+  no code changes required. &
+  Development, CI verification, and demonstrations must be possible on
+  machines without Tobii hardware attached; this property also enables
+  testing of all architectural layers in isolation. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
