@@ -8,7 +8,7 @@ The primary stakeholder of this platform is the Reading the Reader research init
 The initiative's supervisors served as the requirements authority throughout the project: they participated in the user story elicitation sessions described in Sec.~\ref{sec:user-stories}, reviewed scope and priority, and provided the research constraints that shaped the architecture.
 A secondary stakeholder group consists of future research teams and external contributors who may extend the platform with new intervention strategies or decision algorithms; their interests motivate the modularity and documented integration protocol that run through the design.
 
-Three actors interact directly with the system at runtime.
+Five actors interact directly with the system at runtime.
 
 \subsection{Researcher}
 \label{sec:stakeholder-researcher}
@@ -43,6 +43,22 @@ A central research motivation for this platform is the ability to evaluate diffe
 This actor motivates the need for a stable and documented integration protocol so that different strategies --- rule-based, machine-learning-based, or otherwise --- can be substituted without changes to the core system.
 The platform must support a range of execution modes, from fully autonomous application of proposals to researcher-gated approval, so that the degree of automation can itself be varied as an experimental condition.
 The system must also continue operating normally if a provider disconnects mid-session, ensuring that a provider failure does not abort an ongoing experiment.
+
+\subsection{Eye Tracker Device}
+\label{sec:stakeholder-eyetracker}
+
+The eye tracker device is the hardware sensing actor that supplies the raw gaze stream on which the platform's adaptive behaviour depends.
+In the context of this project the device is a Tobii screen-based eye tracker \cite{ref3}, though the system must support hardware sensing sources through a stable interface so that alternative devices can be substituted without changes to the application layer.
+The device streams gaze coordinates, per-eye validity signals, and timestamps at high frequency; it does not initiate any use cases of its own but must be detected, licensed, and calibrated before a session can begin.
+A key requirement arising from this actor is that the system must handle device disconnection and reconnection gracefully during a session so that a transient hardware failure does not abort an ongoing experiment.
+
+\subsection{Data Consumer}
+\label{sec:stakeholder-consumer}
+
+The data consumer represents the downstream actor --- an analyst, a collaborator, or an automated analysis script --- that processes the records produced at the end of a session.
+This actor does not interact with the running system; their interest is in the structure, completeness, and reproducibility of the exported artefacts.
+The requirement that follows is that every session export must be self-contained: it must bundle raw gaze samples, derived events, all intervention records with source attribution and timestamps, comprehension results, and calibration metadata in a machine-readable format so that the full experimental sequence can be reconstructed without access to the live application.
+The data consumer also motivates the replay interface, which allows the same exported record to be loaded back into the platform for visual review.
 
 \section{User Stories}
 \label{sec:user-stories}
