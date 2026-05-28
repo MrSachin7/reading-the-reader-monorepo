@@ -1,6 +1,12 @@
 \chapter{Requirements and Analysis}
 \label{ch:requirements}
 
+This chapter establishes the requirements for the Reading the Reader platform through a structured derivation chain that connects project stakeholders to measurable system constraints.
+Requirements were elicited primarily through discussions with the project supervisors, who defined the research goals and experimental constraints that the platform must satisfy, and were refined iteratively as the scope of the implementation became clearer.
+Rather than listing requirements in isolation, this chapter traces the full reasoning path: stakeholders and system actors are identified first, their needs are captured as user stories, the stories are decomposed into use cases, and the use cases are finally translated into functional and non-functional requirements.
+This derivation chain makes explicit which design decisions are grounded in stakeholder need and which arise from architectural or technical constraints.
+Sec.~\ref{sec:stakeholders} introduces the project stakeholders and the five system actors; Sec.~\ref{sec:user-stories} presents the elicited user stories; Sec.~\ref{sec:use-cases} develops the use case model; Sec.~\ref{sec:functional-requirements} lists the functional requirements; and Sec.~\ref{sec:non-functional-requirements} covers the non-functional requirements.
+
 \section{Stakeholders and System Actors}
 \label{sec:stakeholders}
 
@@ -833,6 +839,7 @@ FR24.2 & Facial state sensing shall be strictly optional; no other system
 % ---------------------------------------------------------------
 
 \section{Non-Functional Requirements}
+\label{sec:non-functional-requirements}
 \label{sec:nonfunctional-requirements}
 
 Tab.~\ref{tab:nfr} presents the non-functional requirements that govern the
