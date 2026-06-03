@@ -52,6 +52,7 @@ Master-Thesis-Report/*.toc
 Master-Thesis-Report/*.lof
 Master-Thesis-Report/*.lot
 Master-Thesis-Report/*.bbl
+Master-Thesis-Report/*.bbl-SAVE-ERROR
 Master-Thesis-Report/*.blg
 Master-Thesis-Report/*.bcf
 Master-Thesis-Report/*.run.xml
