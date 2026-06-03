@@ -1,0 +1,70 @@
+\section{Key Concepts for Adaptive Reading Analytics}
+\label{sec:key-concepts}
+This section defines the core concepts underlying the thesis.
+Definitions are grounded in primary and project-aligned sources.
+
+\subsection{Adaptive Reading System}
+\label{subsec:adaptive-reading-system}
+The "Reading the Reader" concept assumes a closed-loop system that senses gaze-related signals (including pupil size) during reading, extracts higher-level events (fixations, saccades, regressions), classifies reading state or style, and triggers typographic interventions in real time \cite{ref1}.
+
+\subsection{Micro-Interventions and Just-in-Time Adaptation}
+\label{subsec:micro-interventions}
+The project proposal defines "micro-interventions" as small, context-preserving changes to typography or layout (e.g., spacing or contrast adjustments) designed to support reading without disrupting flow \cite{ref2}.
+
+Within broader HCI literature, micro-intervention systems are described as structured, designed small actions embedded into systems, where timing, narrative coherence, and personalisation influence overall user experience \cite{ref2}.
+
+In this thesis, just-in-time adaptation is defined operationally as an intervention policy that triggers based on short temporal windows of online gaze and interaction features, while controlling for:
+\begin{itemize}
+    \item Intervention cost (risk of disruption),
+    \item Recovery behaviour (time required to resume reading).
+\end{itemize}
+
+\subsection{Context Preservation and Recovery Metrics}
+\label{subsec:context-preservation}
+Recent ETRA 2025 work frames context preservation as interface functionality that enables readers to resume reading quickly after typographic changes.
+It introduces the metric Reading Resume Time (RRT) and compares four intervention designs: Popup, Undo, Notification, and Gradual \cite{ref2}.
+
+Jensen et al. report that a Gradual intervention combined with highlighting yields the fastest recovery time and the highest user preference among the designs they compared \cite{ref2}.
+This indicates that intervention form factor and transition smoothness materially affect usability.
+
+In this thesis, context preservation is treated as a first-class design goal with measurable outcomes:
+\begin{itemize}
+    \item Reading Resume Time (RRT),
+    \item Gaze stabilisation time,
+    \item Regression bursts following change.
+\end{itemize}
+
+\subsection{Central Vision Loss and Reading}
+\label{subsec:central-vision-loss}
+The Reading the Reader project targets readers whose central vision is impaired, most commonly through age-related macular degeneration (AMD).
+Central vision loss (CVL) damages the part of the visual field used for high-acuity tasks, forcing affected readers to rely on peripheral or parafoveal vision and producing measurable declines in reading speed and changes in eye-movement patterns \cite{kanonidou2011reading}.
+Reading is therefore not a single perceptual act but a combination of sensory, motor, and cognitive processes that CVL disrupts simultaneously.
+
+Interventions that adapt presentation to the individual reader have been studied as a way to recover some of this lost performance.
+Perceptual-learning regimes have been reported to improve reading speed in people with long-standing central vision loss \cite{chung2011improving}, % \todo{verify the reported magnitude against the original before citing a number}
+and a broader literature surveys clinical and technological strategies for training reading skills in central-field-loss patients \cite{cocomartin2020training}.
+Mobile and digital assistive technologies have been positioned as a discreet, widely available route to supporting visually impaired readers in everyday settings \cite{hakobyan2013mobile}.
+A distinction of scope is important here.
+Central vision loss is the motivating target condition for the wider Reading the Reader project, but the reading sessions in this thesis are conducted with general laboratory participants rather than recruited CVL patients.
+The platform is therefore designed to serve CVL readers eventually, while the present work validates the architecture and runtime rather than a clinical outcome.
+This thesis does not pursue a clinical training protocol; it treats CVL as the condition that justifies real-time, individualised typographic adaptation and that frames why minimising disruption (Sec.~\ref{subsec:context-preservation}) matters.
+
+\subsection{Oculomotor Events: Fixations, Saccades, and Regressions}
+\label{subsec:oculomotor-events}
+Gaze during reading is not continuous but decomposes into discrete oculomotor events.
+A fixation is a relatively stable gaze on a small region, during which visual information is extracted; a saccade is the rapid ballistic movement that relocates the gaze between fixations \cite{salvucci2000identifying}.
+A regression is a backward saccade against the reading direction and is commonly associated with processing or comprehension difficulty \cite{guan2022predictive}.
+
+Extracting these events from a raw gaze stream is the task of fixation-identification algorithms, for which Salvucci and Goldberg proposed an influential taxonomy organised by the criterion each algorithm uses, such as velocity or dispersion \cite{salvucci2000identifying}.
+The platform developed in this thesis performs this extraction online, classifying incoming gaze samples into fixations and saccades so that downstream decision strategies can reason over reading behaviour rather than over raw coordinates.
+These definitions therefore underpin the sensing and analysis layers described in later chapters.
+
+\subsection{Typography as an Intervention Medium}
+\label{subsec:typography-medium}
+The adaptations this thesis applies are typographic: changes to font, size, weight, spacing, and contrast.
+This choice is grounded in evidence that such variables measurably affect readability.
+Adjustable typography has been argued as a route to low-vision text accessibility \cite{arditi2004adjustable}, and controlled studies report that increased letter spacing and greater letter width improve reading acuity for low-vision readers \cite{beier2021letterspacing}, that font size and line spacing affect online readability \cite{rello2016makeitbig}, and that background colour influences reading performance \cite{rello2017backgroundcolors}.
+Eye-tracking has itself been used to study how font size and type influence online reading \cite{beymer2008eyetracking}.
+
+Taken together, these findings define the parameter space within which micro-interventions (Sec.~\ref{subsec:micro-interventions}) operate.
+They justify treating typography as the actuator of the adaptive loop while leaving the decision of which adjustment to make, and when, to the interchangeable strategy modules that are the architectural focus of this thesis.

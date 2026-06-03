@@ -1,0 +1,40 @@
+\section{Market Landscape of Tools and Products}
+\label{sec:market-landscape}
+
+Alongside the academic literature, a survey of the commercial and product landscape clarifies what adaptive reading technology is already available and where the gaps lie.
+This section reviews representative products across three groups that bear on this thesis: research-grade eye trackers and experiment software, accessibility and reading-assessment aids, and built-in adaptive reading interfaces.
+The survey is not exhaustive; it samples widely used products in each group to characterise prevailing capabilities and delivery models rather than to rank vendors.
+Tab.~\ref{tab:market-landscape} summarises the comparison, after which the implications for this thesis are discussed.
+
+\subsection{Comparison of Tools}
+\label{subsec:tool-comparison}
+
+\begin{longtable}{p{3cm}p{3cm}p{2.5cm}p{4cm}p{2.5cm}}
+\caption{Representative tools and products in the adaptive reading and eye-tracking landscape, grouped by category and compared on delivery model, capabilities, and a pricing signal.}
+\label{tab:market-landscape}\\
+\toprule
+Category & Vendor / Product & Delivery Model & Capabilities & Pricing Signal \\
+\midrule
+\endfirsthead
+\toprule
+Category & Vendor / Product & Delivery Model & Capabilities & Pricing Signal \\
+\midrule
+\endhead
+Screen-based eye tracker & Tobii Pro Fusion & Hardware & Up to 250 Hz sampling; fixation/saccade detection; pupil diameter recording \cite{ref3} & Quote-based \cite{ref3} \\
+Screen-based eye tracker & EyeLink 1000 Plus & Hardware & Binocular sampling up to 2000 Hz; research integration support \cite{ref4} & Quote request \cite{ref5} \\
+Lower-cost eye tracker & GazePoint GP3 HD & Hardware + Software & 150 Hz sampling; research-grade positioning \cite{ref6} & \$2,650 hardware-only \cite{ref6} \\
+Wearable eye tracking & Pupil Labs Neon & Hardware & Academic pricing; complete research system \cite{ref7} & €5,515 academic \cite{ref7} \\
+Remote webcam tracking & RealEye & SaaS & Subscription plans; data export; panel workflow \cite{ref8} & Panelists \$15 \cite{ref9} \\
+Experiment software & Tobii Pro Lab & Desktop software & Experiment design + recording + analysis \cite{ref10} & Trial available \cite{ref10} \\
+Reading assessment & Lexplore & Service + Hardware & AI-based reading assessment \cite{ref11} & Quote-based \cite{ref12} \\
+Accessibility device & OrCam Read 3 & Hardware & Reads printed/digital text aloud \cite{ref13} & \$116/month option \cite{ref13} \\
+Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus; Text Spacing; read-aloud \cite{ref14} & Included \cite{ref14} \\
+E-reading customisation & Amazon Kindle settings & Device feature & Font size and appearance adjustments \cite{ref15} & Included with device \cite{ref15} \\
+\bottomrule
+\end{longtable}
+
+Three observations follow from Tab.~\ref{tab:market-landscape}.
+First, the research-grade eye trackers and experiment software offer the sampling rates and gaze precision this thesis requires, but they are delivered as closed hardware and analysis suites priced by quotation or at several thousand euros \cite{ref3, ref4, ref6, ref7, ref10}, and they are oriented toward recording and post-hoc analysis rather than real-time, gaze-driven adaptation of the text being read.
+Second, the accessibility and reading-assessment tools act on the reading material, but either as static customisation under user control \cite{ref13, ref15} or as assessment services that analyse the reader without adapting presentation in the loop \cite{ref11}.
+Third, the built-in adaptive interfaces provide useful presentation controls such as line focus and text spacing \cite{ref14}, yet these are manually selected features rather than responses driven by the reader's gaze.
+No surveyed product combines real-time gaze sensing, automatic typographic adaptation, and researcher-facing experiment control within a single modular platform, which is precisely the combination this thesis targets.
