@@ -1,0 +1,504 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{ref1}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=49df125fd57ae7a04e824ba5cff8ab85}{%
+           family={{DTU Compute}},
+           familyi={D\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {DTU Compute Research}%
+      }
+      \strng{namehash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{fullhash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{fullhashraw}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{bibnamehash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{authorbibnamehash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{authornamehash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{authorfullhash}{49df125fd57ae7a04e824ba5cff8ab85}
+      \strng{authorfullhashraw}{49df125fd57ae7a04e824ba5cff8ab85}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Reading the Reader}
+      \field{urlday}{1}
+      \field{urlmonth}{1}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://people.compute.dtu.dk/pgba/research/reading-the-reader/
+      \endverb
+      \verb{url}
+      \verb https://people.compute.dtu.dk/pgba/research/reading-the-reader/
+      \endverb
+    \endentry
+    \entry{ref2}{inproceedings}{}{}
+      \name{author}{6}{}{%
+        {{hash=b3fc50fb1c9e87ba0ea31099c2c2783a}{%
+           family={Jensen},
+           familyi={J\bibinitperiod},
+           given={Helena\bibnamedelima Eschricht},
+           giveni={H\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
+        {{hash=065462549049396fb09d0367d5f0cde2}{%
+           family={Ilyas},
+           familyi={I\bibinitperiod},
+           given={Chaudhary\bibnamedelimb Muhammad\bibnamedelima Aqdus},
+           giveni={C\bibinitperiod\bibinitdelim M\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=4193037bd6cc2d00b814ea16cb876c6c}{%
+           family={Tashk},
+           familyi={T\bibinitperiod},
+           given={Ashkan},
+           giveni={A\bibinitperiod}}}%
+        {{hash=0757578ce21bd7cef9440c11931649fd}{%
+           family={Cooreman},
+           familyi={C\bibinitperiod},
+           given={Bart},
+           giveni={B\bibinitperiod}}}%
+        {{hash=9f8c15b00abda976a9c5b12b5c7b1bb6}{%
+           family={Beier},
+           familyi={B\bibinitperiod},
+           given={Sofie},
+           giveni={S\bibinitperiod}}}%
+        {{hash=3a03f5eaf67dc561bb03dcab20cc5c01}{%
+           family={B{æ}kgaard},
+           familyi={B\bibinitperiod},
+           given={Per},
+           giveni={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{da05a43c2c423d4547a32d1d5c020e3c}
+      \strng{fullhash}{a02930c84fe4f1b371da46899b5d7f58}
+      \strng{fullhashraw}{a02930c84fe4f1b371da46899b5d7f58}
+      \strng{bibnamehash}{da05a43c2c423d4547a32d1d5c020e3c}
+      \strng{authorbibnamehash}{da05a43c2c423d4547a32d1d5c020e3c}
+      \strng{authornamehash}{da05a43c2c423d4547a32d1d5c020e3c}
+      \strng{authorfullhash}{a02930c84fe4f1b371da46899b5d7f58}
+      \strng{authorfullhashraw}{a02930c84fe4f1b371da46899b5d7f58}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the ACM Symposium on Eye Tracking Research \& Applications (ETRA 2025)}
+      \field{title}{Context Preservation in Adaptive Reading Systems}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://orbit.dtu.dk/files/406853513/3715669.3725897.pdf
+      \endverb
+      \verb{url}
+      \verb https://orbit.dtu.dk/files/406853513/3715669.3725897.pdf
+      \endverb
+    \endentry
+    \entry{ref3}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=02600688062cbab3d5611956559de1a4}{%
+           family={{Tobii Pro}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Tobii Pro Product Page}%
+      }
+      \strng{namehash}{02600688062cbab3d5611956559de1a4}
+      \strng{fullhash}{02600688062cbab3d5611956559de1a4}
+      \strng{fullhashraw}{02600688062cbab3d5611956559de1a4}
+      \strng{bibnamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorbibnamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authornamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorfullhash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorfullhashraw}{02600688062cbab3d5611956559de1a4}
+      \field{extraname}{1}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Tobii Pro Fusion}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.tobii.com/products/eye-trackers/screen-based/tobii-pro-fusion
+      \endverb
+      \verb{url}
+      \verb https://www.tobii.com/products/eye-trackers/screen-based/tobii-pro-fusion
+      \endverb
+    \endentry
+    \entry{ref4}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=2388aeb0c7c69bbef8ce56d12b10c5e1}{%
+           family={{SR Research}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {SR Research Product Page}%
+      }
+      \strng{namehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{fullhash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{fullhashraw}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{bibnamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorbibnamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authornamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorfullhash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorfullhashraw}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \field{extraname}{1}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{EyeLink 1000 Plus}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.sr-research.com/eyelink-1000-plus/
+      \endverb
+      \verb{url}
+      \verb https://www.sr-research.com/eyelink-1000-plus/
+      \endverb
+    \endentry
+    \entry{ref5}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=2388aeb0c7c69bbef8ce56d12b10c5e1}{%
+           family={{SR Research}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{fullhash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{fullhashraw}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{bibnamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorbibnamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authornamehash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorfullhash}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \strng{authorfullhashraw}{2388aeb0c7c69bbef8ce56d12b10c5e1}
+      \field{extraname}{2}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{EyeLink 1000 Plus -- Request a Quote}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.sr-research.com/request-a-quote/eyelink-1000-plus-request-a-quote/
+      \endverb
+      \verb{url}
+      \verb https://www.sr-research.com/request-a-quote/eyelink-1000-plus-request-a-quote/
+      \endverb
+    \endentry
+    \entry{ref6}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=56b88733184dc2c3937b6faf2be67e80}{%
+           family={{GazePoint}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {GazePoint Official Store}%
+      }
+      \strng{namehash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{fullhash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{fullhashraw}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{bibnamehash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{authorbibnamehash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{authornamehash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{authorfullhash}{56b88733184dc2c3937b6faf2be67e80}
+      \strng{authorfullhashraw}{56b88733184dc2c3937b6faf2be67e80}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{GazePoint GP3 HD -- Shop Page}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.gazept.com/shop/
+      \endverb
+      \verb{url}
+      \verb https://www.gazept.com/shop/
+      \endverb
+    \endentry
+    \entry{ref7}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=87f5b806cd18fab7bb71dc2a6968d41e}{%
+           family={{Pupil Labs}},
+           familyi={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{fullhash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{fullhashraw}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{bibnamehash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{authorbibnamehash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{authornamehash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{authorfullhash}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \strng{authorfullhashraw}{87f5b806cd18fab7bb71dc2a6968d41e}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Neon Eye Tracking Platform}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://pupil-labs.com/products/neon
+      \endverb
+      \verb{url}
+      \verb https://pupil-labs.com/products/neon
+      \endverb
+    \endentry
+    \entry{ref8}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=1527f4bb66328fc1c6b2df1b1e01ce03}{%
+           family={{RealEye}},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{fullhash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{fullhashraw}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{bibnamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorbibnamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authornamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorfullhash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorfullhashraw}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \field{extraname}{1}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{RealEye Pricing -- Support Documentation}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://support.realeye.io/realeye-pricing
+      \endverb
+      \verb{url}
+      \verb https://support.realeye.io/realeye-pricing
+      \endverb
+    \endentry
+    \entry{ref9}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=1527f4bb66328fc1c6b2df1b1e01ce03}{%
+           family={{RealEye}},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{fullhash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{fullhashraw}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{bibnamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorbibnamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authornamehash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorfullhash}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \strng{authorfullhashraw}{1527f4bb66328fc1c6b2df1b1e01ce03}
+      \field{extraname}{2}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{RealEye Pricing}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.realeye.io/pricing
+      \endverb
+      \verb{url}
+      \verb https://www.realeye.io/pricing
+      \endverb
+    \endentry
+    \entry{ref10}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=02600688062cbab3d5611956559de1a4}{%
+           family={{Tobii Pro}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{02600688062cbab3d5611956559de1a4}
+      \strng{fullhash}{02600688062cbab3d5611956559de1a4}
+      \strng{fullhashraw}{02600688062cbab3d5611956559de1a4}
+      \strng{bibnamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorbibnamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authornamehash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorfullhash}{02600688062cbab3d5611956559de1a4}
+      \strng{authorfullhashraw}{02600688062cbab3d5611956559de1a4}
+      \field{extraname}{2}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Tobii Pro Lab}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.tobii.com/products/software/behavior-research-software/tobii-pro-lab
+      \endverb
+      \verb{url}
+      \verb https://www.tobii.com/products/software/behavior-research-software/tobii-pro-lab
+      \endverb
+    \endentry
+    \entry{ref11}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=2f894ef307ac7af4cf65221c1a80450f}{%
+           family={{Lexplore}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{fullhash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{fullhashraw}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{bibnamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorbibnamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authornamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorfullhash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorfullhashraw}{2f894ef307ac7af4cf65221c1a80450f}
+      \field{extraname}{1}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Lexplore Assessment}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://lexplore.com/lexplore-assessment
+      \endverb
+      \verb{url}
+      \verb https://lexplore.com/lexplore-assessment
+      \endverb
+    \endentry
+    \entry{ref12}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=2f894ef307ac7af4cf65221c1a80450f}{%
+           family={{Lexplore}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{fullhash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{fullhashraw}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{bibnamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorbibnamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authornamehash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorfullhash}{2f894ef307ac7af4cf65221c1a80450f}
+      \strng{authorfullhashraw}{2f894ef307ac7af4cf65221c1a80450f}
+      \field{extraname}{2}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Lexplore Pricing}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://lexplore.com/pricing-lexplore
+      \endverb
+      \verb{url}
+      \verb https://lexplore.com/pricing-lexplore
+      \endverb
+    \endentry
+    \entry{ref13}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=0aa9df724b8d427b85fd2ca5ebefe952}{%
+           family={{OrCam}},
+           familyi={O\bibinitperiod}}}%
+      }
+      \strng{namehash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{fullhash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{fullhashraw}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{bibnamehash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{authorbibnamehash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{authornamehash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{authorfullhash}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \strng{authorfullhashraw}{0aa9df724b8d427b85fd2ca5ebefe952}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{OrCam Read 3}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.orcam.com/en-us/orcam-read-3-new
+      \endverb
+      \verb{url}
+      \verb https://www.orcam.com/en-us/orcam-read-3-new
+      \endverb
+    \endentry
+    \entry{ref14}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=140864078aeca1c7c35b4beb33c53c34}{%
+           family={{Microsoft}},
+           familyi={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{fullhash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{fullhashraw}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{bibnamehash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{authorbibnamehash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{authornamehash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{authorfullhash}{140864078aeca1c7c35b4beb33c53c34}
+      \strng{authorfullhashraw}{140864078aeca1c7c35b4beb33c53c34}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Use Immersive Reader in Word}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://support.microsoft.com/en-au/office/use-immersive-reader-in-word-a857949f-c91e-4c97-977c-a4efcaf9b3c1
+      \endverb
+      \verb{url}
+      \verb https://support.microsoft.com/en-au/office/use-immersive-reader-in-word-a857949f-c91e-4c97-977c-a4efcaf9b3c1
+      \endverb
+    \endentry
+    \entry{ref15}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=b3b3a6ac74ecbd56bcdbefa4799fb9df}{%
+           family={{Amazon}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{fullhash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{fullhashraw}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{bibnamehash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{authorbibnamehash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{authornamehash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{authorfullhash}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \strng{authorfullhashraw}{b3b3a6ac74ecbd56bcdbefa4799fb9df}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Kindle Text Display Settings}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.amazon.com/gp/help/customer/display.html?nodeId=T5Y94BzSCGwm0vd75W
+      \endverb
+      \verb{url}
+      \verb https://www.amazon.com/gp/help/customer/display.html?nodeId=T5Y94BzSCGwm0vd75W
+      \endverb
+    \endentry
+    \entry{ref16}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=68753d36ec0c4d7768b20993268d68d1}{%
+           family={{Placeholder}},
+           familyi={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{fullhash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{fullhashraw}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{bibnamehash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{authorbibnamehash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{authornamehash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{authorfullhash}{68753d36ec0c4d7768b20993268d68d1}
+      \strng{authorfullhashraw}{68753d36ec0c4d7768b20993268d68d1}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Cited in Chapter 2; original source not yet recorded}
+      \field{title}{TODO -- replace this entry}
+      \field{year}{2025}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+
