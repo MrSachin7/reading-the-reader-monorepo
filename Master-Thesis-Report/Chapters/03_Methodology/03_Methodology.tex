@@ -1,93 +1,93 @@
 \chapter{Methodology}
 \label{ch:methodology}
 
-\section{Research and Engineering Approach}
-\label{sec:research-approach}
+The methodology of this thesis is structured around the Double Diamond model \cite{designcouncil2023diamond}, a human-centred design framework introduced by the Design Council that organises any design project into two sequential diverge-then-converge cycles.
+The first diamond covers the problem space: an initial phase of wide exploration that opens up the inquiry, followed by a focusing phase that narrows the findings into a precise, actionable problem statement.
+The second diamond covers the solution space: a generative phase that explores and iterates on candidate solutions, followed by a delivery phase that converges on a tested, evaluated artifact.
+Fig.~\ref{fig:double-diamond} illustrates this structure and maps each phase to the corresponding stage of this thesis.
 
-This thesis is a platform engineering thesis: its primary contribution is a designed and implemented software artifact --- a researcher-operated adaptive reading platform --- rather than an empirical study of human reading behaviour.
-The research approach therefore combines software engineering methodology with human-centred design principles, structured to produce both a working system and a defensible architectural argument.
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\linewidth}{!}{%
+\begin{tikzpicture}[
+  phlbl/.style={font=\large\bfseries, align=center},
+  thlbl/.style={font=\normalsize\itshape, align=center, text=gray!60!black},
+  spanlbl/.style={font=\normalsize\bfseries, align=center},
+  dirlbl/.style={font=\small, align=center, text=gray!55!black},
+]
 
-We follow a four-phase process that moves from problem framing to artifact construction to evaluation.
-In the first phase, we review the existing literature on adaptive reading systems, eye-tracking-based reading models, and just-in-time micro-interventions, establishing the conceptual foundations and identifying gaps in existing tools and platforms.
-In the second phase, we conduct a system analysis to identify the requirements that a research-capable adaptive reading platform must satisfy, with particular attention to modularity, experimental control, and the ability to compare interchangeable intervention and decision strategies.
-In the third phase, we design and implement the platform iteratively, making architectural decisions that are explicitly justified against the requirements and against the modular design goals of the thesis.
-In the fourth phase, we evaluate the resulting system against the measurable objectives stated in the final problem statement, assessing both technical correctness and the degree to which the architecture supports the research scenarios it was designed for.
+%% ── Colours ──────────────────────────────────────────────────────────────────
+\colorlet{discoverFill}{blue!18}
+\colorlet{defineFill}{blue!36}
+\colorlet{developFill}{teal!22}
+\colorlet{deliverFill}{teal!42}
 
-This approach is appropriate for the research goals for two reasons.
-First, the primary open question is not whether adaptive reading interventions are effective for readers --- that is a question for a future user study conducted with this platform --- but whether a modular, extensible architecture for such interventions can be built and defended.
-Second, the artifact itself is the instrument: the quality of the architecture is both the subject of the research question and the means by which future empirical studies become possible.
-The methodology therefore treats system design decisions as first-class research outputs that must be motivated, documented, and evaluated, not merely implemented.
+%% ── Diamond 1 — Problem Space (x: 0 → 6, apex at 3) ─────────────────────────
+\fill[discoverFill] (0,0) -- (3, 2.2) -- (3,-2.2) -- cycle;
+\fill[defineFill]   (3,2.2) -- (6,0)  -- (3,-2.2) -- cycle;
+\draw[very thick]   (0,0) -- (3,2.2) -- (6,0) -- (3,-2.2) -- cycle;
 
-\section{Requirements Elicitation}
-\label{sec:requirements-elicitation}
+%% ── Diamond 2 — Solution Space (x: 6 → 12, apex at 9) ───────────────────────
+\fill[developFill]  (6,0) -- (9, 2.2) -- (9,-2.2) -- cycle;
+\fill[deliverFill]  (9,2.2) -- (12,0) -- (9,-2.2) -- cycle;
+\draw[very thick]   (6,0) -- (9,2.2) -- (12,0) -- (9,-2.2) -- cycle;
 
-Requirements for this platform were derived through a process of reverse engineering and structured system analysis rather than up-front specification.
-Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{ref1} and the findings of the literature review to identify what a research-capable platform must be able to do.
-This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
+%% ── Vertical divider between diamonds ────────────────────────────────────────
+\draw[dashed, thick, gray!50] (6, 2.7) -- (6,-2.7);
 
-User stories were written from the perspective of the three identified actors --- the researcher, the test subject, and the external module provider --- and were used as the primary vehicle for communicating behavioural expectations across the team.
-Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
+%% ── Phase name labels (inside each quadrant) ─────────────────────────────────
+\node[phlbl] at (2.0,  0) {Discover};
+\node[phlbl] at (4.5,  0) {Define};
+\node[phlbl] at (7.8,  0) {Develop};
+\node[phlbl] at (10.5, 0) {Deliver};
 
-We note that this elicitation approach is a deliberate consequence of the thesis type.
-Because the contribution is an artifact, the requirements serve a dual purpose: they establish what the system must do, and they provide the criteria against which the architectural design decisions in \cref{ch:design} are later justified.
+%% ── Thesis-phase labels (below each quadrant) ────────────────────────────────
+\node[thlbl] at (2.0, -3.1) {Literature\\Review};
+\node[thlbl] at (4.5, -3.1) {Requirements\\Analysis};
+\node[thlbl] at (7.8, -3.1) {Design \&\\Implementation};
+\node[thlbl] at (10.5,-3.1) {Evaluation};
 
-\section{Development Process}
-\label{sec:development-process}
+%% ── Diverge / Converge annotations ──────────────────────────────────────────
+\node[dirlbl] at (1.5,  2.85) {diverge $\nearrow$};
+\node[dirlbl] at (4.5,  2.85) {$\searrow$ converge};
+\node[dirlbl] at (7.5,  2.85) {diverge $\nearrow$};
+\node[dirlbl] at (10.5, 2.85) {$\searrow$ converge};
 
-The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality --- from sensing to decision to intervention to researcher interface --- rather than building one layer at a time.
-This approach allowed each increment to be tested end-to-end and prevented the accumulation of untested integration assumptions across layers.
+%% ── Problem / Solution space span labels ─────────────────────────────────────
+\draw[thick] (0.2, 3.5) -- (5.8, 3.5);
+\node[spanlbl] at (3.0, 3.9) {Problem Space};
 
-The codebase is organised as a monorepo containing five sub-projects: the frontend application, the backend API and realtime server, the documentation site, a reference decision-maker, and a reference eye-movement analyser.
-This structure allowed shared conventions and contracts to be maintained across components without requiring a separate package registry, while keeping each sub-project independently buildable and deployable.
+\draw[thick] (6.2, 3.5) -- (11.8, 3.5);
+\node[spanlbl] at (9.0, 3.9) {Solution Space};
 
-Version control was managed using Git with GitHub as the remote host.
-Two independent continuous integration pipelines were configured using GitHub Actions: the frontend pipeline runs on Ubuntu using Bun and validates every change to the \texttt{Frontend/} directory with a full production build; the backend pipeline runs on Windows --- required by the Tobii SDK dependency --- and validates every change to \texttt{Backend/} by restoring dependencies, building the solution in Release configuration, and running the xUnit test suite.
-Changes were introduced through pull requests, providing a lightweight code-review step between the two authors before merging to the main branch.
+%% ── Overall flow arrow (below thesis-phase labels) ───────────────────────────
+\draw[->, very thick, gray!40] (-0.4, -4.2) -- (12.4, -4.2);
+\node[font=\small, text=gray!55!black] at (6.0, -4.6) {Thesis progression};
 
-The full codebase is published on GitHub and released under the MIT License, making it freely available for inspection, reuse, and extension by future researchers and developers.
-This decision reflects the open-science orientation of the work: because the architecture and the integration contracts are themselves research contributions, making the source openly accessible is necessary for those contributions to be reproducible and verifiable by others.
+\end{tikzpicture}%
+}
+\caption{%
+The Double Diamond process model \cite{designcouncil2023diamond} as applied in this thesis.
+Each diamond represents one diverge-then-converge cycle:
+the first covers the problem space (literature review and requirements analysis)
+and the second covers the solution space (design and implementation, then evaluation).
+Italic labels below each phase name indicate the corresponding thesis activity.%
+}
+\label{fig:double-diamond}
+\end{figure}
 
-\section{Evaluation Strategy}
-\label{sec:evaluation-strategy}
+The remaining sections of this chapter detail each methodological dimension in turn.
+Sec.~\ref{sec:research-approach} describes the research approach that guides the four phases.
+Sec.~\ref{sec:requirements-elicitation} explains how requirements were derived.
+Sec.~\ref{sec:development-process} describes the iterative engineering process and tooling.
+Sec.~\ref{sec:evaluation-strategy} sets out the evaluation strategy.
+Sec.~\ref{sec:tools-and-technologies} justifies the technology choices for each sub-project.
+Sec.~\ref{sec:ethical-considerations} addresses ethical considerations arising from the use of eye-tracking data.
 
-The evaluation of this thesis addresses two distinct questions: whether the system functions correctly as a platform for reading experiments, and whether the architecture satisfies the modularity and extensibility goals that motivate the design.
-
-For functional correctness, we evaluate the system against the functional requirements defined in \cref{ch:requirements}, verifying that each requirement is met through a combination of automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, and inspection of exported session data.
-For architectural quality, we evaluate the degree to which the modular boundaries between sensing, decision-making, intervention execution, and user interface hold in the implemented system, and whether the external module provider integration contract is sufficient for a third-party provider to connect without modifying the core application.
-
-We do not conduct a user study of reading behaviour within the scope of this thesis.
-The platform is designed to enable such studies, but evaluating the effectiveness of specific typographic interventions on reading comprehension or fatigue is a separate research question that requires a dedicated experiment with recruited participants and an approved study protocol.
-That question is explicitly outside the scope of this work, as discussed in \cref{ch:introduction}.
-
-\section{Tools and Technologies}
-\label{sec:tools-and-technologies}
-
-The frontend application is built with Next.js~16 and React~19 using TypeScript~5 in strict mode.
-State management uses Redux Toolkit with RTK Query for server-side data fetching and Tailwind CSS~v4 for styling.
-The frontend is built and served using Bun~1.3, which is also used as the package manager and test runner.
-
-The backend is built on .NET~10 with C\# using ASP.NET Core as the HTTP and WebSocket host.
-REST endpoints are implemented with FastEndpoints~8, and session data is exported using CsvHelper~33 for CSV serialisation alongside the built-in \texttt{System.Text.Json} for JSON.
-The Tobii Research SDK (\texttt{Tobii.Research.x64}~1.11) provides the hardware integration layer for eye-tracker communication and is a Windows-only dependency \cite{ref3}.
-
-Reading content is authored in Markdown.
-PDF support was considered but explicitly scoped out in favour of a simpler, tokenisation-friendly format that allows reliable gaze-to-word mapping without the coordinate complexity of PDF rendering.
-
-Both sub-projects are validated on every push to the main branch via GitHub Actions.
-The backend pipeline runs on a Windows runner to satisfy the Tobii SDK requirement; the frontend pipeline runs on Ubuntu.
-
-\section{Ethical Considerations}
-\label{sec:ethical-considerations}
-
-Eye-tracking data is sensitive by nature: it captures where a person directs their attention, moment by moment, and can in principle be used to infer cognitive states, reading difficulties, or other personal characteristics beyond the scope of any individual experiment.
-Collecting such data from study participants therefore requires careful handling.
-
-Within this platform, all session data --- including raw gaze samples, demographic attributes, and comprehension results --- remains under the direct control of the researcher who operates the system.
-No data is transmitted to external servers; all storage is local to the machine on which the backend is running.
-Participant attributes collected at enrolment --- name, age, sex, existing eye conditions, and reading proficiency --- are stored only within the session record and are not shared outside the system.
-
-Before deploying this platform in a real study, the researcher is responsible for obtaining informed consent from each participant, ensuring that participants understand what data is collected and how it will be used, and complying with applicable data protection regulations, including the General Data Protection Regulation (GDPR) as it applies at DTU.
-The platform does not implement consent workflows directly; this responsibility rests with the researcher and, where required, an institutional ethics review process.
-
-The system includes a mouse-cursor simulation mode that produces synthetic gaze data without engaging a hardware eye tracker.
-This mode is used exclusively for development and demonstration purposes and does not involve any participant data.
+\input{Chapters/03_Methodology/01_research_approach}
+\input{Chapters/03_Methodology/02_requirements_elicitation}
+\input{Chapters/03_Methodology/03_development_process}
+\input{Chapters/03_Methodology/04_evaluation_strategy}
+\input{Chapters/03_Methodology/05_tools_and_technologies}
+\input{Chapters/03_Methodology/06_ethical_considerations}
+\input{Chapters/03_Methodology/07_summary}

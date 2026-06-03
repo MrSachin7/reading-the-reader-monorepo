@@ -1,0 +1,17 @@
+\section{Development Process}
+\label{sec:development-process}
+
+The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality (from sensing to decision to intervention to researcher interface) rather than building one layer at a time.
+This approach was chosen over a design-first waterfall process for two reasons.
+First, the integration between the Tobii hardware layer, the realtime transport, and the frontend intervention rendering could not be fully specified upfront: latency, timing, and synchronisation constraints only become visible under end-to-end execution.
+Second, a vertical-slice structure ensures that integration assumptions are tested and corrected at each increment rather than deferred to a final integration phase, reducing the risk of late-stage architectural surprises.
+
+The codebase is organised as a monorepo containing five sub-projects: the frontend application, the backend API and realtime server, the documentation site, a reference decision-maker, and a reference eye-movement analyser.
+This structure allowed shared conventions and contracts to be maintained across components without requiring a separate package registry, while keeping each sub-project independently buildable and deployable.
+
+Version control was managed using Git with GitHub as the remote host.
+Changes were introduced through pull requests, providing a lightweight code-review step between the two authors before merging to the main branch.
+The CI pipeline configuration is described in \cref{sec:tools-and-technologies}.
+
+The full codebase is published on GitHub and released under the MIT License, making it freely available for inspection, reuse, and extension by future researchers and developers.
+This decision reflects the open-science orientation of the work: because the architecture and the integration contracts are themselves research contributions, making the source openly accessible is necessary for those contributions to be reproducible and verifiable by others.

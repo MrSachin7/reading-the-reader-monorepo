@@ -1,0 +1,13 @@
+\section{Requirements Elicitation}
+\label{sec:requirements-elicitation}
+
+Requirements for this platform were derived through retrospective analysis of an existing prototype rather than up-front specification.
+Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{ref1} and the findings of the literature review to identify what a research-capable platform must be able to do.
+This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
+
+User stories were written from the perspective of the three primary actors (the researcher, the participant, and the external module provider) and were used as the primary vehicle for communicating behavioural expectations across the team.
+Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
+Each requirement was assigned a MoSCoW priority (Must have, Should have, Could have, or Won't have) \cite{clegg1994moscow}, providing a principled basis for identifying the minimum viable capability set and for deferring lower-priority features when time pressure required trade-offs.
+
+We note that this elicitation approach is a deliberate consequence of the thesis type.
+Because the contribution is an artifact, the requirements serve a dual purpose: they establish what the system must do, and they provide the criteria against which the architectural design decisions in \cref{ch:design} are later justified.

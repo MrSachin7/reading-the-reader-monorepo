@@ -1,0 +1,20 @@
+\section{Evaluation Strategy}
+\label{sec:evaluation-strategy}
+
+The evaluation of this thesis addresses two distinct questions: whether the system functions correctly as a platform for reading experiments, and whether the architecture satisfies the modularity and extensibility goals that motivate the design.
+
+For functional correctness, we evaluate the system against the functional requirements defined in \cref{ch:requirements}, verifying that each requirement is met through a combination of automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, and inspection of exported session data.
+For architectural quality, we evaluate the degree to which the modular boundaries between sensing, decision-making, intervention execution, and user interface hold in the implemented system, and whether the external module provider integration contract is sufficient for a third-party provider to connect without modifying the core application.
+Concretely, this is assessed through three means:
+\begin{enumerate}
+  \item Inspection of the dependency graph to confirm that no module imports across the boundaries defined in the design.
+  \item Demonstration that the external integration contract is sufficient for the reference decision-maker sub-project to connect to the core runtime without modifying it.
+  \item Review of the module installer pattern to confirm that new implementations can be substituted at the composition root without touching application logic.
+\end{enumerate}
+
+We acknowledge one structural threat to validity: as a two-person implementation team, we cannot assess our own architectural decisions with full objectivity.
+We mitigate this by publishing the codebase and integration contracts openly under the MIT License, making them available for independent inspection, and by treating the reference decision-maker and reference eye-movement analyser as independently exercised validators of the external integration contract rather than as internal tests.
+
+We do not conduct a user study of reading behaviour within the scope of this thesis.
+The platform is designed to enable such studies, but evaluating the effectiveness of specific typographic interventions on reading comprehension or fatigue is a separate research question that requires a dedicated experiment with recruited participants and an approved study protocol.
+That question is explicitly outside the scope of this work, as discussed in \cref{ch:introduction}.
