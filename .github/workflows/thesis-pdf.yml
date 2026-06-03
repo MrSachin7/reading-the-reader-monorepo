@@ -1,0 +1,39 @@
+name: Thesis PDF
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Master-Thesis-Report/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile thesis
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: Master-Thesis-Report
+          root_file: main.tex
+          latexmk_use_xelatex: true
+          extra_system_packages: font-liberation
+          pre_compile: |
+            mkdir -p /etc/fonts
+            printf '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><alias><family>Arial</family><prefer><family>Liberation Sans</family></prefer></alias></fontconfig>' > /etc/fonts/local.conf
+            fc-cache -f
+
+      - name: Publish latest PDF
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: thesis-latest
+          name: "Thesis — latest build"
+          body: |
+            Auto-built from `main` · ${{ github.sha }}
+            > Font note: body text uses Liberation Sans (Arial substitute) — final submission should be built locally with Arial installed.
+          files: Master-Thesis-Report/main.pdf
+          prerelease: true
