@@ -38,7 +38,7 @@ purple,         fill=purple         \\%
 % Font
 % There is no corporate serif font in the DTU design guide. The DTU design team has proposed to use Neo Sans for headings - and Arial for the body text.
 % To change heading font to NeoSans Pro please upload both NeoSansPro-Regular.otf and NeoSansPro-Medium.otf to the root directory.
-\setmainfont{Arial}
+\IfFontExistsTF{Arial}{\setmainfont{Arial}}{\setmainfont{Liberation Sans}}
 \renewcommand\thepart{Part \Roman{part}}
 \IfFontExistsTF{NeoSansPro-Medium.otf}
 { %If True set headings to NeoSans Pro

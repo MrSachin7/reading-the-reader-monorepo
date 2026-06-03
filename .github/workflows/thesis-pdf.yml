@@ -23,9 +23,18 @@ jobs:
           latexmk_use_xelatex: true
           extra_system_packages: font-liberation
           pre_compile: |
-            mkdir -p /etc/fonts
-            printf '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><alias><family>Arial</family><prefer><family>Liberation Sans</family></prefer></alias></fontconfig>' > /etc/fonts/local.conf
-            fc-cache -f
+            mkdir -p /etc/fonts/conf.d
+            cat > /etc/fonts/conf.d/99-arial.conf << 'EOF'
+            <?xml version="1.0"?>
+            <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+            <fontconfig>
+              <alias binding="same">
+                <family>Arial</family>
+                <prefer><family>Liberation Sans</family></prefer>
+              </alias>
+            </fontconfig>
+            EOF
+            fc-cache -f -v
 
       - name: Publish latest PDF
         uses: softprops/action-gh-release@v2
