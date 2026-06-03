@@ -1,0 +1,18 @@
+\section{Ethical Considerations}
+\label{sec:ethical-considerations}
+
+Eye-tracking data is sensitive by nature: it captures where a person directs their attention, moment by moment, and can in principle be used to infer cognitive states, reading difficulties, or other personal characteristics beyond the scope of any individual experiment.
+Collecting such data from study participants therefore requires careful handling.
+
+Within this platform, all session data (including raw gaze samples, demographic attributes, and comprehension results) remains under the direct control of the researcher who operates the system.
+No data is transmitted to external servers; all storage is local to the machine on which the backend is running.
+Participant attributes collected at enrolment (name, age, sex, existing eye conditions, and reading proficiency) are stored only within the session record and are not shared outside the system.
+
+Because these attributes are directly identifiable, researchers deploying the platform in a real study should apply pseudonymisation where required by their study protocol, replacing identifying fields with participant codes before any data leaves the controlled research environment.
+Data should be retained only for the duration required by the study protocol and applicable regulations, and deleted thereafter.
+
+The development of this platform did not itself require an institutional ethics review, as no human participants were recruited and no personal data was collected during the engineering work described in this thesis.
+
+The ethics obligations described above apply to researchers who deploy the platform in a future study involving real participants.
+Before conducting such a study, the researcher is responsible for obtaining informed consent from each participant, ensuring that participants understand what data is collected and how it will be used, and complying with applicable data protection regulations, including the General Data Protection Regulation (GDPR) \cite{gdpr2016} as it applies at DTU.
+The platform does not implement consent workflows directly; this responsibility rests with the researcher conducting the study.
