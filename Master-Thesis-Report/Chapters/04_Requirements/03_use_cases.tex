@@ -7,13 +7,13 @@ The diagram uses standard UML use case notation: stick figures are actors, ovals
 individual use cases, solid lines are associations, and dashed arrows labelled
 \texttt{<<include>>} indicate that one use case necessarily invokes another as part
 of its execution.
-The twenty-two use cases are organised into five horizontal bands that reflect the
+The twenty-one use cases are organised into five horizontal bands that reflect the
 natural phases of system use: \textit{Setup \& Calibration}, \textit{Content Management},
 \textit{Session Configuration}, \textit{Live Session}, and \textit{Post-Session}.
 
 The system involves five actors.
 The \textbf{Researcher} is the primary operator and is associated with fifteen of the
-twenty-two use cases, spanning all five bands.
+twenty-one use cases, spanning all five bands.
 The \textbf{Participant} is involved in three use cases: they fixate on calibration
 points during setup, read the presented text during the live phase, and answer
 comprehension questions at the end of each reading item.
@@ -53,30 +53,31 @@ Sec.~\ref{sec:functional-requirements}.
 ]
 
 %% ── Group bands (drawn first so they sit behind everything) ──────────────
-% Setup band
+% Setup & Calibration band
 \fill[gray!9, rounded corners=4pt]
-  (0.8, 21.6) rectangle (16.2, 25.2);
+  (0.8, 22.5) rectangle (16.2, 25.2);
 \node[lbl] at (1.0, 25.2) {Setup \& Calibration};
 
-% Content management band
+% Content Management band
 \fill[gray!5, rounded corners=4pt]
-  (0.8, 18.1) rectangle (16.2, 21.4);
-\node[lbl] at (1.0, 21.4) {Content Management};
+  (0.8, 19.1) rectangle (16.2, 22.3);
+\node[lbl] at (1.0, 22.3) {Content Management};
 
-% Session configuration band
+% Session Configuration band
 \fill[gray!9, rounded corners=4pt]
-  (0.8, 14.9) rectangle (16.2, 17.9);
-\node[lbl] at (1.0, 17.9) {Session Configuration};
+  (0.8, 15.8) rectangle (16.2, 18.9);
+\node[lbl] at (1.0, 18.9) {Session Configuration};
 
-% Live session band
+% Live Session band — spans researcher controls, system activities,
+% participant reading, and provider integration
 \fill[gray!5, rounded corners=4pt]
-  (0.8, 8.7) rectangle (16.2, 14.7);
-\node[lbl] at (1.0, 14.7) {Live Session};
+  (0.8, 6.8) rectangle (16.2, 15.6);
+\node[lbl] at (1.0, 15.6) {Live Session};
 
-% Post-session band
+% Post-Session band
 \fill[gray!9, rounded corners=4pt]
-  (0.8, 0.5) rectangle (16.2, 8.5);
-\node[lbl] at (1.0, 8.5) {Post-Session};
+  (0.8, 0.5) rectangle (16.2, 6.6);
+\node[lbl] at (1.0, 6.6) {Post-Session};
 
 %% ── System boundary (drawn on top of bands) ──────────────────────────────
 \draw[very thick, rounded corners=8pt]
@@ -85,57 +86,59 @@ Sec.~\ref{sec:functional-requirements}.
   {Reading the Reader Platform};
 
 %% ── Use cases ────────────────────────────────────────────────────────────
-% Row: Setup (y = 23.5)
-\node[uc] (uc-detect)    at (4.0,  23.5) {Detect \& Select\\Eye Tracker};
-\node[uc] (uc-calibrate) at (8.5,  23.5) {Perform\\Calibration};
-\node[uc] (uc-license)   at (13.0, 23.5) {Validate Device\\License};
 
-% Row: Content management (y = 19.8)
-\node[uc] (uc-materials) at (4.0,  19.8) {Manage Reading\\Materials};
-\node[uc] (uc-templates) at (8.5,  19.8) {Define Experiment\\Template};
-\node[uc] (uc-config)    at (13.0, 19.8) {Configure Session\\Settings};
+% Row: Setup & Calibration (y = 23.7)
+\node[uc] (uc-detect)    at (4.0,  23.7) {Detect \& Select\\Eye Tracker};
+\node[uc] (uc-calibrate) at (8.5,  23.7) {Perform\\Calibration};
+\node[uc] (uc-license)   at (13.0, 23.7) {Validate Device\\License};
 
-% Row: Session configuration (y = 16.4)
-\node[uc] (uc-sensing)   at (5.0,  16.4) {Configure\\Sensing Mode};
-\node[uc] (uc-start)     at (12.0, 16.4) {Start Experiment\\Session};
+% Row: Content Management (y = 20.6)
+\node[uc] (uc-materials) at (4.0,  20.6) {Manage Reading\\Materials};
+\node[uc] (uc-templates) at (8.5,  20.6) {Define Experiment\\Template};
+\node[uc] (uc-config)    at (13.0, 20.6) {Configure Session\\Settings};
 
-% Row: Live session — primary (y = 13.2)
-\node[uc] (uc-monitor)   at (4.0,  13.2) {Monitor Live\\Session};
-\node[uc] (uc-intervene) at (8.5,  13.2) {Apply Manual\\Intervention};
-\node[uc] (uc-decision)  at (13.0, 13.2) {Control Decision\\Automation};
+% Row: Session Configuration (y = 17.3)
+\node[uc] (uc-sensing)   at (5.0,  17.3) {Configure\\Sensing Mode};
+\node[uc] (uc-start)     at (12.0, 17.3) {Start Experiment\\Session};
 
-% Row: Live session — secondary (y = 10.1)
-\node[uc] (uc-advance)   at (4.0,  10.1) {Advance\\Reading Item};
-\node[uc] (uc-quiz)      at (8.5,  10.1) {Manage\\Comprehension Quiz};
-\node[uc] (uc-stream)    at (13.0, 10.1) {Stream\\Gaze Samples};
+% Row: Live Session — researcher-driven controls (y = 14.2)
+\node[uc] (uc-monitor)   at (4.0,  14.2) {Monitor Live\\Session};
+\node[uc] (uc-intervene) at (8.5,  14.2) {Apply Manual\\Intervention};
+\node[uc] (uc-decision)  at (13.0, 14.2) {Control Decision\\Automation};
 
-% Row: Post-session — participant / provider (y = 7.1)
-\node[uc] (uc-read)      at (4.0,  7.1) {Read\\Presented Text};
-\node[uc] (uc-answer)    at (8.5,  7.1) {Answer\\Comprehension Quiz};
-\node[uc] (uc-connect)   at (13.0, 7.1) {Connect as\\Module Provider};
+% Row: Live Session — concurrent runtime activities (y = 11.5)
+\node[uc] (uc-advance)   at (4.0,  11.5) {Advance\\Reading Item};
+\node[uc] (uc-quiz)      at (8.5,  11.5) {Manage\\Comprehension Quiz};
+\node[uc] (uc-stream)    at (13.0, 11.5) {Stream\\Gaze Samples};
 
-% Row: Post-session — export / provide (y = 4.2)
-\node[uc] (uc-export)    at (4.0,  4.2) {Export\\Session Data};
-\node[uc] (uc-replay)    at (8.5,  4.2) {Replay Recorded\\Session};
-\node[uc] (uc-provide)   at (13.0, 4.2) {Provide Decision\\or Analysis};
+% Row: Live Session — participant-side activities (y = 9.4)
+\node[uc] (uc-read)      at (3.5,   9.4) {Read\\Presented Text};
+\node[uc] (uc-answer)    at (8.5,   9.4) {Answer\\Comprehension Quiz};
 
-% Row: Access (y = 1.7)
-\node[uc] (uc-access)    at (8.5,  1.7) {Access\\Exported Data};
+% Row: Live Session — external provider activities (y = 7.6)
+\node[uc] (uc-connect)   at (9.5,   7.6) {Connect as\\Module Provider};
+\node[uc] (uc-provide)   at (13.5,  7.6) {Provide Decision\\or Analysis};
+
+% Row: Post-Session — researcher review and export (y = 4.7)
+\node[uc] (uc-export)    at (4.0,   4.7) {Export\\Session Data};
+\node[uc] (uc-replay)    at (8.5,   4.7) {Replay Recorded\\Session};
+
+% Row: Post-Session — downstream data access (y = 2.2)
+\node[uc] (uc-access)    at (8.5,   2.2) {Access\\Exported Data};
 
 %% ── Actors ───────────────────────────────────────────────────────────────
-% Macro shorthand: draw stick figure centred at (#3,#4), label #5
-% Researcher — left, vertically centred on their use cases
-\def\rX{-1.5} \def\rY{15.0}
-\draw[thick] (\rX,     \rY+2.0) circle (0.42);      % head
-\draw[thick] (\rX,     \rY+1.58) -- (\rX,  \rY+0.5); % body
-\draw[thick] (\rX,     \rY+0.5)  -- (\rX-0.42, \rY-0.25); % L leg
-\draw[thick] (\rX,     \rY+0.5)  -- (\rX+0.42, \rY-0.25); % R leg
-\draw[thick] (\rX,     \rY+1.25) -- (\rX-0.48, \rY+0.80); % L arm
-\draw[thick] (\rX,     \rY+1.25) -- (\rX+0.48, \rY+0.80); % R arm
+% Researcher — left side, vertically centred on their fifteen use cases
+\def\rX{-1.5} \def\rY{14.0}
+\draw[thick] (\rX,     \rY+2.0) circle (0.42);
+\draw[thick] (\rX,     \rY+1.58) -- (\rX,  \rY+0.5);
+\draw[thick] (\rX,     \rY+0.5)  -- (\rX-0.42, \rY-0.25);
+\draw[thick] (\rX,     \rY+0.5)  -- (\rX+0.42, \rY-0.25);
+\draw[thick] (\rX,     \rY+1.25) -- (\rX-0.48, \rY+0.80);
+\draw[thick] (\rX,     \rY+1.25) -- (\rX+0.48, \rY+0.80);
 \node[font=\small\bfseries, align=center, below] at (\rX, \rY-0.35) {Researcher};
 \coordinate (researcher) at (\rX, \rY+1.0);
 
-% Participant — left, lower
+% Participant — left side, lower
 \def\pX{-1.5} \def\pY{5.5}
 \draw[thick] (\pX,     \pY+2.0) circle (0.42);
 \draw[thick] (\pX,     \pY+1.58) -- (\pX,  \pY+0.5);
@@ -146,8 +149,8 @@ Sec.~\ref{sec:functional-requirements}.
 \node[font=\small\bfseries, align=center, below] at (\pX, \pY-0.35) {Participant};
 \coordinate (participant) at (\pX, \pY+1.0);
 
-% Eye Tracker Device — right, top
-\def\eX{18.2} \def\eY{23.5}
+% Eye Tracker Device — right side, aligned with gaze-streaming row
+\def\eX{18.2} \def\eY{11.5}
 \draw[thick] (\eX,     \eY+0.42) circle (0.42);
 \draw[thick] (\eX,     \eY)      -- (\eX,  \eY-1.0);
 \draw[thick] (\eX,     \eY-1.0)  -- (\eX-0.42, \eY-1.75);
@@ -157,8 +160,8 @@ Sec.~\ref{sec:functional-requirements}.
 \node[font=\small\bfseries, align=center, below] at (\eX, \eY-2.1) {Eye Tracker\\Device};
 \coordinate (eyetracker) at (\eX, \eY+0.42);
 
-% External Module Provider — right, middle
-\def\mX{18.2} \def\mY{10.0}
+% External Module Provider — right side, aligned with provider activity row
+\def\mX{18.2} \def\mY{7.1}
 \draw[thick] (\mX,     \mY+0.42) circle (0.42);
 \draw[thick] (\mX,     \mY)      -- (\mX,  \mY-1.0);
 \draw[thick] (\mX,     \mY-1.0)  -- (\mX-0.42, \mY-1.75);
@@ -168,7 +171,7 @@ Sec.~\ref{sec:functional-requirements}.
 \node[font=\small\bfseries, align=center, below] at (\mX, \mY-2.1) {External Module\\Provider};
 \coordinate (extprovider) at (\mX, \mY+0.42);
 
-% Data Consumer — right, bottom
+% Data Consumer — right side, bottom
 \def\dX{18.2} \def\dY{2.0}
 \draw[thick] (\dX,     \dY+0.42) circle (0.42);
 \draw[thick] (\dX,     \dY)      -- (\dX,  \dY-1.0);
@@ -180,8 +183,9 @@ Sec.~\ref{sec:functional-requirements}.
 \coordinate (dataconsumer) at (\dX, \dY+0.42);
 
 %% ── Associations ─────────────────────────────────────────────────────────
-% Researcher → all researcher use cases
-\foreach \t in {uc-detect, uc-license,
+% Researcher → fifteen use cases spanning all five bands
+% (uc-calibrate added: researcher initiates and reviews calibration)
+\foreach \t in {uc-detect, uc-calibrate, uc-license,
                 uc-materials, uc-templates, uc-config,
                 uc-sensing, uc-start,
                 uc-monitor, uc-intervene, uc-decision,
@@ -190,19 +194,19 @@ Sec.~\ref{sec:functional-requirements}.
   \draw (researcher) -- (\t);
 }
 
-% Participant → participant use cases
+% Participant → three use cases: calibration fixation, reading, quiz answers
 \draw (participant) -- (uc-calibrate);
 \draw (participant) -- (uc-read);
 \draw (participant) -- (uc-answer);
 
-% Eye Tracker Device → stream gaze
+% Eye Tracker Device → gaze streaming
 \draw (eyetracker) -- (uc-stream);
 
-% External Module Provider → provider use cases
+% External Module Provider → provider integration use cases
 \draw (extprovider) -- (uc-connect);
 \draw (extprovider) -- (uc-provide);
 
-% Data Consumer → access exported data
+% Data Consumer → exported data access
 \draw (dataconsumer) -- (uc-access);
 
 %% ── Include relationships ────────────────────────────────────────────────
@@ -310,7 +314,7 @@ This scenario motivates FR1 (System Execution and Setup), FR4 (Gaze Data Acquisi
 \label{sec:uc3}
 
 This scenario involves the External Module Provider actor and the two
-\textit{Post-Session} band use cases on the right side of
+\textit{Live Session} band use cases on the right side of
 Fig.~\ref{fig:use-case-diagram}: \textit{Connect as Module Provider} and
 \textit{Provide Decision or Analysis}.
 
@@ -367,6 +371,130 @@ Because the export alone is sufficient to reconstruct the full sequence of
 sensing, analysis, and intervention events, this use case is the primary
 mechanism through which the reproducibility requirement is satisfied.
 This scenario motivates FR10 (Real-Time Performance Monitoring), FR12 (Logging and Export), FR21 (Session Replay Playback), and FR22 (Session State Recovery).
+
+\subsection{End-to-End Session Workflow}
+\label{sec:activity-session}
+
+While the use case diagram in Fig.~\ref{fig:use-case-diagram} captures actor associations, it does not express the order in which activities occur, the conditions under which the workflow branches, or the activities that proceed concurrently during a live session.
+Fig.~\ref{fig:activity-session} traces the control flow of a complete experimental session, synthesising the preparation path of UC-1 and the live path of UC-2 into a single workflow.
+The diagram remains at the analysis level: every node denotes an activity and every branch a condition, with no reference to system components or internal mechanisms.
+
+\begin{figure}[p]
+\centering
+\resizebox{!}{0.9\textheight}{%
+\begin{tikzpicture}[
+  act/.style={
+    draw, rounded corners=4pt, thick,
+    minimum width=3cm, minimum height=0.9cm,
+    align=center, font=\small, fill=white
+  },
+  dec/.style={
+    draw, diamond, aspect=2.2, thick,
+    inner sep=1pt, align=center, font=\scriptsize, fill=white
+  },
+  term/.style={draw, circle, fill=black, minimum size=0.32cm, inner sep=0},
+  flow/.style={->, >=latex, thick},
+  elbl/.style={font=\scriptsize, fill=white, inner sep=1.5pt}
+]
+
+%% ── Nodes ─────────────────────────────────────────────────────────────────────
+\node[term] (start)        at (0,   0.0)   {};
+\node[act]  (prepare)      at (0,  -1.25)  {Prepare reading materials\\and templates};
+\node[act]  (configure)    at (0,  -2.5)   {Configure session settings};
+\node[act]  (connect)      at (0,  -3.75)  {Connect and select\\eye tracker};
+\node[act]  (validate)     at (0,  -5.0)   {Validate device licence};
+\node[act]  (perform)      at (0,  -6.25)  {Perform calibration};
+\node[dec]  (d1)           at (0,  -7.75)  {Calibration\\passed?};
+\node[act]  (startses)     at (0,  -9.25)  {Start session};
+\node[act]  (present)      at (0, -10.5)   {Present reading item};
+
+% Fork bar
+\fill (-5.6, -11.45) rectangle (5.6, -11.35);
+
+% Concurrent lanes
+\node[act]  (laneL)        at (-4.0, -12.5) {Participant reads\\presented text};
+\node[act]  (laneM)        at ( 0.0, -12.5) {Record gaze and derive\\fixation events};
+\node[act]  (laneR)        at ( 4.0, -12.5) {Monitor\\live session};
+
+\node[dec]  (d2)           at (0, -14.1)   {Intervention\\warranted?};
+\node[act]  (apply)        at (0, -15.7)   {Apply or propose\\intervention};
+
+% Join bar
+\fill (-5.6, -17.05) rectangle (5.6, -17.15);
+
+\node[dec]  (d3)           at (0, -18.6)   {Comprehension\\quiz?};
+\node[act]  (quizbox)      at (4.9, -18.6) {Administer\\comprehension quiz};
+\node[dec]  (d4)           at (0, -20.9)   {More reading\\items?};
+\node[act]  (export)       at (0, -22.7)   {Export session data};
+\node[term] (end)          at (0, -24.0)   {};
+\draw[thick] (end) ++(0,0) circle (0.26);
+
+%% ── Sequential flow ───────────────────────────────────────────────────────────
+\draw[flow] (start)     -- (prepare);
+\draw[flow] (prepare)   -- (configure);
+\draw[flow] (configure) -- (connect);
+\draw[flow] (connect)   -- (validate);
+\draw[flow] (validate)  -- (perform);
+\draw[flow] (perform)   -- (d1);
+
+% Calibration loop (no)
+\draw[flow] (d1.east) -- (2.7,-7.75) -- (2.7,-6.25) -- (perform.east)
+  node[elbl, above, pos=0.3] {no};
+% Calibration passed (yes)
+\draw[flow] (d1.south) -- (startses) node[elbl, right, pos=0.5] {yes};
+
+\draw[flow] (startses) -- (present);
+
+% Fork
+\draw[flow] (present) -- (0,-11.45);
+\draw[flow] (0,-11.35) -- (laneL);
+\draw[flow] (0,-11.35) -- (laneM);
+\draw[flow] (0,-11.35) -- (laneR);
+
+% Lane M chain
+\draw[flow] (laneM) -- (d2);
+\draw[flow] (d2.south) -- (apply) node[elbl, right, pos=0.5] {yes};
+\draw[flow] (apply) -- (0,-17.05);
+% Lane M "no" routes past the activity into the join
+\draw[flow] (d2.east) -- (2.0,-14.1) -- (2.0,-17.05) node[elbl, above, pos=0.4] {no};
+
+% Join (lanes L and R into the bar)
+\draw[flow] (laneL.south) -- (-4.0,-17.05);
+\draw[flow] (laneR.south) -- (4.0,-17.05);
+
+% After join
+\draw[flow] (0,-17.15) -- (d3);
+
+% Quiz branch
+\draw[flow] (d3.east) -- (quizbox.west) node[elbl, above, pos=0.45] {yes};
+\draw[flow] (quizbox.south) -- (4.9,-20.9) -- (d4.east);
+\draw[flow] (d3.south) -- (d4) node[elbl, right, pos=0.5] {no};
+
+% Multi-item loop (yes)
+\draw[flow] (d4.west) -- (-6.4,-20.9) -- (-6.4,-10.5) -- (present.west)
+  node[elbl, above, pos=0.12] {yes};
+% No more items
+\draw[flow] (d4.south) -- (export) node[elbl, right, pos=0.5] {no};
+\draw[flow] (export) -- (end);
+
+\end{tikzpicture}%
+}
+\caption{%
+Activity diagram for a complete experimental session.
+Rounded boxes are activities and diamonds are decisions; the solid horizontal
+bars denote the fork and join that bound the concurrent activities of the live
+reading phase.
+The diagram stays at the analysis level, describing what happens and under what
+conditions rather than how the system is structured internally.%
+}
+\label{fig:activity-session}
+\end{figure}
+
+Two readiness gates structure the flow.
+Calibration repeats until its quality threshold is met, and a reading item cannot begin until calibration has passed and the device is licensed.
+During each reading item, three activities proceed concurrently: the participant reads the presented text, the system records gaze and derives fixation events, and the researcher monitors the live session.
+Within the sensing activity an intervention is applied or proposed only when the current reading state warrants it, reflecting the configurable execution modes captured in FR11.
+The outer loop returns to the next reading item until the experiment template is exhausted, after which the session data is exported for later analysis.
 
 % ---------------------------------------------------------------
 
