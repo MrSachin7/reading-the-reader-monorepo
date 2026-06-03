@@ -24,12 +24,11 @@ Collectively they support the architectural premise of this thesis: that a real-
 
 \subsection{Context Preservation and Intervention Design}
 \label{subsec:related-context-preservation}
-The ETRA 2025 paper on context preservation formalises a key HCI challenge: adaptive reading interfaces can either assist or hinder reading depending on how changes are introduced and how recovery is supported.
-In a within-subjects study with 22 participants, Jensen et al. report differences in RRT across intervention types \cite{ref2}. % \todo{confirm whether the paper reports these as statistically significant, and add the test/p-value if so}
+The context-preservation paper formalises a key human-computer interaction (HCI) challenge: adaptive reading interfaces can either assist or hinder reading depending on how changes are introduced and how recovery is supported.
+In a within-subjects study, Jensen et al. compared intervention times against a non-highlight baseline from earlier project work \cite{pereira2024typography} and found that only the gradual intervention improved significantly when paired with highlighting (Mann-Whitney U, p < .001), while the popup, undo, and notification interventions showed no significant difference, an outcome the authors attribute partly to the small sample size \cite{jensen2025context}.
 The design of the interventions themselves has also been examined within the Reading the Reader project: Pereira and Andrei compared four intervention forms (Undo, Popup, Notification, and Gradual) and reported that they differ markedly in disruption and user acceptance \cite{pereira2024typography}.
 The typographic parameters these interventions manipulate are in turn grounded in controlled readability studies, which show that font size and line spacing \cite{rello2016makeitbig} and font size and type \cite{beymer2008eyetracking} measurably affect online reading.
-
-This supports the thesis argument that intervention design is a measurable system behaviour that must be architecturally supported through stable integration hooks and logging mechanisms.
+Together these results support the thesis argument that intervention design is a measurable system behaviour, one that must be architecturally supported through stable integration hooks and logging mechanisms.
 
 \subsection{Transparent and Reproducible Analysis Pipelines}
 \label{subsec:related-reading-analytics}

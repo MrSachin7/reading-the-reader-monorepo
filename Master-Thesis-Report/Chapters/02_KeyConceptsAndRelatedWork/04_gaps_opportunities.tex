@@ -5,30 +5,25 @@
 \label{subsec:gap-experimentability}
 The prior Reading the Reader theses each delivered a working prototype, but each was tightly coupled and was extended by copying the previous frontend rather than by plugging into a shared platform \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
 This coupling hinders the systematic comparison of interventions and decision strategies that the project ultimately requires.
-At the same time, empirical findings show that intervention design materially affects recovery and user preference \cite{ref2}, which makes such comparison scientifically important rather than merely convenient.
+At the same time, empirical findings show that intervention design materially affects recovery and user preference \cite{jensen2025context}, which makes such comparison scientifically important rather than merely convenient.
 
-\textbf{Opportunity:} Design the adaptation engine with hot-swappable intervention modules and auditable logging to enable:
-\begin{itemize}
-    \item Systematic A/B testing,
-    \item Replay-based evaluation,
-    \item Real-time override capabilities,
-    \item Transparent experimental comparison.
-\end{itemize}
+These coupling problems point to a clear opportunity.
+Designing the adaptation engine around hot-swappable intervention modules and auditable logging would enable systematic A/B testing, replay-based evaluation, real-time researcher override, and the transparent experimental comparison of interventions that the prior prototypes could not support.
 
 \subsection{Sensing Gap: Research-Grade versus Accessible Hardware}
 \label{subsec:gap-sensing}
 The market survey in Sec.~\ref{sec:market-landscape} exposes a split in the sensing layer.
-Research-grade eye trackers deliver the sampling rate and precision needed for reliable fixation and saccade extraction, but they are closed and costly \cite{ref3, ref4, ref6, ref7}, whereas the more accessible reading and accessibility tools do not expose a gaze signal that can drive adaptation \cite{ref13, ref14, ref15}.
+Research-grade eye trackers deliver the sampling rate and precision needed for reliable fixation and saccade extraction, but they are closed and costly \cite{tobii2025fusion, srresearch2025eyelink, gazepoint2025gp3, pupillabs2025neon}, whereas the more accessible reading and accessibility tools do not expose a gaze signal that can drive adaptation \cite{orcam2025read3, microsoft2025immersive, amazon2025kindle}.
 A platform tied to one tracker therefore inherits both its cost and its constraints.
 
-\textbf{Opportunity:} Place sensing behind a stable adapter interface so that the eye tracker is one interchangeable implementation among several.
-This decouples the reading runtime from any single vendor, allows research-grade hardware to be used where available while leaving room for lower-cost or webcam-based sensing, and keeps the door open to the multimodal signals (including pupil size) envisaged for the project \cite{ref1}.
+The opportunity is to place sensing behind a stable adapter interface so that the eye tracker is one interchangeable implementation among several.
+This decouples the reading runtime from any single vendor, allows research-grade hardware to be used where available while leaving room for lower-cost or webcam-based sensing, and keeps the door open to the multimodal signals (including pupil size) envisaged for the project \cite{dtucompute2025rtr}.
 
 \subsection{Integration Gap: External and AI-Driven Decision Modules}
 \label{subsec:gap-integration}
 None of the surveyed products expose a pluggable decision layer; each bundles fixed logic for when and how to act on the reader.
-This is at odds with the project's vision, in which decisions about adaptation may eventually be made by external, AI-driven providers rather than hard-coded rules \cite{ref1}.
+This is at odds with the project's vision, in which decisions about adaptation may eventually be made by external, AI-driven providers rather than hard-coded rules \cite{dtucompute2025rtr}.
 Without a defined integration boundary, every new decision strategy would require modifying the core application.
 
-\textbf{Opportunity:} Define a decision-strategy contract that the core application depends on, so that built-in rules and external or AI-based providers are interchangeable behind the same interface.
+The opportunity is to define a decision-strategy contract that the core application depends on, so that built-in rules and external or AI-based providers are interchangeable behind the same interface.
 This makes AI support an architectural property of the platform rather than a feature implemented end-to-end in this thesis, and it lets future contributors supply decision providers without touching the sensing, analysis, or intervention layers.

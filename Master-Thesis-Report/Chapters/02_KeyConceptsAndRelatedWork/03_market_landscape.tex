@@ -20,21 +20,79 @@ Category & Vendor / Product & Delivery Model & Capabilities & Pricing Signal \\
 Category & Vendor / Product & Delivery Model & Capabilities & Pricing Signal \\
 \midrule
 \endhead
-Screen-based eye tracker & Tobii Pro Fusion & Hardware & Up to 250 Hz sampling; fixation/saccade detection; pupil diameter recording \cite{ref3} & Quote-based \cite{ref3} \\
-Screen-based eye tracker & EyeLink 1000 Plus & Hardware & Binocular sampling up to 2000 Hz; research integration support \cite{ref4} & Quote request \cite{ref5} \\
-Lower-cost eye tracker & GazePoint GP3 HD & Hardware + Software & 150 Hz sampling; research-grade positioning \cite{ref6} & \$2,650 hardware-only \cite{ref6} \\
-Wearable eye tracking & Pupil Labs Neon & Hardware & Academic pricing; complete research system \cite{ref7} & €5,515 academic \cite{ref7} \\
-Remote webcam tracking & RealEye & SaaS & Subscription plans; data export; panel workflow \cite{ref8} & Panelists \$15 \cite{ref9} \\
-Experiment software & Tobii Pro Lab & Desktop software & Experiment design + recording + analysis \cite{ref10} & Trial available \cite{ref10} \\
-Reading assessment & Lexplore & Service + Hardware & AI-based reading assessment \cite{ref11} & Quote-based \cite{ref12} \\
-Accessibility device & OrCam Read 3 & Hardware & Reads printed/digital text aloud \cite{ref13} & \$116/month option \cite{ref13} \\
-Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus; Text Spacing; read-aloud \cite{ref14} & Included \cite{ref14} \\
-E-reading customisation & Amazon Kindle settings & Device feature & Font size and appearance adjustments \cite{ref15} & Included with device \cite{ref15} \\
+Screen-based eye tracker & Tobii Pro Fusion & Hardware & Up to 250 Hz sampling; fixation/saccade detection; pupil diameter recording \cite{tobii2025fusion} & Quote-based \cite{tobii2025fusion} \\
+Screen-based eye tracker & EyeLink 1000 Plus & Hardware & Binocular sampling up to 2000 Hz; research integration support \cite{srresearch2025eyelink} & Quote request \cite{srresearch2025eyelinkquote} \\
+Lower-cost eye tracker & GazePoint GP3 HD & Hardware + Software & 150 Hz sampling; research-grade positioning \cite{gazepoint2025gp3} & \$2,650 hardware-only \cite{gazepoint2025gp3} \\
+Wearable eye tracking & Pupil Labs Neon & Hardware & Academic pricing; complete research system \cite{pupillabs2025neon} & €5,515 academic \cite{pupillabs2025neon} \\
+Remote webcam tracking & RealEye & SaaS & Subscription plans; data export; panel workflow \cite{realeye2025pricingdocs} & Panelists \$15 \cite{realeye2025pricing} \\
+Experiment software & Tobii Pro Lab & Desktop software & Experiment design + recording + analysis \cite{tobii2025prolab} & Trial available \cite{tobii2025prolab} \\
+Reading assessment & Lexplore & Service + Hardware & AI-based reading assessment \cite{lexplore2025assessment} & Quote-based \cite{lexplore2025pricing} \\
+Accessibility device & OrCam Read 3 & Hardware & Reads printed/digital text aloud \cite{orcam2025read3} & \$116/month option \cite{orcam2025read3} \\
+Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus; Text Spacing; read-aloud \cite{microsoft2025immersive} & Included \cite{microsoft2025immersive} \\
+E-reading customisation & Amazon Kindle settings & Device feature & Font size and appearance adjustments \cite{amazon2025kindle} & Included with device \cite{amazon2025kindle} \\
 \bottomrule
 \end{longtable}
 
 Three observations follow from Tab.~\ref{tab:market-landscape}.
-First, the research-grade eye trackers and experiment software offer the sampling rates and gaze precision this thesis requires, but they are delivered as closed hardware and analysis suites priced by quotation or at several thousand euros \cite{ref3, ref4, ref6, ref7, ref10}, and they are oriented toward recording and post-hoc analysis rather than real-time, gaze-driven adaptation of the text being read.
-Second, the accessibility and reading-assessment tools act on the reading material, but either as static customisation under user control \cite{ref13, ref15} or as assessment services that analyse the reader without adapting presentation in the loop \cite{ref11}.
-Third, the built-in adaptive interfaces provide useful presentation controls such as line focus and text spacing \cite{ref14}, yet these are manually selected features rather than responses driven by the reader's gaze.
+First, the research-grade eye trackers and experiment software offer the sampling rates and gaze precision this thesis requires, but they are delivered as closed hardware and analysis suites priced by quotation or at several thousand euros \cite{tobii2025fusion, srresearch2025eyelink, gazepoint2025gp3, pupillabs2025neon, tobii2025prolab}, and they are oriented toward recording and post-hoc analysis rather than real-time, gaze-driven adaptation of the text being read.
+Second, the accessibility and reading-assessment tools act on the reading material, but either as static customisation under user control \cite{orcam2025read3, amazon2025kindle} or as assessment services that analyse the reader without adapting presentation in the loop \cite{lexplore2025assessment}.
+Third, the built-in adaptive interfaces provide useful presentation controls such as line focus and text spacing \cite{microsoft2025immersive}, yet these are manually selected features rather than responses driven by the reader's gaze.
 No surveyed product combines real-time gaze sensing, automatic typographic adaptation, and researcher-facing experiment control within a single modular platform, which is precisely the combination this thesis targets.
+Fig.~\ref{fig:market-quadrant} arranges the surveyed products along two of these dimensions, whether the system adapts the text presentation and whether it uses the reader's gaze, making the region they leave unoccupied immediately visible.
+
+\usetikzlibrary{arrows.meta, shapes.geometric}
+\begin{figure}[htbp]
+\centering
+\resizebox{0.85\linewidth}{!}{%
+\begin{tikzpicture}[
+  prod/.style={circle, fill=black, inner sep=1.7pt},
+  plabel/.style={font=\scriptsize, anchor=west},
+  axis/.style={-{Latex[length=2.6mm]}, thick}
+]
+
+% Highlight target quadrant (top-right)
+\fill[gray!9] (5,5) rectangle (10.6,10.6);
+
+% Quadrant dividers
+\draw[dashed, gray!60] (5,0) -- (5,10.4);
+\draw[dashed, gray!60] (0,5) -- (10.4,5);
+
+% Axes
+\draw[axis] (0,0) -- (11.0,0);
+\draw[axis] (0,0) -- (0,11.0);
+
+% Axis titles and endpoint hints
+\node[font=\small] at (5.3,-1.05) {Adapts text presentation $\rightarrow$};
+\node[anchor=north, font=\scriptsize, text=black!60] at (0.4,-0.15) {none};
+\node[anchor=north, font=\scriptsize, text=black!60] at (3.6,-0.15) {manual};
+\node[anchor=north, font=\scriptsize, text=black!60] at (9.8,-0.15) {automatic};
+\node[font=\small, rotate=90] at (-1.05,5.4) {Uses the reader's gaze $\rightarrow$};
+\node[anchor=east, font=\scriptsize, text=black!60] at (-0.15,0.4) {no};
+\node[anchor=east, font=\scriptsize, text=black!60] at (-0.15,10.2) {yes};
+
+% --- Group A: gaze tools (use gaze, none adapt text -> all at x=0.8) ---
+% Vertical order reflects how directly each delivers a usable real-time gaze stream.
+\node[prod] (eyelink) at (0.8,9.5) {}; \node[plabel] at (1.1,9.5) {EyeLink 1000 Plus};
+\node[prod] (fusion)  at (0.8,8.8) {}; \node[plabel] at (1.1,8.8) {Tobii Pro Fusion};
+\node[prod] (neon)    at (0.8,8.1) {}; \node[plabel] at (1.1,8.1) {Pupil Labs Neon};
+\node[prod] (gp3)     at (0.8,7.4) {}; \node[plabel] at (1.1,7.4) {GazePoint GP3 HD};
+\node[prod] (realeye) at (0.8,6.7) {}; \node[plabel] at (1.1,6.7) {RealEye};
+\node[prod] (prolab)  at (0.8,6.0) {}; \node[plabel] at (1.1,6.0) {Tobii Pro Lab};
+\node[prod] (lexplore)at (0.8,5.3) {}; \node[plabel] at (1.1,5.3) {Lexplore};
+
+% --- Group B/C: manual or non-gaze text tools (adapt presentation, no gaze) ---
+\node[prod] (orcam)     at (2.3,2.2) {}; \node[plabel, anchor=south] at (2.3,2.4) {OrCam Read 3};
+\node[prod] (kindle)    at (3.8,1.0) {}; \node[plabel, anchor=south] at (3.8,1.2) {Amazon Kindle};
+\node[prod] (immersive) at (4.7,2.0) {}; \node[plabel, anchor=south] at (4.7,2.2) {MS Immersive Reader};
+
+% --- Target: this thesis ---
+\node[star, star points=5, star point ratio=2.3, draw, thick, fill=black!75,
+      inner sep=2.6pt] (target) at (8.5,7.8) {};
+\node[anchor=north, align=center, font=\scriptsize\bfseries] at (8.5,7.35)
+     {Reading the Reader\\(this thesis)};
+
+\end{tikzpicture}%
+}
+\caption{Positioning of the surveyed tools on two dimensions: whether the system adapts the text presentation (horizontal) and whether it uses the reader's gaze (vertical). The research-grade trackers and analysis software share the leftmost position because none of them adapt the text; they differ only in how directly they expose a usable gaze signal. The accessibility and built-in reading tools sit at the lower band: they change presentation, but manually and without gaze. The upper-right region, combining automatic gaze-driven adaptation with the researcher experiment control this thesis adds, is unoccupied. Positions reflect the authors' assessment of the sources compiled in Tab.~\ref{tab:market-landscape}.}
+\label{fig:market-quadrant}
+\end{figure}

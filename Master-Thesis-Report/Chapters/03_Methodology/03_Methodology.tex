@@ -22,7 +22,7 @@ The methodology therefore treats system design decisions as first-class research
 \label{sec:requirements-elicitation}
 
 Requirements for this platform were derived through a process of reverse engineering and structured system analysis rather than up-front specification.
-Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{ref1} and the findings of the literature review to identify what a research-capable platform must be able to do.
+Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{dtucompute2025rtr} and the findings of the literature review to identify what a research-capable platform must be able to do.
 This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
 
 User stories were written from the perspective of the three identified actors --- the researcher, the test subject, and the external module provider --- and were used as the primary vehicle for communicating behavioural expectations across the team.
@@ -68,7 +68,7 @@ The frontend is built and served using Bun~1.3, which is also used as the packag
 
 The backend is built on .NET~10 with C\# using ASP.NET Core as the HTTP and WebSocket host.
 REST endpoints are implemented with FastEndpoints~8, and session data is exported using CsvHelper~33 for CSV serialisation alongside the built-in \texttt{System.Text.Json} for JSON.
-The Tobii Research SDK (\texttt{Tobii.Research.x64}~1.11) provides the hardware integration layer for eye-tracker communication and is a Windows-only dependency \cite{ref3}.
+The Tobii Research SDK (\texttt{Tobii.Research.x64}~1.11) provides the hardware integration layer for eye-tracker communication and is a Windows-only dependency \cite{tobii2025fusion}.
 
 Reading content is authored in Markdown.
 PDF support was considered but explicitly scoped out in favour of a simpler, tokenisation-friendly format that allows reliable gaze-to-word mapping without the coordinate complexity of PDF rendering.
