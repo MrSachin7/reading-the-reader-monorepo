@@ -238,7 +238,26 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 - Editing chapter 2 (already contains user-written content) — flag
   the planned diff before applying.
 
-### 3.6 Two-stage writing workflow (operationalises §1.1)
+### 3.6 TODO tracking
+
+Whenever the user designates something as a TODO — using phrases such as
+"add this to todo", "this is a todo", "we'll fix this later", "put a todo
+there", or any equivalent — immediately append it to `todo.md` in this
+directory (`Master-Thesis-Report/todo.md`) **before** continuing with
+other work.
+
+Format for each entry:
+```
+- [ ] **Short label**: One-sentence description of what needs to be done and why. Pointer to the relevant file/section if known.
+```
+
+Do not wait to be asked a second time. If the todo file does not yet
+exist, create it. Keep entries actionable and self-contained so a future
+session can act on them cold.
+
+---
+
+### 3.7 Two-stage writing workflow (operationalises §1.1)
 
 When asked to write or expand a prose section that requires citations,
 do not produce paragraphs in a single pass. Hallucinated citations

@@ -53,7 +53,10 @@ NFR2 & Low Latency &
   The system shall process gaze data with sufficiently low latency for
   just-in-time intervention delivery.
   High-frequency gaze data shall be handled through a dedicated real-time
-  channel, separate from general request-response communication. &
+  channel, separate from general request-response communication.
+  \todo{NFR2: Research acceptable gaze-to-intervention latency threshold
+  from eye-tracking literature; replace \textit{sufficiently low} with a
+  concrete measurable value (e.g.\ ${\leq}\,X$\,ms).} &
   Micro-interventions must be applied while the trigger condition is still
   present; multi-hundred-millisecond delays would invalidate the
   intervention rationale. & M \\
