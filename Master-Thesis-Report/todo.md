@@ -1,6 +1,6 @@
 # Thesis TODOs
 
-- [ ] **NFR2 — Latency metric**: Research acceptable gaze-to-intervention latency threshold from eye-tracking literature. Replace "sufficiently low latency" in NFR2 with a concrete measurable value (e.g. ≤ X ms). See `Chapters/04_Requirements/05_non_functional_requirements.tex`.
+- [ ] **NFR2 — Latency metric**: Research acceptable gaze-to-intervention latency threshold from eye-tracking literature. Replace "sufficiently low latency" in NFR2 with a concrete measurable value (e.g. ≤ X ms). See `Chapters/04_Requirements/05_non_functional_requirements.tex`. This threshold is now also depended on by the RQ2 latency-measurement method in Tab. 3.1 (`Chapters/03_Methodology/04_evaluation_strategy.tex`) and must be the value reported in the Evaluation chapter.
 
 - [ ] **User stories — Full backlog**: Implement the full user story backlog on the project documentation site (https://mrsachin7.github.io/reading-the-reader-monorepo/) so the `\cite{rtr2026docs}` reference in `Chapters/04_Requirements/02_user_stories.tex` points to a page with actual content.
 
