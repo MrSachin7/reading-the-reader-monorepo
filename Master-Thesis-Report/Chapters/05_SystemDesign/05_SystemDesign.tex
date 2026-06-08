@@ -1,27 +1,760 @@
 \chapter{System Design and Architecture}
 \label{ch:design}
 
+% CHAPTER ROLE (do not let this blur into Ch4 or Ch6):
+%   Ch4 owns WHAT the system must do (FRs/NFRs, use cases, activity flow).
+%   Ch6 owns HOW the code was built (highlights, CI, challenges).
+%   Ch5 owns the layer between: the justified structures and decisions that
+%   turn requirements into a defendable, modular system.
+% This chapter carries the central thesis claim (DSR: the architecture IS the
+% contribution; see \cref{sec:research-approach}). It must be argued, not
+% narrated, and must visibly answer RQ1--RQ4
+% (\cref{sec:final-problem-statement}).
+
+\section{Architectural Drivers}
+\label{sec:design-drivers}
+% Authoring brief for this section lives in GUIDE.md (§5.1).
+
+The preceding chapter specified what the platform must do, but not every requirement shapes its structure to the same degree.
+A recognised observation in software architecture is that only a subset of requirements is \emph{architecturally significant}, in the sense of having a measurable and lasting effect on the architecture, and that identifying this subset is a necessary step in design \cite{chen2013asr}.
+This section isolates that subset for the Reading the Reader platform and treats it as the set of \emph{architectural drivers} that the remainder of this chapter is designed to satisfy.
+Consistent with the Design Science Research orientation established in \cref{sec:research-approach}, we make these drivers explicit for two reasons: they motivate the design decisions recorded in \cref{sec:design-decisions}, and they become the criteria against which the artifact is evaluated in \cref{ch:evaluation} \cite{hevner2004designscience}.
+The drivers are drawn from the Must-have requirements of \cref{sec:functional-requirements,sec:non-functional-requirements}, prioritised using the MoSCoW scheme \cite{clegg1994moscow}, together with the fixed constraints of \cref{sec:constraints}; they are summarised in \cref{tab:design-drivers}.
+
+The dominant driver is modular separability.
+The central claim of this thesis, set out in \cref{sec:research-approach}, is that sensing, eye-movement analysis, decision strategy, and intervention execution can be made independently replaceable; NFR1 and NFR6 (\cref{tab:nfr}) restate this as binding quality requirements, and the Future Research Teams and External Module Provider stakeholders (\cref{sec:stakeholders}) are the parties who depend on it.
+This driver requires that every boundary between concerns be expressed as an interface, that implementations depend inward on those interfaces rather than on one another, and that a new intervention, analysis algorithm, or decision provider be addable through additive code alone.
+It is the force from which the architectural style of \cref{sec:design-style} is derived, and it corresponds directly to RQ1.
+
+How that separability may be achieved is constrained by the live, real-time nature of a reading session.
+The adaptive loop operates under a responsiveness budget (NFR2): high-frequency gaze data must travel a dedicated channel, and the indirection introduced for modularity must not delay an intervention past the point at which it remains valid.
+Because a session involves a human participant and cannot be repeated without cost, the platform must also be robust in live operation (NFR4 and NFR7): it must degrade gracefully when a device or an external provider disconnects, and it must checkpoint session state so that an interrupted session is recoverable.
+These two drivers stand in tension with the first, since the cleanest separation of concerns is rarely the fastest or the most fault-tolerant at runtime, and reconciling them is a recurring theme of the design decisions in \cref{sec:design-decisions}.
+
+A further group of drivers follows from the platform's role as a research instrument rather than an end-user product.
+Reproducibility (NFR5) requires a single, schema-versioned session record that captures enough of each session, including its parameters, calibration, events, and presentation configuration, to reconstruct it from the record alone, which is the need expressed by the Data Consumer stakeholder (\cref{sec:stakeholders}).
+Hardware independence (NFR8) requires a sensing-source abstraction that admits mouse and webcam input alongside the Tobii device, enabling development, automated testing, and demonstration without hardware, and as a side effect allowing each architectural layer to be exercised in isolation.
+Because the platform is researcher-operated, it must additionally lower operator cognitive load (NFR3) through a guided setup workflow, explicit readiness gating, and a unified control surface, which shapes the researcher-facing structure described in \cref{sec:design-modules}.
+
+Alongside these drivers, four fixed constraints (\cref{sec:constraints}) bound the design space without being objectives to optimise.
+The Tobii Research SDK is distributed as a Windows-only binary (C1), so platform-specific code must be quarantined behind the sensing adapter rather than allowed to leak into the core.
+Reading material is restricted to Markdown (C2), whose predictable, reflowable structure is what makes a stable gaze-to-content coordinate mapping feasible.
+End-to-end decision intelligence is out of scope (C3), and this constraint is the direct origin of the external-provider seam and the decision-strategy abstraction: the architectural responsibility of this thesis is to make such integration well-defined, not to supply the algorithms.
+Finally, gaze data and comprehension responses are personal data under the GDPR (C4), which bounds what the session record captures and exports while leaving participant consent as a procedural matter outside the application.
+
+\begin{table}[htbp]
+\centering
+\caption{Architectural drivers, their origin in the requirements of \cref{ch:requirements}, the structural response each demands, and where each is evaluated. Driver identifiers are introduced here for reference in later sections.}
+\label{tab:design-drivers}
+\small
+\begin{tabular}{%
+  p{0.05\linewidth}
+  p{0.17\linewidth}
+  p{0.16\linewidth}
+  p{0.32\linewidth}
+  p{0.16\linewidth}
+}
+\toprule
+\textbf{ID} & \textbf{Driver} & \textbf{Origin} & \textbf{Architectural implication} & \textbf{Evaluated in} \\
+\midrule
+D1 & Modular separability & NFR1, NFR6; RQ1 &
+  Interface seam per concern; inward dependency; additive extension &
+  \cref{sec:design-modules}; RQ1 (\cref{tab:rq-evaluation}) \\
+\midrule
+D2 & Real-time responsiveness & NFR2; FR4; RQ2 &
+  Dedicated real-time channel; bounded end-to-end loop latency &
+  \cref{sec:design-loop}; RQ2 (\cref{tab:rq-evaluation}) \\
+\midrule
+D3 & Live-operation robustness & NFR4, NFR7 &
+  Graceful degradation on disconnect; session-state checkpoint and restore &
+  \cref{sec:design-loop}; functional verification \\
+\midrule
+D4 & Reproducibility & NFR5; FR12, FR21; RQ4 &
+  Authoritative, schema-versioned session record; session replay &
+  \cref{sec:design-data}; RQ4 (\cref{tab:rq-evaluation}) \\
+\midrule
+D5 & Hardware independence & NFR8; FR17 &
+  Sensing-source port admitting Tobii, mouse, and webcam input &
+  \cref{sec:design-modules}; operation on simulated input \\
+\midrule
+D6 & Operator-centred control & NFR3; FR1, FR6, FR11; RQ4 &
+  Guided setup, readiness gating, unified control plane, second-screen mirror &
+  \cref{sec:design-modules,sec:design-extensibility}; workflow walkthrough \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Architectural Overview}
-% High-level diagram (C4 context / container level recommended).
-% Closed-loop view: sensing -> event extraction -> classification ->
-% intervention -> logging.
+\label{sec:design-overview}
+% Authoring brief for this section lives in GUIDE.md (§5.2).
 
-\section{Monorepo Structure and Rationale}
-% Why a monorepo for Reading-the-Reader. Package / app boundaries,
-% shared types, build graph. Trade-off analysis vs. polyrepo.
+This section gives the whole picture before the later sections take it apart, and it does so by zooming in three steps.
+We first see the platform as a single black box among the people and devices around it, then open that box into the handful of running pieces it is built from, and finally watch those pieces exchange data while a participant reads.
+For the first two steps we borrow the vocabulary of the C4 model, which describes an architecture as nested levels of context, containers, and components \cite{c4model}.
+Nothing here requires knowing the internals yet: the layered structure that justifies these pieces is taken up in \cref{sec:design-style}, the module contracts in \cref{sec:design-modules}, and the runtime timing of the loop in \cref{sec:design-loop}.
 
-\section{Component Design}
-\subsection{Gaze Acquisition and Preprocessing}
-\subsection{Event Extraction (Fixations, Saccades, Regressions)}
-\subsection{Reading-State Classification}
-\subsection{Intervention Engine}
-\subsection{Logging and Replay Subsystem}
+The most distant view treats the platform as a single black box and asks only who and what it interacts with.
+\Cref{fig:c4-context} places it among the five external actors already identified in the use-case analysis (\cref{sec:use-cases}).
+The Researcher operates the system: they prepare materials, drive the setup workflow, apply or approve interventions, and review the recorded data.
+The Participant interacts only with the reading surface, fixating on calibration targets during setup and reading the presented text during the session.
+The Eye Tracker Device is a hardware actor that streams raw gaze samples into the platform at high frequency, while the External Module Provider is an out-of-process actor that connects over a documented protocol to supply decision recommendations or eye-movement analysis.
+The Data Consumer is any downstream party that retrieves exported session records for later analysis.
+The separation of a participant-facing surface from a researcher-facing surface is the first architectural consequence of the researcher-operated model (driver D6 in \cref{tab:design-drivers}).
 
-\section{Data Model and Interfaces}
-% Event schemas, message contracts between components, persistence model.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  sys/.style={draw, thick, rounded corners=6pt, fill=gray!8,
+              minimum width=4.0cm, minimum height=1.5cm, align=center,
+              font=\small\bfseries},
+  actor/.style={draw, thick, rounded corners=3pt, fill=white,
+                minimum width=2.7cm, minimum height=1.0cm, align=center,
+                font=\small},
+  rel/.style={<->, >=latex, thick, font=\scriptsize, align=center}
+]
+\node[sys] (plat) at (0,0) {Reading the Reader\\Platform};
+
+\node[actor] (res)  at (-6.2, 1.7) {Researcher};
+\node[actor] (par)  at (-6.2,-1.7) {Participant};
+\node[actor] (tob)  at ( 6.2, 2.0) {Eye Tracker\\Device};
+\node[actor] (prov) at ( 6.2, 0.0) {External Module\\Provider};
+\node[actor] (cons) at ( 6.2,-2.0) {Data Consumer};
+
+\draw[rel] (res)  -- node[above, sloped]{operates,\\monitors} (plat);
+\draw[rel] (par)  -- node[below, sloped]{reads,\\calibrates} (plat);
+\draw[rel, ->] (tob)  -- node[above, sloped]{raw gaze} (plat);
+\draw[rel] (prov) -- node[above]{decision /\\analysis} (plat);
+\draw[rel, ->] (plat) -- node[below, sloped]{exported\\records} (cons);
+\end{tikzpicture}
+\caption{%
+System context view of the platform and its five external actors.
+Arrows denote the principal interactions; the eye tracker and data consumer
+exchanges are one-directional, the remainder bidirectional.%
+}
+\label{fig:c4-context}
+\end{figure}
+
+Opening the box one level reveals the containers that run during a session and the channels between them (\cref{fig:c4-container}).
+On the people-facing side there is a single web application, built with Next.js, that is served to two screens at once: a participant view that shows only the reading material on a second screen, and a researcher view that combines a live mirror of that reading with the session control panel.
+That one application also owns the real-time client, so the participant view and the researcher's mirror are driven from a single live data source rather than two parallel implementations.
+The browser therefore talks to the backend over two distinct channels, and this separation is the structural expression of the real-time responsiveness driver (D2): routine commands such as setup, configuration, export, and replay loading travel a conventional REST interface, whereas high-frequency gaze samples and live session envelopes travel a dedicated WebSocket channel kept off the request-response path.
+The backend is a single ASP.NET Core host composed of layered modules rather than a set of separate services: a transport layer of REST endpoints and the WebSocket hub, an application layer that orchestrates the session, a domain layer that owns the meaning of the data, and infrastructure adapters for the eye tracker, real-time broadcasting, and persistence.
+Two participants in the diagram are genuinely external to this host: the Tobii eye tracker, reached through its Windows-only SDK, and the External Module Provider, which runs as its own process and connects over a documented integration channel.
+Session state is checkpointed to the local filesystem, from which exports are also written; the internal layering of the host is the subject of \cref{sec:design-style,sec:design-modules}, and the provider integration is treated in \cref{sec:design-extensibility}.
+
+\begin{figure}[htbp]
+\centering
+\includesvg[width=\linewidth]{Chapters/05_SystemDesign/5.2}
+\caption{%
+Container view of the runtime.
+The user interface is one Next.js application served to a participant screen
+and a researcher screen; the backend is a single ASP.NET Core host composed of
+layered modules.
+The two browser-to-backend channels (REST and WebSocket) realise the
+separation of routine commands from high-frequency gaze traffic.
+The Tobii device and the external module provider are the only genuinely
+out-of-host participants.%
+}
+\label{fig:c4-container}
+\end{figure}
+
+The two earlier views describe what the system is made of; the third describes what it does while a participant reads, and it is the heart of the design (\cref{fig:adaptive-loop}).
+It is easiest to follow as a single concrete episode.
+Consider a participant who slows on a dense paragraph and begins to re-read the same line.
+The eye tracker reports where their gaze falls; the system turns that position into the particular word being read, notices that the same region is holding the gaze longer than fluent reading would, and judges that a small easing of the typography would help.
+It increases the text size slightly, and does so while keeping that word anchored in place, so the participant does not lose where they were.
+The change and its cause are written to a log, and a researcher watching a mirror of the same screen could equally have made the adjustment by hand, or declined one the system proposed.
+
+This episode traces the closed adaptive loop that the rest of the chapter elaborates.
+Along its main path, the participant adaptation plane, a sensing source emits a raw gaze sample, which is mapped first to a screen coordinate and then to the content word under gaze.
+The mapped stream feeds the eye-movement analysis stage, which derives fixations and saccades, and those events are handed to the active decision strategy.
+The strategy, whether a built-in rule or an external provider, decides whether adaptation is warranted, and when it is, an intervention is applied to the participant's view while the reading position is preserved.
+Every stage writes to the session log, which is later the single source for both export and replay.
+
+Running alongside this automated path is the researcher control plane.
+The researcher watches the mirrored view and a rolling summary of where attention has fallen, and may inject an intervention by hand or approve one the system proposes, so that a single intervention path serves automated, manual, and hybrid operation alike.
+Holding the two planes together is one authoritative component, the \idtt{ExperimentSessionManager}, through which every change to session state passes; it is the hub around which the later module decomposition is organised.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  stage/.style={draw, rounded corners=2pt, fill=white, align=center,
+                font=\scriptsize, minimum height=0.95cm, minimum width=2.0cm,
+                line width=0.4pt},
+  focus/.style={draw, rounded corners=2pt, fill=gray!14, align=center,
+                font=\scriptsize, minimum height=1.1cm, minimum width=2.2cm,
+                line width=1.4pt},
+  store/.style={draw, align=center, font=\scriptsize,
+                minimum height=0.95cm, minimum width=1.9cm, line width=0.4pt},
+  plane/.style={draw, rounded corners=3pt, fill=gray!8, align=center,
+                font=\scriptsize, minimum height=1.0cm, line width=0.8pt},
+  hub/.style={draw, rounded corners=3pt, fill=gray!8, align=center,
+              font=\scriptsize, minimum height=1.0cm, line width=1.5pt},
+  data/.style={->, >=latex, line width=0.5pt, draw=gray!65},
+  auto/.style={->, >=latex, line width=0.9pt, draw=black, font=\scriptsize},
+  ctrl/.style={->, >=latex, line width=1.3pt, dashed, draw=black,
+               font=\scriptsize, align=center}
+]
+% Participant adaptation plane: a quiet left-to-right pipeline.
+\node[stage] (sense)  at ( 0.0, 0) {Sensing\\source};
+\node[stage] (map)    at ( 3.0, 0) {Gaze-to-content\\mapping};
+\node[stage] (anal)   at ( 6.0, 0) {Eye-movement\\analysis};
+\node[stage] (dec)    at ( 9.0, 0) {Decision\\strategy};
+\node[focus] (interv) at (12.8, 0) {Intervention\\(context-preserving)};
+\node[store] (log)    at (16.7, 0) {Session log};
+
+\draw[data] (sense) -- (map);
+\draw[data] (map)   -- (anal);
+\draw[data] (anal)  -- (dec);
+\draw[data] (interv) -- node[above, font=\scriptsize\itshape, text=gray!55!black]{applied} (log);
+\node[font=\scriptsize\itshape, text=gray!55!black, anchor=west] at (9.55,-1.15) {rule-based \textbar{} external};
+
+% Automated adaptation: the decision strategy issues a command directly.
+\draw[auto] (dec) -- node[above]{automated} (interv);
+
+% Researcher control plane (top): manual injection and proposal approval.
+\node[plane] (res) at (10.7, 2.8) {Researcher control plane\\(mirror + attention summary)};
+\draw[ctrl] (res.south) to[out=-70,in=120] node[left,pos=0.55]{manual} (interv.118);
+\draw[ctrl] (res.west)  to[out=200,in=80]  node[above left,pos=0.55]{approve} (dec.70);
+
+% Authoritative hub (bottom): coordinates the adaptation stages.
+\node[hub] (mgr) at (7.6, -2.8) {\idtt{ExperimentSessionManager} --- authoritative session state};
+\draw[ctrl] (mgr.north) to[out=130,in=-110] (anal.south);
+\draw[ctrl] (mgr.north) to[out=100,in=-90] (dec.south);
+\draw[ctrl] (mgr.north) to[out=40,in=-120] node[below right,pos=0.82]{coordinates} (interv.south);
+
+% Replay / export.
+\node[store] (out) at (16.7, -2.2) {Export /\\replay};
+\draw[data] (log) -- node[right, font=\scriptsize\itshape, text=gray!55!black]{persist} (out);
+
+% The convergence is the message: one intervention path, three modes.
+\node[align=center, font=\scriptsize\bfseries] at (15.4, 2.5)
+  {one intervention path:\\automated \textperiodcentered{} manual \textperiodcentered{} hybrid};
+\end{tikzpicture}%
+}
+\caption{%
+The closed adaptive loop during a live reading session.
+The participant adaptation plane (centre row) transforms raw gaze into a
+context-preserving intervention and logs every stage; the researcher control
+plane (top) feeds manual and proposal-gated interventions into the same path;
+and the session manager (bottom) coordinates both planes as the authoritative
+holder of session state.
+The session log is the single source for export and replay.%
+}
+\label{fig:adaptive-loop}
+\end{figure}
+
+Taken together, these three views fix the vocabulary the rest of the chapter relies on, and from here we move inward, from what the system is and does to how its backend is built.
+They also expose the design challenge that drives everything inside: the module boundaries that make the platform extensible must not, within the loop just traced, cost more delay than a live intervention can tolerate; the small easing in our episode is only useful if it lands while the participant is still on that line.
+The next section sets out the architectural style adopted to reconcile these competing demands.
+
+\section{Architectural Style and Principles}
+\label{sec:design-style}
+% Authoring brief for this section lives in GUIDE.md (§5.3).
+
+\Cref{sec:design-overview} showed what the system does; this section answers how its backend is arranged so that the stages of that loop can be replaced one at a time without disturbing the rest.
+The dominant driver of \cref{sec:design-drivers}, modular separability, is met not by a bespoke arrangement but by adopting an established layered style whose properties are already understood.
+We organise the backend as a set of concentric layers in the manner of Clean Architecture \cite{martin2017cleanarch}: an inner \texttt{Domain} layer, an \texttt{Application} layer around it, and an outer ring formed by the \texttt{Infrastructure} adapters and the \texttt{WebApi} transport host (\cref{fig:c4-container}).
+The single rule that gives the arrangement its force is that source-level dependencies point inward only (\cref{fig:clean-layers}).
+\texttt{Domain} depends on nothing, \texttt{Application} depends only on \texttt{Domain}, and both \texttt{Infrastructure} and \texttt{WebApi} depend inward on the core rather than on one another.
+This rule is enforced by the project references of the solution itself, so that a violation fails to compile rather than merely breaking a convention.
+Put plainly, the parts that hold the meaning of a reading session know nothing about the database, the network, or the make of eye tracker that serve them, and so can be reasoned about, tested, and reused on their own.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  ring/.style={draw, line width=0.8pt},
+  lbl/.style={align=center},
+  ibox/.style={draw, rounded corners=2pt, fill=white, align=center,
+               font=\scriptsize, minimum width=3.4cm, minimum height=1.0cm,
+               inner sep=3pt},
+  dep/.style={->, >=latex, line width=0.9pt},
+  rea/.style={->, >=latex, dashed, line width=0.8pt},
+  ctl/.style={->, >=latex, dotted, line width=0.8pt}
+]
+% Concentric layers, drawn outer-first so the inner rings sit on top.
+\draw[ring, fill=gray!4]  (0,0) circle (3.7);
+\draw[ring, fill=gray!10] (0,0) circle (2.55);
+\draw[ring, fill=gray!18] (0,0) circle (1.4);
+
+% Split the outer ring into Infrastructure (left) and WebApi (right).
+\draw[dashed, gray!55] (0, 2.55) -- (0, 3.7);
+\draw[dashed, gray!55] (0,-2.55) -- (0,-3.7);
+
+% Layer labels.
+\node[lbl, font=\small\bfseries]      at (0, 0.12) {Domain};
+\node[lbl, font=\scriptsize]          at (0,-0.40) {entities \& rules};
+\node[lbl, font=\scriptsize\bfseries] at (0, 2.18) {Application};
+\node[lbl, font=\tiny]                at (0, 1.84) {orchestration};
+\node[lbl, font=\scriptsize\bfseries] at (-2.45,-1.72) {Infrastructure};
+\node[lbl, font=\tiny]                at (-2.45,-2.04) {(adapters)};
+\node[lbl, font=\scriptsize\bfseries] at ( 2.45,-1.72) {WebApi};
+\node[lbl, font=\tiny]                at ( 2.45,-2.04) {(transport)};
+
+% Inward dependency arrow (after Martin's concentric figure).
+\draw[dep] (-5.10,0) -- (-3.78,0);
+\node[lbl, font=\scriptsize, anchor=south] at (-4.44,0.10) {source deps\\point inward};
+
+% Ports \& Adapters inset: one real seam.
+\node[lbl, font=\scriptsize\bfseries] at (8.0, 2.25) {Ports \& Adapters: one seam};
+\node[ibox] (port)    at (8.0, 0.95) {\textit{\guillemotleft port\guillemotright}\\\texttt{IEyeTrackerAdapter}\\(declared in Application)};
+\node[ibox] (adapter) at (8.0,-1.55) {\textit{\guillemotleft adapter\guillemotright}\\\texttt{TobiiEyeTrackerAdapter}\\(in Infrastructure)};
+\draw[rea] (adapter.north) -- node[left, font=\tiny, align=right]{implements\\(source dep.)} (port.south);
+\draw[ctl] (port.east) to[out=-25,in=25] node[right, font=\tiny, align=left]{calls\\(runtime)} (adapter.east);
+\end{tikzpicture}%
+}
+\caption{%
+The backend organised as concentric Clean Architecture layers, after
+Martin~\cite{martin2017cleanarch}.
+Source-level dependencies point inward only: \texttt{Domain} depends on
+nothing, \texttt{Application} depends on \texttt{Domain}, and the outer ring
+(the \texttt{Infrastructure} adapters and the \texttt{WebApi} transport host)
+depends inward on the core rather than its two halves on each other.
+The inset expands one seam: the port \texttt{IEyeTrackerAdapter} is declared in
+\texttt{Application}, while its Tobii adapter lives in \texttt{Infrastructure}
+and is bound to the port by dependency injection, so the source dependency runs
+opposite to the run-time flow of control.%
+}
+\label{fig:clean-layers}
+\end{figure}
+
+Each layer owns exactly one kind of decision, which keeps the boundaries legible as the system grows.
+The \texttt{Domain} layer owns meaning: the entities and rules that define what a reading session, a gaze sample, or a participant is in itself, independent of how it is stored or transported.
+The \texttt{Application} layer owns orchestration, sequencing the use cases of a session through the central \idtt{ExperimentSessionManager} without knowing which hardware or transport realises them.
+The \texttt{Infrastructure} layer owns side effects, such as talking to the Tobii device, broadcasting over WebSocket, or writing checkpoints to disk.
+The \texttt{WebApi} layer owns transport, mapping HTTP and WebSocket traffic onto application calls and nothing more.
+Because responsibility is partitioned this way, a change of storage medium or wire protocol is confined to the outer ring and never reaches the meaning held in the domain.
+
+Layering states which way dependencies point; Ports and Adapters states how the outer ring is attached so that it can be replaced.
+The mechanism of swappability is the Hexagonal (Ports and Adapters) style \cite{cockburn2005hexagonal}, in which the application defines abstract ports and the infrastructure supplies concrete adapters behind them.
+In our codebase the ports are the interfaces in \texttt{InfrastructureContracts} (for example \texttt{IEyeTrackerAdapter}, \idtt{IClientBroadcasterAdapter}, \idtt{IModuleProviderTransportAdapter}, and \idtt{IExperimentStateStoreAdapter}), and the adapters are the concrete classes in the \texttt{infrastructure/*} projects, bound to those ports through dependency-injection installers at start-up.
+The inset of \cref{fig:clean-layers} renders this arrangement for the sensing seam, where the port is declared in the core and the Tobii adapter is supplied from the outer ring.
+Because the \texttt{Application} layer declares the ports it requires and depends on those abstractions rather than on any concrete adapter, the arrangement is a direct application of the Dependency Inversion Principle \cite{martin1996dip}.
+High-level policy and low-level detail depend on the same abstraction, and the direction of the source dependency is thereby inverted relative to the direction of control at run time.
+
+The consequence we draw from this is the central claim of the chapter: in this design, modularity is not a feature added on top of the system but a property that follows from the dependency rule and its inversion \cite{martin2017cleanarch}.
+A new intervention, an alternative decision strategy, a different sensing device, or an external decision provider can be introduced by writing a new adapter behind an existing port, leaving the core reading runtime untouched.
+In the terms of our episode, the stage that judged the participant to be struggling could be replaced by an external analysis or decision provider while the sensing, intervention, and reading stages around it neither change nor notice.
+This is precisely the additive-change criterion demanded by driver D1 and by RQ1, and it is what makes the modularity claim testable rather than rhetorical.
+The next section makes the claim concrete by walking each module seam in turn, naming the port that defines it and the implementations that can be substituted behind it (\cref{sec:design-modules}); the external-provider case, where the adapter lives in a separate process, is treated separately in \cref{sec:design-extensibility}.
+
+\section{Module Decomposition and Boundaries}
+\label{sec:design-modules}
+% HEART OF THE CHAPTER -- discharges RQ1.
+% Walk the bounded module areas as they exist in core.Domain/core.Application.
+% For EACH module state: single responsibility, the contract/interface that
+% defines its seam, and what can be swapped behind that seam without touching
+% the core. A summary table (module -> port interface -> swappable
+% implementations -> FR/NFR satisfied) is strong here.
+% Recommended diagram: module-seam / component diagram (ports = interfaces).
+\Cref{sec:design-style} established the rule that holds the backend together; this section steps inside it and shows the parts that rule keeps separable.
+The platform divides into seven modules, and they are not an arbitrary list: five trace the participant-facing pipeline already seen in \cref{fig:adaptive-loop}, from acquiring the gaze to the surface that renders the result, and the remaining two are the hub that coordinates those parts and the record they all write to.
+Sensing acquires the gaze; analysis and reader observation interpret it into fixations and a live picture of the reader; decisioning judges whether to adapt; intervention execution carries an adaptation out; and reading and presentation is the surface the participant sees, where the gaze first meets content and where an intervention finally appears.
+Around these sit the session authority, the hub through which every change to state passes, and replay and export, which turns the accumulated record into a reproducible artifact.
+For each module we give the same three things: a plain statement of what it does for the reading experience, the single contract that forms its seam, and what can be substituted behind that seam without recompiling the core.
+\Cref{fig:module-components} shows the seven together, with the contract each exposes and the implementations and external provider that attach to those contracts from outside the core.
+The seams are collected in \cref{tab:module-seams} at the close of the section, and the one module whose adapter runs in a separate process, the external decision and analysis provider, is treated on its own in \cref{sec:design-extensibility}.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  mod/.style={draw, rounded corners=2pt, fill=gray!10, align=center,
+              text width=2.9cm, minimum height=1.6cm, inner sep=3pt, font=\footnotesize},
+  hub/.style={draw, rounded corners=3pt, fill=gray!16, align=center,
+              minimum height=1.3cm, inner sep=5pt, line width=1pt, font=\footnotesize},
+  store/.style={draw, rounded corners=2pt, fill=gray!10, align=center,
+              text width=2.9cm, minimum height=1.3cm, inner sep=3pt, font=\footnotesize},
+  impl/.style={draw, dashed, rounded corners=2pt, fill=white, align=center,
+              inner sep=3pt, font=\scriptsize},
+  ext/.style={draw, rounded corners=2pt, fill=white, align=center,
+              inner sep=4pt, font=\scriptsize, line width=0.9pt},
+  dep/.style={->, >=latex, draw=gray!55, line width=0.6pt},
+  plug/.style={->, >=latex, dashed, line width=0.7pt},
+]
+% Core boundary (drawn first so it sits behind the components).
+\draw[rounded corners=5pt, fill=gray!3, draw=gray!45]
+  (-1.7,0.6) rectangle (16.1,5.8);
+\node[anchor=north west, font=\scriptsize\itshape, text=gray!50!black]
+  at (-1.7,5.8) {\ Application + Domain core};
+
+% The seven module components, each labelled with its defining port.
+\node[mod] (sense)  at (0,4.6)    {\textbf{Sensing}\\[2pt]{\idtt{IEyeTrackerAdapter}}};
+\node[mod] (anal)   at (3.6,4.6)  {\textbf{Analysis \&\ observation}\\[2pt]{\idtt{IEyeMovementAnalysisStrategy}}};
+\node[mod] (dec)    at (7.2,4.6)  {\textbf{Decisioning}\\[2pt]{\idtt{IDecisionStrategy}}};
+\node[mod] (interv) at (10.8,4.6) {\textbf{Intervention}\\[2pt]{\idtt{IReadingInterventionModule}}};
+\node[mod] (read)   at (14.4,4.6) {\textbf{Reading \&\ presentation}\\[2pt]{\idtt{ReadingPresentationSnapshot}}};
+
+% The coordinating hub and the record it feeds.
+\node[hub, text width=10cm] (hub) at (5.4,1.6)
+  {\textbf{Session authority} \quad \idtt{ExperimentSessionManager}\\{holds session state and coordinates the participant and researcher planes}};
+\node[store] (replay) at (14.4,1.6) {\textbf{Replay \&\ export}\\[2pt]{\idtt{IExperimentReplayExportSerializer}}};
+
+\foreach \m in {sense,anal,dec,interv} \draw[dep] (\m.south) -- (hub.north);
+\draw[dep] (read.south) -- (hub.north east);
+\draw[dep] (hub.east) -- node[above,font=\scriptsize,text=gray!55!black]{log} (replay.west);
+
+% Pluggable implementations, outside the core, attaching to the ports.
+\node[impl] (tobii)  at (-1.0,7.0) {Tobii};
+\node[impl] (mouse)  at (0.0,7.0)  {mouse};
+\node[impl] (webcam) at (1.1,7.0)  {webcam};
+\node[ext, text width=4.6cm] (prov) at (5.4,7.1)
+  {\textbf{External module provider}\\(separate process, over a documented protocol)};
+\node[impl] (stores) at (14.4,7.0) {file / in-memory};
+
+\draw[plug] (tobii.south)  -- (sense.north west);
+\draw[plug] (mouse.south)  -- (sense.north);
+\draw[plug] (webcam.south) -- (sense.north east);
+\draw[plug] (prov.south) to[out=-120,in=90] (anal.north);
+\draw[plug] (prov.south) to[out=-60,in=90]  (dec.north);
+\draw[plug] (stores.south) -- (replay.north east);
+
+% Legend.
+\node[anchor=north west, font=\scriptsize, align=left] at (-1.7,-0.2)
+  {\textbf{module} (component)\quad\quad \idtt{port} (interface seam)\quad\quad dashed arrow: plugs in / implements};
+\end{tikzpicture}%
+}
+\caption{%
+Component view of the backend core, the third C4 level after the context and
+container views of \cref{sec:design-overview}.
+Each module exposes one contract that forms its seam; the session authority
+coordinates the modules and holds the session state, while pluggable
+implementations and the out-of-process external provider attach to those seams
+from outside the core.
+The ports shown are the seams enumerated in \cref{tab:module-seams}.%
+}
+\label{fig:module-components}
+\end{figure}
+
+\subsection{Sensing (Devices and Calibration)}
+\label{sec:design-mod-sensing}
+
+This is the part that knows where the participant is looking, the sensing that begins our episode.
+The first module is responsible for turning a physical sensing source into a trustworthy stream of gaze samples.
+It owns three concerns: discovery and selection of the sensing device, the calibration and validation workflow that conditions that device, and the choice of which sensing source is currently active.
+It deliberately does not interpret the stream into fixations or saccades, which is the concern of \cref{sec:design-mod-analysis}, nor does it decide whether to intervene, which belongs to \cref{sec:design-mod-decisioning}.
+The seam that defines the module is the port \texttt{IEyeTrackerAdapter}, declared in the \texttt{Application} layer's \texttt{InfrastructureContracts}.
+It exposes the device as an event source, \texttt{GazeDataReceived}, together with the operations to enumerate, select, start, and stop a tracker and to drive its on-device calibration and validation.
+The single concrete adapter at present is \texttt{TobiiEyeTrackerAdapter}, which lives in the \texttt{Infrastructure} ring and is bound to the port through its own dependency-injection installer.
+Every call into the Tobii Research SDK is compiled behind a \texttt{\#if WINDOWS} guard, so the Windows-only binary named in constraint~C1 (\cref{sec:design-drivers}) is physically confined to the adapter and cannot leak inward to the core; a second eye tracker would be introduced by writing one more class behind \texttt{IEyeTrackerAdapter}, leaving every layer above it untouched (FR2).
+
+Hardware independence (NFR8, driver~D5) is realised here as a working capability rather than an aspiration.
+A small vocabulary of sensing modes (eye-tracker, webcam, combined eye-tracker-plus-face, and mouse-simulation) selects which source feeds the loop, and the chosen mode is persisted operator state that survives restarts (FR17).
+Because the mouse mode produces gaze samples compatible with the rest of the pipeline (FR17.3), the platform can be developed, tested, and demonstrated with no Tobii device present, which as a side effect lets each downstream layer be exercised in isolation.
+This flexibility carries a deliberate asymmetry that we make explicit rather than conceal.
+The Tobii source pushes samples into the platform through the \texttt{IEyeTrackerAdapter} event, whereas the mouse and webcam-gaze sources submit their samples as envelopes over the WebSocket channel, where they are ingested directly by the \idtt{ExperimentSessionManager} (\cref{sec:design-mod-session}).
+A sensing source is therefore an abstraction with two physical shapes, a device-side adapter and a client-side ingress, rather than a single uniform port.
+We accept this because the externally generated sources already originate in the browser and travel the same realtime channel as the rest of the live session, so routing them through a synthetic device adapter would add indirection without adding substitutability.
+Optional webcam facial state (FR24) is the one externally sourced signal that does retain a dedicated port, \texttt{IFacialStateAdapter}, so that the facial-sensing pipeline stays substitutable behind the core like any other adapter.
+
+Calibration is split across two seams so that the workflow stays independent of the device that executes it.
+The application-level port \texttt{ICalibrationService} owns the calibration session as the researcher experiences it: a point-by-point state machine, the snapshots that drive the participant-facing calibration screen, the quality metrics it reports, and the selectable point-count presets (FR3).
+This service is device-agnostic; it delegates the on-device collection and computation to the same \texttt{IEyeTrackerAdapter} primitives that drive live tracking.
+Concerns that merely surround calibration are pushed behind ports of their own: licence storage, a Tobii requirement, is abstracted as \idtt{IEyeTrackerLicenseStoreAdapter} with a file-backed implementation, and device selection is gated so that a session cannot start before a device and licence are in place.
+The result is the additive-change criterion of driver~D1 localised to sensing: replacing the tracker reimplements one adapter, while the calibration state machine, the calibration metadata persisted into the session record, and the calibration user interface all remain unchanged.
+
+The module thus exposes four independent substitution points behind the core: the tracker (\texttt{IEyeTrackerAdapter}), the optional facial pipeline (\texttt{IFacialStateAdapter}), licence storage (\idtt{IEyeTrackerLicenseStoreAdapter}), and the mouse simulation that requires no adapter at all.
+Each can be replaced or omitted without recompiling the \texttt{Application} or \texttt{Domain} layers, which is the contribution this module makes to the modularity claim of RQ1.
+
+\subsection{Eye-Movement Analysis and Reader Observation}
+\label{sec:design-mod-analysis}
+
+This is the module that works out how the participant is reading: where the eyes settle, and where they jump back to re-read.
+The second module interprets gaze into the eye-movement structure in which reading research is expressed, and it maintains the live model of what the participant is reading.
+It owns two concerns: deriving fixations and saccades from the gaze stream, and keeping a running observation of the reader that downstream stages and the researcher mirror both consume.
+It neither acquires the stream, which is the sensing module of \cref{sec:design-mod-sensing}, nor decides whether to intervene, which is the decisioning module of \cref{sec:design-mod-decisioning}.
+One boundary is worth stating at the outset: the gaze-to-content mapping that turns a screen coordinate into the word token under gaze is performed in the reading surface itself (\cref{sec:design-mod-reading}), where the rendered Markdown layout owns the token geometry, a placement that the Markdown-only constraint~C2 makes tractable.
+This module therefore consumes observations that are already anchored to content, and the seam that carries them is the stable internal interface required by FR4.4.
+
+The analytical heart of the module is a single seam, the port \idtt{IEyeMovementAnalysisStrategy}, behind which the entire fixation-detection algorithm is replaceable.
+A strategy is asked to analyse a context and return a result, and two implementations are registered: a built-in strategy that derives fixations and saccades in process, and an external strategy that forwards the observation to an out-of-process analysis provider (\cref{sec:design-extensibility}).
+The active strategy is chosen by its configured provider identity, so substituting the built-in fixation detector for an external one is the additive registration demanded by FR18.2 rather than a change to the loop that drives it (FR18.1).
+The seam is deliberately shaped as a pure transformation: a strategy receives an immutable snapshot of the session, its configuration, the prior runtime state, and the current observation, and may only return a new runtime state.
+Because it cannot reach into or mutate session state, the analysis stage is a function of its inputs alone, which is what allows an external, and in principle untrusted, provider to be plugged in without endangering the authoritative state held elsewhere (\cref{sec:design-mod-session}).
+
+The second seam is the reader-observation service, the port \idtt{IReaderObservationService}, which holds the live picture of the reader that the analysis consumes and the researcher view renders.
+It registers and releases the participant view, tracks the viewport and the current reading focus, ingests the content-anchored gaze observations, records context-preservation events, and maintains the rolling attention summary that the researcher monitors (\cref{sec:design-mod-session}).
+Keeping this observation behind one service is what lets the analysis strategy depend on a single stable input rather than on the transport that produced it.
+The events the module speaks in, fixation, saccade, and reading-gaze observation, are domain types rather than analysis-local structures (\cref{sec:design-style}).
+Because their meaning lives in the \texttt{Domain} layer, the built-in and external strategies produce the same vocabulary, and the derived events written to the session record (FR12.2, FR18.3) are expressed in those terms independent of which strategy produced them.
+
+The module thus contributes one principal substitution point to the modularity claim of RQ1: the eye-movement analysis algorithm itself, replaceable in process or relocatable out of process behind \idtt{IEyeMovementAnalysisStrategy}, with the reader-observation seam held stable so that a new analysis can be introduced without changing how the reader is observed.
+This separation of a swappable interpretation from a stable observation is the module's contribution to the argument, and the runtime timing of that interpretation, on which its feasibility (RQ2) depends, is taken up in \cref{sec:design-loop}.
+
+\subsection{Decisioning}
+\label{sec:design-mod-decisioning}
+
+The third module decides whether and how the reading experience should adapt.
+Its output is a decision proposal derived from the current reading context, and deciding is kept distinct from doing: this module proposes, while the intervention module of \cref{sec:design-mod-interventions} executes and the session authority of \cref{sec:design-mod-session} resolves whether a proposal is applied.
+This separation of proposing, approving, and executing is what allows the same proposal to be produced identically whether it is later applied autonomously, gated behind researcher approval, or discarded.
+
+The seam that defines the module is the port \texttt{IDecisionStrategy}, which evaluates the current context and returns at most one proposal.
+Three strategies are registered behind it: a manual strategy that represents the researcher acting directly, a built-in rule-based policy, and an external strategy that forwards the context to an out-of-process decision provider (\cref{sec:design-extensibility}).
+They are interchangeable, and a strategy can be enabled or disabled mid-session without restarting the platform (FR8).
+The seam is shaped exactly as the analysis seam of \cref{sec:design-mod-analysis} is: a strategy receives an immutable snapshot of the decision context and may only return a proposal, never reaching into or mutating session state.
+This deliberate symmetry gives the platform a single extension model for both of its cognitive stages, a strategy behind a port that is a pure function of a snapshot and may be built in or supplied externally, which keeps the system's pluggability uniform rather than ad hoc.
+
+The four execution modes required of a controlled reading experiment (control, manual, automated, and hybrid in FR11.1) are not stored as a four-valued setting but composed from two orthogonal axes.
+The first axis is which strategy decides; the second is how its proposal is dispatched, either applied autonomously or held behind a researcher-approval gate.
+Their combination yields the required modes: a control condition when no strategy proposes, manual operation under the manual strategy, automated operation when an automated strategy's proposals are applied without a gate, and hybrid operation when those proposals are held for approval (FR20).
+We regard composing the modes from independent axes, rather than enumerating them, as the cleaner realisation of FR11, because adding a new strategy or a new dispatch policy does not then require revisiting a closed list of modes.
+The active mode and any mid-session change to it are recorded (FR11.2), and automated decisioning can be paused and resumed by the researcher (FR11.3), both observable at this seam.
+
+The built-in rule-based strategy is intentionally a simple baseline rather than the system's intelligence.
+Constraint~C3 places end-to-end decision intelligence outside the scope of this thesis, and the architectural response is to make the decision seam the well-defined point at which such intelligence, an AI-driven provider included, is attached as an external strategy rather than written into the core; the protocol that makes this possible is the subject of \cref{sec:design-extensibility}.
+Consistent with the layered style of \cref{sec:design-style}, the vocabulary the module decides in, the provider identities, the execution modes, the proposal status, and the rules governing how a proposal may move between statuses, are domain types rather than application details.
+Because this decision policy lives in the \texttt{Domain} layer, a proposal carries its own origin and rationale into the session record (FR8.3), and the propose-approve-execute lifecycle is governed by domain rules that no single strategy or transport can bypass.
+
+The module therefore adds one principal substitution point to the modularity claim of RQ1, the decision strategy itself, manual, rule-based, or external, registered additively, with the execution policy composed above it from two independent axes.
+What a proposal becomes once issued, how it is applied to the participant view while the reading position is preserved, is the concern of the next module.
+
+\subsection{Intervention Execution}
+\label{sec:design-mod-interventions}
+
+This is the module that actually changes what the participant sees, such as the small increase in text size from our episode.
+The fourth module owns what an intervention is and how it is applied and recorded.
+It holds the catalogue of intervention types and the single runtime path that turns a decision to adapt into a change in the reading experience together with a record of that change.
+It does not decide when to intervene, which is the decisioning module of \cref{sec:design-mod-decisioning}, and it does not render the typography or perform the on-screen reflow, which belongs to the reading surface of \cref{sec:design-mod-reading}; it computes the authoritative change and leaves its visual realisation to the surface that displays it.
+
+The unit of extension is the port \idtt{IReadingInterventionModule}, and each module is self-describing.
+A module carries a descriptor that declares the parameters it accepts, validates a request against that declaration before anything is applied, and executes the request into a new presentation state (FR7.3).
+Eight modules ship as built-ins, covering font family, font size, line width, line height, letter spacing, theme mode, colour palette, and a participant-edit lock (FR7.5), and a further intervention is introduced as one more module registered alongside them, touching neither an existing module nor the core runtime.
+Because a module declares its own parameters rather than having them hard-coded into the caller, additive extension reaches as far as the researcher control surface: the control panel renders the inputs for an intervention, and validates them, from the descriptor itself, so a new intervention needs no change to the user interface either.
+This is the point at which the extensibility of the runtime and the operator-centred control of driver~D6 meet, since the same self-description that makes the runtime extensible also keeps the control surface in step with it.
+
+All interventions, whatever their origin, are applied through a single path, the port \idtt{IReadingInterventionRuntime}.
+It resolves the addressed module, validates the request, executes it, and returns both the next presentation state and an intervention event for the record.
+This single path is the structural form of the claim made by the loop of \cref{fig:adaptive-loop}: an automated intervention from the decisioning module, a manual one from the researcher, and an approved proposal in hybrid operation all converge here and are applied and recorded identically (FR7.4).
+Because the convergence is enforced by the architecture rather than by convention, an intervention proposed by an external provider cannot be applied by a different route, or logged in a different shape, than one a researcher triggers by hand.
+Every application yields an intervention event that carries its source, trigger, reason, the module responsible, and the parameters used into the session record (FR12.3), which is what makes the provenance of every change to the reading experience auditable after the fact.
+
+A presentation change that alters layout would, untreated, shift the text beneath the participant's gaze and cause them to lose their reading position.
+Context preservation (FR9, and the concern behind RQ3) is therefore a first-class property of this path: a layout-changing intervention identifies the participant's current reading position and preserves it across the change, the view restores that position to the same visual location once the change is applied, and a preservation failure is itself logged in the record.
+The runtime supports this by bounding how far a single intervention may move the layout and by committing changes at controlled boundaries rather than mid-fixation, so that a stable anchor always exists to restore to.
+The reading surface of \cref{sec:design-mod-reading} performs the visual re-anchoring, and the timing of that mechanism within one adaptive cycle is taken up in \cref{sec:design-loop}; here it is enough that the intervention path is designed so the position can be preserved at all.
+
+The module thus contributes one principal substitution point to the modularity claim of RQ1, the intervention type behind \idtt{IReadingInterventionModule}, additively registered and self-describing, while the single runtime keeps validation, execution, and logging uniform across every trigger mode.
+The presentation state that an intervention produces, and the typographic surface that renders it under a preserved reading position, are the subject of the next module.
+
+\subsection{Reading and Presentation}
+\label{sec:design-mod-reading}
+
+The fifth module is the participant's reading surface, and it differs in kind from the modules examined so far.
+The previous four each resolve to a port with interchangeable implementations behind it; this one is the surface a participant actually reads from, and it lives substantially in the frontend.
+Its contribution to the architecture is therefore a different shape: a clean separation between the authoritative presentation state, which the backend owns, and the rendering of that state, which the surface performs, together with the choice of content format that keeps the link between gaze and content stable.
+It renders the reading content under a controlled typography, maps gaze onto the words being read, and visually realises a layout-changing intervention without dislodging the participant's reading position; it holds none of the session truth, which belongs to \cref{sec:design-mod-session}, and it neither decides nor computes interventions (\cref{sec:design-mod-decisioning,sec:design-mod-interventions}).
+
+The presentation the participant sees is defined by a single domain record, \idtt{ReadingPresentationSnapshot}, which fixes the typographic dimensions of FR5.2, font family, size, line width, line height, and letter spacing, and carries the lock through which a researcher prevents participant-side changes for the duration of a session (FR5.3).
+This record is authoritative in the backend and is changed only by the intervention runtime of \cref{sec:design-mod-interventions}; the surface renders it and owns no presentation truth of its own.
+The same record is mirrored by hand into a TypeScript type on the frontend, an honest cost of the design that we name here and examine in full where the data model is discussed (\cref{sec:design-data}).
+The surface also keeps a discipline of its own that mirrors the backend's: the live, gaze-driven redraw runs in lightweight per-frame state, deliberately separated from the cached request-response state that holds setup and saved results, so that rendering the participant's view is never throttled by ordinary application traffic.
+
+That gaze and content stay aligned across a presentation change rests on the choice of content format.
+The surface tokenises the document into a hierarchy of stable, identified anchors at the level of block, sentence, and word, and it is the predictable, reflowable structure of Markdown that allows those anchors to keep their identity when the typography changes beneath them.
+This is the architectural justification for restricting content to Markdown (constraint~C2, \cref{sec:design-drivers}): the requirement for stable coordinate references after a presentation change (FR5.4) and for word-level gaze-to-content mapping (FR4.3) is met because the anchors are stable, and a format such as PDF, whose layout is fixed rather than reflowable, would not offer the same guarantee.
+The constraint is thus a positive enabler of the adaptive loop rather than only a limitation of scope.
+
+Two of the surface's responsibilities follow directly from its being the place where the rendered layout geometry exists.
+The mapping from a normalised gaze sample to a screen coordinate and then to the word token under gaze is performed here (FR4.2, FR4.3), which is why the analysis module of \cref{sec:design-mod-analysis} consumes observations already anchored to content rather than raw screen positions.
+When a layout-changing intervention arrives, the surface captures the participant's current reading position as one of its stable anchors before the change and restores it to the same visual location afterwards (FR9.2).
+The surface therefore supplies the visual half of the context preservation that the intervention path of \cref{sec:design-mod-interventions} guarantees; the placement of these two steps within a single adaptive cycle, and the latency budget they share, are taken up in \cref{sec:design-loop}.
+
+The participant reading view is not the only view this surface produces.
+The same surface renders the researcher's live mirror (FR6.1) and the replay view, each under a view-settings profile resolved by \idtt{IReaderShellSettingsService} and carried in a \idtt{ReaderShellSettingsSnapshot} that toggles observation overlays such as the gaze marker, the context highlight, and the attention heatmap.
+The mirror is therefore not a second renderer maintained in parallel but the reading surface itself seen through a different profile, which removes a class of drift between what the participant sees and what the researcher monitors and links this module to the operator-centred control of driver~D6 and to the replay module of \cref{sec:design-mod-replay}.
+
+The module's modularity is consequently of a different kind from a swappable port: its seams are the reading content, any Markdown document; the view profile, whether participant, mirror, or replay; and the typographic configuration, with the rendering technology itself replaceable in principle behind the presentation contract.
+What remains is the authority that holds the presentation state this surface renders, sequences the session around it, and coordinates the planes the loop depends on, which is the subject of the next module.
+
+\subsection{Session Authority and Orchestration}
+\label{sec:design-mod-session}
+% Address openly: ExperimentSessionManager is the strong center and risks
+% absorbing too much; it stays the orchestrator while policy lives in domain.
+
+This is the part that keeps one consistent account of what is happening in a session, so that the automated and the researcher-driven actions never contradict each other.
+The sixth module is the platform's single authority for session truth, and it is the strong centre of the architecture.
+It holds the authoritative state of a session, runs the session lifecycle, and coordinates the two planes that the adaptive loop of \cref{fig:adaptive-loop} depends on; it is the \idtt{ExperimentSessionManager} already named as the hub in \cref{sec:design-overview,sec:design-style}.
+We address its principal risk openly: a single component that touches sensing, analysis, decisioning, intervention, reading, comprehension testing, and replay is, on its face, the classic violation of the single-responsibility principle, the god object that accretes the whole system.
+The remainder of this subsection is the argument that, in this design, the centre is justified rather than accidental, and that its breadth is bounded by deliberate means rather than left to grow unchecked.
+
+The first reason the centre exists is that the loop has two planes that mutate the same session state at the same time.
+The participant adaptation plane and the researcher control plane both change what is true of a session, and a single authority behind one serialisation point is what makes the single-source-of-truth property hold and what the guarantees of the preceding modules are enforced against: the one intervention path of \cref{sec:design-mod-interventions} and the approval gate of \cref{sec:design-mod-decisioning} are guarantees only because one component arbitrates them.
+Distributing this state across several components would introduce a coordination problem whose resolution costs latency that a single-host deployment operating under the responsiveness budget of NFR2 does not warrant.
+The choice of one authoritative holder over distributed state is itself a design decision, argued as such in \cref{sec:design-decisions}.
+
+The second reason the centre is defensible is that it orchestrates rather than legislates.
+The manager sequences the use cases of a session and applies changes to state, but it does not contain the policy those use cases enact: how a fixation is detected belongs to the analysis strategy, when an adaptation is warranted to the decision strategy, and how a proposal may move between statuses or an intervention validates its parameters to the domain types of \cref{sec:design-style}.
+Its single responsibility, stated precisely, is session authority and orchestration, not the sum of the behaviours it triggers, and this is the result of moving policy out of the application layer and into a rich domain.
+Read this way the manager is large in surface but narrow in kind: it decides nothing about reading, it decides only what is now true of the session.
+
+The third means by which the breadth is bounded is interface segregation, so that no collaborator depends on the whole.
+Although one class supplies the behaviour, it is reached through four role-scoped contracts: command-issuing transport sees \idtt{IExperimentRuntimeAuthority}, read-only callers see \idtt{IExperimentSessionQueryService}, the background checkpoint worker sees \idtt{IExperimentReplayRecoveryBuffer}, and participant assignment sees the minimal \idtt{IExperimentSessionManager}.
+Each caller therefore depends only on the slice of the authority its role requires, and the unified implementation is, internally, divided across partial definitions by concern so that each area stays legible despite sharing the one state.
+
+A fourth property turns the centre from a liability into the thing that keeps the rest of the system clean.
+The manager exposes only immutable snapshots of its state, chiefly the \idtt{ExperimentSessionSnapshot} and the \idtt{LiveReadingSessionSnapshot}, and accepts change only as typed commands through its gated surface; it never hands out a reference to its mutable internals.
+This is exactly what allows the analysis and decision strategies of \cref{sec:design-mod-analysis,sec:design-mod-decisioning} to be pure functions over a snapshot, because the authority is what builds the immutable context each of them receives.
+The strong centre is, in this sense, the keystone of the modularity rather than its exception: it absorbs the shared mutable state so that everything around it can remain a substitutable function of that state.
+
+Holding the authoritative state also makes the manager the natural origin of the record that makes a session survivable.
+It accumulates the events of a session and emits the checkpoint stream from which an interrupted session is restored (driver~D3, and NFR4 and NFR7), while the mechanism that persists that stream is an infrastructure concern taken up in \cref{sec:design-mod-replay}.
+One nuance is worth recording: the high-frequency gaze path does not pass through the lifecycle serialisation point but updates through lock-free state, which keeps sensing off the contended gate and within the responsiveness budget of NFR2.
+Beyond this the manager is what sequences the reading and comprehension-quiz progression (FR13, FR16) and enforces the execution-mode, pause, and approval controls of experimental operation (FR11, driver~D6).
+Its contribution to the modularity claim is therefore not a swap point but a boundary, one gated authority behind role-segregated interfaces, and the last of the seven modules turns the record this authority accumulates into a reproducible artifact.
+
+\subsection{Replay and Export}
+\label{sec:design-mod-replay}
+
+The seventh and last module turns the stream of events that the session authority accumulates into a durable artifact, and turns that artifact back into a session that can be watched again.
+Its responsibility is recording, export, recovery, and replay; it does not own the session truth, which the authority of \cref{sec:design-mod-session} produces, and it does not define what a session record contains or argue that the record suffices to reconstruct a session, which is the subject of \cref{sec:design-data}.
+What concerns us here are the seams through which a live session becomes a file and a file becomes a replay, and the way those seams keep even the reproducibility machinery substitutable.
+
+The format in which a session is exported is isolated behind the port \idtt{IExperimentReplayExportSerializer}, which serialises and deserialises an export to a format named in the call rather than baked into the type.
+Two formats ship, a structured JSON form and a flattened CSV form (FR12.4), and a further format would be an additive change behind this one port rather than a change to anything that produces or consumes exports.
+
+Persistence of those exports is a second seam, the port \idtt{IExperimentReplayExportStoreAdapter}, through which an export is saved as the latest result, saved under a name, listed, and reloaded from within the application without the researcher handling files by hand (FR12.6).
+Two adapters stand behind it, one writing to the local filesystem and one keeping exports in memory, which is the same separation seen in the sensing module: the file adapter serves real sessions while the in-memory adapter lets the export path be exercised in tests without touching disk.
+
+Recording and recovery are handled by two further ports that together make a session survivable rather than only exportable at its end.
+The recovery store (\idtt{IExperimentReplayRecoveryStoreAdapter}) records the session incrementally, seeding a session, appending batches of events as they accrue, and assembling the completed export from them, while the active-state store (\idtt{IExperimentStateStoreAdapter}) checkpoints the in-progress session so that an interrupted run can be resumed (FR22, NFR7, driver~D3).
+Background checkpoint and flush workers in the infrastructure ring drive these ports on their own schedule, and the session authority of \cref{sec:design-mod-session} is their source, exposing only the narrow recovery-buffer interface through which its pending events are flushed.
+
+What makes the exported artifact reproducible rather than merely saved is that it describes itself.
+Each export carries a named, versioned schema and a manifest identifying the software that produced it, so that the artifact can be read and reconstructed independently of the version of the code that wrote it (FR12.5).
+This versioning discipline is the module's contribution to reproducibility (NFR5, driver~D4); the content the schema governs, the calibration, presentation, and event data that a record must hold to stand on its own, is set out where the data model is discussed (\cref{sec:design-data}).
+
+Replay closes the arc the loop opened.
+A saved export reconstructs the session inside the reading surface of \cref{sec:design-mod-reading} under its replay profile, with play and pause, configurable speeds, a scrubbable timeline, and applied interventions marked along it (FR21); replay is therefore not a separate viewer but the same surface re-fed with the recorded log, which is the realisation of the session-log-to-replay path drawn in \cref{fig:adaptive-loop}.
+Even here the dependency rule holds: the application defines the export, recovery, and state ports while the infrastructure supplies the file and in-memory adapters behind them, so the reproducibility machinery is as substitutable in its format and its storage medium as the live modules are in their algorithms, and the modularity claim of RQ1 reaches the data tier as well.
+
+\begin{table}[htbp]
+\centering
+\caption{%
+The seven modules of \cref{sec:design-modules}, the contract that defines each
+module's seam, what may be substituted behind that seam without recompiling the
+\texttt{Application} or \texttt{Domain} core, and the requirements each module
+satisfies. The session authority is a boundary rather than a substitution
+point.%
+}
+\label{tab:module-seams}
+\scriptsize
+\begin{tabular}{%
+  p{0.145\linewidth}
+  p{0.305\linewidth}
+  p{0.275\linewidth}
+  p{0.155\linewidth}
+}
+\toprule
+\textbf{Module} & \textbf{Defining contract (port)} & \textbf{Substitutable behind it} & \textbf{Requirements} \\
+\midrule
+Sensing (devices, calibration) &
+  \texttt{IEyeTrackerAdapter}; \texttt{ICalibrationService} &
+  Tobii adapter; mouse and webcam sources; facial pipeline; licence store &
+  FR2, FR3, FR17, FR24; NFR8; C1 \\
+\midrule
+Eye-movement analysis and reader observation &
+  \texttt{IEyeMovementAnalysis}\newline\texttt{Strategy} &
+  Built-in detector; external analysis provider &
+  FR4.4, FR18; FR12.2 \\
+\midrule
+Decisioning &
+  \texttt{IDecisionStrategy} &
+  Manual; rule-based; external decision provider &
+  FR8, FR11, FR20; C3 \\
+\midrule
+Intervention execution &
+  \idtt{IReadingInterventionModule} &
+  Eight built-in modules; additive custom modules &
+  FR7, FR9; FR12.3 \\
+\midrule
+Reading and presentation &
+  \texttt{ReadingPresentation}\newline\texttt{Snapshot} contract;
+  \idtt{IReaderShellSettingsService} &
+  Any Markdown document; view profile (reading, mirror, replay); typography &
+  FR4, FR5, FR6.1; C2 \\
+\midrule
+Session authority and orchestration &
+  Role-scoped interfaces over one implementation (\idtt{ExperimentSessionManager}) &
+  Not a substitution point; one gated authority bounded by interface segregation &
+  FR1, FR11, FR13, FR16; NFR2, NFR4, NFR7 \\
+\midrule
+Replay and export &
+  \texttt{IExperimentReplayExport}\newline\texttt{Serializer}; export, recovery, and state stores &
+  JSON and CSV serialisers; file and in-memory stores &
+  FR12, FR21, FR22; NFR5, NFR7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{The Adaptive Runtime Loop}
+\label{sec:design-loop}
+% Dynamic view -- discharges RQ2 (sensing pipeline) and RQ3 (context
+% preservation). A static module map cannot prove behavioural claims.
+% Recommended diagram: UML sequence diagram of ONE cycle
+%   (raw sample -> screen-space mapping -> token mapping -> fixation/saccade
+%    -> decision -> intervention command -> context preservation -> logging).
+% Explain realtime channel vs request/response separation (NFR2) and how the
+% latency budget is allocated across the loop.
+% NFR2 threshold stays a placeholder until a literature value is supplied:
+% \todo{cite: acceptable gaze-to-intervention latency threshold (<= X ms)}
+% Then context preservation in design terms (anchor reading position, commit
+% at controlled boundaries) -- FR9 / RQ3.
+
+\section{Extensibility and the External Provider Model}
+\label{sec:design-extensibility}
+% RQ1 forward-looking + the "AI is architectural, not implemented" defence.
+% Decision-strategy abstraction (built-in rule-based vs external provider),
+% the four execution modes (control / manual / automated / hybrid), and the
+% out-of-process module-provider framework: how a provider connects, declares
+% capabilities, receives context envelopes, and has its commands routed
+% through the same validation/logging path as built-ins.
+% Covers FR8, FR18, FR19, FR20. Make the protocol-level argument (a third
+% party could implement a provider from the docs, FR19.4) and graceful
+% degradation on provider loss (FR19.3 / NFR4).
+% Recommended diagram: deployment/integration diagram with the provider as a
+% separate process over the protocol.
+
+\section{Data Model, Interfaces and the Session Record}
+\label{sec:design-data}
+% RQ4 + reproducibility (NFR5).
+% Domain model (key entities/snapshots), message-type contracts, the canonical
+% authoritative session snapshot, and the manual frontend/backend contract
+% mirroring (an honest design fact -- defend or critique it).
+% Then the export schema with versioning: the self-contained session record
+% that makes a session reproducible from the artifact alone (Data Consumer
+% actor). State what a session record contains and why that is sufficient to
+% reconstruct the session.
 
 \section{Design Decisions and Alternatives}
-% For each major decision: options considered, criteria, choice, why.
-% This is where academic rigor in a system thesis is earned.
+\label{sec:design-decisions}
+% Where academic rigor is earned (Hevner DSR: justified decisions are
+% first-class contributions). ADR-style per decision:
+%   context -> options considered -> criteria -> choice -> consequences.
+% Candidate decisions (much reasoning already exists in
+% architecture_propoal.md):
+%   - Clean/Onion architecture vs simpler pragmatic layering
+%   - Dual transport (WebSocket + REST) vs single channel
+%   - In-process strategy + out-of-process provider vs plugin DLLs vs
+%     full microservices
+%   - Single authoritative ExperimentSessionManager vs distributed state
+%   - Monorepo vs polyrepo (rationale lives here; the concrete package tree
+%     stays in \cref{ch:implementation})
+%   - Manual FE/BE contract mirroring vs code-gen / shared package
+%   - Rich-domain refactor (policy/presets/lifecycle out of Application)
+%   - Markdown-only content (scope constraint)
+%   - Known compromise: the OpenCv webcam sensing worker
+%     (OpenCvWebcamSensingWorker) is hosted in the WebApi project rather than a
+%     dedicated infrastructure project, though it still sits behind the
+%     IFacialStateAdapter port. Acknowledge as a layering inconsistency, not a
+%     boundary breach (lifted out of sec:design-mod-sensing to keep that
+%     subsection at design altitude).
+% A decision with no rejected alternative is not yet an argument.
 
 \section{Summary}
+\label{sec:design-summary}
+% 3--5 sentences recapping what the design establishes (per authoring rules),
+% then one sentence pointing to \cref{ch:implementation}: the design's
+% realisation in code, the build/CI workflow, and the most instructive
+% implementation challenges.
