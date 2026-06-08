@@ -12,7 +12,7 @@ natural phases of system use: \textit{Setup \& Calibration}, \textit{Content Man
 \textit{Session Configuration}, \textit{Live Session}, and \textit{Post-Session}.
 
 The system involves five actors.
-The \textbf{Researcher} is the primary operator and is associated with fifteen of the
+The \textbf{Researcher} is the primary operator and is associated with fourteen of the
 twenty-one use cases, spanning all five bands.
 The \textbf{Participant} is involved in three use cases: they fixate on calibration
 points during setup, read the presented text during the live phase, and answer
@@ -183,9 +183,9 @@ Sec.~\ref{sec:functional-requirements}.
 \coordinate (dataconsumer) at (\dX, \dY+0.42);
 
 %% ── Associations ─────────────────────────────────────────────────────────
-% Researcher → fifteen use cases spanning all five bands
-% (uc-calibrate added: researcher initiates and reviews calibration)
-\foreach \t in {uc-detect, uc-calibrate, uc-license,
+% Researcher → fourteen use cases spanning all five bands
+% (calibration is performed by the participant, so it is not a researcher association)
+\foreach \t in {uc-detect, uc-license,
                 uc-materials, uc-templates, uc-config,
                 uc-sensing, uc-start,
                 uc-monitor, uc-intervene, uc-decision,
@@ -266,8 +266,9 @@ is permitted to flow.
 \textit{Perform Calibration} runs the calibration point-collection and validation
 workflow; the participant fixates on each calibration point in turn while the
 system records the correspondence between gaze signal and screen position.
-The researcher reviews the resulting quality metrics and may repeat the
-procedure if the accuracy threshold is not met.
+The researcher initiates and oversees this step rather than performing it,
+reviewing the resulting quality metrics and repeating the procedure if the
+accuracy threshold is not met.
 All three hardware steps must pass before the session-start control becomes
 available.
 This scenario motivates FR2 (Eye-Tracker Detection and Licensing), FR3 (Calibration Integration), FR5 (Reading Content and Presentation), FR14 (Reading Material Library), and FR15 (Experiment Setup Templates).
