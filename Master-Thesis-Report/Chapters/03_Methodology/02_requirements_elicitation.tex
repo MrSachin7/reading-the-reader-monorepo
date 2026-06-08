@@ -1,13 +1,53 @@
 \section{Requirements Elicitation}
 \label{sec:requirements-elicitation}
 
-Requirements for this platform were derived through retrospective analysis of an existing prototype rather than up-front specification.
-Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal \cite{dtucompute2025rtr} and the findings of the literature review to identify what a research-capable platform must be able to do.
+Requirements for this platform were derived through retrospective analysis of an existing prototype rather than up-front specification, following the process summarised in Fig.~\ref{fig:requirements-elicitation}.
+Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing it alongside the original project proposal \cite{dtucompute2025rtr} and the findings of the literature review to identify what a research-capable platform must be able to do.
+This prototype was the codebase produced by the predecessor Reading the Reader student projects (\cref{subsec:related-rtr-prior-work}) \cite{refsgaard2024rtr, pereira2024typography}, which the literature review identified as capable but tightly coupled.
 This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
 
 User stories were written from the perspective of the three primary actors (the researcher, the participant, and the external module provider) and were used as the primary vehicle for communicating behavioural expectations across the team.
 Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
 Each requirement was assigned a MoSCoW priority (Must have, Should have, Could have, or Won't have) \cite{clegg1994moscow}, providing a principled basis for identifying the minimum viable capability set and for deferring lower-priority features when time pressure required trade-offs.
+
+\usetikzlibrary{arrows.meta}
+\begin{figure}[htbp]
+\centering
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[
+  io/.style={draw, thick, rounded corners=2pt, align=center, fill=gray!7,
+             text width=2.9cm, minimum height=1.0cm, font=\small},
+  proc/.style={draw, thick, rounded corners=2pt, align=center, fill=gray!16,
+               text width=2.7cm, minimum height=1.4cm, font=\small},
+  outp/.style={draw, very thick, rounded corners=2pt, align=center, fill=gray!16,
+               text width=3.0cm, minimum height=1.6cm, font=\small},
+  flow/.style={-{Latex[length=2.2mm]}, thick},
+  ann/.style={font=\scriptsize\itshape, text=black!75}
+]
+
+\node[io] (proto)  at (0, 1.7)  {Existing prototype\\(predecessor RtR projects)};
+\node[io] (prop)   at (0, 0)    {Project proposal};
+\node[io] (lit)    at (0,-1.7)  {Literature review};
+
+\node[proc] (analysis) at (4.6, 0)  {Retrospective\\analysis};
+\node[proc] (stories)  at (9.0, 0)  {User stories\\(researcher,\\participant,\\module provider)};
+\node[outp] (reqs)     at (13.4, 0) {Functional \&\\non-functional\\requirements\\(MoSCoW-prioritised)};
+
+\draw[flow] (proto.east) -- (analysis.west);
+\draw[flow] (prop.east)  -- (analysis.west);
+\draw[flow] (lit.east)   -- (analysis.west);
+
+\draw[flow] (analysis) -- node[ann, above]{elicit} (stories);
+\draw[flow] (stories)  -- node[ann, above]{derive} (reqs);
+
+\draw[flow] ([xshift=-5mm]analysis.north) to[out=120,in=60,looseness=5]
+            node[ann, above=1pt]{supervision refinement} ([xshift=5mm]analysis.north);
+
+\end{tikzpicture}%
+}
+\caption{The requirements elicitation process. An existing prototype (the predecessor Reading the Reader projects), the project proposal, and the literature review were subjected to retrospective analysis and iteratively refined through supervision, producing user stories for the three actors, from which MoSCoW-prioritised functional and non-functional requirements were derived.}
+\label{fig:requirements-elicitation}
+\end{figure}
 
 We note that this elicitation approach is a deliberate consequence of the thesis type.
 Because the contribution is an artifact, the requirements serve a dual purpose: they establish what the system must do, and they provide the criteria against which the architectural design decisions in \cref{ch:design} are later justified.

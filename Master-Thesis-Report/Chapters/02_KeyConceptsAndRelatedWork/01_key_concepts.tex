@@ -88,7 +88,7 @@ This thesis does not pursue a clinical training protocol; it treats CVL as the c
 Gaze during reading is not continuous but decomposes into discrete oculomotor events.
 A fixation is a relatively stable gaze on a small region, during which visual information is extracted; a saccade is the rapid ballistic movement that relocates the gaze between fixations \cite{salvucci2000identifying}.
 A regression is a backward saccade against the reading direction and is commonly associated with processing or comprehension difficulty \cite{guan2022predictive}.
-Fig.~\ref{fig:oculomotor} illustrates a representative scan path over one line of text, with fixations coloured by the order in which they occur, the forward saccades that connect them, and a single regression back to an earlier word.
+Fig.~\ref{fig:oculomotor} illustrates these events two ways for a single line of text: panel (a) shows the spatial scan path over the words, while panel (b) replots the same gaze as position against time, where fixations appear as plateaus whose width is their dwell duration and saccades as the steep steps between them.
 
 \usetikzlibrary{arrows.meta}
 \definecolor{fixearly}{HTML}{157F3B}
@@ -97,62 +97,97 @@ Fig.~\ref{fig:oculomotor} illustrates a representative scan path over one line o
 \definecolor{regcol}{HTML}{C0392B}
 \begin{figure}[htbp]
 \centering
-\resizebox{0.92\linewidth}{!}{%
+\resizebox{0.82\linewidth}{!}{%
 \begin{tikzpicture}[
   fix/.style={circle, draw=black!55, thick, inner sep=0pt},
   word/.style={font=\footnotesize, text=black!80, anchor=base},
   sacc/.style={-{Latex[length=1.8mm]}, thick, saccol},
   regr/.style={-{Latex[length=1.9mm]}, very thick, regcol},
-  ann/.style={font=\scriptsize\itshape}
+  axis/.style={-{Latex[length=2.6mm]}, thick},
+  sacline/.style={line width=1.4pt, saccol},
+  regline/.style={line width=1.7pt, regcol},
+  ann/.style={font=\scriptsize\itshape, align=center},
+  lead/.style={-{Latex[length=1.3mm]}, black!55},
+  sub/.style={font=\small\itshape, anchor=west}
 ]
 
-% Words (a single line of text)
-\node[word] (t1) at (0,0)    {The};
-\node[word] (t2) at (1.6,0)  {reader's};
-\node[word] (t3) at (3.2,0)  {gaze};
-\node[word] (t4) at (4.8,0)  {moves};
-\node[word] (t5) at (6.4,0)  {across};
-\node[word] (t6) at (8.0,0)  {the};
-\node[word] (t7) at (9.6,0)  {text};
-\node[word] (t8) at (11.2,0) {line};
+% ===== Panel (a): spatial scan path over the sentence =====
+\begin{scope}[yshift=9.2cm]
+  \node[sub] at (-0.3,3.2) {(a) Scan path over the sentence};
 
-% Fixations in temporal order (fill = reading order/time; size = dwell duration).
-% f6 is a regressive re-fixation of "gaze", raised slightly to stay visible.
-\node[fix, minimum size=0.55cm, fill=fixearly]            (f1) at (0,1.30)   {};
-\node[fix, minimum size=0.70cm, fill=fixlate!14!fixearly] (f2) at (1.6,1.48) {};
-\node[fix, minimum size=0.90cm, fill=fixlate!29!fixearly] (f3) at (3.2,1.30) {};
-\node[fix, minimum size=0.55cm, fill=fixlate!43!fixearly] (f4) at (4.8,1.52) {};
-\node[fix, minimum size=0.66cm, fill=fixlate!57!fixearly] (f5) at (6.4,1.36) {};
-\node[fix, minimum size=0.80cm, fill=fixlate!71!fixearly] (f6) at (3.5,2.05) {};
-\node[fix, minimum size=0.60cm, fill=fixlate!86!fixearly] (f7) at (8.0,1.48) {};
-\node[fix, minimum size=0.52cm, fill=fixlate]             (f8) at (9.6,1.34) {};
+  \node[word] (t1) at (0,0)    {The};
+  \node[word] (t2) at (1.6,0)  {reader's};
+  \node[word] (t3) at (3.2,0)  {gaze};
+  \node[word] (t4) at (4.8,0)  {moves};
+  \node[word] (t5) at (6.4,0)  {across};
+  \node[word] (t6) at (8.0,0)  {the};
+  \node[word] (t7) at (9.6,0)  {text};
+  \node[word] (t8) at (11.2,0) {line};
 
-% Forward saccades (temporal order)
-\draw[sacc] (f1) to[bend left=13] (f2);
-\draw[sacc] (f2) to[bend left=13] (f3);
-\draw[sacc] (f3) to[bend left=13] (f4);
-\draw[sacc] (f4) to[bend left=13] (f5);
-\draw[sacc] (f6) to[bend left=8]  (f7);
-\draw[sacc] (f7) to[bend left=13] (f8);
+  % Fixations: fill = reading order; size = dwell duration. f6 re-fixates "gaze".
+  \node[fix, minimum size=0.55cm, fill=fixearly]            (f1) at (0,1.30)   {};
+  \node[fix, minimum size=0.70cm, fill=fixlate!14!fixearly] (f2) at (1.6,1.48) {};
+  \node[fix, minimum size=0.90cm, fill=fixlate!29!fixearly] (f3) at (3.2,1.30) {};
+  \node[fix, minimum size=0.55cm, fill=fixlate!43!fixearly] (f4) at (4.8,1.52) {};
+  \node[fix, minimum size=0.66cm, fill=fixlate!57!fixearly] (f5) at (6.4,1.36) {};
+  \node[fix, minimum size=0.80cm, fill=fixlate!71!fixearly] (f6) at (3.5,2.05) {};
+  \node[fix, minimum size=0.60cm, fill=fixlate!86!fixearly] (f7) at (8.0,1.48) {};
+  \node[fix, minimum size=0.52cm, fill=fixlate]             (f8) at (9.6,1.34) {};
 
-% Regression (backward saccade against reading direction)
-\draw[regr] (f5) to[bend right=22] (f6);
-\node[ann, regcol] at (5.0,2.55) {regression};
+  \draw[sacc] (f1) to[bend left=13] (f2);
+  \draw[sacc] (f2) to[bend left=13] (f3);
+  \draw[sacc] (f3) to[bend left=13] (f4);
+  \draw[sacc] (f4) to[bend left=13] (f5);
+  \draw[sacc] (f6) to[bend left=8]  (f7);
+  \draw[sacc] (f7) to[bend left=13] (f8);
+  \draw[regr] (f5) to[bend right=22] (f6);
+\end{scope}
 
-% Time legend (gradient bar)
-\shade[left color=fixearly, right color=fixlate] (7.4,2.95) rectangle (10.6,3.28);
-\draw (7.4,2.95) rectangle (10.6,3.28);
-\node[font=\scriptsize, anchor=south] at (9.0,3.30) {reading order (time) $\rightarrow$};
-\node[font=\scriptsize, anchor=north] at (7.5,2.95) {early};
-\node[font=\scriptsize, anchor=north] at (10.5,2.95) {late};
+% ===== Panel (b): the same gaze, position along the line against time =====
+\node[sub] at (-0.3,8.15) {(b) The same gaze, plotted over time};
 
-% Reading-direction hint
-\draw[-{Latex[length=2mm]}, black!55] (0,-0.78) -- (2.2,-0.78);
-\node[font=\scriptsize, text=black!55, anchor=west] at (2.35,-0.78) {reading direction};
+\foreach \y/\w in {1/The, 2/reader's, 3/gaze, 4/moves, 5/across, 6/the, 7/text} {
+  \draw[gray!22] (0,\y) -- (10.4,\y);
+  \node[anchor=east, font=\scriptsize, text=black!70] at (-0.12,\y) {\w};
+}
+
+\draw[axis] (0,0) -- (10.8,0);
+\draw[axis] (0,0) -- (0,7.7);
+\node[font=\small] at (5.2,-0.62) {time $\rightarrow$};
+\node[font=\small, rotate=90] at (-1.95,3.9) {position along the line $\rightarrow$};
+
+% Fixations: plateaus (width = dwell duration; colour = reading order, matching (a))
+\draw[line width=2.4pt, fixearly]            (0,1)   -- (1.2,1);
+\draw[line width=2.4pt, fixlate!14!fixearly] (1.2,2) -- (2.5,2);
+\draw[line width=2.4pt, fixlate!29!fixearly] (2.5,3) -- (4.6,3);
+\draw[line width=2.4pt, fixlate!43!fixearly] (4.6,4) -- (5.4,4);
+\draw[line width=2.4pt, fixlate!57!fixearly] (5.4,5) -- (6.6,5);
+\draw[line width=2.4pt, fixlate!71!fixearly] (6.6,3) -- (7.9,3);
+\draw[line width=2.4pt, fixlate!86!fixearly] (7.9,6) -- (8.7,6);
+\draw[line width=2.4pt, fixlate]             (8.7,7) -- (9.5,7);
+
+% Saccades: steep vertical steps
+\draw[sacline] (1.2,1) -- (1.2,2);
+\draw[sacline] (2.5,2) -- (2.5,3);
+\draw[sacline] (4.6,3) -- (4.6,4);
+\draw[sacline] (5.4,4) -- (5.4,5);
+\draw[sacline] (7.9,3) -- (7.9,6);
+\draw[sacline] (8.7,6) -- (8.7,7);
+
+% Regression: backward (downward) step
+\draw[regline] (6.6,5) -- (6.6,3);
+
+% Definitional call-outs
+\node[ann] at (2.3,6.5) {fixation\\(eye dwells; width $=$ duration)};
+\draw[lead] (2.5,6.0) to[bend left=10] (3.5,3.06);
+\node[ann] at (6.0,6.9) {saccade\\(fast jump)};
+\draw[lead] (5.7,6.5) to[bend right=12] (5.4,4.5);
+\node[ann, regcol] at (8.4,4.4) {regression\\(jump back)};
+\draw[lead] (7.7,4.4) to[bend left=10] (6.6,4.0);
 
 \end{tikzpicture}%
 }
-\caption{A representative scan path over a single line of text, encoding the temporal dimension of reading. Each circle is a fixation, positioned over the word it lands on, with circle area indicating dwell duration and fill colour indicating the order in which fixations occur (legend). Grey arrows are forward saccades that advance along the line; the red arrow is a regression, a backward saccade that re-fixates an earlier word (here "gaze") and is commonly associated with processing difficulty.}
+\caption{Two complementary views of a representative reading scan path over a single line of text. (a) The spatial scan path: each circle is a fixation positioned over the word it lands on, with circle area indicating dwell duration and fill colour indicating reading order; grey arrows are forward saccades and the red arrow is a regression to an earlier word. (b) The same gaze plotted as position along the line against time: fixations become horizontal plateaus whose width is their dwell duration, saccades become steep vertical steps, and the regression becomes a backward (downward) step. Fixations keep the same reading-order colour in both panels, so the two views correspond.}
 \label{fig:oculomotor}
 \end{figure}
 
