@@ -376,116 +376,121 @@ This scenario motivates FR10 (Real-Time Performance Monitoring), FR12 (Logging a
 \label{sec:activity-session}
 
 While the use case diagram in Fig.~\ref{fig:use-case-diagram} captures actor associations, it does not express the order in which activities occur, the conditions under which the workflow branches, or the activities that proceed concurrently during a live session.
-Fig.~\ref{fig:activity-session} traces the control flow of a complete experimental session, synthesising the preparation path of UC-1 and the live path of UC-2 into a single workflow.
-The diagram remains at the analysis level: every node denotes an activity and every branch a condition, with no reference to system components or internal mechanisms.
+Fig.~\ref{fig:activity-session} traces the control flow of a complete experimental session, synthesising the preparation path of UC-1 and the live path of UC-2 into a single workflow, partitioned into swimlanes that show which actor performs each activity.
+The diagram remains at the analysis level: every node denotes an activity, every branch a condition, and every lane an actor, with no reference to system components or internal mechanisms.
 
 \begin{figure}[p]
 \centering
-\resizebox{!}{0.9\textheight}{%
+\resizebox{!}{0.86\textheight}{%
 \begin{tikzpicture}[
-  act/.style={
-    draw, rounded corners=4pt, thick,
-    minimum width=3cm, minimum height=0.9cm,
-    align=center, font=\small, fill=white
-  },
-  dec/.style={
-    draw, diamond, aspect=2.2, thick,
-    inner sep=1pt, align=center, font=\scriptsize, fill=white
-  },
-  term/.style={draw, circle, fill=black, minimum size=0.32cm, inner sep=0},
+  act/.style={draw, rounded corners=4pt, thick, minimum width=2.7cm,
+              minimum height=0.85cm, align=center, font=\scriptsize, fill=white},
+  dec/.style={draw, diamond, aspect=2.2, thick, inner sep=1pt, align=center,
+              font=\scriptsize, fill=white},
+  term/.style={draw, circle, fill=black, minimum size=0.3cm, inner sep=0},
   flow/.style={->, >=latex, thick},
-  elbl/.style={font=\scriptsize, fill=white, inner sep=1.5pt}
+  elbl/.style={font=\scriptsize, fill=white, inner sep=1.5pt},
+  lane/.style={font=\small\bfseries}
 ]
 
-%% ── Nodes ─────────────────────────────────────────────────────────────────────
-\node[term] (start)        at (0,   0.0)   {};
-\node[act]  (prepare)      at (0,  -1.25)  {Prepare reading materials\\and templates};
-\node[act]  (configure)    at (0,  -2.5)   {Configure session settings};
-\node[act]  (connect)      at (0,  -3.75)  {Connect and select\\eye tracker};
-\node[act]  (validate)     at (0,  -5.0)   {Validate device licence};
-\node[act]  (perform)      at (0,  -6.25)  {Perform calibration};
-\node[dec]  (d1)           at (0,  -7.75)  {Calibration\\passed?};
-\node[act]  (startses)     at (0,  -9.25)  {Start session};
-\node[act]  (present)      at (0, -10.5)   {Present reading item};
+%% ── Lane backdrop, dividers, headers ───────────────────────────────────────────
+\fill[gray!9] (-2.6, 1.0) rectangle (12.6, 1.9);
+\draw[thick] (-2.6,1.9) rectangle (12.6,-26.2);
+\draw[thick] (2.5, 1.9) -- (2.5,-26.2);
+\draw[thick] (7.5, 1.9) -- (7.5,-26.2);
+\node[lane] at (0,1.45)  {Researcher};
+\node[lane] at (5,1.45)  {System};
+\node[lane] at (10,1.45) {Participant};
 
-% Fork bar
-\fill (-5.6, -11.45) rectangle (5.6, -11.35);
+%% ── Nodes (placed in the lane of the actor that performs them) ──────────────────
+\node[term] (start)    at (0,  0.1)  {};
+\node[act]  (prepare)  at (0, -1.2)  {Prepare reading\\materials \& templates};
+\node[act]  (config)   at (0, -2.6)  {Configure\\session settings};
+\node[act]  (connect)  at (0, -4.0)  {Connect \& select\\eye tracker};
+\node[act]  (validate) at (5, -5.4)  {Validate\\device licence};
+\node[act]  (calib)    at (10,-6.8)  {Perform\\calibration};
+\node[dec]  (d1)       at (5, -8.4)  {Calibration\\passed?};
+\node[act]  (startses) at (0, -9.9)  {Start session};
+\node[act]  (present)  at (5, -11.2) {Present\\reading item};
 
-% Concurrent lanes
-\node[act]  (laneL)        at (-4.0, -12.5) {Participant reads\\presented text};
-\node[act]  (laneM)        at ( 0.0, -12.5) {Record gaze and derive\\fixation events};
-\node[act]  (laneR)        at ( 4.0, -12.5) {Monitor\\live session};
+% Fork bar (spans the live phase)
+\fill (-2.0,-12.2) rectangle (12.0,-12.1);
 
-\node[dec]  (d2)           at (0, -14.1)   {Intervention\\warranted?};
-\node[act]  (apply)        at (0, -15.7)   {Apply or propose\\intervention};
+\node[act]  (monitor)  at (0, -13.3) {Monitor\\live session};
+\node[act]  (record)   at (5, -13.3) {Record gaze \&\\derive fixations};
+\node[act]  (read)     at (10,-13.3) {Read\\presented text};
+
+\node[dec]  (d2)       at (5, -15.0) {Intervention\\warranted?};
+\node[act]  (apply)    at (2.0,-16.7) {Apply or propose\\intervention};
 
 % Join bar
-\fill (-5.6, -17.05) rectangle (5.6, -17.15);
+\fill (-2.0,-17.9) rectangle (12.0,-17.8);
 
-\node[dec]  (d3)           at (0, -18.6)   {Comprehension\\quiz?};
-\node[act]  (quizbox)      at (4.9, -18.6) {Administer\\comprehension quiz};
-\node[dec]  (d4)           at (0, -20.9)   {More reading\\items?};
-\node[act]  (export)       at (0, -22.7)   {Export session data};
-\node[term] (end)          at (0, -24.0)   {};
-\draw[thick] (end) ++(0,0) circle (0.26);
+\node[dec]  (d3)       at (5, -19.3) {Comprehension\\quiz?};
+\node[act]  (quiz)     at (5, -21.1) {Administer quiz};
+\node[dec]  (d4)       at (5, -22.9) {More reading\\items?};
+\node[act]  (export)   at (0, -24.5) {Export\\session data};
+\node[term] (end0)     at (0, -25.7) {};
+\draw[thick] (end0) circle (0.26);
 
 %% ── Sequential flow ───────────────────────────────────────────────────────────
-\draw[flow] (start)     -- (prepare);
-\draw[flow] (prepare)   -- (configure);
-\draw[flow] (configure) -- (connect);
-\draw[flow] (connect)   -- (validate);
-\draw[flow] (validate)  -- (perform);
-\draw[flow] (perform)   -- (d1);
+\draw[flow] (start)    -- (prepare);
+\draw[flow] (prepare)  -- (config);
+\draw[flow] (config)   -- (connect);
+\draw[flow] (connect.south) |- (validate.west);
+\draw[flow] (validate.east) -| (calib.north);
+\draw[flow] (calib.south) |- (d1.east);
+\draw[flow] (d1.west) -| (startses.north) node[elbl,pos=0.25]{yes};
+\draw[flow] (startses.south) |- (present.west);
 
-% Calibration loop (no)
-\draw[flow] (d1.east) -- (2.7,-7.75) -- (2.7,-6.25) -- (perform.east)
-  node[elbl, above, pos=0.3] {no};
-% Calibration passed (yes)
-\draw[flow] (d1.south) -- (startses) node[elbl, right, pos=0.5] {yes};
+% Calibration retry (no): up the right margin back to the participant
+\draw[flow] (d1.south) -- (5,-9.0) -- (11.7,-9.0) -- (11.7,-6.8) -- (calib.east)
+  node[elbl, pos=0.78]{no};
 
-\draw[flow] (startses) -- (present);
+% Fork out into the three concurrent lanes
+\draw[flow] (present) -- (5,-12.2);
+\draw[flow] (5,-12.1) -| (monitor.north);
+\draw[flow] (5,-12.1) -- (record.north);
+\draw[flow] (5,-12.1) -| (read.north);
 
-% Fork
-\draw[flow] (present) -- (0,-11.45);
-\draw[flow] (0,-11.35) -- (laneL);
-\draw[flow] (0,-11.35) -- (laneM);
-\draw[flow] (0,-11.35) -- (laneR);
+% Middle lane: record -> intervention -> join
+\draw[flow] (record) -- (d2);
+\draw[flow] (d2.south) |- (apply.east) node[elbl,above,pos=0.72]{yes};
+\draw[flow] (d2.east) -- (7.0,-15.0) -- (7.0,-17.85) node[elbl,above,pos=0.55]{no};
+\draw[flow] (apply.south) -- (2.0,-17.8);
 
-% Lane M chain
-\draw[flow] (laneM) -- (d2);
-\draw[flow] (d2.south) -- (apply) node[elbl, right, pos=0.5] {yes};
-\draw[flow] (apply) -- (0,-17.05);
-% Lane M "no" routes past the activity into the join
-\draw[flow] (d2.east) -- (2.0,-14.1) -- (2.0,-17.05) node[elbl, above, pos=0.4] {no};
-
-% Join (lanes L and R into the bar)
-\draw[flow] (laneL.south) -- (-4.0,-17.05);
-\draw[flow] (laneR.south) -- (4.0,-17.05);
+% Side lanes into the join
+\draw[flow] (monitor.south) -- (0,-17.8);
+\draw[flow] (read.south) -- (10,-17.8);
 
 % After join
-\draw[flow] (0,-17.15) -- (d3);
+\draw[flow] (5,-17.8) -- (d3);
+\draw[flow] (d3.south) -- (quiz) node[elbl,right,pos=0.5]{yes};
+\draw[flow] (quiz.south) -- (d4);
+\draw[flow] (d3.east) -- (7.0,-19.3) -- (7.0,-22.9) -- (d4.east) node[elbl,above,pos=0.12]{no};
+\draw[flow] (d4.south) |- (export.east) node[elbl,pos=0.25]{no};
+\draw[flow] (export) -- (end0);
 
-% Quiz branch
-\draw[flow] (d3.east) -- (quizbox.west) node[elbl, above, pos=0.45] {yes};
-\draw[flow] (quizbox.south) -- (4.9,-20.9) -- (d4.east);
-\draw[flow] (d3.south) -- (d4) node[elbl, right, pos=0.5] {no};
-
-% Multi-item loop (yes)
-\draw[flow] (d4.west) -- (-6.4,-20.9) -- (-6.4,-10.5) -- (present.west)
-  node[elbl, above, pos=0.12] {yes};
-% No more items
-\draw[flow] (d4.south) -- (export) node[elbl, right, pos=0.5] {no};
-\draw[flow] (export) -- (end);
+% Multi-item loop (yes): up the left margin to the next reading item
+\draw[flow] (d4.west) -- (-2.2,-22.9) -- (-2.2,-11.2) -- (present.west)
+  node[elbl,above,pos=0.62]{yes};
 
 \end{tikzpicture}%
 }
 \caption{%
-Activity diagram for a complete experimental session.
+Swimlane activity diagram for a complete experimental session, partitioned by
+actor into Researcher, System, and Participant lanes.
 Rounded boxes are activities and diamonds are decisions; the solid horizontal
 bars denote the fork and join that bound the concurrent activities of the live
 reading phase.
-The diagram stays at the analysis level, describing what happens and under what
-conditions rather than how the system is structured internally.%
+Each activity sits in the lane of the actor that performs it: the researcher
+prepares and operates the session, the participant performs the calibration and
+reads, and the system validates, senses, and adapts.
+The intervention activity straddles the researcher and system lanes because an
+intervention may be applied automatically by the system or proposed by the system
+and approved by the researcher.
+The diagram stays at the analysis level, describing what happens, under what
+conditions, and by whom, rather than how the system is structured internally.%
 }
 \label{fig:activity-session}
 \end{figure}
