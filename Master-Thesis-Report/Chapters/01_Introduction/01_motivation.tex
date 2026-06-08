@@ -3,28 +3,57 @@
 
 Reading is a foundational skill that underpins participation in education, employment, and daily life.
 For many people, however, reading is not a straightforward activity.
-The World Health Organization estimates that at least 2.2~billion people worldwide live with a vision impairment of some kind \cite{who2026vision}, and age-related macular degeneration (AMD) alone is projected to affect 288~million people globally by 2040 \cite{apte2021amd}.
+The World Health Organization estimates that at least 2.2~billion people worldwide live with a vision impairment \cite{who2026vision}, and age-related macular degeneration (AMD) alone is projected to affect 288~million people globally by 2040 \cite{apte2021amd}.
 Beyond vision impairment, reading difficulties arise from a wide range of cognitive and perceptual factors, affecting learners at every stage of life.
-In each of these cases the act of reading places demands that the reader's visual system can only partially meet, and the gap between what the text requires and what the reader can comfortably process translates directly into slower reading, greater fatigue, and reduced comprehension.
+In each of these cases the act of reading places demands that the reader's visual or cognitive system can only partially meet, and the gap between what the text requires and what the reader can comfortably process translates directly into slower reading, greater fatigue, and reduced comprehension.
 
 Digital text offers something that printed text cannot: the presentation can be changed in real time.
 Font size, letter spacing, line height, contrast, and weight are all adjustable on a screen, and adjustments can be made not on a fixed schedule but in response to how the reader is actually engaging with the content at any given moment.
 Eye tracking provides exactly the kind of signal needed to drive such responses.
 A gaze-sensing device placed in front of a reader produces a continuous stream of data that reflects where the reader is looking, how long they dwell on particular regions, and when their reading slows or falters.
 A system that can interpret this stream and translate it into small, targeted typographic adjustments has the potential to provide individualised reading support without interrupting the reader's flow.
-This is the core premise of adaptive reading technology, and it is the premise that the Reading the Reader initiative is built on.
+This is the core premise of adaptive reading technology.
 
 This promise, however, carries an inherent risk.
-An adaptation that changes what the reader sees can just as easily interrupt the reader it is meant to help: a font that resizes mid-sentence, or a contrast shift applied at the wrong moment, can cost the reader their place and force them to start the line again.
+Fig.~\ref{fig:typo-intervention} shows the kind of typographic adaptation such a system applies, increasing size, spacing, and contrast to make a line easier to read.
+An adaptation like this can support a struggling reader, but the same change applied at the wrong moment, or too abruptly, can cost the reader their place and force them to start the line again.
 The central design challenge of adaptive reading is therefore not simply deciding what to change, but changing it in a way that supports the reader without disrupting the very reading flow the system is trying to protect.
 This tension between adaptation and continuity runs through every layer of the platform this thesis develops.
+
+\usetikzlibrary{arrows.meta, positioning}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  block/.style={rounded corners=3pt, inner sep=10pt, align=left},
+  lbl/.style={font=\small\bfseries, align=center, text=black!70},
+  flow/.style={-{Latex[length=3mm]}, very thick, black!55},
+]
+
+\node[block, draw=black!15, fill=gray!5, text width=3.8cm,
+      font=\footnotesize, text=black!55] (before)
+  {Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.};
+\node[lbl, above=2.5mm of before] {Default typography};
+
+\node[block, draw=black!35, fill=blue!5, text width=5.6cm,
+      right=2.6cm of before, font=\large, text=black!92] (after)
+  {{\linespread{1.45}\selectfont Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.}};
+\node[lbl, above=2.5mm of after] {Adapted typography};
+
+\draw[flow] (before.east) -- (after.west)
+  node[midway, above, font=\footnotesize\itshape, text=black!70, align=center]
+  {adaptive\\intervention};
+
+\end{tikzpicture}
+\caption{A typographic intervention of the kind an adaptive reading system applies, shown as a before-and-after comparison of the same sentence. The adapted version on the right increases font size, line spacing, and contrast to improve legibility. Changes such as this can support a reader, but if applied abruptly or at the wrong moment they risk disrupting reading flow; reconciling these two effects is the central challenge of this thesis.}
+\label{fig:typo-intervention}
+\end{figure}
 
 The Reading the Reader project at DTU Compute, funded by the Novo Nordisk Foundation with approximately DKK~8~million, brings together computer scientists, typographers, psychologists, and ophthalmologists to develop exactly such a system \cite{dtucompute2025rtr, nnf2023rtr}.
 The programme targets readers across a range of difficulties (including central vision loss caused by AMD and reading disabilities such as dyslexia) with the shared premise that eye-tracking data can reveal individual reading patterns and inform personalised typographic adaptation.
 Prior work within the programme has demonstrated that real-time, gaze-driven adaptive reading is technically achievable, but the resulting prototypes were tightly coupled systems in which sensing, decision logic, and the reading interface were woven into a single codebase \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
 The cost of this coupling is concrete: each new study tended to extend the system by copying the previous prototype's frontend wholesale rather than by building on a shared platform.
 
-Consider a researcher who wants to test a simple hypothesis, that fading a font change gradually into place is less disruptive to the reader than applying it abruptly.
+Consider a researcher who wants to test a simple hypothesis: that fading a font change gradually into place is less disruptive to the reader than applying it abruptly.
 On the existing prototypes, answering this requires editing core application code, and running the two conditions under identical sensing means maintaining two divergent forks of the system.
 The question is scientifically straightforward, but the architecture makes it expensive to ask.
 A platform on which such a comparison is a configuration choice rather than a code change would remove that friction, and providing it is precisely the gap this thesis addresses: the modular infrastructure the programme needs to move from proof-of-concept prototypes to rigorous, repeatable experimentation.
