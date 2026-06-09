@@ -46,17 +46,19 @@ Reading material is restricted to Markdown (C2), whose predictable, reflowable s
 End-to-end decision intelligence is out of scope (C3), and this constraint is the direct origin of the external-provider seam and the decision-strategy abstraction: the architectural responsibility of this thesis is to make such integration well-defined, not to supply the algorithms.
 Finally, gaze data and comprehension responses are personal data under the GDPR (C4), which bounds what the session record captures and exports while leaving participant consent as a procedural matter outside the application.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Architectural drivers, their origin in the requirements of \cref{ch:requirements}, the structural response each demands, and where each is evaluated. Driver identifiers are introduced here for reference in later sections.}
 \label{tab:design-drivers}
 \small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.1}
 \begin{tabular}{%
-  p{0.05\linewidth}
-  p{0.17\linewidth}
-  p{0.16\linewidth}
-  p{0.32\linewidth}
-  p{0.16\linewidth}
+  p{0.045\linewidth}
+  p{0.165\linewidth}
+  p{0.155\linewidth}
+  p{0.33\linewidth}
+  p{0.165\linewidth}
 }
 \toprule
 \textbf{ID} & \textbf{Driver} & \textbf{Origin} & \textbf{Architectural implication} & \textbf{Evaluated in} \\
@@ -64,27 +66,27 @@ Finally, gaze data and comprehension responses are personal data under the GDPR 
 D1 & Modular separability & NFR1, NFR6; RQ1 &
   Interface seam per concern; inward dependency; additive extension &
   \cref{sec:design-modules}; RQ1 (\cref{tab:rq-evaluation}) \\
-\midrule
+\addlinespace
 D2 & Real-time responsiveness & NFR2; FR4; RQ2 &
   Dedicated real-time channel; bounded end-to-end loop latency &
   \cref{sec:design-loop}; RQ2 (\cref{tab:rq-evaluation}) \\
-\midrule
+\addlinespace
 D3 & Live-operation robustness & NFR4, NFR7 &
   Graceful degradation on disconnect; session-state checkpoint and restore &
   \cref{sec:design-loop}; functional verification \\
-\midrule
+\addlinespace
 D4 & Reproducibility & NFR5; FR12, FR21; RQ4 &
   Authoritative, schema-versioned session record; session replay &
   \cref{sec:design-data}; RQ4 (\cref{tab:rq-evaluation}) \\
-\midrule
+\addlinespace
 D5 & Hardware independence & NFR8; FR17 &
   Sensing-source port admitting the Tobii device and a simulated (mouse-cursor) source &
   \cref{sec:design-modules}; operation on simulated input \\
-\midrule
+\addlinespace
 D6 & Operator-centred control & NFR3; FR1, FR6, FR11; RQ4 &
   Guided setup, readiness gating, unified control plane, second-screen mirror &
   \cref{sec:design-modules,sec:design-extensibility}; workflow walkthrough \\
-\midrule
+\addlinespace
 D7 & Context-preserving adaptation & FR9; RQ3 &
   Two-phase (validate then commit) intervention contract applied at a controlled boundary that restores the reader's position &
   \cref{sec:design-loop,sec:design-extensibility}; RQ3 (\cref{tab:rq-evaluation}) \\
