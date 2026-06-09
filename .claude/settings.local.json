@@ -12,7 +12,9 @@
       "Bash(bun x *)",
       "Bash(powershell -Command \"Get-Content -Path src/lib/reader-appearance.ts\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\s243871\\\\reading-the-reader-monorepo\\\\Backend\\\\src\" -Directory)",
-      "Bash(Select-Object -ExpandProperty Name)"
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(cp \"/Users/sachinbaral/Downloads/5.2.svg\" \"/tmp/5.2.svg\")",
+      "Bash(/bin/cat \"/Users/sachinbaral/Downloads/5.2.svg\")"
     ]
   }
 }
