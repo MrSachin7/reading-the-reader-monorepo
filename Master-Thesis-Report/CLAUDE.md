@@ -207,19 +207,9 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 
 1. Check what is already in the chapter — do not rewrite work without
    permission.
-2. **Check for a chapter authoring guide.** If the chapter's folder
-   under `Chapters/` contains a `GUIDE.md` (or any `*.GUIDE.md`), read
-   it before writing or expanding any section in that chapter. It is the
-   binding **content brief**: it states what each section must contain,
-   why, which research question or requirement it discharges, and what an
-   examiner is checking. Follow it the way you follow the `.tex` inline
-   comments — if the guide and a casual request conflict, surface the
-   conflict rather than silently overriding the guide. When a section's
-   intent changes, update its `GUIDE.md` entry in the same pass so the
-   brief never drifts from the prose. Example: `Chapters/05_SystemDesign/GUIDE.md`.
-3. Check whether the claim needs a citation. If yes and no source is
+2. Check whether the claim needs a citation. If yes and no source is
    on hand: stop, ask the user.
-4. If asked to "expand" or "flesh out" a section, ask which sources
+3. If asked to "expand" or "flesh out" a section, ask which sources
    to draw on. Do **not** invent supporting literature to fill space.
 
 ### 3.2 When inserting `\cite{}`
