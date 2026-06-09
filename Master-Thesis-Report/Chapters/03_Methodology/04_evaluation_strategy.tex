@@ -12,7 +12,7 @@ Tab.~\ref{tab:rq-evaluation} maps each research question to the method by which 
 \toprule
 Research question & Evaluation method \\
 \midrule
-RQ1 --- Modularity & Dependency-graph inspection (no imports across module boundaries), module-installer review, and demonstration that a reference provider connects without modifying the core. \\
+RQ1 --- Modularity & Dependency-graph inspection (no imports across module boundaries), module-installer review, an assessment of how much of the core must change to add or replace a module, and demonstration that a reference provider connects without modifying the core. \\
 RQ2 --- Sensing pipeline & Measurement of end-to-end gaze-to-event and gaze-to-intervention latency under live operation, and confirmation that the analysis stage is inspectable, loggable, and replayable. \\
 RQ3 --- Context-preserving intervention & Demonstration that interventions are committed at controlled boundaries, together with inspection of the logged context-preservation events. \\
 RQ4 --- Researcher control & Demonstration of the researcher's session controls and verification of the auditable record through session replay and data export. \\
@@ -27,12 +27,21 @@ Concretely, the architectural-quality assessment summarised in the RQ1 row of Ta
   \item Inspection of the dependency graph to confirm that no module imports across the boundaries defined in the design.
   \item Demonstration that the external integration contract is sufficient for the reference decision-maker sub-project to connect to the core runtime without modifying it.
   \item Review of the module installer pattern to confirm that new implementations can be substituted at the composition root without touching application logic.
+  \item Assessment of modification locality: how much of the core must change to add a new intervention or substitute a decision provider, moving the measure beyond the binary presence or absence of cross-boundary imports to a graded indication of how well the boundaries localise change.
 \end{enumerate}
 
 The remaining methods in Tab.~\ref{tab:rq-evaluation} concern the runtime behaviour of the platform rather than its structure: the gaze-to-event and gaze-to-intervention latency measurement for RQ2, and the boundary-commit and session-replay demonstrations for RQ3 and RQ4, are carried out as part of the evaluation reported in \cref{ch:evaluation}.
 
-We acknowledge one structural threat to validity: as a two-person implementation team, we cannot assess our own architectural decisions with full objectivity.
-We partially mitigate this, by enabling external scrutiny: we publish the codebase and integration contracts openly under the MIT License, making them available for independent inspection, and we treat the reference decision-maker and reference eye-movement analyser as independently exercised validators of the external integration contract rather than as internal tests.
+The latency budget against which RQ2 is assessed is not arbitrary: it is set by the timescale of natural reading.
+Eye movements in reading unfold over fractions of a second, with individual fixations lasting on the order of a few hundred milliseconds \cite{rayner1998eyemovements}, so an adaptation that is to remain in step with the reader must be applied well within that window.
+The precise budget is fixed as a non-functional requirement in \cref{ch:requirements} and measured in \cref{ch:evaluation}, where latency is reported as a distribution (including its tail) rather than a single average, because live adaptation is sensitive to worst-case delay and jitter and not to mean throughput alone.
+
+We acknowledge a structural threat to validity: as a two-person team that both specified and built the system, we cannot assess our own requirements and architectural decisions with full objectivity, and verifying functional correctness against requirements we authored ourselves carries a risk of confirmation bias.
+We mitigate this in three ways.
+First, we lean on automated tests, which encode pass/fail criteria independently of subjective judgement, as the more objective component of the functional assessment.
+Second, we publish the codebase and integration contracts openly under the MIT License, making them available for independent inspection.
+Third, we use the reference decision-maker and reference eye-movement analyser to show that the external integration contract is sufficient to build a provider against without modifying the core.
+We note, however, that because these reference modules were built by the same team, they evidence the sufficiency and separability of the contract rather than constituting its independent validation; genuinely independent validation would require a third-party provider, which we leave to future work.
 
 We do not conduct a user study of reading behaviour within the scope of this thesis.
 The platform is designed to enable such studies, but evaluating the effectiveness of specific typographic interventions on reading comprehension or fatigue is a separate research question that requires a dedicated experiment with recruited participants and an approved study protocol.

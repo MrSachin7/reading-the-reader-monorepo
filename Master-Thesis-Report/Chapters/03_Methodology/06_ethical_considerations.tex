@@ -7,9 +7,13 @@ Collecting such data from study participants therefore requires careful handling
 Within this platform, all session data (including raw gaze samples, demographic attributes, and comprehension results) remains under the direct control of the researcher who operates the system.
 No data is transmitted to external servers; all storage is local to the machine on which the backend is running.
 Participant attributes collected at enrolment (name, age, sex, existing eye conditions, and reading proficiency) are stored only within the session record and are not shared outside the system.
+We note that one of these attributes, existing eye conditions, is information about a person's health, which the GDPR treats as a special category of personal data subject to stricter protection than ordinary personal data \cite{gdpr2016}; its collection should be limited to what a given study genuinely requires.
 
 Because these attributes are directly identifiable, researchers deploying the platform in a real study should apply pseudonymisation where required by their study protocol, replacing identifying fields with participant codes before any data leaves the controlled research environment.
 Data should be retained only for the duration required by the study protocol and applicable regulations, and deleted thereafter.
+
+More fundamentally, collecting a directly identifying name sits in tension with the principles of data minimisation and of data protection by design and by default, both of which the GDPR establishes \cite{gdpr2016}.
+We therefore argue that a platform of this kind should, in a future iteration, issue participant codes at enrolment rather than store identifying fields and rely on the researcher to pseudonymise them afterwards: designing the data model so that identifying information need never be collected is a stronger safeguard than removing it after the fact.
 
 The development of this platform did not itself require an institutional ethics review, as no human participants were recruited and no personal data was collected during the engineering work described in this thesis.
 The ethics obligations described above therefore apply to researchers who deploy the platform in a future study involving real participants.

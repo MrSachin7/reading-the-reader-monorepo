@@ -1,0 +1,35 @@
+\section{Goal of the Project}
+\label{sec:goal}
+
+The goal of this project is to design and implement a modular, researcher-operated adaptive reading platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable components behind stable contracts.
+The aim is not to measure a specific typographic effect or to train a reading model; it is to build the infrastructure that makes such measurements and models possible in a principled and reproducible way, and to demonstrate that the architecture meets the properties the programme requires.
+
+Building a software platform might appear to be an engineering exercise rather than a research one.
+We argue that it is both.
+The research contribution of this thesis is not the running code itself but the design knowledge embodied in it: the module boundaries and integration contracts that determine whether sensing, analysis, decision, and intervention can genuinely be separated, and the evidence, obtained by evaluating the implemented system against explicit criteria, of whether those boundaries hold under the demands of a real-time reading loop.
+This framing follows the Design Science Research paradigm, in which a designed artifact and the knowledge it embodies are themselves the contribution, provided they are rigorously motivated and evaluated \cite{hevner2004designscience}.
+The methodology that operationalises this stance is developed in \cref{ch:methodology}.
+
+To reach this goal, the project pursues four objectives.
+
+\begin{itemize}
+
+  \item \textbf{Modular architecture.}
+    To design an architecture that separates sensing, eye-movement analysis, decision strategy, and intervention execution into independently replaceable components behind stable contracts, so that any layer can be extended or substituted without modifying the core reading runtime.
+
+  \item \textbf{Real-time sensing pipeline.}
+    To implement an end-to-end pipeline that integrates physical Tobii hardware and converts the raw gaze stream into reading-behaviour signals online, within a latency budget compatible with live adaptation.
+
+  \item \textbf{Researcher experiment workflow.}
+    To build researcher-facing tools for operating controlled reading experiments, including live observation of the participant's view, manual intervention control, and complete session export and replay.
+
+  \item \textbf{External decision-provider contract.}
+    To define an integration boundary through which AI-driven or alternative decision strategies can be connected to the running platform without modifying its core.
+
+\end{itemize}
+
+The work is scoped to thesis-scale controlled experiments with general laboratory participants.
+It does not implement a machine learning model for reading state classification, does not target PDF as a reading format, and does not pursue clinical recruitment of vision-impaired or dyslexic participants.
+The platform is designed to support those ambitions in future work; validating them is outside the scope of this thesis.
+
+The research questions that govern the evaluation of the resulting platform are stated in full at the end of \cref{ch:key-concepts-related-work}, once the supporting literature has established their motivation (Sec.~\ref{sec:final-problem-statement}).
