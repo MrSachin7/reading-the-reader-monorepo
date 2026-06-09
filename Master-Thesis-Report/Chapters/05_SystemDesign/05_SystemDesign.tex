@@ -83,3 +83,217 @@ D6 & Operator-centred control & NFR3; FR1, FR6, FR11; RQ4 &
 \bottomrule
 \end{tabular}
 \end{table}
+
+\section{Architectural Approach and System Overview}
+\label{sec:design-style}
+% Authoring brief for this section lives in section.md (§5.2).
+
+The drivers of \cref{sec:design-drivers} specify the forces the architecture must reconcile, but not the form it should take.
+This section fixes that form in two steps, moving from the system in outline to the style that governs its internal structure, before any single concern is opened in \cref{sec:design-modules}.
+We first present the platform at two levels of abstraction, the system in its environment and the runtime containers it comprises, and then name and justify the architectural style that the dominant driver D1 demands.
+
+At the highest level of abstraction the platform is a single, researcher-operated system that mediates a participant's reading session, shown in its environment in \cref{fig:design-context}.
+Four external actors surround it (\cref{sec:stakeholders}): the researcher operates the session, the participant reads, the Tobii eye-tracking device supplies the gaze signal, and an external decision provider supplies the adaptive intelligence that this thesis treats as out of scope (C3, \cref{sec:constraints}).
+We adopt the C4 model \cite{c4model} for this view and the next, because its context and container levels match the two altitudes at which we wish to reveal the system.
+This outermost view fixes the system boundary, and with it the division of responsibility that the rest of the chapter elaborates: the platform owns the capture of gaze, its analysis, the execution of interventions, and the session record, whereas it deliberately owns neither the internals of the eye-tracking hardware nor the decision intelligence behind the provider seam.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.95\linewidth}{!}{%
+\begin{tikzpicture}[
+  person/.style={rectangle, rounded corners=2pt, draw=navyblue, very thick, fill=navyblue!12, align=center, text width=3.0cm, minimum height=1.2cm, inner sep=4pt},
+  system/.style={rectangle, rounded corners=3pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=4.6cm, minimum height=1.8cm, inner sep=5pt},
+  extsys/.style={rectangle, rounded corners=2pt, draw=black!55, thick, fill=grey!45, align=center, text width=3.2cm, minimum height=1.2cm, inner sep=4pt},
+  rel/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
+  link/.style={->, thick, black!65},
+  bilink/.style={<->, thick, black!65},
+  extlink/.style={<->, thick, dashed, black!55},
+]
+\node[system] (plat) at (0,0) {{\bfseries Reading the Reader Platform}\\[3pt]\footnotesize Researcher-operated adaptive reading system};
+\node[person] (res)  at (-5.6, 2.7) {{\bfseries Researcher}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Operates sessions, monitors live view};
+\node[person] (par)  at ( 5.6, 2.7) {{\bfseries Participant}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Reads the presented text};
+\node[extsys] (tob)  at (-5.6,-2.7) {{\bfseries Tobii Eye Tracker}\\[1pt]{\scriptsize\itshape External device}};
+\node[extsys] (prov) at ( 5.6,-2.7) {{\bfseries External Decision Provider}\\[1pt]{\scriptsize\itshape External system}};
+\draw[link]    (res)  -- (plat) node[rel, midway, sloped] {operates,\\ monitors};
+\draw[bilink]  (plat) -- (par)  node[rel, midway, sloped] {presents\\ adapted text};
+\draw[link]    (tob)  -- (plat) node[rel, midway, sloped] {streams\\ raw gaze};
+\draw[extlink] (plat) -- (prov) node[rel, midway, sloped] {requests\\ decisions};
+\end{tikzpicture}%
+}
+\caption{System context for the Reading the Reader platform, showing the researcher-operated system and the four external actors it mediates between.}
+\label{fig:design-context}
+\end{figure}
+
+Resolving the platform one level further reveals the runtime containers it comprises, shown in \cref{fig:design-containers}.
+A researcher-facing control surface and a participant-facing reading surface are presented as two distinct surfaces of a single web front-end rather than a single shared screen, so that the participant sees only the text while the researcher retains a mirror of that view together with the controls around it (D6).
+A backend application host carries the core logic and mediates between the two surfaces, the hardware, and the store.
+Two channels connect the front-ends to the host: a request and response channel carries discrete operator commands and setup data, whereas a separate high-frequency channel carries the live gaze stream, a separation we introduce here and justify against the responsiveness budget D2 in \cref{sec:design-loop}.
+Session state is written to a local, file-backed store rather than an external database, a choice we introduce here and defend on grounds of reproducibility and scope in \cref{sec:design-data,sec:design-decisions}.
+The external decision provider attaches through a single, well-defined seam rather than being embedded in the host, which is the structural expression of the out-of-scope constraint C3.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.95\linewidth}{!}{%
+\begin{tikzpicture}[
+  person/.style={rectangle, rounded corners=2pt, draw=navyblue, very thick, fill=navyblue!12, align=center, text width=2.7cm, minimum height=1.0cm, inner sep=3pt},
+  container/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!14, align=center, text width=5.0cm, minimum height=1.2cm, inner sep=4pt},
+  store/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!8, align=center, text width=2.8cm, minimum height=1.1cm, inner sep=4pt},
+  extsys/.style={rectangle, rounded corners=2pt, draw=black!55, thick, fill=grey!45, align=center, text width=3.0cm, minimum height=1.0cm, inner sep=3pt},
+  rel/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
+  link/.style={->, thick, black!65},
+  bilink/.style={<->, thick, black!65},
+  extlink/.style={<->, thick, dashed, black!55},
+]
+% system boundary (drawn first, behind the nodes)
+\draw[dashed, rounded corners=4pt, draw=dtured!75, very thick] (-2.9,-2.15) rectangle (7.25,4.95);
+\node[font=\footnotesize\itshape, text=dtured] at (1.55, 4.55) {Reading the Reader Platform};
+% containers (inside the boundary)
+\node[container] (fe) at (0.6, 3.25) {{\bfseries Web Frontend}\\{\scriptsize[Container: Next.js / React]}\\[2pt]\footnotesize Researcher control \& participant reading surfaces (second screen)};
+\node[container] (be) at (0.6, -0.35) {{\bfseries Backend Application Host}\\{\scriptsize[Container: ASP.NET Core]}\\[2pt]\footnotesize Sensing, analysis, decision \& intervention core behind ports};
+\node[store]     (st) at (5.7, -0.35) {{\bfseries Session Store}\\{\scriptsize[local filesystem]}\\[2pt]\footnotesize Checkpoints \& exports};
+% persons (outside boundary, above the top edge)
+\node[person] (res) at (-5.0, 5.7) {{\bfseries Researcher}\\{\scriptsize\itshape Person}};
+\node[person] (par) at ( 6.2, 5.7) {{\bfseries Participant}\\{\scriptsize\itshape Person}};
+% external systems (outside boundary, below the bottom edge)
+\node[extsys] (tob)  at (-5.0,-3.5) {{\bfseries Tobii Eye Tracker}\\{\scriptsize\itshape External device + SDK}};
+\node[extsys] (prov) at ( 6.2,-3.5) {{\bfseries External Decision Provider}\\{\scriptsize\itshape External system}};
+% persons use the frontend
+\draw[link] (res) -- (fe.north west) node[rel, near end, sloped] {operates};
+\draw[link] (par) -- (fe.north east) node[rel, near end, sloped] {reads};
+% frontend <-> backend, two channels
+\draw[link]   ([xshift=-15mm]fe.south) -- ([xshift=-15mm]be.north) node[rel, midway] {commands \& setup\\{\scriptsize(REST \texttt{/api})}};
+\draw[bilink] ([xshift=15mm]fe.south)  -- ([xshift=15mm]be.north)  node[rel, midway] {gaze \& live updates\\{\scriptsize(WebSocket \texttt{/ws})}};
+% backend -> store
+\draw[link] (be.east) -- (st.west) node[rel, midway, above] {checkpoints \& exports};
+% backend <- tobii
+\draw[link] (tob) -- (be.south west) node[rel, near end, sloped] {raw gaze\\{\scriptsize(Tobii SDK)}};
+% backend <-> external provider
+\draw[extlink] (be.south east) -- (prov) node[rel, near end, sloped] {decision requests\\{\scriptsize(provider seam)}};
+\end{tikzpicture}%
+}
+\caption{Runtime container view of the platform, showing the two front-end surfaces, the backend host, the two communication channels, the local session store, and the external-provider seam.}
+\label{fig:design-containers}
+\end{figure}
+
+The internal structure of the backend host follows one organising principle, namely that dependencies point inward, from volatile detail towards stable abstraction.
+Hardware access, transport, persistence, and presentation are treated as replaceable detail that depends on the core through abstractions, while the core itself depends on nothing outward \cite{martin2017cleanarch, martin1996dip}.
+Expressed in the vocabulary of ports and adapters, each external concern meets the core at a port, an interface owned by the core, and each concrete technology is an adapter that the infrastructure supplies behind that port \cite{cockburn2005hexagonal}.
+This is one idea seen from two angles, the dependency rule describing the direction and the ports-and-adapters metaphor describing the seam, and we use both terms in the sections that follow.
+
+This style is not adopted for its own sake, but because it is the most direct structural response to the dominant driver, modular separability D1.
+Making every boundary an interface, and forbidding the core from depending on any concrete technology, is precisely what allows sensing, analysis, decision, and intervention to be replaced independently, which is the claim that RQ1 puts to the test.
+The alternative is the shape taken by the earlier Reading the Reader prototypes, in which sensing, adaptation, and presentation were realised as a single tightly coupled application \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}; that coupling is the limitation identified in \cref{sec:gaps-opportunities} and the reason a new architecture is warranted.
+We defer the full comparison of this and the other structural options to the decision register of \cref{sec:design-decisions}, and turn first to the concerns upon which the inward-pointing dependencies converge.
+
+\section{The Four-Layer Modular Decomposition}
+\label{sec:design-modules}
+% Authoring brief for this section lives in section.md (§5.3).
+
+The architectural style of \cref{sec:design-style} fixes the direction of dependencies but not the concerns they organise.
+This section opens the core and identifies those concerns.
+We decompose the platform's adaptive behaviour into four parts (sensing, eye-movement analysis, decision, and intervention), chosen not by technical tier but along the axis of replaceability that the dominant driver D1 demands.
+Each part is a module that hides its internals behind a contract, and the four contracts together are the structural claim that RQ1 puts to the test.
+
+The four concerns form a pipeline that follows the data, from raw signal to committed change.
+Sensing is the source: it produces a continuous stream of gaze samples, and its contract is defined over those samples rather than over any device, so that the Tobii tracker, a webcam, or a simulated source are interchangeable behind it (D5).
+Analysis consumes that stream and projects it into oculomotor events (the fixations, saccades, and regressions that constitute reading behaviour), abstracting the particular identification algorithm behind its contract \cite{salvucci2000identifying}.
+Decision consumes the analysed state together with the session context and returns, at most, a proposal to intervene; this is the seam at which an external, AI-driven provider stands in for the built-in rule-based strategy, and it is the structural origin of the out-of-scope constraint C3.
+Intervention is the sink: it validates a proposal and commits a context-preserving change to the presented text at a controlled boundary.
+\Cref{fig:design-modules} shows the four as ports on a common core, a structure we develop in the remainder of this section.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\linewidth}{!}{%
+\begin{tikzpicture}[
+  hexcore/.style={draw=navyblue, very thick, fill=blue!7},
+  hexdom/.style={draw=navyblue, thick, fill=blue!16},
+  port/.style={rectangle, rounded corners=2pt, draw=dtured, very thick, fill=dtured!12, align=center, text width=1.7cm, minimum height=0.8cm, inner sep=2pt, font=\small},
+  impl/.style={rectangle, rounded corners=2pt, draw=black!55, thick, fill=grey!30, align=center, text width=2.4cm, minimum height=0.7cm, inner sep=2pt, font=\scriptsize},
+  inlink/.style={->, thick, black!60},
+  note/.style={font=\scriptsize\itshape, text=black!70, align=center},
+]
+% outer hexagon: the application core boundary (ports sit on it)
+\draw[hexcore] (-1.5,2.6) -- (1.5,2.6) -- (3.0,0) -- (1.5,-2.6) -- (-1.5,-2.6) -- (-3.0,0) -- cycle;
+% inner hexagon: the domain
+\draw[hexdom] (-0.65,1.13) -- (0.65,1.13) -- (1.3,0) -- (0.65,-1.13) -- (-0.65,-1.13) -- (-1.3,0) -- cycle;
+\node[font=\small\bfseries] at (0,0) {Domain};
+\node[note] at (0,1.78) {Reading Runtime\\(Application)};
+% ports, sitting on the hexagon boundary
+\node[port] (psen) at (-3.0, 0)  {{\bfseries Sensing}\\{\scriptsize port (1)}};
+\node[port] (pana) at (0, 2.6)   {{\bfseries Analysis}\\{\scriptsize port (2)}};
+\node[port] (pdec) at (3.0, 0)   {{\bfseries Decision}\\{\scriptsize port (3)}};
+\node[port] (pint) at (0, -2.6)  {{\bfseries Intervention}\\{\scriptsize port (4)}};
+% adapters and providers, outside the core
+\node[impl] (tobii)  at (-6.3, 1.0) {Tobii adapter};
+\node[impl] (webcam) at (-6.3, 0.0) {Webcam adapter};
+\node[impl] (sims)   at (-6.3,-1.0) {Simulated source};
+\node[impl] (anab)   at (-1.8, 4.4) {Built-in strategy};
+\node[impl] (anae)   at ( 1.8, 4.4) {External strategy};
+\node[impl] (decr)   at (6.3, 1.0)  {Rule-based strategy};
+\node[impl] (dece)   at (6.3,-1.0)  {External provider};
+\node[impl] (intb)   at (-1.8,-4.4) {Built-in modules};
+\node[impl] (inte)   at ( 1.8,-4.4) {Additional modules};
+% inward dependency arrows (adapters depend on the ports)
+\draw[inlink] (tobii.east)  -- (psen.west);
+\draw[inlink] (webcam.east) -- (psen.west);
+\draw[inlink] (sims.east)   -- (psen.west);
+\draw[inlink] (anab.south)  -- (pana.north);
+\draw[inlink] (anae.south)  -- (pana.north);
+\draw[inlink] (decr.west)   -- (pdec.east);
+\draw[inlink] (dece.west)   -- (pdec.east);
+\draw[inlink] (intb.north)  -- (pint.south);
+\draw[inlink] (inte.north)  -- (pint.south);
+% dependency-direction legend
+\node[note, align=left, anchor=west] at (-6.7,-3.5) {Arrows show the direction of\\dependency: inward, towards\\the core that owns the ports.};
+\end{tikzpicture}%
+}
+\caption{The four-layer modular decomposition. Each concern (sensing, analysis, decision, intervention) is a port owned by the application core, while concrete implementations sit outside the core and depend inward upon the ports (solid arrows), so that the core depends on none of them. The numbers indicate the data-flow order of one adaptive cycle, from sensing (1) to intervention (4). Each port resolves its implementation through a registry, so that adding an implementation is an additive change.}
+\label{fig:design-modules}
+\end{figure}
+
+The three concerns that carry intelligence (analysis, decision, and intervention) deliberately share one contract shape.
+Each is identified by a stable provider identity and exposes a single operation that receives an immutable snapshot of the relevant session state and returns an optional result.
+The snapshot is the load-bearing choice: a module is handed a copy of what it needs to see, not a reference to the live session, so that it can neither reach into nor mutate the core's state.
+This is what makes a module replaceable without coordination and testable in isolation, since its entire interaction with the system is one transformation from a snapshot to a result.
+The uniformity across the three seams is itself a design decision rather than a coincidence, because a contributor who has implemented one kind of module already understands the shape of the others.
+
+These contracts are owned by the core, and that ownership is what gives the dependency rule its force.
+The interfaces belong to the application core, whereas the concrete implementations (the Tobii adapter, the rule-based and external strategies, and the individual intervention modules) live outside it and depend inward upon them \cite{martin1996dip}.
+The core in turn depends on none of these implementations, being expressed entirely in terms of its own ports and domain types.
+Read concentrically, as in \cref{sec:design-style}, this places the domain and application at the centre and every replaceable detail at the rim, with all dependencies pointing inward.
+``Independently replaceable'' can now be stated precisely: any implementation may be exchanged for another that satisfies the same port without a single change to the core, which is exactly the property evaluated against RQ1.
+
+Replaceability becomes extensibility through one further element at each seam, a registry that resolves an implementation by its provider identity.
+Because resolution is by identity rather than by type, adding a new analysis algorithm, decision provider, or intervention is an additive change: a new implementation of an existing port, registered alongside the others, with no edit to the reading runtime that drives them.
+The platform ships a built-in implementation at each seam and, for analysis and decision, a second implementation that forwards the same contract to an out-of-process provider, so that the extension path is not hypothetical but already exercised by the system itself.
+This mechanism, a strategy selected at runtime from a registry, is how the modularity named in the title of this thesis is delivered \cite{gamma1994designpatterns}.
+
+One consequence of the same discipline deserves emphasis, because it is what makes the architecture practical to develop and to defend.
+Since the sensing port is written in terms of gaze samples and not Tobii types, the analysis, decision, and intervention layers above it run unchanged when the source is a webcam or a simulated stream.
+The platform therefore does not require the eye-tracking hardware in order to exercise the adaptive pipeline from end to end, which supports development, automated testing, and demonstration away from the device (D5), and which allows each layer to be validated in isolation.
+
+The decomposition described here is static: it names the four concerns, their contracts, and the direction of their dependencies.
+What it does not yet show is how the four behave together under the timing constraints of a live session.
+\Cref{sec:design-loop} sets these ports in motion as the real-time adaptive loop.
+
+\section{The Real-Time Adaptive Loop}
+\label{sec:design-loop}
+% Authoring brief for this section lives in section.md (§5.4).
+\todo[inline]{\S5.4 to be written. The four layers set in motion as a bounded loop; dual-channel design, latency budget, graceful degradation and checkpointing; the tension between clean separation and runtime speed. Discharges D2, D3; RQ2, RQ3.}
+
+\section{Session Record and Reproducibility}
+\label{sec:design-data}
+% Authoring brief for this section lives in section.md (§5.5).
+\todo[inline]{\S5.5 to be written. The single authoritative, schema-versioned session record; what it captures; replay as proof of sufficiency. Discharges D4; RQ4.}
+
+\section{Extensibility and the External-Provider Seam}
+\label{sec:design-extensibility}
+% Authoring brief for this section lives in section.md (§5.6).
+\todo[inline]{\S5.6 to be written. Walkthrough of adding an intervention and plugging an external decision provider across the seam; operator control plane as an architectural concern. Discharges D1, D6; RQ1, RQ4.}
+
+\section{Design Decision Register}
+\label{sec:design-decisions}
+% Authoring brief for this section lives in section.md (§5.7).
+\todo[inline]{\S5.7 to be written last of the body. Consolidated ADR-style table: decision, driver(s) served, alternatives considered, rationale. Consolidates the decisions argued inline in §5.2--§5.6.}
+
+% Chapter-closing summary to be written last, after the body (see section.md).
