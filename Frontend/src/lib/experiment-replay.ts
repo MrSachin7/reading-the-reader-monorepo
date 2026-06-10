@@ -1136,6 +1136,73 @@ function finalizeReplayAttentionEpisode(
   })
 }
 
+/**
+ * Builds the attention summary from the analyser's exported fixation events
+ * (schema v7+). This is the same data the backend derived live, so the replay
+ * heatmap matches the export exactly; older exports fall back to re-deriving
+ * from focus events.
+ */
+function buildReplayAnalysisAttentionSummary(
+  replay: ExperimentReplayExport,
+  currentTimeMs: number
+): ReadingAttentionSummarySnapshot | null {
+  const fixationEvents = getReplayFixationEvents(replay)
+  if (fixationEvents.length === 0) {
+    return null
+  }
+
+  const startedAtUnixMs = replay.experiment.startedAtUnixMs
+  const tokenStats: Record<string, ReadingAttentionTokenStats> = {}
+  let lastFixationTokenId: string | null = null
+  let appliedCount = 0
+
+  for (const record of fixationEvents) {
+    const recordTimeMs = resolveRecordTimeMs(
+      startedAtUnixMs,
+      record.elapsedSinceStartMs,
+      record.occurredAtUnixMs
+    )
+    if (recordTimeMs > currentTimeMs) {
+      break
+    }
+
+    const fixation = record.fixation
+    const durationMs = Math.max(fixation.durationMs, 0)
+    const previous = tokenStats[fixation.tokenId] ?? {
+      fixationMs: 0,
+      fixationCount: 0,
+      skimCount: 0,
+      maxFixationMs: 0,
+      lastFixationMs: 0,
+    }
+
+    tokenStats[fixation.tokenId] = {
+      ...previous,
+      fixationMs: previous.fixationMs + durationMs,
+      fixationCount: previous.fixationCount + 1,
+      maxFixationMs: Math.max(previous.maxFixationMs, durationMs),
+      lastFixationMs: durationMs,
+    }
+    lastFixationTokenId = fixation.tokenId
+    appliedCount += 1
+  }
+
+  if (appliedCount === 0) {
+    return null
+  }
+
+  const statsList = Object.values(tokenStats)
+
+  return {
+    updatedAtUnixMs: startedAtUnixMs + currentTimeMs,
+    tokenStats,
+    currentTokenId: lastFixationTokenId,
+    currentTokenDurationMs: lastFixationTokenId ? tokenStats[lastFixationTokenId]!.lastFixationMs : null,
+    fixatedTokenCount: statsList.filter((stats) => stats.fixationMs >= REPLAY_FIXATION_THRESHOLD_MS).length,
+    skimmedTokenCount: statsList.filter((stats) => stats.skimCount > 0 && stats.fixationMs < REPLAY_FIXATION_THRESHOLD_MS).length,
+  }
+}
+
 function buildReplayDerivedAttentionSummary(
   replay: ExperimentReplayExport,
   currentTimeMs: number
@@ -1440,6 +1507,7 @@ export function buildReplayFrame(replay: ExperimentReplayExport, requestedTimeMs
     : readingSession.participantViewport
   readingSession.focus = focusRecord ? { ...focusRecord.focus } : readingSession.focus
   readingSession.attentionSummary =
+    buildReplayAnalysisAttentionSummary(replay, currentTimeMs) ??
     buildReplayDerivedAttentionSummary(replay, currentTimeMs) ??
     (attentionRecord ? normalizeReadingAttentionSummary(attentionRecord.summary, replay.derived.finalTokenStats) : null)
   readingSession.latestFacialObservation = facialObservationRecord ? { ...facialObservationRecord.observation } : null

@@ -415,10 +415,26 @@ export function ReaderShell({
   // page assignments resolve, which happens after the analysis data arrives.
   const readingDynamicsApplyKey = `${arePageAssignmentsReady ? 1 : 0}:${effectivePageIndex}:${visibleSentenceIds.size}:${presentation.fontFamily}:${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}`;
 
+  const regressionTargetTokenIds = useMemo(() => {
+    if (!remoteSaccades || remoteSaccades.length === 0) {
+      return null;
+    }
+
+    const targets = new Set<string>();
+    for (const segment of remoteSaccades) {
+      if (segment.isRegression && segment.toTokenId) {
+        targets.add(segment.toTokenId);
+      }
+    }
+
+    return targets.size > 0 ? targets : null;
+  }, [remoteSaccades]);
+
   useRemoteTokenAttentionHeatmap({
     containerRef,
     contentRef,
     attention: remoteTokenAttention,
+    regressionTargetTokenIds,
     enabled: Boolean(remoteTokenAttention),
     applyKey: readingDynamicsApplyKey,
   });

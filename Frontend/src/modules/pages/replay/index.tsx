@@ -120,12 +120,10 @@ export default function ReplayPage() {
       (record) => record.occurredAtUnixMs - startedAtUnixMs <= currentTimeMs
     )
 
-    // Newest first so the overlay fades the older paths.
+    // Newest first; the path overlay caps how many it draws, while regression
+    // markers on tokens accumulate over the whole session so far.
     return toSaccadeOverlaySegments(
-      upToCurrentTime
-        .slice(-10)
-        .reverse()
-        .map((record) => record.saccade)
+      [...upToCurrentTime].reverse().map((record) => record.saccade)
     )
   }, [currentTimeMs, replay])
 
