@@ -14,6 +14,8 @@ type UseRemoteTokenAttentionHeatmapParams = {
   contentRef?: RefObject<HTMLElement | null>;
   attention: RemoteTokenAttentionSnapshot | null;
   enabled?: boolean;
+  /** Changes when the rendered token set or layout changes, forcing a re-apply. */
+  applyKey?: string;
 };
 
 const MIN_FIXATION_HEAT_MS = 110;
@@ -85,6 +87,7 @@ export function useRemoteTokenAttentionHeatmap({
   contentRef,
   attention,
   enabled = true,
+  applyKey,
 }: UseRemoteTokenAttentionHeatmapParams) {
   useEffect(() => {
     const container = containerRef.current;
@@ -122,5 +125,5 @@ export function useRemoteTokenAttentionHeatmap({
         clearStyles(element);
       }
     };
-  }, [attention, containerRef, contentRef, enabled]);
+  }, [attention, containerRef, contentRef, enabled, applyKey]);
 }

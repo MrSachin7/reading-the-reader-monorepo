@@ -1,10 +1,11 @@
 "use client"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { cn } from "@/lib/utils"
 import type { ReplayQuizFrame, ReplaySessionFinishedFrame } from "@/lib/experiment-replay"
 import type { ActiveQuizState, LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
+import { ReadingDynamicsLegend } from "@/modules/pages/reading/components/ReadingDynamicsLegend"
+import type { SaccadeOverlaySegment } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import { ReplaySessionFinishedPanel } from "@/modules/pages/replay/components/ReplaySessionFinishedPanel"
@@ -17,6 +18,7 @@ type ReplayReaderColumnProps = {
   readingSession: LiveReadingSessionSnapshot
   readerOptions: ReplayReaderOptions
   remoteTokenAttention: RemoteTokenAttentionSnapshot | null
+  saccades: SaccadeOverlaySegment[]
   quiz: ReplayQuizFrame | null
   sessionFinished: ReplaySessionFinishedFrame | null
 }
@@ -28,6 +30,7 @@ export function ReplayReaderColumn({
   readingSession,
   readerOptions,
   remoteTokenAttention,
+  saccades,
   quiz,
   sessionFinished,
 }: ReplayReaderColumnProps) {
@@ -82,13 +85,7 @@ export function ReplayReaderColumn({
       <div className="relative h-full overflow-hidden rounded-xl border bg-card shadow-sm">
         {readerOptions.showFixationHeatmap ? (
           <div className="pointer-events-none absolute right-4 top-4 z-10">
-            <span
-              className={cn(
-                "inline-flex rounded-full border border-accent/45 bg-accent/15 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-accent-foreground shadow-sm backdrop-blur"
-              )}
-            >
-              Token heat map
-            </span>
+            <ReadingDynamicsLegend />
           </div>
         ) : null}
         <ReaderShell
@@ -118,6 +115,7 @@ export function ReplayReaderColumn({
             updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
           }}
           remoteTokenAttention={readerOptions.showFixationHeatmap ? remoteTokenAttention : null}
+          remoteSaccades={readerOptions.showFixationHeatmap ? saccades : null}
           showRemoteFocusMarker={readerOptions.displayGazePosition}
           embedded
           latestIntervention={readingSession.latestIntervention ?? null}

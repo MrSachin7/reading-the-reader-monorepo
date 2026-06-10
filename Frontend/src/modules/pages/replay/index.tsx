@@ -17,6 +17,7 @@ import {
   type ExperimentReplayExport,
 } from "@/lib/experiment-replay"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
+import { toSaccadeOverlaySegments } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import { ReplayControlsColumn } from "@/modules/pages/replay/components/ReplayControlsColumn"
 import { ReplayMetadataColumn } from "@/modules/pages/replay/components/ReplayMetadataColumn"
@@ -109,6 +110,24 @@ export default function ReplayPage() {
     () => findReplayKeyEventIndex(replayEvents, currentTimeMs),
     [currentTimeMs, replayEvents]
   )
+  const saccadeSegments = useMemo(() => {
+    if (!replay) {
+      return []
+    }
+
+    const startedAtUnixMs = replay.experiment.startedAtUnixMs
+    const upToCurrentTime = getReplaySaccadeEvents(replay).filter(
+      (record) => record.occurredAtUnixMs - startedAtUnixMs <= currentTimeMs
+    )
+
+    // Newest first so the overlay fades the older paths.
+    return toSaccadeOverlaySegments(
+      upToCurrentTime
+        .slice(-10)
+        .reverse()
+        .map((record) => record.saccade)
+    )
+  }, [currentTimeMs, replay])
 
   const readingSession = frame?.session.readingSession ?? null
   const content = readingSession?.content ?? null
@@ -341,6 +360,7 @@ export default function ReplayPage() {
           readingSession={readingSession}
           readerOptions={readerOptions}
           remoteTokenAttention={readingSession.attentionSummary}
+          saccades={saccadeSegments}
           quiz={frame.quiz ?? null}
           sessionFinished={frame.sessionFinished ?? null}
         />

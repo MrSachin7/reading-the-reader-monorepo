@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { LiveReadingSessionSnapshot, ReadingContentSnapshot } from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
+import { ReadingDynamicsLegend } from "@/modules/pages/reading/components/ReadingDynamicsLegend"
+import type { SaccadeOverlaySegment } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
 import { QuizResultsMirrorPanel } from "@/modules/pages/researcher/current-live/components/QuizResultsMirrorPanel"
@@ -20,6 +22,7 @@ type LiveReaderColumnProps = {
   mirrorTrustState: LiveMirrorTrustState
   showReadingDynamics: boolean
   tokenAttention: RemoteTokenAttentionSnapshot
+  saccades: SaccadeOverlaySegment[]
   onTokenAttentionChange: (snapshot: RemoteTokenAttentionSnapshot) => void
   participantName?: string | null
 }
@@ -74,6 +77,7 @@ export function LiveReaderColumn({
   mirrorTrustState,
   showReadingDynamics,
   tokenAttention,
+  saccades,
   onTokenAttentionChange,
   participantName,
 }: LiveReaderColumnProps) {
@@ -173,11 +177,7 @@ export function LiveReaderColumn({
         ) : null}
         {showReadingDynamics ? (
           <div className="pointer-events-none absolute right-4 top-4 z-10">
-            <span
-              className="inline-flex rounded-full border border-accent/45 bg-accent/15 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-accent-foreground shadow-sm backdrop-blur"
-            >
-              Token heat map
-            </span>
+            <ReadingDynamicsLegend />
           </div>
         ) : null}
         {canAttemptExactMirror ? (
@@ -242,6 +242,7 @@ export function LiveReaderColumn({
                       updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
                     }}
                     remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
+                    remoteSaccades={showReadingDynamics ? saccades : null}
                     onRemoteTokenAttentionChange={onTokenAttentionChange}
                     showRemoteFocusMarker={readerOptions.displayGazePosition}
                     embedded
@@ -305,6 +306,7 @@ export function LiveReaderColumn({
                   updatedAtUnixMs: readingSession.focus.updatedAtUnixMs,
                 }}
                 remoteTokenAttention={showReadingDynamics ? tokenAttention : null}
+                remoteSaccades={showReadingDynamics ? saccades : null}
                 onRemoteTokenAttentionChange={onTokenAttentionChange}
                 showRemoteFocusMarker={readerOptions.displayGazePosition}
                 embedded

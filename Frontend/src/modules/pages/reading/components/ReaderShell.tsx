@@ -29,6 +29,10 @@ import {
   type RemoteTokenAttentionSnapshot,
 } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap";
 import { useRemoteTokenHighlight } from "@/modules/pages/reading/lib/useRemoteTokenHighlight";
+import {
+  SaccadePathOverlay,
+  type SaccadeOverlaySegment,
+} from "@/modules/pages/reading/components/SaccadePathOverlay";
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown";
 import { tokenizeDocument } from "@/modules/pages/reading/lib/tokenize";
 import type {
@@ -91,6 +95,7 @@ type ReaderShellProps = {
   } | null;
   remoteTokenAttention?: RemoteTokenAttentionSnapshot | null;
   onRemoteTokenAttentionChange?: (snapshot: RemoteTokenAttentionSnapshot) => void;
+  remoteSaccades?: SaccadeOverlaySegment[] | null;
   showRemoteFocusMarker?: boolean;
   gazeOverlayPoint?: GazePoint | null;
   gazeOverlayHasRecentPoint?: boolean;
@@ -236,6 +241,7 @@ export function ReaderShell({
   viewportHeightPx = null,
   remoteFocus = null,
   remoteTokenAttention = null,
+  remoteSaccades = null,
   onRemoteTokenAttentionChange,
   showRemoteFocusMarker = true,
   gazeOverlayPoint,
@@ -302,13 +308,6 @@ export function ReaderShell({
     contentRef,
     remoteFocus,
     enabled: Boolean(remoteFocus),
-  });
-
-  useRemoteTokenAttentionHeatmap({
-    containerRef,
-    contentRef,
-    attention: remoteTokenAttention,
-    enabled: Boolean(remoteTokenAttention),
   });
 
   useEffect(() => {
@@ -410,6 +409,19 @@ export function ReaderShell({
 
     return sentenceIds;
   }, [arePageAssignmentsReady, effectivePageIndex, sentencePageAssignments]);
+
+  // Token-level visuals (heatmap, saccade paths) must re-apply when the set of
+  // rendered tokens or their layout changes — token elements appear only after
+  // page assignments resolve, which happens after the analysis data arrives.
+  const readingDynamicsApplyKey = `${arePageAssignmentsReady ? 1 : 0}:${effectivePageIndex}:${visibleSentenceIds.size}:${presentation.fontFamily}:${presentation.fontSizePx}:${presentation.lineWidthPx}:${presentation.lineHeight}:${presentation.letterSpacingEm}`;
+
+  useRemoteTokenAttentionHeatmap({
+    containerRef,
+    contentRef,
+    attention: remoteTokenAttention,
+    enabled: Boolean(remoteTokenAttention),
+    applyKey: readingDynamicsApplyKey,
+  });
 
   const words = useMemo(() => countWords(markdown), [markdown]);
   const estimatedTimeLabel = useMemo(() => formatEstimatedMinutes(words), [words]);
@@ -1249,6 +1261,12 @@ export function ReaderShell({
                 visibleSentenceIds={visibleSentenceIds}
                 blockStyleOverrides={liveBlockStyleOverrides}
               />
+              {remoteSaccades && remoteSaccades.length > 0 ? (
+                <SaccadePathOverlay
+                  segments={remoteSaccades}
+                  remeasureKey={readingDynamicsApplyKey}
+                />
+              ) : null}
             </div>
             <div
               aria-hidden="true"

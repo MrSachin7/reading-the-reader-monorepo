@@ -32,6 +32,7 @@ import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
 import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
+import { toSaccadeOverlaySegments } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
 import {
   DEFAULT_READING_PRESENTATION,
@@ -231,6 +232,11 @@ function ResearcherCurrentLiveBody({
     letterSpacingEm: readingSession.presentation.letterSpacingEm,
     editableByExperimenter: readingSession.presentation.editableByResearcher,
   })
+
+  const saccadeSegments = useMemo(
+    () => toSaccadeOverlaySegments(session.eyeMovementAnalysis?.recentSaccades ?? []),
+    [session.eyeMovementAnalysis]
+  )
 
   const parsedDoc = useMemo(() => parseMinimalMarkdown(content.markdown), [content.markdown])
   const tokenizedBlocks = useMemo(
@@ -432,6 +438,7 @@ function ResearcherCurrentLiveBody({
           mirrorTrustState={mirrorTrustState}
           showReadingDynamics={readerOptions.showFixationHeatmap}
           tokenAttention={effectiveTokenAttention}
+          saccades={saccadeSegments}
           onTokenAttentionChange={setTokenAttention}
           participantName={session.participant?.name ?? null}
         />
