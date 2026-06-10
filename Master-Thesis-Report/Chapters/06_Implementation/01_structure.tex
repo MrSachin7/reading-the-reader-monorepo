@@ -1,0 +1,101 @@
+\section{Code Structure and Solution Layout}
+\label{sec:impl-structure}
+% Authoring brief for this section lives in section.md (§6.1).
+
+\Cref{sec:design-style,sec:design-modules} described the architecture as concerns, ports, and a rule that dependencies point inward.
+This chapter goes inside that description to show how it is realised in code, beginning here with where the code lives before \cref{sec:impl-session} follows a session through it.
+The system is a monorepo with two independent roots, a .NET backend solution under \texttt{Backend/} and a Next.js front-end under \texttt{Frontend/}, with no shared workspace manifest binding them, so that each is built and versioned on its own.
+Their folder layout is shown in \cref{fig:impl-tree} and their dependency structure in \cref{fig:impl-structure}.
+
+\begin{figure}[htbp]
+\footnotesize
+\dirtree{%
+.1 \texttt{reading-the-reader-monorepo/}.
+.2 \texttt{Backend/src/} \DTcomment{.NET solution}.
+.3 \texttt{core/}.
+.4 \texttt{ReadingTheReader.core.Domain/} \DTcomment{domain entities}.
+.4 \texttt{ReadingTheReader.core.Application/} \DTcomment{ports, services, snapshots}.
+.5 \texttt{ApplicationContracts/Realtime/} \DTcomment{the four concern modules}.
+.3 \texttt{infrastructure/}.
+.4 \texttt{ReadingTheReader.TobiiEyetracker/} \DTcomment{Tobii adapter}.
+.4 \texttt{ReadingTheReader.RealtimeMessenger/} \DTcomment{WebSocket broadcaster}.
+.4 \texttt{ReadingTheReader.Realtime.Persistence/} \DTcomment{file store + checkpoints}.
+.3 \texttt{ReadingTheReader.WebApi/} \DTcomment{transport, composition root}.
+.2 \texttt{Frontend/src/} \DTcomment{Next.js application}.
+.3 \texttt{app/} \DTcomment{routes only (sidebar groups)}.
+.3 \texttt{modules/pages/} \DTcomment{feature UI}.
+.3 \texttt{redux/}, \texttt{lib/} \DTcomment{state, API, gaze socket}.
+.3 \texttt{components/}, \texttt{hooks/} \DTcomment{shared UI}.
+}
+\caption{Curated layout of the monorepo (selected folders only). The backend groups projects into \texttt{core} (the \texttt{Domain} entities and the \texttt{Application} with its ports), \texttt{infrastructure} (the adapters), and the \texttt{WebApi} composition root; the four concern modules of \cref{sec:design-modules} appear as folders beneath the application contracts. The front-end separates routing (\texttt{app/}) from feature UI, shared state and transport, and shared components.}
+\label{fig:impl-tree}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  web/.style={rectangle, rounded corners=3pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=2.7cm, minimum height=0.95cm, inner sep=3pt, font=\scriptsize},
+  infra/.style={rectangle, rounded corners=3pt, draw=black!55, thick, fill=grey!25, align=center, text width=2.2cm, minimum height=0.95cm, inner sep=3pt, font=\scriptsize},
+  app/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!10, align=center, text width=2.6cm, minimum height=0.95cm, inner sep=3pt, font=\scriptsize},
+  dom/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!18, align=center, text width=2.0cm, minimum height=0.8cm, inner sep=3pt, font=\scriptsize},
+  fe/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=navyblue!8, align=center, text width=3.4cm, minimum height=1.0cm, inner sep=3pt, font=\scriptsize},
+  dep/.style={->, thick, black!60},
+  fedep/.style={->, semithick, black!45},
+  ttl/.style={font=\small\bfseries, text=black!75},
+  note/.style={font=\scriptsize\itshape, text=black!70, align=center},
+]
+% ---- panel titles ----
+\node[ttl] at (-2.3, 6.3) {Backend solution (.NET)};
+\node[ttl] at ( 5.0, 6.3) {Frontend (Next.js)};
+% ---- divider ----
+\draw[dashed, black!30] (2.9,-1.0) -- (2.9,6.0);
+% ---- backend projects ----
+\node[web]   (web) at (-4.7, 5.3) {{\bfseries WebApi}\\{\scriptsize transport + composition root}};
+\node[infra] (per) at (-4.7, 3.5) {{\bfseries Realtime}\\{\scriptsize Persistence}};
+\node[infra] (msg) at (-1.7, 3.5) {{\bfseries Realtime}\\{\scriptsize Messenger}};
+\node[infra] (tob) at ( 1.4, 3.5) {{\bfseries Tobii}\\{\scriptsize Eyetracker}};
+\node[app]   (app) at (-1.7, 1.7) {{\bfseries Application}\\{\scriptsize contracts, orchestration}};
+\node[dom]   (dom) at (-1.7, 0.0) {{\bfseries Domain}};
+% ---- backend references (A -> B: A depends on B) ----
+\draw[dep] (app) -- (dom);
+\draw[dep] (per) -- (app);
+\draw[dep] (msg) -- (app);
+\draw[dep] (tob) -- (app);
+\draw[dep] (tob) -- (dom);
+\draw[dep] (web) -- (per);
+\draw[dep] (web) -- (msg);
+\draw[dep] (web) -- (tob);
+\draw[dep] (web) -- (app);
+% ---- frontend layer stack ----
+\node[fe] (feapp)   at (5.0, 5.1) {{\bfseries app/}\\{\scriptsize routes \& layouts (with-/without-sidebar)}};
+\node[fe] (femod)   at (5.0, 3.6) {{\bfseries modules/pages}\\{\scriptsize feature UI}};
+\node[fe] (festate) at (5.0, 2.1) {{\bfseries redux} \& {\bfseries lib}\\{\scriptsize state, RTK Query API, gaze socket}};
+\node[fe] (feshare) at (5.0, 0.6) {{\bfseries components} \& {\bfseries hooks}\\{\scriptsize shared UI}};
+\draw[fedep] (feapp)   -- (femod);
+\draw[fedep] (femod)   -- (festate);
+\draw[fedep] (festate) -- (feshare);
+% ---- legend ----
+\node[note, anchor=north west] at (-6.1,-1.2) {Arrow $A \rightarrow B$: project (or layer) $A$ references / depends on $B$. In the backend every reference points inward, towards the \textbf{Domain} core.};
+\end{tikzpicture}%
+}
+\caption{Code structure of the two monorepo roots. In the backend solution every project reference points inward (\texttt{WebApi}, the composition root, depends on \texttt{Application} and all infrastructure; each infrastructure adapter and \texttt{Application} depend inward towards \texttt{Domain}), which is the dependency rule of \cref{sec:design-style} enforced by the build rather than merely intended. The front-end is a single Next.js application whose source separates thin routing (\texttt{app/}) from feature UI (\texttt{modules/pages}), shared state and transport (\texttt{redux}, \texttt{lib}), and shared components.}
+\label{fig:impl-structure}
+\end{figure}
+
+The backend solution realises the concentric structure of \cref{sec:design-style} directly as projects.
+A \texttt{Domain} project at the centre holds the basic entities, an \texttt{Application} project holds the use-case services, the snapshots, and the port interfaces, three infrastructure projects supply the adapters for the Tobii device, realtime messaging, and persistence, and a \texttt{WebApi} project provides the HTTP and WebSocket transport and composes the whole at startup.
+Each conceptual layer of the architecture is thus a separate compilation unit, which is what allows the dependency rule to be enforced rather than merely intended.
+
+That rule is visible in the project references, and because a project cannot compile against a reference it does not declare, the references are evidence rather than documentation.
+The \texttt{Domain} project references nothing; the \texttt{Application} project references only \texttt{Domain}; and each infrastructure adapter references inward to \texttt{Application}, with the Tobii project additionally referencing \texttt{Domain}, so that every reference points towards the centre, as \cref{fig:impl-structure} shows.
+The one project that references outward is \texttt{WebApi}, which depends on \texttt{Application} and on all three infrastructure projects at once.
+This is deliberate, and it is the single exception the style permits: as the composition root, \texttt{WebApi} alone must know the concrete adapters in order to register them against the core's ports at startup, while the core itself never names them.
+
+The front-end is a single Next.js application whose source mirrors the same discipline of separating routing from logic.
+The \texttt{app/} directory contains only routes and layouts, organised into two route groups, a researcher-facing group with the operator sidebar and a participant-facing group without it, which are the two surfaces of the container view of \cref{sec:design-style}.
+Feature UI lives in \texttt{modules/pages}, cross-feature state and the typed REST clients in \texttt{redux}, and shared helpers including the realtime gaze socket in \texttt{lib}, with common components and hooks factored into \texttt{components} and \texttt{hooks}.
+Routing therefore stays thin and hands off to feature logic that is kept separately, in the same spirit as the backend's separation of transport from core.
+
+Because there is no generated package shared between the two roots, the TypeScript types the front-end uses are hand-written mirrors of the backend records, and keeping the two aligned is a manual discipline rather than a compiler-checked one.
+With the territory mapped, the next section puts it in motion: \cref{sec:impl-session} follows a single experiment session through these projects, from the researcher's first setup action to the sealed record left behind.

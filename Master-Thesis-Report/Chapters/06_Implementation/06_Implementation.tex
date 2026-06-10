@@ -1,22 +1,33 @@
 \chapter{Implementation}
 \label{ch:implementation}
 
-\section{Monorepo Layout}
-% Tree of packages / apps with one-line description each.
+% CHAPTER ROLE (do not let this blur into Ch5 or Ch7):
+%   Ch5 owns WHY the structure is shaped this way (argued architecture).
+%   Ch7 owns HOW WELL it works (measurements against RQ1--RQ4).
+%   Ch6 owns HOW the architecture becomes running code: realization + evidence.
+% Organised as a session-walkthrough spine (see section.md). Each section lives
+% in its own file:
+%   01_structure    -> \cref{sec:impl-structure}
+%   02_session      -> \cref{sec:impl-session}      (the spine)
+%   03_highlights   -> \cref{sec:impl-highlights}
+%   04_ui           -> \cref{sec:impl-ui}
+%   05_engineering  -> \cref{sec:impl-engineering}
+%   06_summary      -> \cref{sec:impl-summary}
 
-\section{Build, CI and Developer Workflow}
-% Task graph, caching, CI pipeline, local dev loop. Tie to NFRs.
+% TODO: §6.0 chapter preamble (on-ramp + roadmap), written last with the summary.
 
-\section{Selected Implementation Highlights}
-% Pick the 3--5 most interesting parts; do not narrate every file.
-\subsection{Real-Time Gaze Pipeline}
-\subsection{Hot-Swappable Intervention Modules}
-\subsection{Session Recording and Replay}
+% \screenshotfig{path}: include a UI screenshot if the file is present, otherwise
+% render a "pending" placeholder so the build stays green until the image is added.
+% Screenshots live in Chapters/06_Implementation/screenshots/ (raster, from the user).
+\newcommand{\screenshotfig}[2][\linewidth]{%
+  \IfFileExists{#2}%
+    {\includegraphics[width=#1]{#2}}%
+    {\fbox{\parbox[c][3cm][c]{0.88\linewidth}{\centering\itshape Screenshot pending: place the referenced image file under \texttt{Chapters/06\_Implementation/screenshots/}.}}}%
+}
 
-\section{Cross-Cutting Concerns}
-% Logging, configuration, observability, testing approach.
-
-\section{Challenges and Resolutions}
-% Notable technical obstacles and how they were addressed.
-
-\section{Summary}
+\input{Chapters/06_Implementation/01_structure}
+\input{Chapters/06_Implementation/02_session}
+\input{Chapters/06_Implementation/03_highlights}
+\input{Chapters/06_Implementation/04_ui}
+\input{Chapters/06_Implementation/05_engineering}
+\input{Chapters/06_Implementation/06_summary}

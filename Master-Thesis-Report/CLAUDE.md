@@ -132,6 +132,14 @@ Plagiarism in Denmark is treated as exam cheating and can result in
   `Chapters/05_SystemDesign/adaptive-loop.mmd` →
   `adaptive-loop.pdf` (Fig.\ in `sec:design-loop`). Other diagram types
   (C4/container, component, hexagonal) stay in TikZ as before.
+- **UI screenshots.** Do **not** launch the application to capture
+  screens. When a screenshot of a running page is needed (e.g. for the
+  implementation chapter or the UI gallery appendix), **ask the user to
+  provide it** and wait for the image. UI screenshots document the built
+  artifact and are the one permitted exception to the vector-only rule
+  above (that rule targets plots/charts, not interface evidence); include
+  them with `\includegraphics`, prefer an appendix gallery, and reference
+  each from the body.
 - Every figure, table, equation **must be referenced and discussed**
   in the body text. If it is not referenced, delete it.
 - Captions are full sentences and end with a period.
