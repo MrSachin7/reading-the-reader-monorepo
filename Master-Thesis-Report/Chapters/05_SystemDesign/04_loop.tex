@@ -1,0 +1,47 @@
+\section{The Real-Time Adaptive Loop}
+\label{sec:design-loop}
+% Authoring brief for this section lives in section.md (§5.4).
+\Cref{sec:design-modules} described the four concerns as a static structure of ports and dependencies.
+This section sets that structure in motion, as the loop that runs throughout a live reading session, and confronts the concessions that liveness imposes on the clean separation just established.
+The loop is where the responsiveness driver D2 and the robustness driver D3 are met, and where they stand in their sharpest tension with the modularity of D1.
+
+One adaptive cycle proceeds in the order of the data, and \cref{fig:design-loop} traces it across the participants involved.
+A gaze sample originates at the sensing source and reaches the core, which mirrors it on the dedicated real-time channel to the reading surface and to the researcher's live view.
+The reading surface, which alone knows the rendered layout, maps the sample to a position in the text and returns an enriched observation to the core.
+The core's analysis layer projects the stream of observations into oculomotor events, and a change in that analysed state triggers the decision layer to evaluate, drawing on either the built-in strategy or an external provider.
+The decision yields at most one intervention proposal, which is either applied at once or, in advisory operation, surfaced to the researcher and applied only on approval.
+Applying it produces an adapted view and an intervention event, which the core returns to the reading surface to re-render, closing the cycle.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{Chapters/05_SystemDesign/adaptive-loop.pdf}
+\caption{One iteration of the real-time adaptive loop. High-frequency gaze is mirrored to the reading surface on the dedicated real-time channel; the surface returns a content-anchored observation; the core projects oculomotor events, evaluates a decision (using the built-in strategy or an external provider) and, in advisory mode, awaits researcher approval before validating and committing the intervention at a controlled boundary; the adapted text is then returned to the surface to re-render. The self-calls on the backend core denote the analysis, decision, intervention, and persistence steps performed within it, and the checkpoint is written on a best-effort basis.}
+\label{fig:design-loop}
+\end{figure}
+
+The cycle just described conceals a deliberate split in timescale that is the key to meeting the responsiveness budget D2.
+High-frequency gaze does not travel the request and response path used for commands and setup; it flows on a separate real-time channel, so that mirroring a sample to the live views never waits on the slower control path.
+On that hot path the core does the minimum: it sanitises the sample, retains it as the latest value, and broadcasts it, without acquiring the lock that guards session lifecycle and decision state.
+The heavier modular pipeline of analysis, decision, and intervention runs at the cadence of analysed-state changes rather than once per raw sample, so the indirection introduced for modularity in \cref{sec:design-modules} is kept off the per-sample path.
+The end-to-end latency that this arrangement must respect, from gaze to committed intervention, is the budget evaluated in \cref{ch:evaluation} under RQ2.
+
+This split is the architecture's answer to a tension we do not wish to hide.
+The cleanest per-concern indirection is rarely the fastest at runtime, and an intervention delivered after the moment at which it remains valid is of no use to the reader.
+We reconcile separation with speed not by diluting the contracts of \cref{sec:design-modules} but by confining their indirection to the lower-frequency control path, leaving the sensing path thin and direct.
+
+Where an intervention is committed matters as much as when, because a typographic change alters the very layout the participant is reading.
+The intervention contract is therefore two-phase: a proposal is first validated against the current reading context and only then committed, and the commit is performed at a controlled boundary rather than at an arbitrary instant (D7).
+Each commit carries an anchor, a sentence, token, or block together with a measured anchor error and the viewport displacement, so that the reading surface can restore the reader's position across the change.
+This commit discipline is the architectural expression of the recovery concern reported in the literature \cite{jensen2025context}: it is what allows a micro-intervention to adapt the text without costing the participant their place, which is the property RQ3 examines.
+
+The loop also keeps the researcher in control of how decisions are enacted.
+It supports an autonomous mode, in which a proposal permitted by the active policy is applied immediately, and an advisory mode, in which the same proposal is presented for the researcher to approve or reject before it is committed.
+The control surface through which this happens is the subject of \cref{sec:design-extensibility}; here it is enough to note that the loop accommodates both an unattended and a supervised experiment without structural change.
+
+Because a reading session involves an invited participant and cannot be repeated cheaply, the loop is built to survive disturbance rather than to assume its absence.
+It degrades gracefully: a client that disconnects falls out of the broadcast without interrupting the stream, and a decision provider that returns nothing, or is not present, yields no proposal and the cycle continues unaffected.
+It also checkpoints its state, so that an interrupted session is recoverable: every state-changing step writes a checkpoint while holding the session lock, and a background worker independently persists the session at a fixed interval and again at shutdown.
+This checkpointing is best-effort by design, swallowing its own failures, so that the durability mechanism can never itself halt a running session (D3).
+
+The loop continually emits events and state changes, and those that are checkpointed accumulate into a record of the session.
+That record is not merely a recovery aid but the platform's primary research output, and \cref{sec:design-data} turns from the live loop to the authoritative account it leaves behind.

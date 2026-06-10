@@ -1,0 +1,28 @@
+%% Source for Fig. 5.4 (sec:design-loop). Render to vector PDF (adaptive-loop.pdf), e.g.:
+%%   mmdc -i adaptive-loop.mmd -o adaptive-loop.pdf
+sequenceDiagram
+    autonumber
+    participant T as Sensing source (Tobii)
+    participant C as Backend core
+    participant R as Reading surface
+    actor O as Researcher
+
+    loop Adaptive cycle — while the session is live
+        T->>C: gaze sample
+        activate C
+        C->>R: live gaze (real-time channel)
+        R->>C: reading observation (gaze → content)
+        C->>C: analysis — project oculomotor events
+        C->>C: decision — evaluate (built-in / external)
+        alt advisory mode
+            C->>O: proposal
+            O-->>C: approve / reject
+        else autonomous mode
+            Note over C: applied without operator
+        end
+        C->>C: validate, then commit at controlled boundary
+        Note right of C: anchor restores the reader's position
+        C-->>R: adapted text + intervention event (re-render)
+        C->>C: checkpoint (best-effort)
+        deactivate C
+    end

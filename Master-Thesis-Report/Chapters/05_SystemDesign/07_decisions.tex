@@ -1,0 +1,51 @@
+\section{Design Decision Register}
+\label{sec:design-decisions}
+% Authoring brief for this section lives in section.md (§5.7).
+The decisions that produced the structures of this chapter were argued in place, each against the driver it serves.
+This section consolidates them into a single register, so that each can be inspected together with the alternative it was chosen over and the reason for the choice.
+\Cref{tab:design-decisions} is the chapter's defence in compact form, and its rows are the design commitments that \cref{ch:evaluation} tests against the research questions.
+
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{p{0.035\linewidth} p{0.165\linewidth} p{0.07\linewidth} p{0.235\linewidth} p{0.35\linewidth}}
+\caption{Consolidated design decision register. Each decision is shown with the architectural driver(s) it serves (Dn as in \cref{tab:design-drivers}), the principal alternative considered, and the rationale for the choice. The decisions are argued in place in \cref{sec:design-style,sec:design-modules,sec:design-loop,sec:design-data,sec:design-extensibility} and are the design commitments evaluated in \cref{ch:evaluation}.}
+\label{tab:design-decisions}\\
+\toprule
+\textbf{ID} & \textbf{Decision} & \textbf{Drivers} & \textbf{Alternative} & \textbf{Rationale} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{l}{\itshape \cref{tab:design-decisions} continued from previous page}\\
+\toprule
+\textbf{ID} & \textbf{Decision} & \textbf{Drivers} & \textbf{Alternative} & \textbf{Rationale} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\itshape continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+DR1 & Inward-dependency layering (ports and adapters) & D1 & A single coupled application, the shape of the prior Reading the Reader prototypes & Only an interface seam per concern with inward dependencies makes sensing, analysis, decision, and intervention independently replaceable; the coupling of the prototypes is the documented gap (RQ1). \\
+\addlinespace
+DR2 & Uniform seam shape with a per-concern registry & D1 & Bespoke per-concern interfaces; direct handles to live session state & A uniform shape (an identity plus a snapshot in and an optional result out) makes seams predictable and modules additive, and immutable snapshots prevent a module from mutating core state, keeping it replaceable and testable in isolation. \\
+\addlinespace
+DR3 & Dedicated real-time channel for gaze, separate from the request/response path & D2 & Carrying gaze over the request/response path or through application state & The per-sample path must stay lock-free and must not wait on the control path; routing high-frequency gaze separately keeps the end-to-end loop latency within budget (RQ2). \\
+\addlinespace
+DR4 & External concerns through a uniform, identity-keyed provider seam & D1, C3 & Embedding decision or analysis intelligence in the core & The constraint C3 places end-to-end intelligence out of scope; a seam keyed by module identity, with fallback to the built-in implementation, makes integration well-defined without supplying the algorithms (RQ1). \\
+\addlinespace
+DR5 & Two-phase validate-then-commit intervention at a controlled boundary & D7 & Applying an intervention immediately at an arbitrary instant & Committing at a controlled boundary and carrying an anchor lets the text adapt while the reader's position is preserved, so adaptation does not cost the participant their place (RQ3). \\
+\addlinespace
+DR6 & One authoritative, schema-versioned session record & D4 & Client-held state, or several parallel representations of the session & A single backend-owned record, reconstructable by replay, guarantees there is no second account against which it could disagree, and an explicit schema version lets the record evolve without invalidating earlier exports (RQ4). \\
+\addlinespace
+DR7 & File-backed, checkpointed local store & D3, D4 & An external database & The single-operator scope and file-only reading material do not warrant a database; periodic, best-effort checkpointing of the record provides recovery without adding operational surface. \\
+\addlinespace
+DR8 & Sensing-source port behind an adapter & D5, C1 & Calling the Tobii SDK directly from the core & Quarantining the Windows-only SDK (C1) behind a port admits a simulated source alongside the device, enabling development, testing, and demonstration without hardware and exercising each layer in isolation. \\
+\addlinespace
+DR9 & Autonomous and advisory execution modes & D6 & An autonomous-only loop with no operator gate & A researcher-operated instrument needs the option of human approval per experiment; supporting both modes without structural change is what gives the researcher control over experimentability (RQ4). \\
+\end{longtable}
+\endgroup
+
+Read together, the register makes the chapter's recurring tension explicit.
+Several decisions (DR3, DR7, and the fallback within DR4) trade a measure of architectural purity for responsiveness or robustness, while others (DR1, DR2, DR8) hold the separation of concerns firm; none of these is an accident of implementation, and each is a deliberate position taken in view of the drivers.
+That the trade-offs are visible and motivated, rather than hidden, is what we intend by presenting the architecture as argued rather than narrated.

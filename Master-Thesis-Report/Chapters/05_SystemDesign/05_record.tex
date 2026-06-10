@@ -1,0 +1,81 @@
+\section{Session Record and Reproducibility}
+\label{sec:design-data}
+% Authoring brief for this section lives in section.md (§5.5).
+\Cref{sec:design-loop} closed with the loop emitting a continuous stream of events and state changes.
+This section turns to the artifact into which those events accumulate, the authoritative session record, which is the platform's primary research output rather than an incidental by-product.
+It is the structure through which the reproducibility driver D4 is met and the criterion against which RQ4 is judged.
+
+Reproducibility (D4) is met by a single record, owned by the backend, that is designed so a completed session can be reconstructed from the record alone.
+This is the need expressed by the Data Consumer stakeholder (\cref{sec:stakeholders}), who must be able to analyse a session without access to the running system that produced it.
+To make that possible the record is self-describing: it is identified by a named schema and an integer version, and it opens with a manifest recording its provenance, the producing application, the backend, and the exporter that wrote it.
+A consumer therefore knows exactly which shape of record it holds and what produced it, and the platform can evolve the record across versions without silently invalidating earlier exports.
+
+What the record contains is everything required to reconstruct a run, organised into labelled sections rather than a flat list.
+It captures the experiment context and the active condition (the parameters of the run), the reading content together with a content hash and the identity of the tokenization that segmented it, the calibration summary, the screen geometry on which the text was presented, and the presentation baseline (the typographic configuration before any intervention).
+To these it adds the time series the session generated: the raw sensing stream, the derived oculomotor and attention events, the decision proposals and the interventions they produced, the participant's comprehension responses, and any annotations the researcher attached.
+Every one of these entries is stamped with a monotonic sequence number and a timestamp, so the record is a deterministically ordered log rather than an unordered dump, and it is this ordering that makes a faithful reconstruction possible.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  phase/.style={font=\small\itshape, text=navyblue},
+  box/.style={rectangle, rounded corners=3pt, draw=black!55, thick, fill=grey!25, align=center, text width=2.7cm, minimum height=1.0cm, inner sep=3pt, font=\scriptsize},
+  seg/.style={rectangle, draw=navyblue, thick, fill=blue!10, minimum width=0.5cm, minimum height=0.5cm, inner sep=0},
+  sealed/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!12, align=center, text width=3.0cm, minimum height=1.3cm, inner sep=4pt, font=\scriptsize},
+  arrow/.style={->, thick, black!65},
+  lbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
+  axis/.style={->, thick, black!45},
+]
+% phase labels
+\node[phase] at (-4.4, 2.5) {During the session};
+\node[phase] at ( 4.5, 2.5) {After the session};
+% session-end divider
+\draw[dashed, thick, dtured!70] (0,-2.35) -- (0,2.15);
+\node[font=\scriptsize\itshape, text=dtured, align=center] at (0,1.75) {session\\ends};
+% adaptive loop
+\node[box] (loop) at (-5.5, 1.25) {Adaptive loop};
+% growing record (incremental checkpoints)
+\node[seg] (s1) at (-6.45,-0.35) {};
+\node[seg] (s2) at (-5.90,-0.35) {};
+\node[seg] (s3) at (-5.35,-0.35) {};
+\node[seg] (s4) at (-4.80,-0.35) {};
+\node[font=\footnotesize, text=navyblue] at (-4.25,-0.35) {$\cdots$};
+\node[font=\scriptsize\itshape, text=black!70, align=center] at (-5.5,-1.2) {record, written\\incrementally};
+% sealed record
+\node[sealed] (rec) at (2.5,-0.05) {{\bfseries Authoritative session record}\\[2pt]{\scriptsize sealed, schema-versioned}};
+% consumers
+\node[box] (rp) at (7.1, 1.2) {Replay\\{\scriptsize schema-validated}};
+\node[box] (ex) at (7.1,-1.35) {Export\\{\scriptsize raw / processed,\\JSON / CSV}};
+% arrows
+\draw[arrow] (loop.south) -- (-5.5,-0.08) node[lbl, midway, right] {checkpoint};
+\draw[arrow] (-3.95,-0.35) -- (rec.west) node[lbl, pos=0.5, above] {sealed at end};
+\draw[arrow] (rec.east) -- (rp.west) node[lbl, pos=0.5, above] {reconstruct};
+\draw[arrow] (rec.east) -- (ex.west) node[lbl, pos=0.5, below] {analyse};
+% time axis
+\draw[axis] (-7,-2.2) -- (8.9,-2.2);
+\node[font=\scriptsize, text=black!55] at (-6.6,-2.45) {start};
+\node[font=\scriptsize\itshape, text=black!55] at (8.05,-2.45) {session time};
+\end{tikzpicture}%
+}
+\caption{The lifecycle of the session record. During a session the adaptive loop writes the record incrementally through periodic checkpoints; at session end the same artifact is sealed as the authoritative, schema-versioned record; afterwards it is reconstructed by schema-validated replay and exported in a raw or processed profile as JSON or CSV. The record written live during the session and the record later replayed or exported are one and the same artifact.}
+\label{fig:design-record}
+\end{figure}
+
+A feature of this record that is easy to miss is that it is not assembled after the session ends.
+It is the same structure that the checkpoint worker of \cref{sec:design-loop} writes to disk continuously while the session runs (\cref{fig:design-record}), so the durability checkpoint and the research export are one artifact serving two roles rather than two parallel representations that might disagree.
+One consequence is that an interrupted session and a completed session yield the same kind of record, which is why recovery (D3) reduces to resuming from the most recent materialization of the record.
+The record is thus authoritative in a strong sense: there is no second account of the session against which it could be inconsistent.
+
+Whether the record truly captures enough is a claim we prefer to demonstrate rather than assert.
+The platform reconstructs a session from a record by replaying it, and the importing side validates the record against the schema before reconstruction begins, so a record that is incomplete or malformed is rejected rather than silently mis-replayed.
+Replay is therefore the operational definition of completeness: if a session can be re-presented and re-analysed from the record alone, the record contained what reproducibility requires, and if it cannot, the record is by definition deficient.
+This is precisely the property that RQ4 examines, and it is why replay (FR21) is treated as a first-class capability of the platform rather than a convenience.
+
+Because different analyses want the data in different shapes, the same underlying record is offered in more than one profile and serialisation.
+A full, raw export preserves every captured sample for re-analysis, whereas a processed export carries the derived events better suited to immediate statistical work, and either may be written as structured JSON or as tabular CSV for tools that expect rows.
+The schema doubles as the boundary of disclosure: because gaze and comprehension responses are personal data under the GDPR (C4), fixing in the schema exactly what the record captures and exports makes the scope of personal data explicit and bounded.
+Participant consent for that capture remains a procedural matter handled around the session rather than a property of the architecture, consistent with the scope set in \cref{sec:design-drivers}.
+
+With the session record, the account of the running platform is complete: it can sense, analyse, decide, intervene, and leave behind a faithful and reproducible record of having done so.
+What remains is to show how the architecture is opened for others to extend, and \cref{sec:design-extensibility} turns from the platform's behaviour to the seams through which new interventions and external decision providers are added.

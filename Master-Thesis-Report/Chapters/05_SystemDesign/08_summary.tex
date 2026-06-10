@@ -1,0 +1,10 @@
+\section{Summary}
+\label{sec:design-summary}
+
+This chapter developed and justified the architecture of the Reading the Reader platform, the central contribution of the thesis.
+It first isolated the architecturally significant requirements as seven design drivers and adopted an inward-dependency, ports-and-adapters style as the structural response to the dominant driver of modular separability.
+On that foundation it decomposed the platform's adaptive behaviour into four independently replaceable concerns (sensing, eye-movement analysis, decision, and intervention), each hidden behind a uniform contract and resolved through a registry, which is the modularity that RQ1 requires.
+It set these concerns in motion as a real-time adaptive loop that reconciles modular separation with the responsiveness and robustness drivers, by confining the modular indirection to a lower-frequency control path while keeping the per-sample sensing path thin, and that commits interventions at controlled boundaries so that adaptation preserves the reader's position, as RQ2 and RQ3 require.
+It described the single authoritative, schema-versioned session record that makes a session reproducible from the record alone and demonstrable through replay, the experimentability and auditable record that RQ4 examines.
+Finally, it showed how the architecture is opened for extension, in-process through additive registration and out-of-process through a uniform provider seam, and gathered the design decisions and their alternatives into a single register.
+The architecture established here is the specification that \cref{ch:implementation} realises in code, where selected implementation highlights, the build, and the development workflow are described.

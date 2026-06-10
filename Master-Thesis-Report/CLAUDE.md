@@ -124,6 +124,14 @@ Plagiarism in Denmark is treated as exam cheating and can result in
 ### 2.4 Figures, tables, equations
 
 - Vector formats (PDF/SVG/EPS) only. No screenshots of plots.
+- **Sequence diagrams are authored in Mermaid** (`sequenceDiagram`), not
+  `pgf-umlsd` or `tikz-uml`. Render the Mermaid source to a vector PDF
+  (e.g. `mmdc -i name.mmd -o name.pdf`) and include it with
+  `\includegraphics`; commit the `.mmd` source beside the figure so it
+  stays reproducible. The reference example is
+  `Chapters/05_SystemDesign/adaptive-loop.mmd` →
+  `adaptive-loop.pdf` (Fig.\ in `sec:design-loop`). Other diagram types
+  (C4/container, component, hexagonal) stay in TikZ as before.
 - Every figure, table, equation **must be referenced and discussed**
   in the body text. If it is not referenced, delete it.
 - Captions are full sentences and end with a period.

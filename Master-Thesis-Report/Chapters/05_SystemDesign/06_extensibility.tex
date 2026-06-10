@@ -1,0 +1,67 @@
+\section{Extensibility and the External-Provider Seam}
+\label{sec:design-extensibility}
+% Authoring brief for this section lives in section.md (§5.6).
+\Cref{sec:design-modules} declared the seams between the four concerns, and \cref{sec:design-loop,sec:design-data} showed the platform exercising its own built-in implementations behind them.
+This section shows those seams used by others.
+Two paths extend the platform, and the architecture is arranged so that both are additive: neither requires a change to the reading runtime or to the existing modules.
+
+The two paths differ in where the new behaviour runs.
+A new implementation may be added in-process, behind an existing port, so that it executes inside the platform alongside the built-in modules.
+Alternatively, an entire concern may be delegated out-of-process to an external provider that runs as a separate program and communicates with the platform across a uniform seam.
+The first path is how the platform's own catalogue of interventions and strategies grows; the second is how the decision intelligence that this thesis holds out of scope (C3) can later be supplied by another team.
+
+Adding a new intervention is the smallest unit of extension and illustrates the in-process path in full.
+A contributor implements the intervention contract of \cref{sec:design-modules}, providing the descriptor that identifies the module, the validation that checks a request against the current context, and the execution that commits the change, and then registers the implementation with the container.
+From that point the registry the runtime consults discovers the module by its identity, and the module becomes available to the decision layer and selectable by the operator.
+No part of the reading runtime, the adaptive loop, or any other module is edited to accommodate it, so the intervention is present solely because it was registered, which is precisely the additive extension that RQ1 requires.
+
+The out-of-process path is the architectural answer to constraint C3, which places end-to-end decision intelligence outside the scope of this thesis.
+Rather than embed such intelligence, the platform exposes a uniform module-provider seam through which an external program can supply a concern, so that the thesis's responsibility is to make that seam well-defined rather than to implement what crosses it.
+A concern that may be externalised contributes two small pieces: a module definition that names the seam and the messages that cross it, and an inbound handler that interprets what a provider sends back.
+An external provider, running as a separate process, connects over a provider transport and registers itself as the active provider for that module's identity.
+
+With a provider attached, the seam routes a concern out and back, as \cref{fig:design-seam} traces.
+When the core reaches the seam it asks the gateway whether a provider is active for the module in question; if one is, it publishes the current context to that provider and later ingests, through the inbound handler, the proposal the provider returns.
+If no provider is active, the gateway reports as much and the same concern is served by its in-process built-in implementation, so the two paths meet at a single outcome.
+Because the seam is keyed by module identity and falls back to the built-in whenever no provider is attached, an external provider is a genuine plug-in: the loop of \cref{sec:design-loop} runs unchanged whether one is present or absent, which is the graceful behaviour required of live operation (D3).
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  box/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!10, align=center, text width=2.7cm, minimum height=1.0cm, inner sep=4pt, font=\scriptsize},
+  gate/.style={rectangle, rounded corners=3pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=2.7cm, minimum height=1.1cm, inner sep=4pt, font=\scriptsize},
+  ext/.style={rectangle, rounded corners=3pt, draw=black!60, dashed, very thick, fill=grey!22, align=center, text width=2.7cm, minimum height=1.0cm, inner sep=4pt, font=\scriptsize},
+  arrow/.style={->, thick, black!65},
+  darrow/.style={->, thick, dashed, black!55},
+  elbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
+]
+% platform boundary (drawn first); the external provider sits outside it
+\draw[dashed, rounded corners=6pt, draw=navyblue!50, thick, fill=blue!3] (-7.85,-3.05) rectangle (7.95,0.98);
+\node[font=\scriptsize\itshape, text=navyblue, anchor=north west] at (-7.75,0.88) {Platform (in-process)};
+% nodes
+\node[box]  (rt)  at (-6.3,-0.2)   {Reading runtime\\{\scriptsize reaches the seam}};
+\node[gate] (gw)  at (-2.5,-0.2)   {Seam gateway\\{\scriptsize provider active for this module?}};
+\node[ext]  (ex)  at ( 2.5, 1.7)   {External provider\\{\scriptsize out-of-process}};
+\node[box]  (bi)  at ( 2.5,-2.15)  {Built-in implementation\\{\scriptsize in-process}};
+\node[box]  (pr)  at ( 6.4,-0.2)   {Proposal\\{\scriptsize re-enters the loop}};
+% routing
+\draw[arrow]  (rt.east) -- (gw.west);
+\draw[arrow]  (gw.east) -- (ex.west) node[elbl, pos=0.42, above] {yes: publish\\(provider channel)};
+\draw[arrow]  (gw.east) -- (bi.west) node[elbl, pos=0.42, below] {no (fallback)};
+\draw[darrow] (ex.east) -- (pr.north) node[elbl, pos=0.5, above] {ingest\\proposal};
+\draw[arrow]  (bi.east) -- (pr.south) node[elbl, pos=0.5, below] {proposal};
+\end{tikzpicture}%
+}
+\caption{The external-provider seam and its fallback. When the core reaches a seam it asks the gateway whether an external provider is active for that module; if one is, it publishes the context across the provider channel and ingests the proposal the out-of-process provider returns, and if not the concern is served by its in-process built-in implementation. Either way a single proposal re-enters the loop, so an external provider is a plug-in that the platform runs with or without.}
+\label{fig:design-seam}
+\end{figure}
+
+Extensibility opens the platform to future module providers; a second structure, the operator control plane, opens it to the researcher who runs the experiment, and it too is an architectural concern rather than a matter of screen layout.
+The architecture separates the researcher's control surface from the participant's reading surface, the second-screen arrangement introduced in \cref{sec:design-style}, so that the participant sees only the text while the researcher retains the controls and a mirror of the participant's view.
+It gates a session behind explicit readiness, requiring device selection, calibration, and validation to succeed before a run can begin, so that a session cannot be started in a mis-configured state.
+And it derives the researcher's view from the single authoritative session snapshot of \cref{sec:design-data}, so that the operator commands and observes the same state through one consistent plane rather than a collection of disconnected controls.
+
+Through that same plane the researcher selects the autonomous or advisory mode of \cref{sec:design-loop}, deciding for each experiment how much of the adaptive loop to retain under human approval, which is the operator control and experimentability that RQ4 examines.
+With the extension seams and the control plane, the structures that make up the architecture are now all in view.
+What remains is to draw together the decisions that produced them, each with the alternatives it was chosen over, and \cref{sec:design-decisions} gathers these into a single register.
