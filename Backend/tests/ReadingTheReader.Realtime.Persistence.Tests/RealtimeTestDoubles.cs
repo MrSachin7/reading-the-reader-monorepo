@@ -357,6 +357,8 @@ public sealed class RealtimeTestDoubles
                 [],
                 [],
                 [],
+                [],
+                [],
                 []);
             return ValueTask.CompletedTask;
         }
@@ -379,6 +381,8 @@ public sealed class RealtimeTestDoubles
                 ViewportEvents = [.. session.ViewportEvents, .. batch.ViewportEvents.Select(item => item.Copy())],
                 FocusEvents = [.. session.FocusEvents, .. batch.FocusEvents.Select(item => item.Copy())],
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
+                FixationEvents = [.. session.FixationEvents, .. (batch.FixationEvents ?? []).Select(item => item.Copy())],
+                SaccadeEvents = [.. session.SaccadeEvents, .. (batch.SaccadeEvents ?? []).Select(item => item.Copy())],
                 ContextPreservationEvents = [.. session.ContextPreservationEvents, .. (batch.ContextPreservationEvents ?? []).Select(item => item.Copy())],
                 DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
                 ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
@@ -413,7 +417,9 @@ public sealed class RealtimeTestDoubles
                 session.ContextPreservationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.ScheduledInterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
-                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+                session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                fixationEvents: session.FixationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                saccadeEvents: session.SaccadeEvents.OrderBy(item => item.SequenceNumber).ToArray()));
         }
 
         public ValueTask<ExperimentProcessedExport?> BuildProcessedExportAsync(
@@ -507,6 +513,8 @@ public sealed class RealtimeTestDoubles
             IReadOnlyList<ParticipantViewportEventRecord> ViewportEvents,
             IReadOnlyList<ReadingFocusEventRecord> FocusEvents,
             IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
+            IReadOnlyList<FixationEventRecord> FixationEvents,
+            IReadOnlyList<SaccadeEventRecord> SaccadeEvents,
             IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
             IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
             IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,

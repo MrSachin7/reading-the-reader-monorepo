@@ -193,7 +193,9 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.QuizAnswerEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.QuizLifecycleEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.QuizFocusEvents, e => e.SequenceNumber),
-            Merge(chunks, c => c.QuizSelectionEvents, e => e.SequenceNumber));
+            Merge(chunks, c => c.QuizSelectionEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.FixationEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.SaccadeEvents, e => e.SequenceNumber));
     }
 
     private ExperimentProcessedExport BuildMergedProcessedExportFromChunks(
@@ -278,6 +280,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             ViewportEvents = batch.ViewportEvents?.ToArray(),
             FocusEvents = batch.FocusEvents?.ToArray(),
             AttentionEvents = batch.AttentionEvents?.ToArray(),
+            FixationEvents = batch.FixationEvents?.ToArray(),
+            SaccadeEvents = batch.SaccadeEvents?.ToArray(),
             ContextPreservationEvents = batch.ContextPreservationEvents?.ToArray(),
             FacialDifficultyEvents = batch.FacialDifficultyEvents?.ToArray(),
             DecisionProposalEvents = batch.DecisionProposalEvents?.ToArray(),
@@ -608,6 +612,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public ParticipantViewportEventRecord[]? ViewportEvents { get; set; }
         public ReadingFocusEventRecord[]? FocusEvents { get; set; }
         public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }
+        public FixationEventRecord[]? FixationEvents { get; set; }
+        public SaccadeEventRecord[]? SaccadeEvents { get; set; }
         public ReadingContextPreservationEventRecord[]? ContextPreservationEvents { get; set; }
         public FacialDifficultyEventRecord[]? FacialDifficultyEvents { get; set; }
         public DecisionProposalEventRecord[]? DecisionProposalEvents { get; set; }

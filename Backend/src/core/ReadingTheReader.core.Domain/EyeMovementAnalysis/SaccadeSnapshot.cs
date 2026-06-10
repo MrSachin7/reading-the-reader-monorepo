@@ -7,6 +7,12 @@ public static class SaccadeDirections
     public const string LineChangeForward = "line-change-forward";
     public const string LineChangeBackward = "line-change-backward";
     public const string Unknown = "unknown";
+
+    public static bool IsRegression(string? direction)
+    {
+        return string.Equals(direction, Backward, StringComparison.Ordinal) ||
+               string.Equals(direction, LineChangeBackward, StringComparison.Ordinal);
+    }
 }
 
 public sealed record SaccadeSnapshot(
@@ -23,6 +29,8 @@ public sealed record SaccadeSnapshot(
     long DurationMs,
     string Direction)
 {
+    public bool IsRegression => SaccadeDirections.IsRegression(Direction);
+
     public SaccadeSnapshot Copy()
     {
         return this with { };

@@ -1,10 +1,11 @@
 \section{Requirements Elicitation}
 \label{sec:requirements-elicitation}
 
-Requirements for this platform were derived through retrospective analysis of an existing prototype rather than up-front specification, following the process summarised in Fig.~\ref{fig:requirements-elicitation}.
-Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing it alongside the original project proposal \cite{dtucompute2025rtr} and the findings of the literature review to identify what a research-capable platform must be able to do.
+Requirements for this platform were elicited primarily through iterative discussions with the project supervisors, who as the primary stakeholders defined the research goals and experimental constraints that the platform must satisfy, rather than through up-front specification.
+The process is summarised in Fig.~\ref{fig:requirements-elicitation}.
+Because a prototype of the adaptive reading system already existed at the start of this thesis work, those discussions were informed by a supporting retrospective analysis of that prototype alongside the original project proposal \cite{dtucompute2025rtr} and the findings of the literature review, which together helped surface what a research-capable platform must be able to do.
 This prototype was the codebase produced by the predecessor Reading the Reader student projects (\cref{subsec:related-rtr-prior-work}) \cite{refsgaard2024rtr, pereira2024typography}, which the literature review identified as capable but tightly coupled.
-This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
+Across successive supervision sessions an initial set of requirements was refined, with gaps and implicit assumptions surfaced and made explicit.
 
 User stories were written from the perspective of the three primary actors (the researcher, the participant, and the external module provider) and were used as the primary vehicle for communicating behavioural expectations across the team.
 Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
@@ -45,7 +46,7 @@ Each requirement was assigned a MoSCoW priority (Must have, Should have, Could h
 
 \end{tikzpicture}%
 }
-\caption{The requirements elicitation process. An existing prototype (the predecessor Reading the Reader projects), the project proposal, and the literature review were subjected to retrospective analysis and iteratively refined through supervision, producing user stories for the three actors, from which MoSCoW-prioritised functional and non-functional requirements were derived.}
+\caption{The requirements elicitation process. An existing prototype (the predecessor Reading the Reader projects), the project proposal, and the literature review were subjected to a retrospective analysis that informed iterative discussions with the supervisors, the primary elicitation activity, producing user stories for the three actors, from which MoSCoW-prioritised functional and non-functional requirements were derived.}
 \label{fig:requirements-elicitation}
 \end{figure}
 

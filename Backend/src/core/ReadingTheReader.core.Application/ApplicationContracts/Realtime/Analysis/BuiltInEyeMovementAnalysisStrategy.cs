@@ -87,13 +87,15 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                     durationMs,
                     null,
                     runtimeState.CandidateFixation.TokenText);
+                var saccade = BuildSaccade(runtimeState.CurrentFixation, nextFixation);
 
                 return ValueTask.FromResult<EyeMovementAnalysisProcessingResult?>(
                     new EyeMovementAnalysisProcessingResult(runtimeState with
                     {
                         TokenStats = completedFixation.TokenStats,
                         RecentFixations = completedFixation.RecentFixations,
-                        RecentSaccades = BuildRecentSaccades(runtimeState.RecentSaccades, BuildSaccade(runtimeState.CurrentFixation, nextFixation)),
+                        RecentSaccades = BuildRecentSaccades(runtimeState.RecentSaccades, saccade),
+                        RegressionCount = runtimeState.RegressionCount + (saccade?.IsRegression == true ? 1 : 0),
                         CurrentFixation = nextFixation,
                         CandidateFixation = null
                     }));
@@ -103,19 +105,12 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
                 new EyeMovementAnalysisProcessingResult(runtimeState));
         }
 
-        var finalized = FinalizeFixation(
-            runtimeState.CurrentFixation,
-            runtimeState.TokenStats,
-            runtimeState.RecentFixations,
-            observation.ObservedAtUnixMs,
-            null);
-
+        // Keep the current fixation alive while the new token is only a candidate:
+        // it is finalized when the candidate is confirmed, so the connecting saccade
+        // (and its regression classification) can be derived from it.
         return ValueTask.FromResult<EyeMovementAnalysisProcessingResult?>(
             new EyeMovementAnalysisProcessingResult(runtimeState with
             {
-                TokenStats = finalized.TokenStats,
-                RecentFixations = finalized.RecentFixations,
-                CurrentFixation = null,
                 CandidateFixation = new FixationCandidateState(
                     observation.TokenId!.Trim(),
                     NormalizeNullableText(observation.BlockId),

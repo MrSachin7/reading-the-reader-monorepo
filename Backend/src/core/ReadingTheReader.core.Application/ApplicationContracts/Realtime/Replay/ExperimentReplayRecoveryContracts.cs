@@ -38,4 +38,6 @@ public sealed record ExperimentReplayRecoveryChunkBatch(
     IReadOnlyList<QuizAnswerRecord>? QuizAnswerEvents = null,
     IReadOnlyList<QuizLifecycleRecord>? QuizLifecycleEvents = null,
     IReadOnlyList<QuizFocusRecord>? QuizFocusEvents = null,
-    IReadOnlyList<QuizSelectionRecord>? QuizSelectionEvents = null);
+    IReadOnlyList<QuizSelectionRecord>? QuizSelectionEvents = null,
+    IReadOnlyList<FixationEventRecord>? FixationEvents = null,
+    IReadOnlyList<SaccadeEventRecord>? SaccadeEvents = null);

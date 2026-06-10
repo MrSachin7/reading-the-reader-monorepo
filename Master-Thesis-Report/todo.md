@@ -1,8 +1,8 @@
 # Thesis TODOs
 
-- [ ] **NFR2 — Latency metric**: Research acceptable gaze-to-intervention latency threshold from eye-tracking literature. Replace "sufficiently low latency" in NFR2 with a concrete measurable value (e.g. ≤ X ms). See `Chapters/04_Requirements/05_non_functional_requirements.tex`. This threshold is now also depended on by the RQ2 latency-measurement method in Tab. 3.1 (`Chapters/03_Methodology/04_evaluation_strategy.tex`) and must be the value reported in the Evaluation chapter.
+- [x] **NFR2 — Latency metric**: DONE. NFR2 now fixes the gaze-to-intervention budget at ≤ 100 ms (instantaneous-response threshold, `\cite{miller1968response, nielsen1993responsetime}`) and within a single fixation (200–300 ms, `\cite{rayner1998eyemovements}`). The Evaluation chapter must report the measured value against this 100 ms ceiling.
 
-- [ ] **User stories — Full backlog**: Implement the full user story backlog on the project documentation site (https://mrsachin7.github.io/reading-the-reader-monorepo/) so the `\cite{rtr2026docs}` reference in `Chapters/04_Requirements/02_user_stories.tex` points to a page with actual content.
+- [ ] **Implement regression detection in the app**: RQ2 and FR18 (`Chapters/04_Requirements/04_functional_requirements.tex`) now require deriving fixations, saccades, AND regressions. The built-in analyser (`Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Analysis/BuiltInEyeMovementAnalysisStrategy.cs`) already distinguishes backward/line-change direction; surface regressions as first-class oculomotor events through the analysis port, the decision context, and the session export so the requirement is actually met, not just stated.
 
 - [ ] **NFR measurability (NFR3, NFR4)**: Consider adding acceptance criteria to NFR3 (Usability) and NFR4 (Reliability) following the same principle as NFR2 — qualitative requirements are harder to defend in evaluation.
 

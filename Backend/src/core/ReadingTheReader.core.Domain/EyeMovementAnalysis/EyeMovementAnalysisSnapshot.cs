@@ -11,7 +11,8 @@ public sealed record EyeMovementAnalysisSnapshot(
     string? CurrentTokenId,
     long? CurrentTokenDurationMs,
     int FixatedTokenCount,
-    int SkimmedTokenCount)
+    int SkimmedTokenCount,
+    int RegressionCount = 0)
 {
     public static EyeMovementAnalysisSnapshot Empty { get; } = new(
         null,
@@ -21,6 +22,7 @@ public sealed record EyeMovementAnalysisSnapshot(
         new Dictionary<string, ReadingAttentionTokenSnapshot>(StringComparer.Ordinal),
         null,
         null,
+        0,
         0,
         0);
 
@@ -37,6 +39,7 @@ public sealed record EyeMovementAnalysisSnapshot(
             CurrentTokenId,
             CurrentTokenDurationMs,
             FixatedTokenCount,
-            SkimmedTokenCount);
+            SkimmedTokenCount,
+            RegressionCount);
     }
 }

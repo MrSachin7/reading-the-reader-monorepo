@@ -71,6 +71,8 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<ParticipantViewportEventRecord> _pendingParticipantViewportEvents = [];
     private List<ReadingFocusEventRecord> _pendingReadingFocusEvents = [];
     private List<ReadingAttentionEventRecord> _pendingAttentionEvents = [];
+    private List<FixationEventRecord> _pendingFixationEvents = [];
+    private List<SaccadeEventRecord> _pendingSaccadeEvents = [];
     private List<ReadingContextPreservationEventRecord> _pendingContextPreservationEvents = [];
     private List<DecisionProposalEventRecord> _pendingDecisionProposalEvents = [];
     private List<ScheduledInterventionEventRecord> _pendingScheduledInterventionEvents = [];

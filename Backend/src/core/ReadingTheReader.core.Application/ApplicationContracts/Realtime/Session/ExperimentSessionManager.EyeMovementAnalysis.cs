@@ -18,6 +18,7 @@ public sealed partial class ExperimentSessionManager
         try
         {
             var observation = NormalizeReadingGazeObservation(command);
+            var previousRuntimeState = _eyeMovementAnalysisRuntimeState;
             var runtimeState = _eyeMovementAnalysisRuntimeState.Copy() with
             {
                 LatestObservation = observation.Copy()
@@ -31,6 +32,7 @@ public sealed partial class ExperimentSessionManager
                 ct);
 
             _eyeMovementAnalysisRuntimeState = result?.RuntimeState.Copy() ?? runtimeState;
+            RecordNewEyeMovementEvents(previousRuntimeState, _eyeMovementAnalysisRuntimeState);
             analysisSnapshot = EyeMovementAnalysisProjector.ToSnapshot(
                 _eyeMovementAnalysisRuntimeState,
                 observation.ObservedAtUnixMs);
@@ -152,7 +154,9 @@ public sealed partial class ExperimentSessionManager
                 CurrentFixation = command.CurrentFixation?.Copy() ?? command.AnalysisState.CurrentFixation?.Copy()
             };
 
+            var previousRuntimeState = _eyeMovementAnalysisRuntimeState;
             _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisProjector.FromSnapshot(analysisSnapshot);
+            RecordNewEyeMovementEvents(previousRuntimeState, _eyeMovementAnalysisRuntimeState);
             summary = EyeMovementAnalysisProjector.ToAttentionSummary(
                 _eyeMovementAnalysisRuntimeState,
                 Math.Max(command.ObservedAtUnixMs, 0));
@@ -173,6 +177,46 @@ public sealed partial class ExperimentSessionManager
         await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
         await EvaluateDecisionStrategiesAsync(ct);
         return analysisSnapshot;
+    }
+
+    private void RecordNewEyeMovementEvents(
+        EyeMovementAnalysisRuntimeState previousState,
+        EyeMovementAnalysisRuntimeState nextState)
+    {
+        foreach (var fixation in ExtractNewRecentItems(previousState.RecentFixations, nextState.RecentFixations))
+        {
+            RecordFixationEvent(fixation.EndedAtUnixMs ?? fixation.LastObservedAtUnixMs, fixation);
+        }
+
+        foreach (var saccade in ExtractNewRecentItems(previousState.RecentSaccades, nextState.RecentSaccades))
+        {
+            RecordSaccadeEvent(saccade.EndedAtUnixMs, saccade);
+        }
+    }
+
+    private static IReadOnlyList<T> ExtractNewRecentItems<T>(IReadOnlyList<T>? previous, IReadOnlyList<T>? current)
+        where T : class
+    {
+        if (current is null || current.Count == 0)
+        {
+            return [];
+        }
+
+        var previousHead = previous is { Count: > 0 } ? previous[0] : null;
+        var newItems = new List<T>();
+        foreach (var item in current)
+        {
+            if (previousHead is not null && EqualityComparer<T>.Default.Equals(item, previousHead))
+            {
+                break;
+            }
+
+            newItems.Add(item);
+        }
+
+        // Recent lists are newest-first; reverse so recorded sequence numbers stay chronological.
+        newItems.Reverse();
+        return newItems;
     }
 
     private bool ShouldPublishToExternalAnalysisProvider()

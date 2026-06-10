@@ -3,6 +3,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventi
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
@@ -119,6 +120,8 @@ public sealed partial class ExperimentSessionManager
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
+            _pendingFixationEvents = [];
+            _pendingSaccadeEvents = [];
             _pendingContextPreservationEvents = [];
             _pendingDecisionProposalEvents = [];
             _pendingScheduledInterventionEvents = [];
@@ -357,6 +360,36 @@ public sealed partial class ExperimentSessionManager
         }
     }
 
+    private void RecordFixationEvent(long occurredAtUnixMs, FixationSnapshot fixation)
+    {
+        lock (_historyGate)
+        {
+            var material = GetCurrentMaterialPointer();
+            _pendingFixationEvents.Add(new FixationEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                fixation.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
+    private void RecordSaccadeEvent(long occurredAtUnixMs, SaccadeSnapshot saccade)
+    {
+        lock (_historyGate)
+        {
+            var material = GetCurrentMaterialPointer();
+            _pendingSaccadeEvents.Add(new SaccadeEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                saccade.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
     private void RecordReadingContextPreservationEvent(
         long occurredAtUnixMs,
         ReadingContextPreservationEventSnapshot contextPreservation)
@@ -428,6 +461,8 @@ public sealed partial class ExperimentSessionManager
         ParticipantViewportEventRecord[] participantViewportEvents;
         ReadingFocusEventRecord[] readingFocusEvents;
         ReadingAttentionEventRecord[] attentionEvents;
+        FixationEventRecord[] fixationEvents;
+        SaccadeEventRecord[] saccadeEvents;
         ReadingContextPreservationEventRecord[] contextPreservationEvents;
         FacialDifficultyEventRecord[] facialDifficultyEvents;
         DecisionProposalEventRecord[] decisionProposalEvents;
@@ -459,6 +494,8 @@ public sealed partial class ExperimentSessionManager
             participantViewportEvents = _pendingParticipantViewportEvents.Select(item => item.Copy()).ToArray();
             readingFocusEvents = _pendingReadingFocusEvents.Select(item => item.Copy()).ToArray();
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
+            fixationEvents = _pendingFixationEvents.Select(item => item.Copy()).ToArray();
+            saccadeEvents = _pendingSaccadeEvents.Select(item => item.Copy()).ToArray();
             contextPreservationEvents = _pendingContextPreservationEvents.Select(item => item.Copy()).ToArray();
             facialDifficultyEvents = _pendingFacialDifficultyEvents.Select(item => item.Copy()).ToArray();
             decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
@@ -482,6 +519,8 @@ public sealed partial class ExperimentSessionManager
             _pendingParticipantViewportEvents = [];
             _pendingReadingFocusEvents = [];
             _pendingAttentionEvents = [];
+            _pendingFixationEvents = [];
+            _pendingSaccadeEvents = [];
             _pendingContextPreservationEvents = [];
             _pendingFacialDifficultyEvents = [];
             _pendingDecisionProposalEvents = [];
@@ -522,7 +561,9 @@ public sealed partial class ExperimentSessionManager
                     quizAnswerEvents,
                     quizLifecycleEvents,
                     quizFocusEvents,
-                    quizSelectionEvents),
+                    quizSelectionEvents,
+                    fixationEvents,
+                    saccadeEvents),
                 ct);
         }
         catch
@@ -539,6 +580,8 @@ public sealed partial class ExperimentSessionManager
                 _pendingParticipantViewportEvents = [.. participantViewportEvents.Select(item => item.Copy()), .. _pendingParticipantViewportEvents];
                 _pendingReadingFocusEvents = [.. readingFocusEvents.Select(item => item.Copy()), .. _pendingReadingFocusEvents];
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
+                _pendingFixationEvents = [.. fixationEvents.Select(item => item.Copy()), .. _pendingFixationEvents];
+                _pendingSaccadeEvents = [.. saccadeEvents.Select(item => item.Copy()), .. _pendingSaccadeEvents];
                 _pendingContextPreservationEvents = [.. contextPreservationEvents.Select(item => item.Copy()), .. _pendingContextPreservationEvents];
                 _pendingFacialDifficultyEvents = [.. facialDifficultyEvents.Select(item => item.Copy()), .. _pendingFacialDifficultyEvents];
                 _pendingDecisionProposalEvents = [.. decisionProposalEvents.Select(item => item.Copy()), .. _pendingDecisionProposalEvents];

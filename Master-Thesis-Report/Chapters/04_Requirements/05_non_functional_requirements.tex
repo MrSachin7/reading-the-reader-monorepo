@@ -50,17 +50,19 @@ NFR1 & Modularity &
 \midrule
 
 NFR2 & Low Latency &
-  The system shall process gaze data with sufficiently low latency for
-  just-in-time intervention delivery.
+  The system shall keep end-to-end gaze-to-intervention latency below
+  100~ms, the threshold at which an interface response ceases to be
+  perceived as instantaneous \cite{miller1968response, nielsen1993responsetime},
+  and well within the duration of a single reading fixation
+  (typically 200--300~ms) \cite{rayner1998eyemovements}.
   High-frequency gaze data shall be handled through a dedicated real-time
-  channel, separate from general request-response communication.
-  % TODO (NFR2): Research acceptable gaze-to-intervention latency threshold
-  % from eye-tracking literature; replace \textit{sufficiently low} with a
-  % concrete measurable value (e.g. <=X ms).
-  &
+  channel, separate from general request-response communication. &
   Micro-interventions must be applied while the trigger condition is still
-  present; multi-hundred-millisecond delays would invalidate the
-  intervention rationale. & M \\
+  present; a change delivered after the fixation that triggered it has
+  ended would no longer match what the reader is looking at, invalidating
+  the intervention rationale. The 100~ms ceiling is the conservative bound
+  from interface-response perception, while the fixation timescale is the
+  stricter reading-specific target. & M \\
 \midrule
 
 NFR3 & Usability &
@@ -117,7 +119,9 @@ NFR8 & Hardware Independence &
   no code changes required. &
   Development, CI verification, and demonstrations must be possible on
   machines without Tobii hardware attached; this property also enables
-  testing of all architectural layers in isolation. & C \\
+  testing of all architectural layers in isolation. It is the
+  quality-attribute counterpart of FR17.3, which mandates the same
+  capability at the functional level. & M \\
 
 \end{longtable}
 \endgroup

@@ -249,8 +249,8 @@ FR16.2 & Each reading-item transition shall be recorded as a timestamped
 % ── FR17 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR17 — Sensing Mode Configuration}} \\
 \midrule
-FR17.1 & The system shall support at least three sensing modes: Tobii eye
-         tracker, mouse-cursor simulation, and webcam. & M \\
+FR17.1 & The system shall support at least two gaze-sensing modes: Tobii
+         eye tracker and mouse-cursor simulation. & M \\
 FR17.2 & The researcher shall be able to switch the active sensing mode
          without restarting the application. & M \\
 FR17.3 & Mouse-cursor simulation shall produce gaze data compatible with all
@@ -261,14 +261,14 @@ FR17.3 & Mouse-cursor simulation shall produce gaze data compatible with all
 % ── FR18 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR18 — Eye-Movement Analysis Layer}} \\
 \midrule
-FR18.1 & The system shall derive fixation events from the raw gaze stream
-         using a built-in algorithm. & M \\
+FR18.1 & The system shall derive fixation, saccade, and regression events
+         from the raw gaze stream using a built-in algorithm. & M \\
 FR18.2 & The system shall support replacement of the built-in fixation
          detector with an external analysis provider connected via the
          module-provider framework. & M \\
-FR18.3 & Fixation and saccade data produced by the analysis layer shall
-         be made available to decision strategies and included in the
-         session export. & M \\
+FR18.3 & Fixation, saccade, and regression data produced by the analysis
+         layer shall be made available to decision strategies and included
+         in the session export. & M \\
 \midrule
 
 % ── FR19 ────────────────────────────────────────────────────────
@@ -333,14 +333,18 @@ FR23.3 & Per-context settings shall be persisted across sessions. & S \\
 % ── FR24 ────────────────────────────────────────────────────────
 \multicolumn{3}{l}{\textit{FR24 — Facial State Sensing (Optional)}} \\
 \midrule
-FR24.1 & When the webcam sensing mode is active, the system shall capture
-         facial state observations and make them available to decision
-         strategies as supplementary context. & C \\
+FR24.1 & When a webcam is connected and enabled, the system shall capture
+         facial state observations (not gaze) and make them available to
+         decision strategies as supplementary context. & C \\
 FR24.2 & Facial state sensing shall be strictly optional; no other system
          function shall depend on it. & C \\
 
 \end{longtable}
 \endgroup
+
+Two requirements in Tab.~\ref{tab:fr} do not trace to a single use-case scenario but emerged during design as refinements of the platform's structure.
+FR23 (Per-Context Reader Shell Settings) follows from the second-screen arrangement: because the participant reading view, the researcher mirror, and the replay view are distinct surfaces (Sec.~\ref{sec:stakeholder-researcher}), each requires independent typographic settings so that adjusting one (for example, enlarging the researcher's mirror) does not alter what the participant sees.
+FR24 (Facial State Sensing) is an optional capability afforded by an attached webcam, supplying supplementary facial-state context to decision strategies; it is prioritised Could-have precisely because no other system function depends on it.
 
 % ---------------------------------------------------------------
 

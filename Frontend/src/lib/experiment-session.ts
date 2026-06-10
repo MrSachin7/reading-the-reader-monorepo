@@ -325,6 +325,7 @@ export type FixationSnapshot = {
   lastObservedAtUnixMs: number
   durationMs: number
   endedAtUnixMs: number | null
+  tokenText?: string | null
 }
 
 export type SaccadeSnapshot = {
@@ -340,6 +341,7 @@ export type SaccadeSnapshot = {
   endedAtUnixMs: number
   durationMs: number
   direction: string
+  isRegression: boolean
 }
 
 export type EyeMovementAnalysisSnapshot = {
@@ -352,6 +354,7 @@ export type EyeMovementAnalysisSnapshot = {
   currentTokenDurationMs: number | null
   fixatedTokenCount: number
   skimmedTokenCount: number
+  regressionCount: number
 }
 
 export type ReadingContextPreservationSnapshot = {
@@ -652,6 +655,7 @@ export const EMPTY_EYE_MOVEMENT_ANALYSIS: EyeMovementAnalysisSnapshot = {
   currentTokenDurationMs: null,
   fixatedTokenCount: 0,
   skimmedTokenCount: 0,
+  regressionCount: 0,
 }
 
 export const EMPTY_DECISION_STATE: DecisionState = {

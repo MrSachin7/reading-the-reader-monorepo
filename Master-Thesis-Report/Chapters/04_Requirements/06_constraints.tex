@@ -8,7 +8,7 @@ Unlike non-functional requirements, which are quality targets the system is desi
 
 Real experimental sessions require the Tobii eye tracker to be connected to a Windows host.
 The Tobii Research SDK \cite{tobii2025fusion}, which provides the gaze data acquisition API used by the sensing layer, is distributed as a Windows-only binary with no Linux or macOS equivalent.
-Mouse-cursor simulation and webcam-based gaze estimation are available on any platform and cover development, automated testing, and demonstration scenarios, but neither substitutes for calibrated Tobii hardware in a controlled experiment context.
+Mouse-cursor simulation is available on any platform and covers development, automated testing, and demonstration scenarios, but it does not substitute for calibrated Tobii hardware in a controlled experiment context. A connected webcam supplies facial-state observations only (Sec.~\ref{sec:functional-requirements}, FR24) and is not a gaze-sensing source.
 
 \subsection*{C2 — Reading Content Format}
 

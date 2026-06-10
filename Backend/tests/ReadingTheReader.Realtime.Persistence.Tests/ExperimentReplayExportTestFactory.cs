@@ -4,6 +4,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventi
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.Realtime.Persistence.Tests;
@@ -172,7 +173,28 @@ internal static class ExperimentReplayExportTestFactory
                 [new ReadingFocusEventRecord(4, 1_710_000_001_600, focus)],
                 [new ReadingAttentionEventRecord(5, 1_710_000_001_900, attentionSummary)],
                 [new ReadingContextPreservationEventRecord(6, 1_710_000_002_100, contextPreservation)],
-                []),
+                [],
+                null,
+                [
+                    new FixationEventRecord(
+                        10,
+                        1_710_000_001_840,
+                        new FixationSnapshot("token-1", "block-1", 1, 0, 0, 1_710_000_001_500, 1_710_000_001_840, 340, 1_710_000_001_840, "word"))
+                ],
+                [
+                    new SaccadeEventRecord(
+                        11,
+                        1_710_000_001_900,
+                        new SaccadeSnapshot(
+                            "token-1", "token-2", "block-1", "block-1", 1, 2, 0, 0,
+                            1_710_000_001_840, 1_710_000_001_900, 60, SaccadeDirections.Forward)),
+                    new SaccadeEventRecord(
+                        12,
+                        1_710_000_002_000,
+                        new SaccadeSnapshot(
+                            "token-2", "token-0", "block-1", "block-1", 2, 0, 0, 0,
+                            1_710_000_001_950, 1_710_000_002_000, 50, SaccadeDirections.Backward))
+                ]),
             new ExperimentReplayInterventions(
                 [new DecisionProposalEventRecord(7, 1_710_000_002_000, proposal)],
                 [new ScheduledInterventionEventRecord(8, 1_710_000_001_700, scheduledIntervention)],

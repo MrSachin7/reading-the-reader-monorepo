@@ -75,7 +75,8 @@ internal static class EyeMovementAnalysisProjector
             summary.CurrentTokenId,
             summary.CurrentTokenDurationMs,
             summary.FixatedTokenCount,
-            summary.SkimmedTokenCount);
+            summary.SkimmedTokenCount,
+            state.RegressionCount);
     }
 
     public static EyeMovementAnalysisRuntimeState FromSnapshot(EyeMovementAnalysisSnapshot snapshot)
@@ -88,6 +89,7 @@ internal static class EyeMovementAnalysisProjector
             snapshot.RecentSaccades is null ? [] : [.. snapshot.RecentSaccades.Select(item => item.Copy())],
             snapshot.TokenStats is null
                 ? new Dictionary<string, ReadingAttentionTokenSnapshot>(StringComparer.Ordinal)
-                : snapshot.TokenStats.ToDictionary(entry => entry.Key, entry => entry.Value.Copy(), StringComparer.Ordinal));
+                : snapshot.TokenStats.ToDictionary(entry => entry.Key, entry => entry.Value.Copy(), StringComparer.Ordinal),
+            snapshot.RegressionCount);
     }
 }

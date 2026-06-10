@@ -16,6 +16,9 @@ type ReplayMetadataColumnProps = {
   replayEvents: ReplayKeyEvent[]
   activeEventIndex: number
   onSeek: (timeMs: number) => void
+  fixationCount?: number
+  saccadeCount?: number
+  regressionCount?: number
 }
 
 type FilterKey = "all" | "quiz" | "intervention" | "lifecycle"
@@ -41,6 +44,9 @@ export function ReplayMetadataColumn({
   replayEvents,
   activeEventIndex,
   onSeek,
+  fixationCount = 0,
+  saccadeCount = 0,
+  regressionCount = 0,
 }: ReplayMetadataColumnProps) {
   const [filter, setFilter] = React.useState<FilterKey>("all")
 
@@ -66,6 +72,11 @@ export function ReplayMetadataColumn({
               .filter(Boolean)
               .join(" · ")}
           </p>
+          {fixationCount > 0 || saccadeCount > 0 ? (
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {`Fixations ${fixationCount} · Saccades ${saccadeCount} · Regressions ${regressionCount}`}
+            </p>
+          ) : null}
         </div>
 
         {/* Timeline — fills the rest. */}

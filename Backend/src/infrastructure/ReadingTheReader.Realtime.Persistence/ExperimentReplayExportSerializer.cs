@@ -163,6 +163,52 @@ public sealed class ExperimentReplayExportSerializer : IExperimentReplayExportSe
             Notes = $"skimmed:{item.Summary.SkimmedTokenCount}"
         }));
 
+        if (exportDocument.Derived.FixationEvents is { Count: > 0 } fixationEvents)
+        {
+            rows.AddRange(fixationEvents.Select(item => new ExperimentReplayCsvRow
+            {
+                RowType = "fixation",
+                SessionId = sessionId,
+                SequenceNumber = item.SequenceNumber,
+                OccurredAtUnixMs = item.OccurredAtUnixMs,
+                TokenId = item.Fixation.TokenId,
+                BlockId = item.Fixation.BlockId,
+                MetricValue = item.Fixation.DurationMs,
+                Details = $"line:{item.Fixation.LineIndex}",
+                Notes = item.Fixation.TokenText
+            }));
+        }
+
+        if (exportDocument.Derived.SaccadeEvents is { Count: > 0 } saccadeEvents)
+        {
+            static ExperimentReplayCsvRow ToSaccadeRow(SaccadeEventRecord item, string? sessionId, string rowType)
+            {
+                return new ExperimentReplayCsvRow
+                {
+                    RowType = rowType,
+                    SessionId = sessionId,
+                    SequenceNumber = item.SequenceNumber,
+                    OccurredAtUnixMs = item.OccurredAtUnixMs,
+                    EventType = item.Saccade.Direction,
+                    Source = item.Saccade.FromTokenId,
+                    TokenId = item.Saccade.ToTokenId,
+                    BlockId = item.Saccade.ToBlockId,
+                    MetricValue = item.Saccade.DurationMs,
+                    Details = $"lineDelta:{item.Saccade.LineDelta}",
+                    Notes = item.Saccade.IsRegression ? "regression" : null
+                };
+            }
+
+            rows.AddRange(saccadeEvents.Select(item => ToSaccadeRow(item, sessionId, "saccade")));
+
+            // Regressions are also emitted as a dedicated row type so they can be
+            // filtered directly; they reference the same sequence number as the
+            // matching saccade row.
+            rows.AddRange(saccadeEvents
+                .Where(item => item.Saccade.IsRegression)
+                .Select(item => ToSaccadeRow(item, sessionId, "regression")));
+        }
+
         rows.AddRange(exportDocument.Interventions.DecisionProposals.Select(item => new ExperimentReplayCsvRow
         {
             RowType = "decision-proposal",

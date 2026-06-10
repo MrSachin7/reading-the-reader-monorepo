@@ -8,6 +8,9 @@ import {
   buildReplayFrame,
   buildReplayKeyEvents,
   findReplayKeyEventIndex,
+  getReplayFixationEvents,
+  getReplayRegressionCount,
+  getReplaySaccadeEvents,
   parseExperimentReplayExport,
   readExperimentReplayExportFile,
   resolveReplayDurationMs,
@@ -91,6 +94,17 @@ export default function ReplayPage() {
   }, [currentTimeMs, replay])
 
   const replayEvents = useMemo(() => (replay ? buildReplayKeyEvents(replay) : []), [replay])
+  const oculomotorCounts = useMemo(
+    () =>
+      replay
+        ? {
+            fixations: getReplayFixationEvents(replay).length,
+            saccades: getReplaySaccadeEvents(replay).length,
+            regressions: getReplayRegressionCount(replay),
+          }
+        : { fixations: 0, saccades: 0, regressions: 0 },
+    [replay]
+  )
   const activeEventIndex = useMemo(
     () => findReplayKeyEventIndex(replayEvents, currentTimeMs),
     [currentTimeMs, replayEvents]
@@ -337,6 +351,9 @@ export default function ReplayPage() {
           replayEvents={replayEvents}
           activeEventIndex={activeEventIndex}
           onSeek={handleSeek}
+          fixationCount={oculomotorCounts.fixations}
+          saccadeCount={oculomotorCounts.saccades}
+          regressionCount={oculomotorCounts.regressions}
         />
       </div>
     </main>

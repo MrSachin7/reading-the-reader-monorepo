@@ -22,7 +22,7 @@ RQ4 --- Researcher control & Demonstration of the researcher's session controls 
 
 For functional correctness, we evaluate the system against the functional requirements defined in \cref{ch:requirements}, verifying that each requirement is met through a combination of automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, and inspection of exported session data.
 For architectural quality, we evaluate the degree to which the modular boundaries between sensing, decision-making, intervention execution, and user interface hold in the implemented system, and whether the external module provider integration contract is sufficient for a third-party provider to connect without modifying the core application.
-Concretely, the architectural-quality assessment summarised in the RQ1 row of Tab.~\ref{tab:rq-evaluation} is carried out through three means:
+Concretely, the architectural-quality assessment summarised in the RQ1 row of Tab.~\ref{tab:rq-evaluation} is carried out through four means:
 \begin{enumerate}
   \item Inspection of the dependency graph to confirm that no module imports across the boundaries defined in the design.
   \item Demonstration that the external integration contract is sufficient for the reference decision-maker sub-project to connect to the core runtime without modifying it.

@@ -1,6 +1,7 @@
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Decisioning;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
 using ReadingTheReader.core.Domain;
+using ReadingTheReader.core.Domain.EyeMovementAnalysis;
 using ReadingTheReader.core.Domain.Reading;
 
 namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
@@ -8,7 +9,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay
 public static class ExperimentReplayExportSchema
 {
     public const string Name = "rtr.experiment-export";
-    public const int Version = 6;
+    public const int Version = 7;
 }
 
 public sealed record ExperimentReplayExportManifest(
@@ -299,6 +300,42 @@ public sealed record ReadingAttentionEventRecord(
     }
 }
 
+public sealed record FixationEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    FixationSnapshot Fixation,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
+{
+    public FixationEventRecord Copy()
+    {
+        return new FixationEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            Fixation.Copy(),
+            MaterialRunId,
+            MaterialIndex);
+    }
+}
+
+public sealed record SaccadeEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    SaccadeSnapshot Saccade,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
+{
+    public SaccadeEventRecord Copy()
+    {
+        return new SaccadeEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            Saccade.Copy(),
+            MaterialRunId,
+            MaterialIndex);
+    }
+}
+
 public sealed record ReadingContextPreservationEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
@@ -423,8 +460,12 @@ public sealed record ExperimentReplayDerived(
     IReadOnlyList<ReadingAttentionEventRecord> AttentionEvents,
     IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
     IReadOnlyList<FacialDifficultyEventRecord> FacialDifficultyEvents,
-    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null)
+    IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null,
+    IReadOnlyList<FixationEventRecord>? FixationEvents = null,
+    IReadOnlyList<SaccadeEventRecord>? SaccadeEvents = null)
 {
+    public int RegressionCount => SaccadeEvents?.Count(item => item.Saccade.IsRegression) ?? 0;
+
     public ExperimentReplayDerived Copy()
     {
         return new ExperimentReplayDerived(
@@ -435,7 +476,9 @@ public sealed record ExperimentReplayDerived(
             FacialDifficultyEvents is null ? [] : [.. FacialDifficultyEvents.Select(item => item.Copy())],
             FinalTokenStats is null
                 ? null
-                : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()));
+                : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()),
+            FixationEvents is null ? null : [.. FixationEvents.Select(item => item.Copy())],
+            SaccadeEvents is null ? null : [.. SaccadeEvents.Select(item => item.Copy())]);
     }
 }
 
