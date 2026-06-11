@@ -6,45 +6,120 @@ Definitions are grounded in primary and project-aligned sources.
 \subsection{Adaptive Reading System}
 \label{subsec:adaptive-reading-system}
 The "Reading the Reader" concept assumes a closed-loop system that senses gaze-related signals (including pupil size) during reading, extracts higher-level events (fixations, saccades, regressions), classifies reading state or style, and triggers typographic interventions in real time \cite{dtucompute2025rtr}.
-Fig.~\ref{fig:adaptive-loop} depicts this loop as four sequential stages, sensing, analysis, decision, and intervention, whose output changes what the reader sees and so feeds the next cycle of sensing.
+Fig.~\ref{fig:reading-concept} reproduces the concept as published by the programme: a reader at a screen is monitored by a tracker of eyes, pupils, and posture; the resulting signal is reduced by feature extraction and passed to a classifier trained offline on a database of readers; and the classifier emits an intervention signal that the reading application renders as a typographic adaptation, closing the loop back to the reader \cite{dtucompute2025rtr}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{Chapters/02_KeyConceptsAndRelatedWork/reading_concept.png}
+\caption{The Reading the Reader concept as published by the project. A tracker of eyes, pupils, and posture feeds feature extraction and a classifier, trained offline on a database of readers, which emits an intervention signal that the reading application renders as a typographic adaptation for the reader, closing the loop. Figure reproduced from the project description \cite{dtucompute2025rtr}.}
+\label{fig:reading-concept}
+\end{figure}
+
+This thesis adopts that vision but reframes it for engineering.
+Fig.~\ref{fig:adaptive-loop} redraws the same loop as four sequential stages, sensing, analysis, decision, and intervention, whose output changes what the reader sees and so feeds the next cycle of sensing.
 Treating each stage as an independently replaceable module behind a stable contract is the central architectural commitment of this thesis, and it is the property examined in the chapters that follow.
 
 \usetikzlibrary{arrows.meta, positioning, fit, backgrounds}
+\definecolor{rtrteal}{rgb}{0.114,0.62,0.46}
 \begin{figure}[htbp]
 \centering
 \resizebox{0.98\linewidth}{!}{%
 \begin{tikzpicture}[
-  mod/.style={draw, thick, rounded corners=3pt, align=center,
-              text width=2.6cm, minimum height=1.7cm, font=\small, fill=gray!4},
-  reader/.style={draw, thick, rounded corners=3pt, align=center,
-                 text width=2.0cm, minimum height=1.7cm, font=\small, fill=gray!14},
-  flow/.style={-{Latex[length=2.4mm]}, thick},
-  io/.style={font=\scriptsize\itshape, text=black!70, inner sep=2pt},
-  node distance=14mm
+  mod/.style={draw=navyblue, thick, rounded corners=3pt, align=center,
+              minimum width=2cm, minimum height=1cm, font=\small\bfseries,
+              fill=navyblue!8, text=navyblue},
+  chip/.style={draw=black!45, rounded corners=2pt, align=center,
+               minimum width=2cm, minimum height=0.5cm, font=\scriptsize,
+               fill=grey!55, inner sep=1pt},
+  extchip/.style={chip, draw=dtured, fill=dtured!12},
+  reschip/.style={chip, draw=rtrteal, fill=rtrteal!15},
+  flow/.style={-{Latex[length=2.8mm]}, line width=1pt, black!70},
+  mfeed/.style={-{Latex[length=2.4mm]}, line width=1pt, rtrteal, dashed},
+  leader/.style={dashed, black!35, line width=0.5pt},
+  io/.style={font=\scriptsize\itshape, text=black!75, inner sep=1pt},
+  hw/.style={draw=black!60, line width=0.9pt},
+  rl/.style={draw=black!55, line width=1pt},
+  tl/.style={draw=rtrteal, line width=1.1pt},
+  track/.style={dashed, black!45, line width=0.6pt},
+  tline/.style={draw=black!40, line width=1.3pt}
 ]
 
-\node[reader] (reader) {\bfseries Reader\\[2pt]\scriptsize reading on screen};
-\node[mod, right=of reader] (sense)   {\bfseries Sensing\\[1pt]\scriptsize eye-tracker adapter\\\scriptsize (gaze, pupil)};
-\node[mod, right=of sense]   (analyse) {\bfseries Analysis\\[1pt]\scriptsize event extraction:\\\scriptsize fixations, saccades,\\\scriptsize regressions};
-\node[mod, right=of analyse] (decide)  {\bfseries Decision\\[1pt]\scriptsize strategy:\\\scriptsize whether and what\\\scriptsize to adapt};
-\node[mod, right=of decide]  (act)     {\bfseries Intervention\\[1pt]\scriptsize typographic\\\scriptsize change};
+% --- the four-module pipeline ---
+\node[mod] (sense)   at (3.6,0)  {Sensing};
+\node[mod] (analyse) at (6.2,0)  {Analysis};
+\node[mod] (decide)  at (8.8,0)  {Decision};
+\node[mod] (act)     at (11.4,0) {Intervention};
 
-\draw[flow] (reader)  -- node[io, above]{gaze}          (sense);
-\draw[flow] (sense)   -- node[io, above]{samples}       (analyse);
-\draw[flow] (analyse) -- node[io, above]{reading state} (decide);
-\draw[flow] (decide)  -- node[io, above]{command}       (act);
+% --- reader (participant) ---
+\draw[rl] (0.0,0.32) circle (0.13);
+\draw[rl] (-0.22,-0.2) to[out=72,in=180] (0.0,0.06) to[out=0,in=108] (0.22,-0.2);
+\node[font=\scriptsize\bfseries] at (0.0,-0.48) {Reader};
 
-\draw[flow] (act.south) -- ++(0,-2.0) -| node[io, below, pos=0.25]{adapted text} (reader.south);
+% --- screen + eye tracker hardware ---
+\draw[hw] (1.2,-0.02) rectangle (2.1,0.75);
+\draw[tline] (1.3,0.55) -- (1.93,0.55);
+\draw[tline] (1.3,0.42) -- (1.81,0.42);
+\draw[tline] (1.3,0.29) -- (1.89,0.29);
+\draw[hw] (1.2,-0.28) rectangle (2.1,-0.10);
+\fill[black!60] (1.53,-0.19) circle (0.028);
+\fill[black!60] (1.77,-0.19) circle (0.028);
+\node[font=\scriptsize] at (1.65,-0.52) {screen + tracker};
 
-\begin{scope}[on background layer]
-\node[draw, dashed, rounded corners=5pt, fit=(sense)(analyse)(decide)(act),
-      inner sep=5mm,
-      label={[font=\scriptsize\itshape, text=black!70]above:Interchangeable modules behind stable contracts}] {};
-\end{scope}
+% reader is tracked while looking at the screen
+\draw[track] (0.14,0.28) -- (1.2,-0.06);
+
+% gaze leaves the eye tracker and enters the pipeline
+\draw[flow] (2.1,0.12) -- (sense.west);
+
+% --- forward data flow ---
+\draw[flow] (sense.east)   -- (analyse.west);
+\draw[flow] (analyse.east) -- (decide.west);
+\draw[flow] (decide.east)  -- (act.west);
+
+% --- flow labels, lifted into a band above the boxes for clarity ---
+\node[io] at (2.55,0.92) {gaze, pupil};
+\node[io] at (4.9,0.92)  {samples};
+\node[io] at (7.5,0.92)  {reading state};
+\node[io] at (10.1,0.92) {proposal};
+
+% --- intervention returns adapted text to the screen, closing the loop ---
+\draw[flow] (act.north) -- (11.4,1.6) -- (1.65,1.6) -- (1.65,0.78);
+\node[io] at (6.5,1.78) {adapted text};
+
+% --- researcher ---
+\draw[tl] (13.2,0.32) circle (0.13);
+\draw[tl] (12.98,-0.2) to[out=72,in=180] (13.2,0.06) to[out=0,in=108] (13.42,-0.2);
+\node[font=\scriptsize\bfseries, text=rtrteal!60!black] at (13.2,-0.48) {Researcher};
+\draw[mfeed] (12.4,0.12) -- (13.0,0.12);
+\node[io] at (12.7,0.92) {monitor};
+
+% --- interchangeable implementations under each module ---
+\draw[leader] (sense.south)   -- (3.6,-0.95);
+\draw[leader] (analyse.south) -- (6.2,-0.95);
+\draw[leader] (decide.south)  -- (8.8,-0.95);
+\draw[leader] (act.south)     -- (11.4,-0.95);
+
+\node[chip] at (3.6,-1.2)  {Tobii};
+\node[chip] at (3.6,-1.82) {Simulated};
+\node[chip] at (6.2,-1.2)  {Built-in};
+\node[chip] at (6.2,-1.82) {External};
+\node[chip] at (8.8,-1.2)  {Rule-based};
+\node[extchip] at (8.8,-1.82) {External / AI};
+\node[reschip] at (8.8,-2.44) {Researcher};
+\node[chip] at (11.4,-1.2)  {Built-in};
+\node[chip] at (11.4,-1.82) {Custom};
+
+% --- legend ---
+\draw[fill=grey!55,draw=black!45,rounded corners=1pt] (3.4,-3.05) rectangle (3.62,-2.88);
+\node[anchor=west,font=\scriptsize] at (3.7,-2.965) {interchangeable implementations behind a stable contract};
+\draw[fill=dtured!12,draw=dtured,rounded corners=1pt] (3.4,-3.42) rectangle (3.62,-3.25);
+\node[anchor=west,font=\scriptsize] at (3.7,-3.335) {external decision provider (contract; out of scope)};
+\draw[fill=rtrteal!15,draw=rtrteal,rounded corners=1pt] (3.4,-3.79) rectangle (3.62,-3.62);
+\node[anchor=west,font=\scriptsize] at (3.7,-3.705) {researcher: monitors the live loop and can intervene manually};
 
 \end{tikzpicture}%
 }
-\caption{The closed-loop adaptive reading concept. Gaze and pupil signals from the reader are sensed, reduced to oculomotor events, classified into a reading state, and used to decide and apply a typographic intervention, which changes what the reader sees and thereby closes the loop. The four stages are designed as interchangeable modules behind stable contracts.}
+\caption{Our modular interpretation of the adaptive reading loop. The reader views text on a screen while an eye tracker beneath it captures gaze and pupil signals, which enter a pipeline of four independently replaceable modules (sensing, analysis, decision, and intervention); the intervention module returns adapted text to the screen, closing the loop. Each module is one of several interchangeable implementations behind a stable contract (grey). The decision seam additionally admits an external or AI provider (red, defined as a contract and out of scope in this thesis) and the researcher (teal), who monitors the live loop and can intervene manually.}
 \label{fig:adaptive-loop}
 \end{figure}
 

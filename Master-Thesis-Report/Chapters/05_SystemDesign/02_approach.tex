@@ -44,6 +44,7 @@ A backend application host carries the core logic and mediates between the two s
 Two channels connect the front-ends to the host: a request and response channel carries discrete operator commands and setup data, whereas a separate high-frequency channel carries the live gaze stream, a separation we introduce here and justify against the responsiveness budget D2 in \cref{sec:design-loop}.
 Session state is written to a local, file-backed store rather than an external database, a choice we introduce here and defend on grounds of reproducibility and scope in \cref{sec:design-data,sec:design-decisions}.
 The external decision provider attaches through a single, well-defined seam rather than being embedded in the host, which is the structural expression of the out-of-scope constraint C3.
+The concrete technologies named on these containers (a Next.js and React front-end, an ASP.NET Core backend) are justified, together with the alternatives considered, in \cref{subsec:technology-selection}.
 
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
 \begin{figure}[htbp]

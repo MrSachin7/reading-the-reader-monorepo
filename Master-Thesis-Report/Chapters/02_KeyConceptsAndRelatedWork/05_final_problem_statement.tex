@@ -12,10 +12,10 @@ How can a researcher-operated adaptive reading platform be architected so that s
 We decompose this into four research questions, each of which maps to evaluation criteria developed in \cref{ch:evaluation}.
 
 \begin{description}
-    \item[RQ1 (Modularity).] Can the platform separate sensing, analysis, decision, and intervention into modules with stable contracts, such that a new intervention or decision provider can be added without modifying the core reading runtime?
-    \item[RQ2 (Sensing pipeline).] Can a real Tobii eye-tracking stream be converted into oculomotor events (fixations, saccades, and regressions) within a latency budget that preserves live adaptation during a reading session, in a manner that is inspectable and reproducible? The associated latency and feasibility criteria are defined and measured in \cref{ch:evaluation}.
-    \item[RQ3 (Context-preserving intervention).] Can typographic micro-interventions be committed at controlled boundaries so that they adapt the text while preserving the reader's context, consistent with the recovery concerns identified in the literature \cite{jensen2025context}?
-    \item[RQ4 (Researcher control and experimentability).] Does the platform give the researcher the control and the auditable record (including session replay) needed to operate experiments and compare interventions and decision strategies?
+    \item[RQ1 (Modularity).] How can the platform separate sensing, analysis, decision, and intervention into modules with stable contracts, such that a new intervention or decision provider can be added without modifying the core reading runtime?
+    \item[RQ2 (Sensing pipeline).] How can a real Tobii eye-tracking stream be converted into oculomotor events (fixations, saccades, and regressions) within a latency budget that preserves live adaptation during a reading session, in a manner that is inspectable and reproducible? The associated latency and feasibility criteria are defined and measured in \cref{ch:evaluation}.
+    \item[RQ3 (Context-preserving intervention).] How can typographic micro-interventions be committed at controlled boundaries so that they adapt the text while preserving the reader's context, consistent with the recovery concerns identified in the literature \cite{jensen2025context}?
+    \item[RQ4 (Researcher control and experimentability).] How can the platform give the researcher the control and the auditable record (including session replay) needed to operate experiments and compare interventions and decision strategies?
 \end{description}
 
 These questions deliberately emphasise architecture and runtime feasibility over a controlled human-subjects effect study, in line with the thesis scope: the contribution is a defendable, modular platform on which interventions and external, AI-driven decision providers can be compared in future work, rather than an end-to-end empirical result for any single intervention.
