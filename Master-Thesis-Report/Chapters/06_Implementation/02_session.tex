@@ -1,4 +1,88 @@
 \section{Anatomy of an Experiment Session}
 \label{sec:impl-session}
 % Authoring brief for this section lives in section.md (§6.2). The spine of the chapter.
-\todo[inline]{\S6.2 to be written. Trace one real experiment session end-to-end through the code: setup -> device/calibration (readiness gating) -> reading with the live adaptive loop -> comprehension/quiz -> export/seal. ExperimentSessionManager as orchestrator, session lifecycle/state, authoritative snapshot. Session state diagram + UI screenshots in context (ask user). Realizes RQ1, RQ3, RQ4.}
+
+\Cref{sec:impl-structure} mapped where the code lives; this section sets it in motion by following one experiment session from the researcher's first preparation step to the sealed record it leaves behind.
+It is the concrete counterpart of the abstract adaptive loop of \cref{sec:design-loop}, and it is the part of the system a researcher actually operates.
+
+A single component, the \texttt{ExperimentSessionManager}, orchestrates the session.
+It is one object whose responsibilities are divided by concern across partial classes (lifecycle, gaze, analysis, decisions, interventions, and replay), and every operation that changes session state follows the same shape: it acquires one lifecycle lock, mutates the state, writes a checkpoint, and broadcasts the authoritative session snapshot that every connected surface then renders.
+Because all session state lives behind this one component and is published as a single snapshot, the researcher's control surface and the participant's reader never hold competing copies of the truth.
+The session moves through three phases, configuring, running, and completed, with a reset back to the beginning, as \cref{fig:impl-session-states} shows.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.97\linewidth}{!}{%
+\begin{tikzpicture}[
+  state/.style={rectangle, rounded corners=4pt, draw=navyblue, very thick, fill=blue!8, align=center, text width=3.7cm, minimum height=1.5cm, inner sep=4pt, font=\small},
+  lbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
+  arr/.style={->, thick, black!65},
+]
+\fill[black!75] (-8.1,0) circle (2.4pt);
+\node[state] (cfg)  at (-5.7,0) {{\bfseries Configuring}\\[2pt]{\scriptsize gates: participant, eye tracker + licence, calibration + validation, reading material}};
+\node[state] (run)  at ( 0.1,0) {{\bfseries Running}\\[2pt]{\scriptsize per item: read with the adaptive loop, then comprehension quiz}};
+\node[state] (done) at ( 5.8,0) {{\bfseries Completed}\\[2pt]{\scriptsize record sealed and exported}};
+\draw[arr] (-8.1,0) -- (cfg.west);
+\draw[arr] (cfg.east) -- (run.west) node[lbl, midway, above] {start\\\mbox{[all gates ready]}};
+\draw[arr] (run.east) -- (done.west) node[lbl, midway, above] {finish};
+\draw[arr] (run.north) to[out=60,in=120,looseness=6] (run.north) node[lbl, midway, above] {next item};
+\draw[arr] (done.south) to[out=-120,in=-60,looseness=0.8] (cfg.south) node[lbl, midway, below] {reset};
+\end{tikzpicture}%
+}
+\caption{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
+\label{fig:impl-session-states}
+\end{figure}
+
+In the configuring phase the researcher prepares the session through a guided, role-sequenced stepper, shown in \cref{fig:impl-setup}.
+The backend tracks four independent readiness gates, a participant, a selected eye tracker with a valid licence, a passed calibration, and the reading material, each of which reports whether it is satisfied and, if not, the reason it blocks the start.
+The stepper sequences these into a recommended order, researcher preparation (the eye tracker and the reading material) before participant setup (the participant details and calibration), and locks each step until its prerequisites are met, so the researcher is never offered a control that cannot yet be used.
+The eye-tracker step in the figure shows the detail of this preparation: a real Tobii device is selected and its licence is managed, with an explicit overwrite guard so that a saved licence is not replaced by accident.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Stepper.png}
+\caption{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
+\label{fig:impl-setup}
+\end{figure}
+
+Calibration is one of the four gates and runs as its own immersive sub-flow, shown in \cref{fig:impl-calibration}.
+The participant follows a sequence of on-screen targets (sixteen in the configuration shown) while the device collects samples, after which a calibration is computed and applied and a validation pass measures its accuracy and precision.
+Only a calibration whose validation passes satisfies the gate, and the accuracy and precision it reports are carried in the setup snapshot and evaluated in \cref{ch:evaluation}.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
+\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (sixteen here) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
+\label{fig:impl-calibration}
+\end{figure}
+
+When all four gates are satisfied the researcher starts the session.
+\texttt{StartSessionAsync} re-checks readiness and refuses, with the blocking step's reason, if anything is incomplete, so a misconfigured run cannot be started rather than merely being discouraged; it then resolves the order of the experiment's material items (fixed or randomised), resets the gaze counters and the event sequence, and marks the session active.
+From this point the adaptive loop of \cref{sec:design-loop} runs over the modules resolved from the registries of \cref{sec:design-modules}, and the researcher observes and steers it through the live control surface of \cref{fig:impl-live}.
+That surface is the second screen of \cref{sec:design-style}: it mirrors the participant's text, reports the live end-to-end latency, and offers the manual interventions and typography controls through which the researcher adapts the presentation.
+Its behaviour makes the commit discipline of driver~D7 visible in the interface, since appearance changes are applied immediately whereas typography changes wait for the selected boundary, which is the two-phase, context-preserving commit of \cref{sec:design-loop} exposed as an operator control.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ResearcherLiveView.png}
+\caption{The researcher's live control surface during a running session. It mirrors the participant's reader (the second screen of \cref{sec:design-style}), reports the live end-to-end latency, and exposes the manual interventions and typography controls. Appearance changes apply immediately while typography changes wait for the selected commit boundary, which is the context-preserving discipline of driver~D7 surfaced as an operator control.}
+\label{fig:impl-live}
+\end{figure}
+
+The session then proceeds item by item.
+For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz, and both the reading events and the answers are written into the session record alongside every gaze sample, intervention, and lifecycle event.
+
+Finishing the session ends it and seals its record.
+\texttt{FinishSessionAsync} stops the loop, flushes any buffered events, and builds two exports from the recovery buffer, a full raw export and a processed one, saves them as the latest, marks the recovery completed, and clears the active record, after which the session is sealed exactly as \cref{sec:design-data} described.
+A sealed session is then available for replay, shown in \cref{fig:impl-replay}: the recording is reconstructed as a timed playback, with the gaze token heat map drawn over the text and a filterable timeline of lifecycle, quiz, and intervention events beside it.
+Replay is therefore the operational proof of \cref{sec:design-data}, that a session can be re-presented and re-analysed from its record alone.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Replay.png}
+\caption{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
+\label{fig:impl-replay}
+\end{figure}
+
+The walkthrough has named several mechanisms only in passing: the lock-free gaze path that keeps the live latency low, the registries that resolve the modules the loop drives, and the export that replay consumes.
+\Cref{sec:impl-highlights} opens these three for a closer look.
