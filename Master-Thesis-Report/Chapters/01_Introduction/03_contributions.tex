@@ -1,0 +1,30 @@
+\section{Contributions}
+\label{sec:contributions}
+
+Although its title names a single adaptive reading system, the artifact this thesis delivers is a two-screen platform for running gaze-driven reading experiments, together with the modular architecture that makes its parts replaceable.
+Its headline contribution is a system in which a researcher can watch a participant read in real time and shape that reading as it happens, either by hand or through a pluggable decision provider, on an architecture where sensing, analysis, decision, and intervention are independent modules behind stable contracts.
+We are not aware of any existing tool that combines all four of real-time typographic intervention, pluggable decision logic, researcher-in-the-loop control, and reproducible session capture in one system, a claim that \cref{ch:key-concepts-related-work} substantiates against the current landscape.
+
+Concretely, this thesis makes the following contributions.
+
+\begin{itemize}
+
+  \item \textbf{A modular adaptive reading platform.}
+    The platform separates the adaptive reading loop into four independently replaceable modules (sensing, eye-movement analysis, decision, and intervention) behind stable contracts, so that any one of them can be substituted or extended without modifying the core reading runtime.
+
+  \item \textbf{A dual-screen, researcher-operated workflow.}
+    A participant screen presents the reading material while a researcher console mirrors the participant's gaze in real time and gives the researcher live control over the running session.
+
+  \item \textbf{A real-time sensing pipeline.}
+    The pipeline drives the platform from a physical eye tracker and, behind the same sensing contract, from a simulated input source, so that the full adaptive loop runs end to end with or without the device and within a latency budget compatible with live adaptation.
+
+  \item \textbf{A human-in-the-loop decision boundary.}
+    Interventions are applied manually by the researcher or proposed by a pluggable decision provider (a built-in rule-based strategy, or an external strategy reached through the same contract), operating in an advisory mode in which the researcher approves or overrides each proposal, or an autonomous mode in which it is applied directly.
+
+  \item \textbf{A reproducible session record.}
+    Every gaze sample, decision, and intervention is captured in a single authoritative record that can be exported, replayed, and re-imported, enabling offline analysis and the reuse of earlier sessions to inform an external decision provider.
+
+\end{itemize}
+
+As is now common in software engineering, the platform was implemented with the assistance of generative-AI coding tools.
+We disclose this here in the interest of transparency; \cref{ch:methodology} describes how these tools were applied and how the resulting code was reviewed and validated.

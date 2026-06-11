@@ -1,7 +1,7 @@
 \section{Goal of the Project}
 \label{sec:goal}
 
-The goal of this project is to design and implement a modular, researcher-operated adaptive reading platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable components behind stable contracts.
+The goal of this project is to design and implement a modular, researcher-operated adaptive reading platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable modules behind stable contracts.
 The aim is not to measure a specific typographic effect or to train a reading model; it is to build the infrastructure that makes such measurements and models possible in a principled and reproducible way, and to demonstrate that the architecture meets the properties the programme requires.
 
 Building a software platform might appear to be an engineering exercise rather than a research one.
@@ -15,21 +15,24 @@ To reach this goal, the project pursues four objectives.
 \begin{itemize}
 
   \item \textbf{Modular architecture.}
-    To design an architecture that separates sensing, eye-movement analysis, decision strategy, and intervention execution into independently replaceable components behind stable contracts, so that any layer can be extended or substituted without modifying the core reading runtime.
+    To design an architecture that separates sensing, eye-movement analysis, decision strategy, and intervention execution into independently replaceable modules behind stable contracts, so that any one of them can be extended or substituted without modifying the core reading runtime.
 
   \item \textbf{Real-time sensing pipeline.}
-    To implement an end-to-end pipeline that integrates physical Tobii hardware and converts the raw gaze stream into reading-behaviour signals online, within a latency budget compatible with live adaptation.
+    To implement an end-to-end sensing pipeline that drives the platform from a physical eye tracker, a Tobii device, and, behind the same sensing contract, from a simulated input source, converting the raw gaze stream into reading-behaviour signals online within a latency budget compatible with live adaptation.
 
-  \item \textbf{Researcher experiment workflow.}
-    To build researcher-facing tools for operating controlled reading experiments, including live observation of the participant's view, manual intervention control, and complete session export and replay.
+  \item \textbf{Researcher console for live experiments.}
+    To build a researcher console that mirrors the participant's gaze in real time and lets the researcher operate a controlled reading session, apply or steer interventions while it runs, and export the complete session for replay and analysis.
 
-  \item \textbf{External decision-provider contract.}
-    To define an integration boundary through which AI-driven or alternative decision strategies can be connected to the running platform without modifying its core.
+  \item \textbf{Pluggable decision boundary.}
+    To define a decision boundary at which an AI-driven or alternative decision strategy can be connected to the running platform, operating either in an advisory mode in which the researcher approves or overrides each proposal or in an autonomous mode in which it is applied directly, without modifying the core.
 
 \end{itemize}
 
-The work is scoped to thesis-scale controlled experiments with general laboratory participants.
-It does not implement a machine learning model for reading state classification, does not target PDF as a reading format, and does not pursue clinical recruitment of vision-impaired or dyslexic participants.
-The platform is designed to support those ambitions in future work; validating them is outside the scope of this thesis.
+This thesis builds the platform that makes adaptive-reading experiments possible; it deliberately stops short of conducting a definitive one.
+Three boundaries follow from that focus.
+First, the platform defines the decision boundary through which a machine-learning reading-state classifier would connect, but implements no such model itself, providing instead a built-in rule-based strategy behind the same contract.
+Second, reading material is restricted to Markdown, and PDF is excluded as a reading format.
+Third, the reading sessions are conducted with general laboratory participants rather than recruited vision-impaired or dyslexic readers, so the work validates the architecture and runtime rather than a clinical outcome.
+The platform is designed to support all three ambitions in future work.
 
 The research questions that govern the evaluation of the resulting platform are stated in full at the end of \cref{ch:key-concepts-related-work}, once the supporting literature has established their motivation (Sec.~\ref{sec:final-problem-statement}).
