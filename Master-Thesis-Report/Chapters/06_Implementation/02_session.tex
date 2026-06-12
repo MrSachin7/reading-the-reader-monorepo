@@ -1,14 +1,74 @@
 \section{Anatomy of an Experiment Session}
 \label{sec:impl-session}
 % Authoring brief for this section lives in section.md (§6.2). The spine of the chapter.
+% UML class-diagram primitives (multipart class boxes + UML arrowheads) for this chapter's structural figures.
+\usetikzlibrary{shapes.multipart, arrows.meta}
 
 \Cref{sec:impl-structure} mapped where the code lives; this section sets it in motion by following one experiment session from the researcher's first preparation step to the sealed record it leaves behind.
 It is the concrete counterpart of the abstract adaptive loop of \cref{sec:design-loop}, and it is the part of the system a researcher actually operates.
 
-A single component, the \texttt{ExperimentSessionManager}, orchestrates the session.
-It is one object whose responsibilities are divided by concern across partial classes (lifecycle, gaze, analysis, decisions, interventions, and replay), and every operation that changes session state follows the same shape: it acquires one lifecycle lock, mutates the state, writes a checkpoint, and broadcasts the authoritative session snapshot that every connected surface then renders.
+A single component, the \texttt{ExperimentSessionManager}, orchestrates the session and is the one place its state lives.
+Its responsibilities are divided by concern across partial classes (a lifecycle facet, a gaze facet, and analysis, decision, intervention, and replay facets), but they share one object behind one lifecycle lock and reach the rest of the system only through ports.
+\Cref{fig:impl-session-manager} shows that arrangement at the level of types: the manager is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on port interfaces also declared in \texttt{Application}, while the concrete adapters that drive the Tobii device, broadcast to the connected clients, and persist the session record live in the infrastructure projects and realise those ports.
+Every realisation and dependency edge in the figure therefore crosses the \texttt{Application}/infrastructure boundary inward, which is the dependency rule of \cref{sec:design-style} holding at the granularity of individual classes rather than whole projects.
+Every operation that changes session state then follows the same shape: it acquires the lifecycle lock, mutates the state, writes a checkpoint, and broadcasts the authoritative session snapshot that every connected surface renders.
 Because all session state lives behind this one component and is published as a single snapshot, the researcher's control surface and the participant's reader never hold competing copies of the truth.
 The session moves through three phases, configuring, running, and completed, with a reset back to the beginning, as \cref{fig:impl-session-states} shows.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  mgr/.style={rectangle split, rectangle split parts=3, draw=navyblue, very thick, fill=blue!8, align=left, text width=5.0cm, inner sep=4pt},
+  iface/.style={rectangle split, rectangle split parts=2, draw=black!65, thick, fill=grey!15, align=left, text width=3.7cm, inner sep=3pt},
+  adapter/.style={rectangle split, rectangle split parts=2, draw=dtured, very thick, fill=dtured!8, align=left, text width=3.7cm, inner sep=3pt},
+  realise/.style={dashed, -{Triangle[open, length=7pt, width=7pt]}, semithick, black!70},
+  use/.style={dashed, -{Stealth[length=5pt]}, semithick, black!55},
+  bnd/.style={dashed, black!40, thick},
+  note/.style={font=\scriptsize\itshape, text=black!75},
+]
+% ---- core: the session manager (Application layer) ----
+\node[mgr] (mgr) at (0,5.9)
+  {{\bfseries ExperimentSessionManager}\\{\itshape sealed, partial}\\[2pt]{\tiny realises \mbox{IExperimentRuntimeAuthority}, \mbox{IExperimentSessionManager},\\\mbox{IExperimentSessionQueryService}, \mbox{IExperimentReplayRecoveryBuffer}}
+   \nodepart{two}$-$\_lifecycleGate : SemaphoreSlim\\$-$\_session : ExperimentSession
+   \nodepart{three}$+$StartSessionAsync() : bool\\$+$FinishSessionAsync(cmd) : Snapshot\\$+$GetCurrentSnapshot() : Snapshot};
+% ---- core: the port interfaces (Application layer) ----
+\node[iface] (psen) at (-5.8,1.5)
+  {{\itshape interface}\\{\bfseries IEyeTrackerAdapter}
+   \nodepart{two}$+$GazeDataReceived : event\\$+$StartEyeTracking()\\$+$BeginCalibrationAsync()};
+\node[iface] (pbrd) at (0,1.5)
+  {{\itshape interface}\\{\bfseries IClientBroadcaster\\Adapter}
+   \nodepart{two}$+$BroadcastAsync(type, \mbox{payload})\\$+$ConnectedClients : int};
+\node[iface] (psto) at (5.8,1.5)
+  {{\itshape interface}\\{\bfseries IExperimentStateStore\\Adapter}
+   \nodepart{two}$+$SaveActiveReplayAsync(doc)\\$+$LoadActiveReplayAsync() : Replay?};
+% ---- Application / infrastructure boundary ----
+\draw[bnd] (-7.8,-0.6) -- (7.8,-0.6);
+\node[note, anchor=west] at (8.1,-0.12) {Application};
+\node[note, anchor=west] at (8.1,-0.52) {(core, ports)};
+\node[note, anchor=west] at (8.1,-1.0) {Infrastructure};
+\node[note, anchor=west] at (8.1,-1.4) {(adapters)};
+% ---- infrastructure: concrete adapters ----
+\node[adapter] (asen) at (-5.8,-2.9)
+  {{\bfseries TobiiEyeTracker\\Adapter}\nodepart{two}{\itshape project:\\TobiiEyetracker}};
+\node[adapter] (abrd) at (0,-2.9)
+  {{\bfseries WebSocketRealtime\\Messenger}\nodepart{two}{\itshape project:\\RealtimeMessenger}};
+\node[adapter] (asto) at (5.8,-2.9)
+  {{\bfseries FileSnapshotExperiment\\StateStoreAdapter}\nodepart{two}{\itshape project:\\Realtime.Persistence}};
+% ---- dependencies: the manager uses the ports ----
+\draw[use] (mgr.south) -- (pbrd.north) node[note, midway, fill=white, inner sep=1pt] {depends on};
+\draw[use] (mgr.south west) to[out=-120,in=65] (psen.north);
+\draw[use] (mgr.south east) to[out=-60,in=115] (psto.north);
+% ---- realisations: the adapters realise the ports ----
+\draw[realise] (asen.north) -- (psen.south) node[note, midway, fill=white, inner sep=1pt] {realises};
+\draw[realise] (abrd.north) -- (pbrd.south);
+\draw[realise] (asto.north) -- (psto.south);
+\end{tikzpicture}%
+}
+\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on the three port interfaces in the middle row (sensing, broadcast, and persistence). Each concrete adapter in the bottom row lives in an infrastructure project and realises the port above it. The dashed rule marks the \texttt{Application}/infrastructure boundary: every realisation (hollow triangle) and dependency (filled arrow) edge crosses it inward towards the core, so the dependency rule of \cref{sec:design-style} is visible at the level of individual classes. Members are abbreviated; the replay, recovery, and module-provider ports follow the same pattern and are omitted for clarity.}
+\label{fig:impl-session-manager}
+\end{figure}
 
 \begin{figure}[htbp]
 \centering
@@ -18,15 +78,17 @@ The session moves through three phases, configuring, running, and completed, wit
   lbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
   arr/.style={->, thick, black!65},
 ]
-\fill[black!75] (-8.1,0) circle (2.4pt);
-\node[state] (cfg)  at (-5.7,0) {{\bfseries Configuring}\\[2pt]{\scriptsize gates: participant, eye tracker + licence, calibration + validation, reading material}};
-\node[state] (run)  at ( 0.1,0) {{\bfseries Running}\\[2pt]{\scriptsize per item: read with the adaptive loop, then comprehension quiz}};
-\node[state] (done) at ( 5.8,0) {{\bfseries Completed}\\[2pt]{\scriptsize record sealed and exported}};
-\draw[arr] (-8.1,0) -- (cfg.west);
+\fill[black!75] (-9.0,0) circle (2.4pt);
+\node[state] (cfg)  at (-6.6,0) {{\bfseries Configuring}\\[2pt]{\scriptsize gates: participant, eye tracker + licence, calibration + validation, reading material}};
+\node[state] (run)  at ( 0.0,0) {{\bfseries Running}\\[2pt]{\scriptsize per item: read with the adaptive loop, then comprehension quiz}};
+\node[state] (done) at ( 6.6,0) {{\bfseries Completed}\\[2pt]{\scriptsize record sealed and exported}};
+\draw[arr] (-9.0,0) -- (cfg.west);
 \draw[arr] (cfg.east) -- (run.west) node[lbl, midway, above] {start\\\mbox{[all gates ready]}};
 \draw[arr] (run.east) -- (done.west) node[lbl, midway, above] {finish};
-\draw[arr] (run.north) to[out=60,in=120,looseness=6] (run.north) node[lbl, midway, above] {next item};
-\draw[arr] (done.south) to[out=-120,in=-60,looseness=0.8] (cfg.south) node[lbl, midway, below] {reset};
+\draw[arr] (run.north) to[out=60,in=120,looseness=8] (run.north);
+\node[lbl] at (0,1.75) {next item};
+\draw[arr] (done.south) to[out=-118,in=-62,looseness=0.9] (cfg.south);
+\node[lbl] at (0,-2.15) {reset};
 \end{tikzpicture}%
 }
 \caption{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
@@ -56,8 +118,8 @@ Only a calibration whose validation passes satisfies the gate, and the accuracy 
 \label{fig:impl-calibration}
 \end{figure}
 
-When all four gates are satisfied the researcher starts the session.
-\texttt{StartSessionAsync} re-checks readiness and refuses, with the blocking step's reason, if anything is incomplete, so a misconfigured run cannot be started rather than merely being discouraged; it then resolves the order of the experiment's material items (fixed or randomised), resets the gaze counters and the event sequence, and marks the session active.
+When all four gates are satisfied the researcher starts the session, and the manager re-checks readiness before committing to the run (\texttt{StartSessionAsync}).
+If anything is incomplete it refuses with the blocking step's reason, so a misconfigured run cannot be started rather than merely being discouraged; otherwise it resolves the order of the experiment's material items (fixed or randomised), resets the gaze counters and the event sequence, and marks the session active.
 From this point the adaptive loop of \cref{sec:design-loop} runs over the modules resolved from the registries of \cref{sec:design-modules}, and the researcher observes and steers it through the live control surface of \cref{fig:impl-live}.
 That surface is the second screen of \cref{sec:design-style}: it mirrors the participant's text, reports the live end-to-end latency, and offers the manual interventions and typography controls through which the researcher adapts the presentation.
 Its behaviour makes the commit discipline of driver~D7 visible in the interface, since appearance changes are applied immediately whereas typography changes wait for the selected boundary, which is the two-phase, context-preserving commit of \cref{sec:design-loop} exposed as an operator control.
@@ -73,7 +135,7 @@ The session then proceeds item by item.
 For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz, and both the reading events and the answers are written into the session record alongside every gaze sample, intervention, and lifecycle event.
 
 Finishing the session ends it and seals its record.
-\texttt{FinishSessionAsync} stops the loop, flushes any buffered events, and builds two exports from the recovery buffer, a full raw export and a processed one, saves them as the latest, marks the recovery completed, and clears the active record, after which the session is sealed exactly as \cref{sec:design-data} described.
+The manager stops the loop, flushes any buffered events, and builds two exports from the recovery buffer (\texttt{FinishSessionAsync}), a full raw export and a processed one, saves them as the latest, marks the recovery completed, and clears the active record, after which the session is sealed exactly as \cref{sec:design-data} described.
 A sealed session is then available for replay, shown in \cref{fig:impl-replay}: the recording is reconstructed as a timed playback, with the gaze token heat map drawn over the text and a filterable timeline of lifecycle, quiz, and intervention events beside it.
 Replay is therefore the operational proof of \cref{sec:design-data}, that a session can be re-presented and re-analysed from its record alone.
 

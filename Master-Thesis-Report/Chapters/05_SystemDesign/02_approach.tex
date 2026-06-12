@@ -7,7 +7,7 @@ This section fixes that form in two steps, moving from the system in outline to 
 We first present the platform at two levels of abstraction, the system in its environment and the runtime containers it comprises, and then name and justify the architectural style that the dominant driver D1 demands.
 
 At the highest level of abstraction the platform is a single, researcher-operated system that mediates a participant's reading session, shown in its environment in \cref{fig:design-context}.
-Four external actors surround it (\cref{sec:stakeholders}): the researcher operates the session, the participant reads, the Tobii eye-tracking device supplies the gaze signal, and an external decision provider supplies the adaptive intelligence that this thesis treats as out of scope (C3, \cref{sec:constraints}).
+Four external actors surround it (\cref{sec:stakeholders}): the researcher operates the session, the participant reads, the eye tracker (a Tobii device in this work) supplies the gaze signal, and an external decision provider supplies the adaptive intelligence that this thesis treats as out of scope (C3, \cref{sec:constraints}).
 We adopt the C4 model \cite{c4model} for this view and the next, because its context and container levels match the two altitudes at which we wish to reveal the system.
 This outermost view fixes the system boundary, and with it the division of responsibility that the rest of the chapter elaborates: the platform owns the capture of gaze, its analysis, the execution of interventions, and the session record, whereas it deliberately owns neither the internals of the eye-tracking hardware nor the decision intelligence behind the provider seam.
 
@@ -15,23 +15,48 @@ This outermost view fixes the system boundary, and with it the division of respo
 \centering
 \resizebox{0.95\linewidth}{!}{%
 \begin{tikzpicture}[
-  person/.style={rectangle, rounded corners=2pt, draw=navyblue, very thick, fill=navyblue!12, align=center, text width=3.0cm, minimum height=1.2cm, inner sep=4pt},
-  system/.style={rectangle, rounded corners=3pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=4.6cm, minimum height=1.8cm, inner sep=5pt},
-  extsys/.style={rectangle, rounded corners=2pt, draw=black!55, thick, fill=grey!45, align=center, text width=3.2cm, minimum height=1.2cm, inner sep=4pt},
+  person/.style={rectangle, rounded corners=7pt, draw=navyblue, very thick, fill=navyblue!12, align=center, text width=3.1cm, minimum height=1.35cm, inner sep=5pt},
+  system/.style={rectangle, rounded corners=9pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=4.6cm, minimum height=2.0cm, inner sep=6pt},
+  extsys/.style={rectangle, rounded corners=7pt, draw=black!55, very thick, dashed, fill=grey!40, align=center, text width=3.4cm, minimum height=1.35cm, inner sep=5pt},
   rel/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
-  link/.style={->, thick, black!65},
-  bilink/.style={<->, thick, black!65},
-  extlink/.style={<->, thick, dashed, black!55},
+  link/.style={->, very thick, black!65},
+  bilink/.style={<->, very thick, black!65},
+  extlink/.style={<->, very thick, dashed, dtured!80},
+  pics/icperson/.style={code={
+    \fill[white] (0,0) circle (0.27); \draw[navyblue,thick] (0,0) circle (0.27);
+    \fill[navyblue] (0,0.08) circle (0.085);
+    \fill[navyblue] (-0.13,-0.18) .. controls (-0.13,-0.02) and (0.13,-0.02) .. (0.13,-0.18) -- cycle;}},
+  pics/iceye/.style={code={
+    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
+    \draw[black!70] (-0.17,0) .. controls (-0.06,0.13) and (0.06,0.13) .. (0.17,0) .. controls (0.06,-0.13) and (-0.06,-0.13) .. (-0.17,0) -- cycle;
+    \fill[black!70] (0,0) circle (0.05);}},
+  pics/iccloud/.style={code={
+    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
+    \fill[black!45] (-0.13,-0.09) rectangle (0.12,-0.02);
+    \fill[black!45] (-0.1,-0.02) circle (0.08);
+    \fill[black!45] (0.07,-0.02) circle (0.07);
+    \fill[black!45] (-0.01,0.05) circle (0.09);}},
+  pics/icplatform/.style={code={
+    \fill[white] (0,0) circle (0.30); \draw[dtured,thick] (0,0) circle (0.30);
+    \draw[dtured,thick] (-0.16,-0.09) rectangle (0.16,0.13);
+    \draw[dtured] (-0.11,0.06) -- (0.11,0.06);
+    \draw[dtured] (-0.11,0.005) -- (0.05,0.005);
+    \draw[dtured,thick] (-0.06,-0.15) -- (0.06,-0.15);}},
 ]
 \node[system] (plat) at (0,0) {{\bfseries Reading the Reader Platform}\\[3pt]\footnotesize Researcher-operated adaptive reading system};
-\node[person] (res)  at (-5.6, 2.7) {{\bfseries Researcher}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Operates sessions, monitors live view};
-\node[person] (par)  at ( 5.6, 2.7) {{\bfseries Participant}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Reads the presented text};
-\node[extsys] (tob)  at (-5.6,-2.7) {{\bfseries Tobii Eye Tracker}\\[1pt]{\scriptsize\itshape External device}};
-\node[extsys] (prov) at ( 5.6,-2.7) {{\bfseries External Decision Provider}\\[1pt]{\scriptsize\itshape External system}};
-\draw[link]    (res)  -- (plat) node[rel, midway, sloped] {operates,\\ monitors};
-\draw[bilink]  (plat) -- (par)  node[rel, midway, sloped] {presents\\ adapted text};
-\draw[link]    (tob)  -- (plat) node[rel, midway, sloped] {streams\\ raw gaze};
-\draw[extlink] (plat) -- (prov) node[rel, midway, sloped] {requests\\ decisions};
+\node[person] (res)  at (-5.8, 2.8) {{\bfseries Researcher}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Operates sessions, monitors live view};
+\node[person] (par)  at ( 5.8, 2.8) {{\bfseries Participant}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Reads the presented text};
+\node[extsys] (tob)  at (-5.8,-2.8) {{\bfseries Eye Tracker}\\[1pt]{\scriptsize\itshape External device, e.g.\ Tobii}};
+\node[extsys] (prov) at ( 5.8,-2.8) {{\bfseries External Decision\\Provider}\\[1pt]{\scriptsize\itshape External system}};
+\draw[link]    (res)  -- (plat) node[rel, midway] {operates,\\ monitors};
+\draw[bilink]  (plat) -- (par)  node[rel, midway] {presents\\ adapted text};
+\draw[link]    (tob)  -- (plat) node[rel, midway] {streams\\ raw gaze};
+\draw[extlink] (plat) -- (prov) node[rel, midway] {requests\\ decisions};
+\pic at (plat.north west) {icplatform};
+\pic at (res.north west)  {icperson};
+\pic at (par.north west)  {icperson};
+\pic at (tob.north west)  {iceye};
+\pic at (prov.north west) {iccloud};
 \end{tikzpicture}%
 }
 \caption{System context for the Reading the Reader platform, showing the researcher-operated system and the four external actors it mediates between.}
@@ -44,7 +69,7 @@ A backend application host carries the core logic and mediates between the two s
 Two channels connect the front-ends to the host: a request and response channel carries discrete operator commands and setup data, whereas a separate high-frequency channel carries the live gaze stream, a separation we introduce here and justify against the responsiveness budget D2 in \cref{sec:design-loop}.
 Session state is written to a local, file-backed store rather than an external database, a choice we introduce here and defend on grounds of reproducibility and scope in \cref{sec:design-data,sec:design-decisions}.
 The external decision provider attaches through a single, well-defined seam rather than being embedded in the host, which is the structural expression of the out-of-scope constraint C3.
-The concrete technologies named on these containers (a Next.js and React front-end, an ASP.NET Core backend) are justified, together with the alternatives considered, in \cref{subsec:technology-selection}.
+The concrete technologies named on these containers (a Next.js and React front-end, an ASP.NET Core backend) are justified, together with the alternatives considered, in \cref{sec:technology-selection}.
 
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
 \begin{figure}[htbp]

@@ -112,7 +112,7 @@ It establishes the shared vocabulary that grounds the functional requirements st
   \hline
   \end{tabular}};
 
-\node[inner sep=0, outer sep=0] (provider) at (8.5, 3.0) {%
+\node[inner sep=0, outer sep=0] (provider) at (9.8, 3.0) {%
   \renewcommand{\arraystretch}{1.2}%
   \begin{tabular}{|p{3.6cm}|}
   \hline
@@ -189,8 +189,7 @@ It establishes the shared vocabulary that grounds the functional requirements st
 \draw[assoc] (session) -- node[lbl, fill=white, pos=0.45] {uses}   (strategy);
 
 % ExternalModuleProvider implements DecisionStrategy
-\draw[assoc] (provider) -- (strategy);
-\node[lbl] at (5.8, 3.5) {implements};
+\draw[assoc] (provider) -- node[lbl, above] {implements} (strategy);
 
 % Session records GazeSample
 \draw[assoc] (session) -- node[lbl, fill=white, pos=0.5] {records} (gaze);

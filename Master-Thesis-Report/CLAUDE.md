@@ -85,6 +85,13 @@ Plagiarism in Denmark is treated as exam cheating and can result in
   Requirements → System Design → Implementation → Evaluation →
   Discussion → Conclusion.
 - Conclusion ≤ 1 page; introduces no new content.
+- **Abstract and Conclusion are written LAST, by deliberate decision.**
+  Until the final writing stage they may be placeholders (e.g.
+  `\blindtext`) or empty. This is intentional, not an oversight. Do
+  **not** flag the Abstract or Conclusion as missing, empty,
+  incomplete, or a gap when reviewing, auditing, or building any other
+  part of the thesis. Only act on them when explicitly asked to write
+  the Abstract or Conclusion.
 - Target length: **~60 pages main content**, range 40–70, hard
   ceiling 100 (excluding front matter, bibliography, appendices).
 - The Final Problem Statement (with measurable sub-questions) lives
