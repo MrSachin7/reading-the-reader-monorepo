@@ -1,0 +1,37 @@
+% F5: cross-session improvement loop (sec:design-extensibility).
+% Compile-verified standalone; \input this inside the §5.6 prose where it is referenced.
+% Solid navyblue = realized in this thesis; dashed dtured = out of scope (C3).
+% Colours (dtured, blue, navyblue, grey) are defined in Setup/Settings.tex.
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\linewidth}{!}{%
+\begin{tikzpicture}[
+  >={Stealth[length=2.4mm]},
+  sess/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!10, align=center, text width=3.3cm, minimum height=1.2cm, inner sep=4pt, font=\scriptsize},
+  sealed/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!12, align=center, text width=3.0cm, minimum height=1.2cm, inner sep=4pt, font=\scriptsize},
+  corpus/.style={cylinder, shape border rotate=90, aspect=0.28, draw=navyblue, very thick, fill=blue!8, align=center, text width=2.6cm, minimum height=1.4cm, inner sep=3pt, font=\scriptsize},
+  extbox/.style={rectangle, rounded corners=2pt, draw=dtured!80, very thick, dashed, fill=grey!25, align=center, text width=4.0cm, minimum height=1.2cm, inner sep=4pt, font=\scriptsize},
+  real/.style={->, very thick, navyblue},
+  ext/.style={->, very thick, dashed, dtured!85},
+  lbl/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
+  extlbl/.style={font=\scriptsize, align=center, text=dtured, fill=white, inner sep=1.5pt},
+]
+\node[sess]   (sess)   at (-4.2, 2.1) {{\bfseries Reading session}\\adaptive loop (sense $\rightarrow$ decide $\rightarrow$ intervene)};
+\node[sealed] (rec)    at ( 4.2, 2.1) {{\bfseries Sealed session record}\\schema-versioned};
+\node[corpus] (corpus) at ( 4.2,-2.1) {{\bfseries Exported corpus}\\JSON / CSV};
+\node[extbox] (prov)   at (-4.2,-2.1) {{\bfseries External decision provider}\\fine-tuned offline};
+\node[font=\itshape\footnotesize, text=black!60, align=center] at (0,0) {closing the loop\\\emph{across} sessions};
+\draw[real] (sess.east) -- (rec.west) node[lbl, midway] {seals a record\\(\cref{fig:design-record})};
+\draw[real] (rec.south) -- (corpus.north) node[lbl, midway, right] {export};
+\draw[ext] (corpus.west) .. controls (0,-3.1) .. (prov.east) node[extlbl, midway] {fine-tune offline\\(out of scope, C3)};
+\draw[ext] (prov.north) -- (sess.south) node[extlbl, midway, left] {drives interventions\\via the decision seam};
+\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-6.4,-4.1) {Legend};
+\draw[real] (-6.4,-4.55) -- (-5.8,-4.55); \node[anchor=west, font=\scriptsize] at (-5.7,-4.55) {realized in this thesis};
+\draw[ext]  (-1.6,-4.55) -- (-1.0,-4.55); \node[anchor=west, font=\scriptsize] at (-0.9,-4.55) {out of scope (C3)};
+\draw[rounded corners=2pt, draw=black!25] (-6.6,-4.95) rectangle (4.3,-3.85);
+\end{tikzpicture}%
+}
+\caption{The cross-session improvement loop. Within the thesis (solid) each reading session seals one authoritative, schema-versioned record (\cref{fig:design-record}) that is exported in a portable format; across a study these records accumulate into a corpus. The architecture additionally affords (dashed, out of scope under C3) fine-tuning an external decision provider offline on that corpus and attaching it through the same decision seam, so that an improved provider can drive interventions in later sessions without any change to the core. The platform contributes the reproducible record and the seam that make this loop possible; the learning algorithm itself is external.}
+\label{fig:design-cross-session}
+\end{figure}

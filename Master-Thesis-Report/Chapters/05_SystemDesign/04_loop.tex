@@ -5,22 +5,23 @@
 This section sets that structure in motion, as the loop that runs throughout a live reading session, and confronts the concessions that liveness imposes on the clean separation just established.
 The loop is where the responsiveness driver D2 and the robustness driver D3 are met, and where they stand in their sharpest tension with the modularity of D1.
 
-One adaptive cycle proceeds in the order of the data, and \cref{fig:design-loop} traces it across the participants involved.
-A gaze sample originates at the sensing source and reaches the core, which mirrors it on the dedicated real-time channel to the reading surface and to the researcher's live view.
-The reading surface, which alone knows the rendered layout, maps the sample to a position in the text and returns an enriched observation to the core.
+One adaptive cycle proceeds in the order of the data, and \cref{fig:design-loop} traces it across the parties involved.
+A gaze sample originates at the eye tracker and reaches the core, which mirrors it on the dedicated real-time channel to the participant's reading surface and to the researcher's console, the second screen introduced in \cref{sec:design-style} that mirrors the reading surface and carries the session controls.
+The participant's reading surface, which alone knows the rendered layout, maps the sample to a position in the text and returns an enriched observation to the core.
 The core's analysis layer projects the stream of observations into oculomotor events, and a change in that analysed state triggers the decision layer to evaluate, drawing on either the built-in strategy or an external provider.
-The decision yields at most one intervention proposal, which is either applied at once or, in advisory operation, surfaced to the researcher and applied only on approval.
-Applying it produces an adapted view and an intervention event, which the core returns to the reading surface to re-render, closing the cycle.
+Those analysed events are rendered on the console, which overlays the mirrored text with a fixation heat map and the recent saccades, so that the researcher observes not only where but how the participant is reading.
+The decision yields at most one intervention proposal, which is either applied at once or, in advisory operation, surfaced on the console for the researcher to approve or reject, informed by those overlays, and committed only on approval.
+Applying it produces an adapted view and an intervention event, which the core returns to the participant's reading surface to re-render and mirrors to the console, closing the cycle.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{Chapters/05_SystemDesign/adaptive-loop.pdf}
-\caption{One iteration of the real-time adaptive loop. High-frequency gaze is mirrored to the reading surface on the dedicated real-time channel; the surface returns a content-anchored observation; the core projects oculomotor events, evaluates a decision (using the built-in strategy or an external provider) and, in advisory mode, awaits researcher approval before validating and committing the intervention at a controlled boundary; the adapted text is then returned to the surface to re-render. The self-calls on the backend core denote the analysis, decision, intervention, and persistence steps performed within it, and the checkpoint is written on a best-effort basis.}
+\caption{One iteration of the real-time adaptive loop across the two front-end surfaces. High-frequency gaze is mirrored on the dedicated real-time channel to both the participant's reading surface and the researcher's console; the reading surface returns a content-anchored observation; the core projects oculomotor events (fixations, saccades, and regressions) and renders them on the console as a fixation heat map and a saccade overlay, so that the researcher can read the participant's behaviour. The core then evaluates a decision (using the built-in strategy or an external provider) and, in advisory mode, awaits researcher approval before validating and committing the intervention at a controlled boundary; the adapted text is returned to the reading surface and mirrored to the console. The self-calls on the backend core denote the analysis, decision, intervention, and persistence steps performed within it, and the checkpoint is written on a best-effort basis.}
 \label{fig:design-loop}
 \end{figure}
 
 The cycle just described conceals a deliberate split in timescale that is the key to meeting the responsiveness budget D2.
-High-frequency gaze does not travel the request and response path used for commands and setup; it flows on a separate real-time channel, so that mirroring a sample to the live views never waits on the slower control path.
+High-frequency gaze does not travel the request and response path used for commands and setup; it flows on a separate real-time channel, so that mirroring a sample to the reading surface and the console never waits on the slower control path.
 On that hot path the core does the minimum: it sanitises the sample, retains it as the latest value, and broadcasts it, without acquiring the lock that guards session lifecycle and decision state.
 The heavier modular pipeline of analysis, decision, and intervention runs at the cadence of analysed-state changes rather than once per raw sample, so the indirection introduced for modularity in \cref{sec:design-modules} is kept off the per-sample path.
 The end-to-end latency that this arrangement must respect, from gaze to committed intervention, is the budget evaluated in \cref{ch:evaluation} under RQ2.
@@ -36,7 +37,7 @@ This commit discipline is the architectural expression of the recovery concern r
 
 The loop also keeps the researcher in control of how decisions are enacted.
 It supports an autonomous mode, in which a proposal permitted by the active policy is applied immediately, and an advisory mode, in which the same proposal is presented for the researcher to approve or reject before it is committed.
-The control surface through which this happens is the subject of \cref{sec:design-extensibility}; here it is enough to note that the loop accommodates both an unattended and a supervised experiment without structural change.
+The researcher console through which this happens is the subject of \cref{sec:design-extensibility}; here it is enough to note that the loop accommodates both an unattended and a supervised experiment without structural change.
 
 Because a reading session involves an invited participant and cannot be repeated cheaply, the loop is built to survive disturbance rather than to assume its absence.
 It degrades gracefully: a client that disconnects falls out of the broadcast without interrupting the stream, and a decision provider that returns nothing, or is not present, yields no proposal and the cycle continues unaffected.

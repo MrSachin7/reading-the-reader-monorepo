@@ -57,11 +57,41 @@ Because the seam is keyed by module identity and falls back to the built-in when
 \label{fig:design-seam}
 \end{figure}
 
-Extensibility opens the platform to future module providers; a second structure, the operator control plane, opens it to the researcher who runs the experiment, and it too is an architectural concern rather than a matter of screen layout.
-The architecture separates the researcher's control surface from the participant's reading surface, the second-screen arrangement introduced in \cref{sec:design-style}, so that the participant sees only the text while the researcher retains the controls and a mirror of the participant's view.
-It gates a session behind explicit readiness, requiring device selection, calibration, and validation to succeed before a run can begin, so that a session cannot be started in a mis-configured state.
-And it derives the researcher's view from the single authoritative session snapshot of \cref{sec:design-data}, so that the operator commands and observes the same state through one consistent plane rather than a collection of disconnected controls.
+The seam of \cref{fig:design-seam} carries a concern out and back within a single session, but together with the session record of \cref{sec:design-data} the same seam opens a second, longer loop that spans sessions.
+An external decision provider improves only insofar as it can learn from prior data, and the authoritative record is precisely such data.
+Each completed session seals one schema-versioned record (\cref{fig:design-record}), and exported in a portable form these records accumulate across a study into a corpus of past sessions.
+A provider may therefore be fine-tuned offline on that corpus and then reattached through the very same decision seam, so that an improved provider drives interventions in later sessions without any change to the reading runtime or to the existing modules.
+\Cref{fig:design-cross-session} traces this loop.
 
-Through that same plane the researcher selects the autonomous or advisory mode of \cref{sec:design-loop}, deciding for each experiment how much of the adaptive loop to retain under human approval, which is the operator control and experimentability that RQ4 examines.
-With the extension seams and the control plane, the structures that make up the architecture are now all in view.
+\input{Chapters/05_SystemDesign/cross-session-loop.tikz}
+
+We are deliberate about which parts of this loop the thesis realises and which it only affords.
+The reproducible record and its export, and the seam through which a provider attaches, are built and exercised in the platform, whereas the learning that would consume the corpus is external and, under constraint C3, out of scope.
+What the architecture contributes is therefore not the intelligence itself but the two structures that make such intelligence improvable in place: a record complete enough to learn from, which is the reproducibility argued in \cref{sec:design-data}, and a seam uniform enough that a retrained provider re-enters the loop without disturbance, which is the additive extension required by RQ1.
+In this sense the platform is not only adaptive within a session but improvable across sessions, and that longer-horizon capability is the deeper reason the external-provider seam is worth its cost.
+
+Extensibility opens the platform to future module providers; a second structure, the researcher console, opens it to the researcher who runs the experiment, and it too is an architectural concern rather than a matter of screen layout.
+The architecture separates the researcher's console from the participant's reading surface, the second-screen arrangement introduced in \cref{sec:design-style}, so that the participant sees only the text while the researcher retains the controls and a mirror of the participant's view.
+It gates a session behind explicit readiness, requiring device selection, calibration, and validation to succeed before a run can begin, so that a session cannot be started in a mis-configured state.
+And it derives the console from the single authoritative session snapshot of \cref{sec:design-data}, so that the operator commands and observes the same state through a single console rather than a collection of disconnected controls.
+
+Through that same plane the researcher also selects how much of the adaptive loop runs under human approval, and the architecture expresses this choice as a single lifecycle through which every decision passes (\cref{fig:design-decision-lifecycle}).
+When a decision provider, whether built-in or external, proposes an intervention, the proposal enters a pending state and resolves into exactly one terminal outcome, so that the disposition of every proposal is explicit and recorded rather than left implicit.
+In advisory mode a pending proposal waits for the researcher, who either approves it, committing the intervention, or rejects it, discarding it, so that a human remains in the loop for each individual adaptation.
+In autonomous mode the platform resolves the proposal itself and applies the intervention directly, so that the researcher's authority is exercised once, at the level of the mode, rather than proposal by proposal.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{Chapters/05_SystemDesign/decision-lifecycle.pdf}
+\caption{Lifecycle of a decision proposal. A proposal raised by the active decision provider (built-in or external) enters a pending state and resolves into exactly one terminal outcome. The execution mode fixes who resolves it: in advisory mode the researcher approves or rejects the proposal, whereas in autonomous mode the platform applies it directly. Approval and autonomous application both commit the intervention at a controlled boundary and differ only in who resolved the proposal, while a proposal that is rejected or superseded by a newer one is discarded without altering the text.}
+\label{fig:design-decision-lifecycle}
+\end{figure}
+
+Two properties of this lifecycle carry the operator-control argument that RQ4 examines.
+First, approval and autonomous application reach the same committed intervention and differ only in who resolved the proposal, so the distinction between the modes is exactly the locus of human authority and nothing more, and in either mode the intervention is committed at the controlled boundary of \cref{sec:design-loop} that preserves the reader's position (RQ3).
+Second, a pending proposal that is overtaken by a newer one, or invalidated by a change of provider or of mode, is superseded rather than silently applied, so that the text never adapts on a decision that no longer holds.
+\todo{verify Expired trigger}A pending proposal may likewise expire once its window of validity has elapsed, on the same principle that a proposal is valid only while the signal that triggered it still describes the reader.
+Because every proposal and its resolution are stamped into the session record of \cref{sec:design-data}, the mode in force and the fate of each proposal are themselves reproducible, which is what makes the researcher's control auditable after the session rather than merely exercised during it.
+
+With the extension seams and the researcher console, the structures that make up the architecture are now all in view.
 What remains is to draw together the decisions that produced them, each with the alternatives it was chosen over, and \cref{sec:design-decisions} gathers these into a single register.
