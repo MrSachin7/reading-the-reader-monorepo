@@ -1,0 +1,38 @@
+%% Source for Fig (sec:design-extensibility): the experiment-session lifecycle.
+%% Render: bunx -y @mermaid-js/mermaid-cli -i session-lifecycle.mmd -o session-lifecycle.pdf
+%% States mirror ExperimentSessionManager lifecycle, the readiness gate
+%% (EnsureSetupIsReadyForStart / BuildSetupSnapshot) and the recovery statuses
+%% (Recording / RecoveredIncomplete / Completed).
+stateDiagram-v2
+    [*] --> Configuring
+    Configuring --> Ready : readiness gate passes
+    Ready --> Configuring : setup changed
+    Ready --> Running : researcher starts the session
+    Running --> Finished : researcher finishes
+    Running --> Interrupted : disturbance (crash / disconnect)
+    Interrupted --> Running : resume from last checkpoint
+    Finished --> Configuring : reset for next participant
+    Finished --> [*]
+
+    note right of Configuring
+        Setup prerequisites (D6):
+        participant saved; eye tracker
+        selected and licensed;
+        calibration validated;
+        reading material chosen.
+        (Eye tracker and calibration are
+        skipped for simulated sources, D5.)
+    end note
+    note right of Running
+        The real-time adaptive loop runs;
+        the session record is written
+        incrementally (checkpointed).
+    end note
+    note left of Interrupted
+        Recoverable (D3): the record is
+        preserved up to the last checkpoint.
+    end note
+    note left of Finished
+        Record sealed and exported
+        (raw / processed, JSON / CSV).
+    end note

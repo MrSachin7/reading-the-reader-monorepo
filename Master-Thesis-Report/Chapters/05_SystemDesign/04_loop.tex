@@ -35,9 +35,29 @@ The intervention contract is therefore two-phase: a proposal is first validated 
 Each commit carries an anchor, a sentence, token, or block together with a measured anchor error and the viewport displacement, so that the reading surface can restore the reader's position across the change.
 This commit discipline is the architectural expression of the recovery concern reported in the literature \cite{jensen2025context}: it is what allows a micro-intervention to adapt the text without costing the participant their place, which is the property RQ3 examines.
 
-The loop also keeps the researcher in control of how decisions are enacted.
-It supports an autonomous mode, in which a proposal permitted by the active policy is applied immediately, and an advisory mode, in which the same proposal is presented for the researcher to approve or reject before it is committed.
-The researcher console through which this happens is the subject of \cref{sec:design-extensibility}; here it is enough to note that the loop accommodates both an unattended and a supervised experiment without structural change.
+The loop is deliberately neutral about who or what decides, so that the researcher retains control over how interventions are enacted.
+A decision may arise from three sources: the researcher acting manually, the built-in rule-based strategy, or an external provider, the latter two being the decision-module implementations of \cref{sec:design-modules}.
+Manual operation is the baseline and keeps the human fully in the loop: no automated provider is active, and the researcher applies a chosen intervention directly from the console, which commits it through the same controlled boundary as any other change.
+When an automated provider is active, an execution mode governs how its proposals are enacted, namely an advisory mode in which each proposal is presented for the researcher to approve or reject before it is committed, and an autonomous mode in which a permitted proposal is applied immediately.
+Together these form a spectrum of human involvement, from fully manual control, through advisory oversight of automated proposals, to unattended autonomous operation, and the loop accommodates the whole spectrum without structural change.
+The researcher console through which manual interventions are issued and automated proposals are reviewed is the subject of \cref{sec:design-extensibility}.
+
+These execution modes are two resolutions of a single lifecycle through which every automated proposal passes, traced in \cref{fig:design-decision-lifecycle}.
+When the active provider proposes an intervention, the proposal enters a pending state and resolves into exactly one terminal outcome, so that the disposition of every proposal is explicit and recorded rather than left implicit.
+A pending proposal is approved or rejected by the researcher under advisory operation, or applied by the platform under autonomous operation, and in every case it leaves the pending state exactly once.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{Chapters/05_SystemDesign/decision-lifecycle.pdf}
+\caption{Lifecycle of a decision proposal. A proposal raised by the active decision provider (built-in or external) enters a pending state and resolves into exactly one terminal outcome. The execution mode fixes who resolves it: in advisory mode the researcher approves or rejects the proposal, whereas in autonomous mode the platform applies it directly. Approval and autonomous application both commit the intervention at a controlled boundary and differ only in who resolved the proposal, while a proposal that is rejected or superseded by a newer one is discarded without altering the text.}
+\label{fig:design-decision-lifecycle}
+\end{figure}
+
+Two properties of this lifecycle carry the operator-control argument that RQ4 examines.
+First, approval and autonomous application reach the same committed intervention and differ only in who resolved the proposal, so the distinction between the modes is exactly the locus of human authority and nothing more, and in either mode the intervention is committed at the controlled boundary introduced above that preserves the reader's position (RQ3).
+Second, a pending proposal that is overtaken by a newer one, or invalidated by a change of provider or of mode, is superseded rather than silently applied, so that the text never adapts on a decision that no longer holds.
+\todo{verify Expired trigger}A pending proposal may likewise expire once its window of validity has elapsed, on the same principle that a proposal is valid only while the signal that triggered it still describes the reader.
+Because every proposal and its resolution are stamped into the session record of \cref{sec:design-data}, the mode in force and the fate of each proposal are themselves reproducible, which is what makes the researcher's control auditable after the session rather than merely exercised during it.
 
 Because a reading session involves an invited participant and cannot be repeated cheaply, the loop is built to survive disturbance rather than to assume its absence.
 It degrades gracefully: a client that disconnects falls out of the broadcast without interrupting the stream, and a decision provider that returns nothing, or is not present, yields no proposal and the cycle continues unaffected.

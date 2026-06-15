@@ -1,4 +1,4 @@
-\section{Extensibility and the External-Provider Seam}
+\section{Extensibility, the Provider Seam, and Researcher Control}
 \label{sec:design-extensibility}
 % Authoring brief for this section lives in section.md (§5.6).
 \Cref{sec:design-modules} declared the seams between the four concerns, and \cref{sec:design-loop,sec:design-data} showed the platform exercising its own built-in implementations behind them.
@@ -57,6 +57,15 @@ Because the seam is keyed by module identity and falls back to the built-in when
 \label{fig:design-seam}
 \end{figure}
 
+The decision concern is the seam most likely to be supplied externally, so it is worth making concrete what crosses it.
+What the platform sends out is context: the authoritative session snapshot together with the stream of analysed signals it derives, namely the reading focus, the attention summary, and the oculomotor events of \cref{sec:design-loop}.
+What it expects back is a decision, expressed as a proposal that pairs an observed signal and a short, human-readable rationale with a concrete intervention, that is, the identity of an intervention module and the parameters to apply.
+The seam therefore commits the platform to a vocabulary, signals in and a proposal out, but not to any particular way of arriving at the proposal.
+
+That deliberate silence about how a decision is reached is what makes the concern pluggable.
+The built-in provider reaches its proposal by a simple threshold heuristic over the analysed signals, which is enough to exercise the loop from end to end, whereas an external provider may reach the same kind of proposal by any means it chooses, for example a model trained to classify reading patterns from gaze.
+Supplying such a model is the end-to-end decision intelligence that constraint C3 places out of scope; the architectural contribution is the seam that makes it integrable, the context it receives and the proposal it must return, rather than the algorithm behind it.
+
 The seam of \cref{fig:design-seam} carries a concern out and back within a single session, but together with the session record of \cref{sec:design-data} the same seam opens a second, longer loop that spans sessions.
 An external decision provider improves only insofar as it can learn from prior data, and the authoritative record is precisely such data.
 Each completed session seals one schema-versioned record (\cref{fig:design-record}), and exported in a portable form these records accumulate across a study into a corpus of past sessions.
@@ -74,24 +83,22 @@ Extensibility opens the platform to future module providers; a second structure,
 The architecture separates the researcher's console from the participant's reading surface, the second-screen arrangement introduced in \cref{sec:design-style}, so that the participant sees only the text while the researcher retains the controls and a mirror of the participant's view.
 It gates a session behind explicit readiness, requiring device selection, calibration, and validation to succeed before a run can begin, so that a session cannot be started in a mis-configured state.
 And it derives the console from the single authoritative session snapshot of \cref{sec:design-data}, so that the operator commands and observes the same state through a single console rather than a collection of disconnected controls.
+Through this console the researcher exercises the manual, advisory, and autonomous control developed in \cref{sec:design-loop} and reviews the proposals and gaze overlays mirrored from the participant's session.
 
-Through that same plane the researcher also selects how much of the adaptive loop runs under human approval, and the architecture expresses this choice as a single lifecycle through which every decision passes (\cref{fig:design-decision-lifecycle}).
-When a decision provider, whether built-in or external, proposes an intervention, the proposal enters a pending state and resolves into exactly one terminal outcome, so that the disposition of every proposal is explicit and recorded rather than left implicit.
-In advisory mode a pending proposal waits for the researcher, who either approves it, committing the intervention, or rejects it, discarding it, so that a human remains in the loop for each individual adaptation.
-In autonomous mode the platform resolves the proposal itself and applies the intervention directly, so that the researcher's authority is exercised once, at the level of the mode, rather than proposal by proposal.
+The console gates and drives a session through a defined lifecycle, shown in \cref{fig:design-session-lifecycle}, which gathers the structures of this chapter into the order a researcher experiences them.
+A session begins in configuration, where four setup prerequisites are assembled, namely a saved participant, a selected and licensed eye tracker, a passed calibration, and chosen reading material, and the readiness gate forbids a start until all of them hold, so that a session cannot run in a mis-configured state (D6).
+For a simulated sensing source the eye-tracker and calibration prerequisites fall away (D5), which is what allows the lifecycle to be exercised without hardware.
+Once ready, the researcher starts the session and the real-time adaptive loop of \cref{sec:design-loop} runs, writing the session record incrementally as it proceeds.
+Should the session be disturbed, by a crash or a disconnect, the checkpointed record leaves it recoverable up to the last checkpoint, so that the loop resumes rather than the session being lost (D3).
+When the researcher finishes, the record is sealed and exported (\cref{sec:design-data}), after which the platform is reset for the next participant.
+This lifecycle is the researcher's view of the architecture in operation, and it is the structure through which the operator-control driver D6 is ultimately discharged.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{Chapters/05_SystemDesign/decision-lifecycle.pdf}
-\caption{Lifecycle of a decision proposal. A proposal raised by the active decision provider (built-in or external) enters a pending state and resolves into exactly one terminal outcome. The execution mode fixes who resolves it: in advisory mode the researcher approves or rejects the proposal, whereas in autonomous mode the platform applies it directly. Approval and autonomous application both commit the intervention at a controlled boundary and differ only in who resolved the proposal, while a proposal that is rejected or superseded by a newer one is discarded without altering the text.}
-\label{fig:design-decision-lifecycle}
+\includegraphics[width=0.92\linewidth]{Chapters/05_SystemDesign/session-lifecycle.pdf}
+\caption{The experiment-session lifecycle as driven from the researcher console. A session is configured until the readiness gate passes (a saved participant, a selected and licensed eye tracker, a validated calibration, and chosen reading material, with the eye-tracker and calibration steps skipped for simulated sources); the researcher then starts the run, during which the real-time adaptive loop executes and the session record is written incrementally. A disturbance leaves the session recoverable from the last checkpoint, and on finishing the record is sealed and exported before the platform is reset for the next participant.}
+\label{fig:design-session-lifecycle}
 \end{figure}
-
-Two properties of this lifecycle carry the operator-control argument that RQ4 examines.
-First, approval and autonomous application reach the same committed intervention and differ only in who resolved the proposal, so the distinction between the modes is exactly the locus of human authority and nothing more, and in either mode the intervention is committed at the controlled boundary of \cref{sec:design-loop} that preserves the reader's position (RQ3).
-Second, a pending proposal that is overtaken by a newer one, or invalidated by a change of provider or of mode, is superseded rather than silently applied, so that the text never adapts on a decision that no longer holds.
-\todo{verify Expired trigger}A pending proposal may likewise expire once its window of validity has elapsed, on the same principle that a proposal is valid only while the signal that triggered it still describes the reader.
-Because every proposal and its resolution are stamped into the session record of \cref{sec:design-data}, the mode in force and the fate of each proposal are themselves reproducible, which is what makes the researcher's control auditable after the session rather than merely exercised during it.
 
 With the extension seams and the researcher console, the structures that make up the architecture are now all in view.
 What remains is to draw together the decisions that produced them, each with the alternatives it was chosen over, and \cref{sec:design-decisions} gathers these into a single register.
