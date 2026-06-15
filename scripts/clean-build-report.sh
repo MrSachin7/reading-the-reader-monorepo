@@ -9,8 +9,14 @@ command -v latexmk >/dev/null 2>&1 || {
   exit 1
 }
 
+command -v latexminted >/dev/null 2>&1 || {
+  echo "latexminted (the minted/Pygments backend) was not found on PATH." >&2
+  echo "Code listings require it. Install with: python3 -m pip install latexminted" >&2
+  exit 1
+}
+
 echo "==> Clean previous build artifacts"
-(cd "$REPORT_DIR" && latexmk -C main.tex)
+(cd "$REPORT_DIR" && latexmk -C main.tex && rm -rf _minted)
 
 echo ""
 echo "==> Compile thesis report"

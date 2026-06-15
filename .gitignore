@@ -65,5 +65,7 @@ Master-Thesis-Report/*.synctex.gz
 Master-Thesis-Report/*.xdv
 Master-Thesis-Report/*.pdf
 Master-Thesis-Report/_minted-*/
+Master-Thesis-Report/_minted/
+Master-Thesis-Report/*.minted
 Master-Thesis-Report/svg-inkscape/
 Master-Thesis-Report/bibliography.tex.bak

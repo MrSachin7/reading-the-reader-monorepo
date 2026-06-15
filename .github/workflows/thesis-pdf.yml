@@ -21,7 +21,9 @@ jobs:
           working_directory: Master-Thesis-Report
           root_file: main.tex
           latexmk_use_xelatex: true
-          extra_system_packages: font-liberation
+          latexmk_shell_escape: true
+          # minted needs the Pygments/latexminted backend at build time.
+          extra_system_packages: font-liberation py3-pip py3-pygments
           pre_compile: |
             mkdir -p /etc/fonts/conf.d
             cat > /etc/fonts/conf.d/99-arial.conf << 'EOF'
@@ -35,6 +37,9 @@ jobs:
             </fontconfig>
             EOF
             fc-cache -f -v
+            # minted 3 drives Pygments through the latexminted backend; install it
+            # if the TeX Live image does not already ship it. Non-fatal if present.
+            python3 -m pip install --break-system-packages --no-warn-script-location latexminted || true
 
       - name: Publish latest PDF
         uses: softprops/action-gh-release@v2
