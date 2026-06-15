@@ -49,3 +49,38 @@ DR9 & Autonomous and advisory execution modes & D6 & An autonomous-only loop wit
 Read together, the register makes the chapter's recurring tension explicit.
 Several decisions (DR3, DR7, and the fallback within DR4) trade a measure of architectural purity for responsiveness or robustness, while others (DR1, DR2, DR8) hold the separation of concerns firm; none of these is an accident of implementation, and each is a deliberate position taken in view of the drivers.
 That the trade-offs are visible and motivated, rather than hidden, is what we intend by presenting the architecture as argued rather than narrated.
+
+\section{Technology Selection}
+\label{sec:technology-selection}
+The decisions above concern structure and are deliberately independent of any particular language or framework; this section records the technologies chosen to realise that structure and the reasoning behind them.
+Two principles guided the selection.
+First, the technologies serve the drivers rather than dictate the architecture: the ports-and-adapters structure of \cref{sec:design-modules} could be realised on several stacks, so the choice is a matter of fit and cost rather than capability.
+Second, under the time constraints of a thesis, the team's existing proficiency was treated as a first-class criterion, since building on familiar tools directed effort towards the architecture and the adaptive runtime rather than towards learning new frameworks.
+\Cref{tab:technology-selection} records the principal choices, the main alternatives considered, and the rationale for each.
+
+\begin{table}[htbp]
+\centering
+\caption{Technology selection: the principal stack choices, the main alternatives considered, and the rationale, anchored to the drivers of \cref{tab:design-drivers} and the constraints of \cref{sec:constraints}.}
+\label{tab:technology-selection}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.15\linewidth} p{0.19\linewidth} p{0.21\linewidth} p{0.32\linewidth}}
+\toprule
+\textbf{Concern} & \textbf{Chosen} & \textbf{Principal alternatives} & \textbf{Rationale} \\
+\midrule
+Frontend & React with TypeScript (Next.js) & Vue, Angular, SvelteKit; Flutter & Team proficiency; a mature component model for the dual researcher and participant surfaces; static typing guards the manually maintained cross-tier contracts (D4). \\
+\addlinespace
+Backend & C\# on .NET (ASP.NET Core) & Python (FastAPI, Django); Node.js & Team proficiency and a strong asynchronous runtime for concurrent gaze streaming (D2); see the SDK constraint below. \\
+\addlinespace
+Reading content & Markdown & PDF, HTML & A predictable, reflowable structure enables a stable gaze-to-word mapping (C2). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two factors narrowed the field beyond familiarity.
+First, the Tobii Research SDK is distributed with official language bindings only for .NET and Python \cite{tobii2025fusion}, which limited the backend to one of these two; a JavaScript or other stack would have required an interop bridge to a supported binding.
+Between the two, .NET was chosen over Python for the team's greater proficiency with C\# and for its mature asynchronous runtime (D2), with the Windows-only distribution of the SDK already fixed as constraint C1.
+Second, because the frontend and backend contracts are maintained by hand rather than generated, TypeScript's static typing was valued for catching contract drift at compile time, which supports reproducibility (D4).
+Beyond these, the alternatives in \cref{tab:technology-selection} were judged broadly capable; none offered an advantage that outweighed the team's proficiency with the chosen stack.
+We note for honesty that the chosen frontend framework's App Router later proved convenient for separating the researcher and participant surfaces, but this was a consequence of the choice rather than a reason for it.

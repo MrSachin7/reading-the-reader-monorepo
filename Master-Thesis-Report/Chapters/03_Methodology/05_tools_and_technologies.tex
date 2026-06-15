@@ -1,20 +1,12 @@
-\section{Tools and Technologies}
+\section{Development Tooling and AI Assistance}
 \label{sec:tools-and-technologies}
 
-The frontend application is built with Next.js~16 and React~19 using TypeScript~5 in strict mode.
-Next.js was selected for its App Router, which provides the route grouping needed to separate the researcher dashboard from the full-screen participant reading view without a second application.
-TypeScript strict mode was chosen because it catches contract mismatches between the frontend and backend at compile time, which is especially important given that the shared contracts between the two are maintained manually rather than through code generation.
-State management uses Redux Toolkit with RTK Query for server-side data fetching: RTK Query centralises caching and invalidation of experiment session state, ensuring consistency across components without ad hoc fetch calls.
-Tailwind CSS~v4 provides utility-first styling that keeps style declarations co-located with component logic.
-The frontend is built and served using Bun~1.3, chosen as the package manager and build tool for its fast dependency installation and cold-start build times.
+The rationale for the platform's technology stack is architectural rather than methodological, and is therefore presented with the other design decisions in \cref{sec:technology-selection}.
+This section records two aspects of how the artifact was produced: the tooling that kept it continuously validated during development, and the use of generative-AI assistants.
 
-The backend is built on .NET~10 with C\# using ASP.NET Core as the HTTP and WebSocket host.
-.NET~10 was selected for its mature asynchronous runtime, which is required to handle concurrent gaze-data streaming over WebSocket alongside synchronous REST requests without blocking.
-REST endpoints are implemented with FastEndpoints~8, which reduces controller boilerplate while retaining full access to the ASP.NET Core middleware pipeline.
-Session data is exported using CsvHelper~33 for type-mapped CSV serialisation alongside the built-in \texttt{System.Text.Json} for JSON, avoiding manual string formatting for structured experiment output.
-The Tobii Research SDK (\texttt{Tobii.Research.x64}~1.11) provides the hardware integration layer for eye-tracker communication and is a Windows-only dependency \cite{tobii2025fusion}; the backend CI pipeline therefore runs on a Windows runner to match the production environment.
+Throughout development the codebase was kept continuously buildable and testable through two independent continuous-integration pipelines, one for each sub-project, so that every change was validated automatically.
+The engineering practices behind this, including the automated test suite and the Windows build environment required by the eye-tracking hardware (C1), are detailed in \cref{ch:implementation}.
 
-Continuous integration is managed through two independent GitHub Actions pipelines: the frontend pipeline runs on Ubuntu using Bun and validates every change with a full production build; the backend pipeline runs on Windows, restores dependencies, builds the solution in Release configuration, and executes the xUnit test suite.
-
-Reading content is authored in Markdown.
-PDF support was considered but explicitly scoped out in favour of a simpler, tokenisation-friendly format that allows reliable gaze-to-word mapping without the coordinate complexity of PDF rendering.
+In keeping with contemporary software practice, generative-AI coding assistants were used to support development.
+All AI-assisted output was reviewed, tested, and integrated by the authors, who remain responsible for the resulting artifact; the analysis, the design decisions, and the writing of this thesis are the authors' own.
+A full declaration of generative-AI use, including the specific tools and the tasks for which they were used, is provided in \cref{app:ai-declaration}.

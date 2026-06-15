@@ -25,7 +25,7 @@ This context-preservation requirement is the criterion that RQ3 puts to the test
 A further group of drivers follows from the platform's role as a research instrument rather than an end-user product.
 Reproducibility (NFR5) requires a single, schema-versioned session record that captures enough of each session, including its parameters, calibration, events, and presentation configuration, to reconstruct it from the record alone, which is the need expressed by the Data Consumer stakeholder (\cref{sec:stakeholders}).
 Hardware independence (NFR8) requires a sensing-source abstraction that admits a simulated, mouse-cursor-driven source alongside the Tobii device, enabling development, automated testing, and demonstration without hardware, and as a side effect allowing each architectural layer to be exercised in isolation.
-Because the platform is researcher-operated, it must additionally lower operator cognitive load (NFR3) through a guided setup workflow, explicit readiness gating, and a unified control surface, which shapes the researcher-facing structure described in \cref{sec:design-modules}.
+Because the platform is researcher-operated, it must additionally lower operator cognitive load (NFR3) through a guided setup workflow, explicit readiness gating, and a unified researcher console, which shapes the researcher-facing structure described in \cref{sec:design-modules}.
 
 Alongside these drivers, four fixed constraints (\cref{sec:constraints}) bound the design space without being objectives to optimise.
 The Tobii Research SDK is distributed as a Windows-only binary (C1), so platform-specific code must be quarantined behind the sensing adapter rather than allowed to leak into the core.
@@ -71,7 +71,7 @@ D5 & Hardware independence & NFR8; FR17 &
   \cref{sec:design-modules}; operation on simulated input \\
 \addlinespace
 D6 & Operator-centred control & NFR3; FR1, FR6, FR11; RQ4 &
-  Guided setup, readiness gating, unified control plane, second-screen mirror &
+  Guided setup, readiness gating, unified researcher console, second-screen mirror &
   \cref{sec:design-modules,sec:design-extensibility}; workflow walkthrough \\
 \addlinespace
 D7 & Context-preserving adaptation & FR9; RQ3 &

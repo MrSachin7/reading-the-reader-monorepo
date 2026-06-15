@@ -1,28 +1,35 @@
 %% Source for Fig. 5.4 (sec:design-loop). Render to vector PDF (adaptive-loop.pdf), e.g.:
 %%   mmdc -i adaptive-loop.mmd -o adaptive-loop.pdf
+%% Two distinct front-end surfaces: the participant reading surface (text only)
+%% and the researcher console (mirror + fixation heat map + saccade overlay).
 sequenceDiagram
     autonumber
-    participant T as Sensing source (Tobii)
+    participant E as Eye tracker
+    participant P as Participant reading surface
     participant C as Backend core
-    participant R as Reading surface
+    participant M as Researcher console
     actor O as Researcher
 
     loop Adaptive cycle — while the session is live
-        T->>C: gaze sample
+        E->>C: gaze sample (raw)
         activate C
-        C->>R: live gaze (real-time channel)
-        R->>C: reading observation (gaze → content)
-        C->>C: analysis — project oculomotor events
+        C-->>P: live gaze (real-time channel)
+        C-->>M: live gaze (real-time channel)
+        P->>C: reading observation (gaze → token)
+        C->>C: analysis — project fixations, saccades, regressions
+        C-->>M: analysed events — fixation heat map, saccade overlay
+        Note over M,O: the researcher sees where and how<br/>the participant is reading
         C->>C: decision — evaluate (built-in / external)
         alt advisory mode
-            C->>O: proposal
-            O-->>C: approve / reject
+            C-->>M: intervention proposal
+            O->>C: approve / reject (informed by the overlays)
         else autonomous mode
-            Note over C: applied without operator
+            Note over C: applied without the operator
         end
         C->>C: validate, then commit at controlled boundary
-        Note right of C: anchor restores the reader's position
-        C-->>R: adapted text + intervention event (re-render)
-        C->>C: checkpoint (best-effort)
+        Note right of C: an anchor restores<br/>the reader's position
+        C-->>P: adapted text + intervention event (re-render)
+        C-->>M: adapted text mirrored to the console
+        C->>C: checkpoint
         deactivate C
     end

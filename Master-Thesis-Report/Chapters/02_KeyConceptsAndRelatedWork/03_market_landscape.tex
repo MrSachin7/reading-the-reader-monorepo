@@ -6,9 +6,6 @@ This section reviews representative products across three groups that bear on th
 The survey is not exhaustive; it samples widely used products in each group to characterise prevailing capabilities and delivery models rather than to rank vendors.
 Tab.~\ref{tab:market-landscape} summarises the comparison, after which the implications for this thesis are discussed.
 
-\subsection{Comparison of Tools}
-\label{subsec:tool-comparison}
-
 \begin{longtable}{p{3cm}p{3cm}p{2.5cm}p{4cm}p{2.5cm}}
 \caption{Representative tools and products in the adaptive reading and eye-tracking landscape, grouped by category and compared on delivery model, capabilities, and a pricing signal.}
 \label{tab:market-landscape}\\
@@ -26,6 +23,8 @@ Lower-cost eye tracker & GazePoint GP3 HD & Hardware + Software & 150 Hz samplin
 Wearable eye tracking & Pupil Labs Neon & Hardware & Academic pricing; complete research system \cite{pupillabs2025neon} & €5,515 academic \cite{pupillabs2025neon} \\
 Remote webcam tracking & RealEye & SaaS & Subscription plans; data export; panel workflow \cite{realeye2025pricingdocs} & Panelists \$15 \cite{realeye2025pricing} \\
 Experiment software & Tobii Pro Lab & Desktop software & Experiment design + recording + analysis \cite{tobii2025prolab} & Trial available \cite{tobii2025prolab} \\
+Experiment software & PsychoPy & Open-source software & Experiment design and stimulus delivery (Python or Builder); eye-tracker integration \cite{peirce2019psychopy} & Free, open source \cite{peirce2019psychopy} \\
+Experiment software & Psychtoolbox & Open-source (MATLAB/Octave) & Low-level stimulus delivery and response collection \cite{brainard1997psychtoolbox} & Free, open source \cite{brainard1997psychtoolbox} \\
 Reading assessment & Lexplore & Service + Hardware & AI-based reading assessment \cite{lexplore2025assessment} & Quote-based \cite{lexplore2025pricing} \\
 Accessibility device & OrCam Read 3 & Hardware & Reads printed/digital text aloud \cite{orcam2025read3} & \$116/month option \cite{orcam2025read3} \\
 Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus; Text Spacing; read-aloud \cite{microsoft2025immersive} & Included \cite{microsoft2025immersive} \\
@@ -38,6 +37,30 @@ First, the research-grade eye trackers and experiment software offer the samplin
 Second, the accessibility and reading-assessment tools act on the reading material, but either as static customisation under user control \cite{orcam2025read3, amazon2025kindle} or as assessment services that analyse the reader without adapting presentation in the loop \cite{lexplore2025assessment}.
 Third, the built-in adaptive interfaces provide useful presentation controls such as line focus and text spacing \cite{microsoft2025immersive}, yet these are manually selected features rather than responses driven by the reader's gaze.
 No surveyed product combines real-time gaze sensing, automatic typographic adaptation, and researcher-facing experiment control within a single modular platform, which is precisely the combination this thesis targets.
+
+The contrast is sharpest against the experiment software that researchers use to build reading studies today.
+Such studies are most often assembled in general-purpose experiment-building platforms (Tobii Pro Lab \cite{tobii2025prolab}, the open-source PsychoPy \cite{peirce2019psychopy}, and the MATLAB-based Psychtoolbox \cite{brainard1997psychtoolbox}) that excel at designing experiments, presenting stimuli, and capturing data, but that were not built to adapt the text in response to the reader's gaze.
+Tab.~\ref{tab:capability-matrix} compares the most established of these platforms with the platform developed in this thesis across the capabilities a gaze-driven reading experiment requires.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Capability comparison of established experiment-building software with the platform developed in this thesis, across the capabilities a gaze-driven reading experiment requires. Entries reflect the authors' assessment of each platform's documented capabilities: available out of the box (Yes), available only with additional hardware or custom scripting (Partial), or absent (No). Platform capabilities are sourced from Tobii Pro Lab \cite{tobii2025prolab}, PsychoPy \cite{peirce2019psychopy}, and Psychtoolbox \cite{brainard1997psychtoolbox}.}
+\label{tab:capability-matrix}
+\begin{tabular}{p{5.2cm}cccc}
+\toprule
+Capability & Tobii Pro Lab & PsychoPy & Psychtoolbox & Reading the Reader \\
+\midrule
+Design experiments & Yes & Yes & Yes & Yes \\
+Record gaze data & Yes & Partial & Partial & Yes \\
+Analyse recorded data & Yes & Partial & No & Yes \\
+Real-time gaze-driven text intervention & No & Partial & Partial & Yes \\
+Pluggable decision modules & No & No & No & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All three established platforms support experiment design and data capture, and the dedicated analysis suite adds post-hoc analysis, yet none delivers real-time, gaze-driven text intervention or a pluggable decision boundary; supplying both within one researcher-operated platform is the contribution this thesis makes.
 Fig.~\ref{fig:market-quadrant} arranges the surveyed products along two of these dimensions, whether the system adapts the text presentation and whether it uses the reader's gaze, making the region they leave unoccupied immediately visible.
 
 \usetikzlibrary{arrows.meta, shapes.geometric}

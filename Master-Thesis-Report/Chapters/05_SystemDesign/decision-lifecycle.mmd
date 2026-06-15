@@ -1,0 +1,37 @@
+%% Source for Fig. (sec:design-extensibility / sec:design-loop): decision-proposal lifecycle.
+%% Render to vector PDF (decision-lifecycle.pdf), e.g.:
+%%   mmdc -i decision-lifecycle.mmd -o decision-lifecycle.pdf
+%% States and transitions mirror DecisionProposalStatus + DecisionProposalLifecycleRules.
+stateDiagram-v2
+    direction LR
+
+    [*] --> Pending : active provider proposes<br/>(rule-based or external)
+
+    Pending --> Approved : advisory: researcher approves
+    Pending --> AutoApplied : autonomous: system applies
+    Pending --> Rejected : advisory: researcher rejects
+    Pending --> Superseded : newer proposal /<br/>provider or mode change
+    Pending --> Expired : validity window elapsed
+
+    Approved --> [*]
+    AutoApplied --> [*]
+    Rejected --> [*]
+    Superseded --> [*]
+    Expired --> [*]
+
+    note right of Pending
+        Created only while an active provider is
+        selected and automation is not paused.
+    end note
+
+    note right of AutoApplied
+        Approved and AutoApplied both commit the
+        intervention at a controlled boundary
+        (anchored to preserve the reader's position);
+        they differ only in who resolved the proposal.
+    end note
+
+    classDef applied fill:#e6f4ea,stroke:#1e7e34,color:#1e3a24;
+    classDef discarded fill:#f1f1f1,stroke:#888,color:#333;
+    class Approved,AutoApplied applied
+    class Rejected,Superseded,Expired discarded
