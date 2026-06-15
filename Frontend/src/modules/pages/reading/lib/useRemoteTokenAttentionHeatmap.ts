@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject, useEffect } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 import type {
   ReadingAttentionSummarySnapshot,
   ReadingAttentionTokenStats,
@@ -137,6 +137,24 @@ function computeBaselineDwellMs(attention: RemoteTokenAttentionSnapshot) {
   return Math.max(median, BASELINE_FLOOR_MS);
 }
 
+function applyRegressionOnlyStyles(element: HTMLElement) {
+  element.style.setProperty("text-decoration", "underline wavy rgba(225, 29, 72, 0.8)");
+  element.style.setProperty("text-decoration-thickness", "1.5px");
+  element.style.setProperty("text-underline-offset", "0.22em");
+  element.dataset.remoteAttention = "true";
+}
+
+type DesiredEntry =
+  | {
+      kind: "stats";
+      stats: RemoteTokenAttentionStats;
+      tier: AttentionTier;
+      isCurrent: boolean;
+      isRegression: boolean;
+      signature: string;
+    }
+  | { kind: "regression"; signature: string };
+
 export function useRemoteTokenAttentionHeatmap({
   containerRef,
   contentRef,
@@ -145,20 +163,16 @@ export function useRemoteTokenAttentionHeatmap({
   enabled = true,
   applyKey,
 }: UseRemoteTokenAttentionHeatmapParams) {
+  // tokenId -> the visual signature currently applied to its DOM node. Persisted
+  // across renders so each update only restyles tokens whose appearance actually
+  // changed (O(delta)) instead of clearing and re-applying every styled token on
+  // every attention broadcast (O(N), which grew with reading progress).
+  const appliedRef = useRef<Map<string, string>>(new Map());
+  const lastApplyKeyRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
-      return;
-    }
-
-    const previouslyStyled = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-remote-attention='true']")
-    );
-    for (const element of previouslyStyled) {
-      clearStyles(element);
-    }
-
-    if (!enabled || !attention) {
       return;
     }
 
@@ -166,9 +180,33 @@ export function useRemoteTokenAttentionHeatmap({
       contentRef?.current ??
       container.querySelector<HTMLElement>("[data-reader-content='true']") ??
       container;
+    const applied = appliedRef.current;
+
+    const clearToken = (tokenId: string) => {
+      const element = contentRoot.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
+      if (element) {
+        clearStyles(element);
+      }
+    };
+
+    // A layout/typography change (new applyKey) replaces the token DOM nodes, so
+    // styles we believe are applied are gone with the old nodes. Drop tracking so
+    // we re-apply against the fresh nodes.
+    if (lastApplyKeyRef.current !== applyKey) {
+      lastApplyKeyRef.current = applyKey;
+      applied.clear();
+    }
+
+    if (!enabled || !attention) {
+      for (const tokenId of applied.keys()) {
+        clearToken(tokenId);
+      }
+      applied.clear();
+      return;
+    }
 
     const baselineMs = computeBaselineDwellMs(attention);
-    const styledTokenIds = new Set<string>();
+    const desired = new Map<string, DesiredEntry>();
 
     for (const [tokenId, stats] of Object.entries(attention.tokenStats)) {
       const tier = classifyTier(stats, baselineMs);
@@ -176,48 +214,76 @@ export function useRemoteTokenAttentionHeatmap({
         continue;
       }
 
-      const element = contentRoot.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
-      if (!element) {
-        continue;
-      }
-
-      applyHeatmapStyles(
-        element,
-        stats,
-        tier,
-        baselineMs,
-        tokenId === attention.currentTokenId,
-        regressionTargetTokenIds?.has(tokenId) ?? false
-      );
-      styledTokenIds.add(tokenId);
+      const isCurrent = tokenId === attention.currentTokenId;
+      const isRegression = regressionTargetTokenIds?.has(tokenId) ?? false;
+      const signature = `${tier}|${stats.fixationMs}|${stats.fixationCount}|${stats.skimCount}|${stats.maxFixationMs}|${baselineMs}|${isCurrent ? 1 : 0}|${isRegression ? 1 : 0}`;
+      desired.set(tokenId, { kind: "stats", stats, tier, isCurrent, isRegression, signature });
     }
 
     // Regression targets that have no dwell stats yet still deserve the marker.
     if (regressionTargetTokenIds) {
       for (const tokenId of regressionTargetTokenIds) {
-        if (styledTokenIds.has(tokenId)) {
+        if (desired.has(tokenId)) {
           continue;
         }
-
-        const element = contentRoot.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
-        if (!element) {
-          continue;
-        }
-
-        element.style.setProperty("text-decoration", "underline wavy rgba(225, 29, 72, 0.8)");
-        element.style.setProperty("text-decoration-thickness", "1.5px");
-        element.style.setProperty("text-underline-offset", "0.22em");
-        element.dataset.remoteAttention = "true";
+        desired.set(tokenId, { kind: "regression", signature: "regression-only" });
       }
     }
 
-    return () => {
-      const styled = Array.from(
-        container.querySelectorAll<HTMLElement>("[data-remote-attention='true']")
-      );
-      for (const element of styled) {
-        clearStyles(element);
+    // Clear tokens that are no longer styled.
+    for (const tokenId of [...applied.keys()]) {
+      if (!desired.has(tokenId)) {
+        clearToken(tokenId);
+        applied.delete(tokenId);
       }
-    };
+    }
+
+    // Apply only tokens whose visual signature changed since last time.
+    for (const [tokenId, entry] of desired) {
+      if (applied.get(tokenId) === entry.signature) {
+        continue;
+      }
+
+      const element = contentRoot.querySelector<HTMLElement>(`[data-token-id='${tokenId}']`);
+      if (!element) {
+        applied.delete(tokenId);
+        continue;
+      }
+
+      clearStyles(element);
+      if (entry.kind === "regression") {
+        applyRegressionOnlyStyles(element);
+      } else {
+        applyHeatmapStyles(
+          element,
+          entry.stats,
+          entry.tier,
+          baselineMs,
+          entry.isCurrent,
+          entry.isRegression
+        );
+      }
+      applied.set(tokenId, entry.signature);
+    }
   }, [attention, containerRef, contentRef, enabled, applyKey, regressionTargetTokenIds]);
+
+  // Final teardown: clear all heatmap styling when the hook unmounts. The
+  // overlay-off case is handled incrementally in the main effect above, so this
+  // intentionally does NOT clear between re-runs (that would defeat the diff).
+  useEffect(() => {
+    const container = containerRef.current;
+    const applied = appliedRef.current;
+    return () => {
+      if (container) {
+        const styled = Array.from(
+          container.querySelectorAll<HTMLElement>("[data-remote-attention='true']")
+        );
+        for (const element of styled) {
+          clearStyles(element);
+        }
+      }
+      applied.clear();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

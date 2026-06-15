@@ -395,18 +395,22 @@ function getWsUrl() {
 
 function send(message: ClientEnvelope) {
   if (socket?.readyState !== WebSocket.OPEN) {
-    console.log("WebSocket Request Skipped:", {
-      url: getWsUrl(),
-      readyState: socket?.readyState ?? null,
-      message,
-    });
+    if (WS_DEBUG) {
+      console.log("WebSocket Request Skipped:", {
+        url: getWsUrl(),
+        readyState: socket?.readyState ?? null,
+        message,
+      });
+    }
     return;
   }
 
-  console.log("WebSocket Request:", {
-    url: getWsUrl(),
-    message,
-  });
+  if (WS_DEBUG) {
+    console.log("WebSocket Request:", {
+      url: getWsUrl(),
+      message,
+    });
+  }
   socket.send(JSON.stringify(message));
 }
 
@@ -660,11 +664,11 @@ function handleMessage(raw: MessageEvent<string>) {
     }
 
     if (message.type === "eyeMovementAnalysisChanged") {
+      // Update the eye-movement analysis slice and emit once. The attention
+      // summary arrives via its own readingAttentionSummaryChanged message, so a
+      // second patchReadingSession here only allocated new identities and forced
+      // a redundant re-render per observation.
       patchEyeMovementAnalysis(message.payload)
-      patchReadingSession((current) => ({
-        ...current,
-        attentionSummary: current.attentionSummary,
-      }))
       return
     }
 

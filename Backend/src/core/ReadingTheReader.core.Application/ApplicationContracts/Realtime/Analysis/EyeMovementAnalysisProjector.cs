@@ -65,19 +65,31 @@ internal static class EyeMovementAnalysisProjector
 
     public static EyeMovementAnalysisSnapshot ToSnapshot(EyeMovementAnalysisRuntimeState state, long observedAtUnixMs)
     {
+        return ToSnapshotWithSummary(state, observedAtUnixMs).Snapshot;
+    }
+
+    public static (EyeMovementAnalysisSnapshot Snapshot, ReadingAttentionSummarySnapshot Summary) ToSnapshotWithSummary(
+        EyeMovementAnalysisRuntimeState state,
+        long observedAtUnixMs)
+    {
         var summary = ToAttentionSummary(state, observedAtUnixMs);
-        return new EyeMovementAnalysisSnapshot(
+        var snapshot = new EyeMovementAnalysisSnapshot(
             state.LatestObservation?.Copy(),
             state.CurrentFixation?.Copy(),
             state.RecentFixations is null ? [] : [.. state.RecentFixations.Select(item => item.Copy())],
             state.RecentSaccades is null ? [] : [.. state.RecentSaccades.Select(item => item.Copy())],
-            summary.TokenStats.ToDictionary(entry => entry.Key, entry => entry.Value.Copy(), StringComparer.Ordinal),
+            // Share the summary's freshly-projected token stats rather than copying
+            // the (session-growing) dictionary a second time. ToAttentionSummary
+            // already allocates a fresh dictionary, and both the snapshot and the
+            // summary treat it as read-only.
+            summary.TokenStats,
             summary.CurrentTokenId,
             summary.CurrentTokenDurationMs,
             summary.FixatedTokenCount,
             summary.SkimmedTokenCount,
             state.RegressionCount,
             state.StruggleSignals?.Copy());
+        return (snapshot, summary);
     }
 
     public static EyeMovementAnalysisRuntimeState FromSnapshot(EyeMovementAnalysisSnapshot snapshot)

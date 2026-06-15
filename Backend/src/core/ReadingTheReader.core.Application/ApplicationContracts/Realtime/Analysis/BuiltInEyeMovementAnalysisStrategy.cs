@@ -21,7 +21,10 @@ public sealed class BuiltInEyeMovementAnalysisStrategy : IEyeMovementAnalysisStr
         EyeMovementAnalysisContextSnapshot context,
         CancellationToken ct = default)
     {
-        var runtimeState = context.RuntimeState.Copy() with
+        // Immutable record: a `with` shallow copy suffices. State transitions
+        // below either replace whole collections or build fresh ones, so the
+        // incoming collections are never mutated in place.
+        var runtimeState = context.RuntimeState with
         {
             LatestObservation = context.Observation.Copy()
         };

@@ -7,6 +7,15 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Sessio
 
 public sealed partial class ExperimentSessionManager
 {
+    // The live eye-movement analysis + attention summary carry the session-growing
+    // TokenStats dictionary and are produced on every reading-gaze observation
+    // (~10-30 Hz). Broadcasting both in full on every observation is what scales
+    // poorly as more of the text is read. Coalesce them to ~8 Hz for the live
+    // visualization; replay/export still records every observation via its own
+    // path, and decision strategies are still evaluated on every observation.
+    private const long MinEyeMovementBroadcastIntervalMs = 120;
+    private long _lastEyeMovementBroadcastAtUnixMs;
+
     public async ValueTask<EyeMovementAnalysisSnapshot> UpdateReadingGazeObservationAsync(
         ReadingGazeObservationCommand command,
         CancellationToken ct = default)
@@ -19,7 +28,11 @@ public sealed partial class ExperimentSessionManager
         {
             var observation = NormalizeReadingGazeObservation(command);
             var previousRuntimeState = _eyeMovementAnalysisRuntimeState;
-            var runtimeState = _eyeMovementAnalysisRuntimeState.Copy() with
+            // The runtime state is an immutable record whose collections are only
+            // ever replaced (never mutated in place), so a `with` shallow copy is
+            // enough — the previous deep `.Copy()` cloned the session-growing
+            // TokenStats on every observation for no benefit.
+            var runtimeState = _eyeMovementAnalysisRuntimeState with
             {
                 LatestObservation = observation.Copy()
             };
@@ -31,12 +44,9 @@ public sealed partial class ExperimentSessionManager
                 observation,
                 ct);
 
-            _eyeMovementAnalysisRuntimeState = result?.RuntimeState.Copy() ?? runtimeState;
+            _eyeMovementAnalysisRuntimeState = result?.RuntimeState ?? runtimeState;
             RecordNewEyeMovementEvents(previousRuntimeState, _eyeMovementAnalysisRuntimeState);
-            analysisSnapshot = EyeMovementAnalysisProjector.ToSnapshot(
-                _eyeMovementAnalysisRuntimeState,
-                observation.ObservedAtUnixMs);
-            summary = EyeMovementAnalysisProjector.ToAttentionSummary(
+            (analysisSnapshot, summary) = EyeMovementAnalysisProjector.ToSnapshotWithSummary(
                 _eyeMovementAnalysisRuntimeState,
                 observation.ObservedAtUnixMs);
             _liveReadingSession = _liveReadingSession with
@@ -51,8 +61,7 @@ public sealed partial class ExperimentSessionManager
             _lifecycleGate.Release();
         }
 
-        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
-        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        await BroadcastEyeMovementAnalysisThrottledAsync(analysisSnapshot, summary, ct);
         await EvaluateDecisionStrategiesAsync(ct);
         return analysisSnapshot;
     }
@@ -180,10 +189,26 @@ public sealed partial class ExperimentSessionManager
             _lifecycleGate.Release();
         }
 
-        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
-        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
+        await BroadcastEyeMovementAnalysisThrottledAsync(analysisSnapshot, summary, ct);
         await EvaluateDecisionStrategiesAsync(ct);
         return analysisSnapshot;
+    }
+
+    private async ValueTask BroadcastEyeMovementAnalysisThrottledAsync(
+        EyeMovementAnalysisSnapshot analysisSnapshot,
+        ReadingAttentionSummarySnapshot summary,
+        CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var last = Interlocked.Read(ref _lastEyeMovementBroadcastAtUnixMs);
+        if (now - last < MinEyeMovementBroadcastIntervalMs)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _lastEyeMovementBroadcastAtUnixMs, now);
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.EyeMovementAnalysisChanged, analysisSnapshot, ct);
+        await _clientBroadcasterAdapter.BroadcastAsync(MessageTypes.ReadingAttentionSummaryChanged, summary, ct);
     }
 
     private void RecordNewEyeMovementEvents(

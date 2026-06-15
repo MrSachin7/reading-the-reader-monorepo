@@ -345,9 +345,10 @@ public sealed partial class ExperimentSessionManager
     {
         lock (_historyGate)
         {
-            _latestAttentionTokenStats = summary.TokenStats is null
-                ? null
-                : summary.TokenStats.ToDictionary(e => e.Key, e => e.Value.Copy());
+            // summary.TokenStats is already a freshly projected, read-only
+            // dictionary (and the flush re-copies it before persisting), so an
+            // extra per-observation deep copy here is redundant.
+            _latestAttentionTokenStats = summary.TokenStats;
             _pendingAttentionEvents.Add(new ReadingAttentionEventRecord(
                 NextSequenceNumber(),
                 occurredAtUnixMs,

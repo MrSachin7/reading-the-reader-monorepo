@@ -35,12 +35,12 @@ export function useGazeConnectionStats(
   const lastValidPointAtRef = useRef(0)
 
   useEffect(() => {
+    // When disabled the hook returns constant defaults below, so there is no
+    // need to reset state here (which would be a synchronous setState in an
+    // effect). Just skip subscribing.
     if (!enabled) {
       sampleCounterRef.current = 0
       lastValidPointAtRef.current = 0
-      setConnectionStats(null)
-      setSampleRateHz(0)
-      setHasRecentGaze(false)
       return
     }
 

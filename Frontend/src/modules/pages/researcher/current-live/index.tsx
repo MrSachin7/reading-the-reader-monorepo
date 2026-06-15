@@ -252,9 +252,25 @@ function ResearcherCurrentLiveBody({
     editableByExperimenter: readingSession.presentation.editableByResearcher,
   })
 
+  // `recentSaccades` is a fresh array on every eyeMovementAnalysisChanged
+  // broadcast (which fires per reading-gaze observation — many times/sec), even
+  // when no new saccade actually completed. Keying the memo on the analysis
+  // object identity therefore gave the overlay segments a new identity on every
+  // broadcast, forcing SaccadePathOverlay to re-measure (dozens of
+  // getBoundingClientRect reflows) far more often than saccades change — which
+  // is what spikes latency once the reading-dynamics overlay is enabled. Key the
+  // memo to a stable signature of the newest saccade + count so the segment
+  // array identity only changes when a saccade actually arrives.
+  const recentSaccades = session.eyeMovementAnalysis?.recentSaccades
+  const newestSaccade = recentSaccades?.[0]
+  const saccadeSignature = newestSaccade
+    ? `${recentSaccades!.length}|${newestSaccade.fromTokenId}->${newestSaccade.toTokenId}@${newestSaccade.endedAtUnixMs}`
+    : "none"
   const saccadeSegments = useMemo(
-    () => toSaccadeOverlaySegments(session.eyeMovementAnalysis?.recentSaccades ?? []),
-    [session.eyeMovementAnalysis]
+    () => toSaccadeOverlaySegments(recentSaccades ?? []),
+    // Intentionally keyed on the stable signature rather than the array identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saccadeSignature]
   )
 
   // Struggle labels are only meaningful while the external eye analyzer service
