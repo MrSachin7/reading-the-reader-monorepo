@@ -367,6 +367,12 @@ function setStats(next: Partial<ConnectionStats>) {
   emitStats();
 }
 
+// Verbose per-message WebSocket logging is opt-in. It fires for every inbound
+// frame (gaze samples at ~90Hz plus large analysis payloads), and logging big
+// objects on the main thread stalls pong handling, which inflates the measured
+// connection RTT. Default off; enable with NEXT_PUBLIC_WS_DEBUG=true.
+const WS_DEBUG = process.env.NEXT_PUBLIC_WS_DEBUG === "true";
+
 function getWsUrl() {
   const fromEnv = process.env.NEXT_PUBLIC_WS_URL;
   if (fromEnv) {
@@ -552,10 +558,12 @@ function patchFacialDifficultySignal(signal: FacialDifficultySignalSnapshot) {
 function handleMessage(raw: MessageEvent<string>) {
   try {
     const message = JSON.parse(raw.data) as ServerEnvelope;
-    console.log("WebSocket Response:", {
-      url: getWsUrl(),
-      message,
-    });
+    if (WS_DEBUG) {
+      console.log("WebSocket Response:", {
+        url: getWsUrl(),
+        message,
+      });
+    }
 
     if (message.type === "gazeSample") {
       for (const listener of gazeListeners) {

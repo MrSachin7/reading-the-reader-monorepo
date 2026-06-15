@@ -1,65 +1,58 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type RefObject } from "react"
 
 import { type ConnectionStats, subscribeToConnectionStats, subscribeToGaze } from "@/lib/gaze-socket"
 import { calculateGazePoint, normalizeGazePoint, type GazePoint } from "./gaze-helpers"
 
-type UseLiveGazeStreamResult = {
-  rawPoint: GazePoint | null
-  smoothedPoint: GazePoint | null
+type GazeStreamOptions = {
+  enabled?: boolean
+}
+
+type UseGazeConnectionStatsResult = {
   connectionStats: ConnectionStats | null
   sampleRateHz: number
   hasRecentGaze: boolean
 }
 
-type UseLiveGazeStreamOptions = {
-  applyLocalCalibration?: boolean
-  enabled?: boolean
-}
+const RECENT_GAZE_WINDOW_MS = 700
 
-export function useLiveGazeStream(
-  options: UseLiveGazeStreamOptions = {}
-): UseLiveGazeStreamResult {
-  const shouldApplyLocalCalibration = options.applyLocalCalibration ?? true
+/**
+ * Low-frequency gaze connection/quality stats. Safe to call from heavy pages:
+ * it re-renders the host at roughly 1 Hz (sample rate), on liveness transitions,
+ * and on connection-stat changes — never per animation frame. The high-frequency
+ * gaze point is deliberately NOT exposed here; use {@link useGazeMarker} for that.
+ */
+export function useGazeConnectionStats(
+  options: GazeStreamOptions = {}
+): UseGazeConnectionStatsResult {
   const enabled = options.enabled ?? true
-  const [rawPoint, setRawPoint] = useState<GazePoint | null>(null)
-  const [smoothedPoint, setSmoothedPoint] = useState<GazePoint | null>(null)
   const [connectionStats, setConnectionStats] = useState<ConnectionStats | null>(null)
   const [sampleRateHz, setSampleRateHz] = useState(0)
   const [hasRecentGaze, setHasRecentGaze] = useState(false)
 
-  const latestRawPointRef = useRef<GazePoint | null>(null)
-  const latestSmoothedPointRef = useRef<GazePoint | null>(null)
-  const latestStatsRef = useRef<ConnectionStats | null>(null)
   const sampleCounterRef = useRef(0)
   const lastValidPointAtRef = useRef(0)
 
   useEffect(() => {
     if (!enabled) {
-      latestRawPointRef.current = null
-      latestSmoothedPointRef.current = null
-      latestStatsRef.current = null
       sampleCounterRef.current = 0
       lastValidPointAtRef.current = 0
+      setConnectionStats(null)
+      setSampleRateHz(0)
+      setHasRecentGaze(false)
       return
     }
 
     const unsubscribeGaze = subscribeToGaze((sample) => {
-      const nextPoint = calculateGazePoint(sample)
       sampleCounterRef.current += 1
-
-      if (!nextPoint) {
-        return
+      if (calculateGazePoint(sample)) {
+        lastValidPointAtRef.current = Date.now()
       }
-
-      lastValidPointAtRef.current = Date.now()
-      latestRawPointRef.current = nextPoint
-      latestSmoothedPointRef.current = normalizeGazePoint(latestSmoothedPointRef.current, nextPoint)
     })
 
     const unsubscribeStats = subscribeToConnectionStats((stats) => {
-      latestStatsRef.current = stats
+      setConnectionStats(stats)
     })
 
     const sampleRateTimer = window.setInterval(() => {
@@ -68,34 +61,84 @@ export function useLiveGazeStream(
     }, 1000)
 
     const livenessTimer = window.setInterval(() => {
-      setHasRecentGaze(Date.now() - lastValidPointAtRef.current < 700)
+      setHasRecentGaze(Date.now() - lastValidPointAtRef.current < RECENT_GAZE_WINDOW_MS)
     }, 250)
-
-    let frameId = 0
-
-    const render = () => {
-      setRawPoint(latestRawPointRef.current)
-      setSmoothedPoint(latestSmoothedPointRef.current)
-      setConnectionStats(latestStatsRef.current)
-      frameId = window.requestAnimationFrame(render)
-    }
-
-    frameId = window.requestAnimationFrame(render)
 
     return () => {
       unsubscribeGaze()
       unsubscribeStats()
       window.clearInterval(sampleRateTimer)
       window.clearInterval(livenessTimer)
+    }
+  }, [enabled])
+
+  if (!enabled) {
+    return { connectionStats: null, sampleRateHz: 0, hasRecentGaze: false }
+  }
+
+  return { connectionStats, sampleRateHz, hasRecentGaze }
+}
+
+type UseGazeMarkerOptions = GazeStreamOptions & {
+  hideWhenNoPoint?: boolean
+}
+
+/**
+ * Imperatively drives a gaze marker element. Subscribes to the gaze stream and
+ * writes `transform`/`opacity` directly to the element inside a single
+ * requestAnimationFrame loop — ZERO React state per frame, so the host component
+ * never re-renders on gaze movement. This is what keeps the live view smooth.
+ */
+export function useGazeMarker(
+  markerRef: RefObject<HTMLElement | null>,
+  options: UseGazeMarkerOptions = {}
+): void {
+  const enabled = options.enabled ?? true
+  const hideWhenNoPoint = options.hideWhenNoPoint ?? false
+
+  useEffect(() => {
+    const marker = markerRef.current
+    const idleOpacity = hideWhenNoPoint ? "0" : "0.2"
+
+    if (!enabled) {
+      if (marker) {
+        marker.style.opacity = idleOpacity
+      }
+      return
+    }
+
+    let smoothedPoint: GazePoint | null = null
+    let lastValidPointAt = 0
+    let frameId = 0
+
+    const unsubscribe = subscribeToGaze((sample) => {
+      const nextPoint = calculateGazePoint(sample)
+      if (!nextPoint) {
+        return
+      }
+      lastValidPointAt = Date.now()
+      smoothedPoint = normalizeGazePoint(smoothedPoint, nextPoint)
+    })
+
+    const render = () => {
+      const node = markerRef.current
+      if (node) {
+        const hasRecentGaze = Date.now() - lastValidPointAt < RECENT_GAZE_WINDOW_MS
+        if (smoothedPoint && hasRecentGaze) {
+          node.style.opacity = "1"
+          node.style.transform = `translate(-50%, -50%) translate(${smoothedPoint.x * 100}vw, ${smoothedPoint.y * 100}vh)`
+        } else {
+          node.style.opacity = idleOpacity
+        }
+      }
+      frameId = window.requestAnimationFrame(render)
+    }
+
+    frameId = window.requestAnimationFrame(render)
+
+    return () => {
+      unsubscribe()
       window.cancelAnimationFrame(frameId)
     }
-  }, [enabled, shouldApplyLocalCalibration])
-
-  return {
-    rawPoint: enabled ? rawPoint : null,
-    smoothedPoint: enabled ? smoothedPoint : null,
-    connectionStats: enabled ? connectionStats : null,
-    sampleRateHz: enabled ? sampleRateHz : 0,
-    hasRecentGaze: enabled ? hasRecentGaze : false,
-  }
+  }, [enabled, hideWhenNoPoint, markerRef])
 }

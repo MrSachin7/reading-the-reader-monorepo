@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiveGazeOverlay } from "@/modules/pages/gaze/components/LiveGazeOverlay";
-import type { GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers";
 import type { GazeData } from "@/lib/gaze-socket";
 import { MarkdownReader } from "@/modules/pages/reading/components/MarkdownReader";
 import { ReaderShellQuiz } from "@/modules/pages/reading/components/ReaderShellQuiz";
@@ -97,8 +96,7 @@ type ReaderShellProps = {
   onRemoteTokenAttentionChange?: (snapshot: RemoteTokenAttentionSnapshot) => void;
   remoteSaccades?: SaccadeOverlaySegment[] | null;
   showRemoteFocusMarker?: boolean;
-  gazeOverlayPoint?: GazePoint | null;
-  gazeOverlayHasRecentPoint?: boolean;
+  gazeOverlayEnabled?: boolean;
   frameClassName?: string;
   frameStyle?: CSSProperties;
   embedded?: boolean;
@@ -244,8 +242,7 @@ export function ReaderShell({
   remoteSaccades = null,
   onRemoteTokenAttentionChange,
   showRemoteFocusMarker = true,
-  gazeOverlayPoint,
-  gazeOverlayHasRecentPoint,
+  gazeOverlayEnabled,
   frameClassName,
   frameStyle,
   embedded = false,
@@ -1147,8 +1144,7 @@ export function ReaderShell({
           statusVariant="compact"
           hideMarkerWhenNoPoint
           markerClassName="h-4 w-4 border-blue-400 bg-blue-500/60 shadow-[0_0_22px_rgba(96,165,250,0.68)]"
-          point={gazeOverlayPoint}
-          hasRecentGaze={gazeOverlayHasRecentPoint}
+          enabled={gazeOverlayEnabled}
         />
       ) : null}
 

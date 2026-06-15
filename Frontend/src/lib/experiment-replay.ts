@@ -11,6 +11,7 @@ import {
   type ExperimentMaterialRunSnapshot,
   type FixationSnapshot,
   type SaccadeSnapshot,
+  type StruggleSignalsSnapshot,
   type ExperimentRunSnapshot,
   type ExperimentEyeTrackerSnapshot,
   type ExperimentLiveMonitoringSnapshot,
@@ -167,6 +168,15 @@ export type SaccadeEventRecord = {
   materialIndex?: number | null
 }
 
+export type StruggleSignalEventRecord = {
+  sequenceNumber: number
+  occurredAtUnixMs: number
+  elapsedSinceStartMs?: number | null
+  signals: StruggleSignalsSnapshot
+  materialRunId?: string | null
+  materialIndex?: number | null
+}
+
 export type DecisionProposalEventRecord = {
   sequenceNumber: number
   occurredAtUnixMs: number
@@ -295,6 +305,8 @@ export type ExperimentReplayExport = {
     finalTokenStats?: Record<string, ReadingAttentionTokenStats> | null
     fixationEvents?: FixationEventRecord[]
     saccadeEvents?: SaccadeEventRecord[]
+    finalStruggleSignals?: StruggleSignalsSnapshot | null
+    struggleSignalEvents?: StruggleSignalEventRecord[]
     regressionCount?: number
   }
   interventions: {
@@ -859,6 +871,10 @@ export function getReplayFixationEvents(replay: ExperimentReplayExport) {
 
 export function getReplaySaccadeEvents(replay: ExperimentReplayExport) {
   return replay.derived.saccadeEvents ?? []
+}
+
+export function getReplayStruggleSignalEvents(replay: ExperimentReplayExport) {
+  return replay.derived.struggleSignalEvents ?? []
 }
 
 export function getReplayRegressionEvents(replay: ExperimentReplayExport) {

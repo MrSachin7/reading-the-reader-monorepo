@@ -28,7 +28,8 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<QuizFocusRecord>? quizFocusEvents = null,
         IReadOnlyList<QuizSelectionRecord>? quizSelectionEvents = null,
         IReadOnlyList<FixationEventRecord>? fixationEvents = null,
-        IReadOnlyList<SaccadeEventRecord>? saccadeEvents = null)
+        IReadOnlyList<SaccadeEventRecord>? saccadeEvents = null,
+        IReadOnlyList<StruggleSignalEventRecord>? struggleSignalEvents = null)
     {
         return Create(
             initialSnapshot,
@@ -55,7 +56,8 @@ public static class ExperimentReplayExportFactory
             quizFocusEvents,
             quizSelectionEvents,
             fixationEvents,
-            saccadeEvents);
+            saccadeEvents,
+            struggleSignalEvents);
     }
 
     public static ExperimentReplayExport Create(
@@ -83,7 +85,8 @@ public static class ExperimentReplayExportFactory
         IReadOnlyList<QuizFocusRecord>? quizFocusEvents = null,
         IReadOnlyList<QuizSelectionRecord>? quizSelectionEvents = null,
         IReadOnlyList<FixationEventRecord>? fixationEvents = null,
-        IReadOnlyList<SaccadeEventRecord>? saccadeEvents = null)
+        IReadOnlyList<SaccadeEventRecord>? saccadeEvents = null,
+        IReadOnlyList<StruggleSignalEventRecord>? struggleSignalEvents = null)
     {
         var normalizedCompletionSource = NormalizeNullableText(completionSource) ?? "unknown";
         var isLiveExport = latestSnapshot.IsActive &&
@@ -212,7 +215,9 @@ public static class ExperimentReplayExportFactory
                     ? null
                     : finalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()),
                 fixationEvents?.Select(item => item.Copy()).ToArray() ?? [],
-                saccadeEvents?.Select(item => item.Copy()).ToArray() ?? []),
+                saccadeEvents?.Select(item => item.Copy()).ToArray() ?? [],
+                finalSnapshot.EyeMovementAnalysis?.StruggleSignals?.Copy(),
+                struggleSignalEvents?.Select(item => item.Copy()).ToArray() ?? []),
             new ExperimentReplayInterventions(
                 decisionProposalEvents.Select(item => item.Copy()).ToArray(),
                 scheduledInterventionEvents.Select(item => item.Copy()).ToArray(),

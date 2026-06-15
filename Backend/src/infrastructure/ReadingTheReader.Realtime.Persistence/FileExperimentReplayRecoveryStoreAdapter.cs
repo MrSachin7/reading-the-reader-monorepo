@@ -195,7 +195,8 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             Merge(chunks, c => c.QuizFocusEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.QuizSelectionEvents, e => e.SequenceNumber),
             Merge(chunks, c => c.FixationEvents, e => e.SequenceNumber),
-            Merge(chunks, c => c.SaccadeEvents, e => e.SequenceNumber));
+            Merge(chunks, c => c.SaccadeEvents, e => e.SequenceNumber),
+            Merge(chunks, c => c.StruggleSignalEvents, e => e.SequenceNumber));
     }
 
     private ExperimentProcessedExport BuildMergedProcessedExportFromChunks(
@@ -282,6 +283,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             AttentionEvents = batch.AttentionEvents?.ToArray(),
             FixationEvents = batch.FixationEvents?.ToArray(),
             SaccadeEvents = batch.SaccadeEvents?.ToArray(),
+            StruggleSignalEvents = batch.StruggleSignalEvents?.ToArray(),
             ContextPreservationEvents = batch.ContextPreservationEvents?.ToArray(),
             FacialDifficultyEvents = batch.FacialDifficultyEvents?.ToArray(),
             DecisionProposalEvents = batch.DecisionProposalEvents?.ToArray(),
@@ -614,6 +616,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public ReadingAttentionEventRecord[]? AttentionEvents { get; set; }
         public FixationEventRecord[]? FixationEvents { get; set; }
         public SaccadeEventRecord[]? SaccadeEvents { get; set; }
+        public StruggleSignalEventRecord[]? StruggleSignalEvents { get; set; }
         public ReadingContextPreservationEventRecord[]? ContextPreservationEvents { get; set; }
         public FacialDifficultyEventRecord[]? FacialDifficultyEvents { get; set; }
         public DecisionProposalEventRecord[]? DecisionProposalEvents { get; set; }

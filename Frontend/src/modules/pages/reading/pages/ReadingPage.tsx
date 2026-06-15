@@ -25,7 +25,6 @@ import {
   getExperimentSequencePositionFromSession,
 } from "@/lib/experiment-sequence"
 import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
-import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { ReaderShell, type ReaderViewportMetrics } from "@/modules/pages/reading/components/ReaderShell"
 import { ThankYouScreen } from "@/modules/pages/reading/quiz/ThankYouScreen"
 import { normalizeReadingPresentation } from "@/modules/pages/reading/lib/readingPresentation"
@@ -90,7 +89,6 @@ export function ReadingPage() {
     liveSession?.isActive &&
       (liveSession.sensingMode === "mouse" || liveSession.eyeTrackerDevice)
   )
-  const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
   const { data: readerShellSettings } = useGetReaderShellSettingsQuery()
   const [upsertReadingSession] = useUpsertReadingSessionMutation()
   const [submitQuizAnswers] = useSubmitQuizAnswersMutation()
@@ -463,8 +461,7 @@ export function ReadingPage() {
         canRetreatPastStart={canRetreatPastStart}
         onAdvancePastEnd={handleAdvancePastEnd}
         canAdvancePastEnd={canAdvancePastEnd}
-        gazeOverlayPoint={liveGaze.smoothedPoint}
-        gazeOverlayHasRecentPoint={liveGaze.hasRecentGaze}
+        gazeOverlayEnabled={hasActiveGazeSource}
         onViewportMetricsChange={handleViewportMetricsChange}
         onEnrichedFocusSample={handleEnrichedFocusSample}
         onObservationChange={handleObservationChange}

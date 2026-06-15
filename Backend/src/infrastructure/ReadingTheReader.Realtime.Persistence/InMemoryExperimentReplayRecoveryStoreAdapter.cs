@@ -43,6 +43,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
+                [],
                 null);
         }
 
@@ -74,6 +75,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 AttentionEvents = [.. session.AttentionEvents, .. batch.AttentionEvents.Select(item => item.Copy())],
                 FixationEvents = [.. session.FixationEvents, .. (batch.FixationEvents ?? []).Select(item => item.Copy())],
                 SaccadeEvents = [.. session.SaccadeEvents, .. (batch.SaccadeEvents ?? []).Select(item => item.Copy())],
+                StruggleSignalEvents = [.. session.StruggleSignalEvents, .. (batch.StruggleSignalEvents ?? []).Select(item => item.Copy())],
                 ContextPreservationEvents = [.. session.ContextPreservationEvents, .. (batch.ContextPreservationEvents ?? []).Select(item => item.Copy())],
                 FacialDifficultyEvents = [.. session.FacialDifficultyEvents, .. (batch.FacialDifficultyEvents ?? []).Select(item => item.Copy())],
                 DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
@@ -132,7 +134,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 session.QuizFocusEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.QuizSelectionEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.FixationEvents.OrderBy(item => item.SequenceNumber).ToArray(),
-                session.SaccadeEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+                session.SaccadeEvents.OrderBy(item => item.SequenceNumber).ToArray(),
+                session.StruggleSignalEvents.OrderBy(item => item.SequenceNumber).ToArray()));
         }
     }
 
@@ -232,5 +235,6 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<QuizSelectionRecord> QuizSelectionEvents,
         IReadOnlyList<FixationEventRecord> FixationEvents,
         IReadOnlyList<SaccadeEventRecord> SaccadeEvents,
+        IReadOnlyList<StruggleSignalEventRecord> StruggleSignalEvents,
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats);
 }

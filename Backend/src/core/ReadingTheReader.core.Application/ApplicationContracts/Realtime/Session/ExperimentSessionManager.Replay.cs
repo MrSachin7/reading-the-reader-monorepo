@@ -122,6 +122,7 @@ public sealed partial class ExperimentSessionManager
             _pendingAttentionEvents = [];
             _pendingFixationEvents = [];
             _pendingSaccadeEvents = [];
+            _pendingStruggleSignalEvents = [];
             _pendingContextPreservationEvents = [];
             _pendingDecisionProposalEvents = [];
             _pendingScheduledInterventionEvents = [];
@@ -390,6 +391,21 @@ public sealed partial class ExperimentSessionManager
         }
     }
 
+    private void RecordStruggleSignalEvent(long occurredAtUnixMs, StruggleSignalsSnapshot signals)
+    {
+        lock (_historyGate)
+        {
+            var material = GetCurrentMaterialPointer();
+            _pendingStruggleSignalEvents.Add(new StruggleSignalEventRecord(
+                NextSequenceNumber(),
+                occurredAtUnixMs,
+                signals.Copy(),
+                material.MaterialRunId,
+                material.MaterialIndex));
+            _hasPendingReplayPersistence = true;
+        }
+    }
+
     private void RecordReadingContextPreservationEvent(
         long occurredAtUnixMs,
         ReadingContextPreservationEventSnapshot contextPreservation)
@@ -463,6 +479,7 @@ public sealed partial class ExperimentSessionManager
         ReadingAttentionEventRecord[] attentionEvents;
         FixationEventRecord[] fixationEvents;
         SaccadeEventRecord[] saccadeEvents;
+        StruggleSignalEventRecord[] struggleSignalEvents;
         ReadingContextPreservationEventRecord[] contextPreservationEvents;
         FacialDifficultyEventRecord[] facialDifficultyEvents;
         DecisionProposalEventRecord[] decisionProposalEvents;
@@ -496,6 +513,7 @@ public sealed partial class ExperimentSessionManager
             attentionEvents = _pendingAttentionEvents.Select(item => item.Copy()).ToArray();
             fixationEvents = _pendingFixationEvents.Select(item => item.Copy()).ToArray();
             saccadeEvents = _pendingSaccadeEvents.Select(item => item.Copy()).ToArray();
+            struggleSignalEvents = _pendingStruggleSignalEvents.Select(item => item.Copy()).ToArray();
             contextPreservationEvents = _pendingContextPreservationEvents.Select(item => item.Copy()).ToArray();
             facialDifficultyEvents = _pendingFacialDifficultyEvents.Select(item => item.Copy()).ToArray();
             decisionProposalEvents = _pendingDecisionProposalEvents.Select(item => item.Copy()).ToArray();
@@ -521,6 +539,7 @@ public sealed partial class ExperimentSessionManager
             _pendingAttentionEvents = [];
             _pendingFixationEvents = [];
             _pendingSaccadeEvents = [];
+            _pendingStruggleSignalEvents = [];
             _pendingContextPreservationEvents = [];
             _pendingFacialDifficultyEvents = [];
             _pendingDecisionProposalEvents = [];
@@ -563,7 +582,8 @@ public sealed partial class ExperimentSessionManager
                     quizFocusEvents,
                     quizSelectionEvents,
                     fixationEvents,
-                    saccadeEvents),
+                    saccadeEvents,
+                    struggleSignalEvents),
                 ct);
         }
         catch
@@ -582,6 +602,7 @@ public sealed partial class ExperimentSessionManager
                 _pendingAttentionEvents = [.. attentionEvents.Select(item => item.Copy()), .. _pendingAttentionEvents];
                 _pendingFixationEvents = [.. fixationEvents.Select(item => item.Copy()), .. _pendingFixationEvents];
                 _pendingSaccadeEvents = [.. saccadeEvents.Select(item => item.Copy()), .. _pendingSaccadeEvents];
+                _pendingStruggleSignalEvents = [.. struggleSignalEvents.Select(item => item.Copy()), .. _pendingStruggleSignalEvents];
                 _pendingContextPreservationEvents = [.. contextPreservationEvents.Select(item => item.Copy()), .. _pendingContextPreservationEvents];
                 _pendingFacialDifficultyEvents = [.. facialDifficultyEvents.Select(item => item.Copy()), .. _pendingFacialDifficultyEvents];
                 _pendingDecisionProposalEvents = [.. decisionProposalEvents.Select(item => item.Copy()), .. _pendingDecisionProposalEvents];

@@ -2,10 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-import { type ConnectionStats } from "@/lib/gaze-socket";
 import { cn } from "@/lib/utils";
-import { formatGazeTime, type GazePoint } from "@/modules/pages/gaze/lib/gaze-helpers";
-import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream";
+import { formatGazeTime } from "@/modules/pages/gaze/lib/gaze-helpers";
+import { useGazeConnectionStats, useGazeMarker } from "@/modules/pages/gaze/lib/use-live-gaze-stream";
 
 type StatusVariant = "none" | "compact" | "panel";
 
@@ -13,20 +12,14 @@ type LiveGazeOverlayProps = {
   statusVariant?: StatusVariant;
   hideMarkerWhenNoPoint?: boolean;
   markerClassName?: string;
-  point?: GazePoint | null;
-  connectionStats?: ConnectionStats | null;
-  sampleRateHz?: number;
-  hasRecentGaze?: boolean;
+  enabled?: boolean;
 };
 
 export function LiveGazeOverlay({
   statusVariant = "none",
   hideMarkerWhenNoPoint = false,
   markerClassName,
-  point,
-  connectionStats,
-  sampleRateHz,
-  hasRecentGaze,
+  enabled = true,
 }: LiveGazeOverlayProps) {
   const markerRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLSpanElement>(null);
@@ -35,26 +28,12 @@ export function LiveGazeOverlay({
   const serverTimeRef = useRef<HTMLSpanElement>(null);
   const lastPongRef = useRef<HTMLSpanElement>(null);
 
-  const stream = useLiveGazeStream();
-  const resolvedPoint = point === undefined ? stream.smoothedPoint : point;
-  const resolvedStats = connectionStats === undefined ? stream.connectionStats : connectionStats;
-  const resolvedSampleRateHz = sampleRateHz === undefined ? stream.sampleRateHz : sampleRateHz;
-  const resolvedHasRecentGaze = hasRecentGaze === undefined ? stream.hasRecentGaze : hasRecentGaze;
+  // The marker is driven imperatively (rAF + direct DOM writes) so gaze movement
+  // never re-renders this component. Only the low-frequency stats below do.
+  useGazeMarker(markerRef, { enabled, hideWhenNoPoint: hideMarkerWhenNoPoint });
 
-  useEffect(() => {
-    const marker = markerRef.current;
-    if (!marker) {
-      return;
-    }
-
-    if (resolvedPoint && resolvedHasRecentGaze) {
-      marker.style.opacity = "1";
-      marker.style.transform = `translate(-50%, -50%) translate(${resolvedPoint.x * 100}vw, ${resolvedPoint.y * 100}vh)`;
-      return;
-    }
-
-    marker.style.opacity = hideMarkerWhenNoPoint ? "0" : "0.2";
-  }, [hideMarkerWhenNoPoint, resolvedHasRecentGaze, resolvedPoint]);
+  const showStats = statusVariant !== "none";
+  const { connectionStats, sampleRateHz } = useGazeConnectionStats({ enabled: enabled && showStats });
 
   useEffect(() => {
     if (statusVariant === "none") {
@@ -62,24 +41,24 @@ export function LiveGazeOverlay({
     }
 
     if (statusRef.current) {
-      statusRef.current.textContent = resolvedStats?.status ?? "connecting";
+      statusRef.current.textContent = connectionStats?.status ?? "connecting";
     }
     if (rttRef.current) {
       rttRef.current.textContent =
-        resolvedStats?.lastRttMs === null || resolvedStats?.lastRttMs === undefined
+        connectionStats?.lastRttMs === null || connectionStats?.lastRttMs === undefined
           ? "-"
-          : `${resolvedStats.lastRttMs} ms`;
+          : `${connectionStats.lastRttMs} ms`;
     }
     if (serverTimeRef.current) {
-      serverTimeRef.current.textContent = formatGazeTime(resolvedStats?.lastServerTimeUnixMs ?? null);
+      serverTimeRef.current.textContent = formatGazeTime(connectionStats?.lastServerTimeUnixMs ?? null);
     }
     if (lastPongRef.current) {
-      lastPongRef.current.textContent = formatGazeTime(resolvedStats?.lastPongAtUnixMs ?? null);
+      lastPongRef.current.textContent = formatGazeTime(connectionStats?.lastPongAtUnixMs ?? null);
     }
     if (rateRef.current) {
-      rateRef.current.textContent = `${resolvedSampleRateHz} Hz`;
+      rateRef.current.textContent = `${sampleRateHz} Hz`;
     }
-  }, [resolvedSampleRateHz, resolvedStats, statusVariant]);
+  }, [sampleRateHz, connectionStats, statusVariant]);
 
 
   return (

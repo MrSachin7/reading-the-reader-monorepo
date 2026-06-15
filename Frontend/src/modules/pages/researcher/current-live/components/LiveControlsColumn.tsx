@@ -1,9 +1,12 @@
 "use client"
 
-import { User } from "lucide-react"
+import { Brain, User } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
-import type { ExperimentLiveMonitoringSnapshot } from "@/lib/experiment-session"
+import type {
+  ExperimentLiveMonitoringSnapshot,
+  StruggleSignalsSnapshot,
+} from "@/lib/experiment-session"
 import { cn } from "@/lib/utils"
 import {
   getLatencyBars,
@@ -17,6 +20,8 @@ type LiveControlsColumnProps = {
   sampleRateHz: number
   validityRate: number
   latencyMs: number | null
+  struggleSignals?: StruggleSignalsSnapshot | null
+  externalAnalysisActive?: boolean
 }
 
 export function LiveControlsColumn({
@@ -25,6 +30,8 @@ export function LiveControlsColumn({
   sampleRateHz,
   validityRate,
   latencyMs,
+  struggleSignals,
+  externalAnalysisActive = false,
 }: LiveControlsColumnProps) {
   const liveHealth = getLiveHealthState({
     sampleRateHz,
@@ -62,8 +69,88 @@ export function LiveControlsColumn({
           </div>
         </CardContent>
       </Card>
+
+      {externalAnalysisActive ? (
+        <StruggleSignalsCard struggleSignals={struggleSignals} />
+      ) : null}
     </div>
   )
+}
+
+function StruggleSignalsCard({
+  struggleSignals,
+}: {
+  struggleSignals?: StruggleSignalsSnapshot | null
+}) {
+  const readingStyle = struggleSignals?.readingStyle ?? null
+  const cognitiveLoad = struggleSignals?.cognitiveLoad ?? null
+
+  return (
+    <Card className="rounded-2xl bg-card/96 shadow-sm">
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Brain className="size-3.5" />
+          <span className="text-[10px] uppercase tracking-[0.2em]">Reader analysis</span>
+        </div>
+
+        <div className="space-y-3">
+          <SignalRow label="Reading style" value={readingStyle} tone={readingStyleTone(readingStyle)} />
+          <SignalRow label="Cognitive load" value={cognitiveLoad} tone={cognitiveLoadTone(cognitiveLoad)} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SignalRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string | null
+  tone: "positive" | "warning" | "negative" | "neutral"
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+          tone === "positive" && "border-primary/40 bg-primary/10 text-primary",
+          tone === "warning" && "border-accent/45 bg-accent/15 text-accent-foreground",
+          tone === "negative" && "border-destructive/40 bg-destructive/10 text-destructive",
+          tone === "neutral" && "border-border bg-muted/40 text-muted-foreground"
+        )}
+      >
+        {value ?? "Calibrating…"}
+      </span>
+    </div>
+  )
+}
+
+function readingStyleTone(value: string | null): "positive" | "warning" | "negative" | "neutral" {
+  switch (value) {
+    case "Fast":
+      return "positive"
+    case "Careful":
+      return "warning"
+    case "Risky":
+      return "negative"
+    default:
+      return "neutral"
+  }
+}
+
+function cognitiveLoadTone(value: string | null): "positive" | "warning" | "negative" | "neutral" {
+  switch (value) {
+    case "Low":
+      return "positive"
+    case "High":
+      return "negative"
+    default:
+      return "neutral"
+  }
 }
 
 function HealthPill({

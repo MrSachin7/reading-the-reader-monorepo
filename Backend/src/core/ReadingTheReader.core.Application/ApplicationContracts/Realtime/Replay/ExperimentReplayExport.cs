@@ -336,6 +336,24 @@ public sealed record SaccadeEventRecord(
     }
 }
 
+public sealed record StruggleSignalEventRecord(
+    long SequenceNumber,
+    long OccurredAtUnixMs,
+    StruggleSignalsSnapshot Signals,
+    string? MaterialRunId = null,
+    int? MaterialIndex = null)
+{
+    public StruggleSignalEventRecord Copy()
+    {
+        return new StruggleSignalEventRecord(
+            SequenceNumber,
+            OccurredAtUnixMs,
+            Signals.Copy(),
+            MaterialRunId,
+            MaterialIndex);
+    }
+}
+
 public sealed record ReadingContextPreservationEventRecord(
     long SequenceNumber,
     long OccurredAtUnixMs,
@@ -462,7 +480,9 @@ public sealed record ExperimentReplayDerived(
     IReadOnlyList<FacialDifficultyEventRecord> FacialDifficultyEvents,
     IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? FinalTokenStats = null,
     IReadOnlyList<FixationEventRecord>? FixationEvents = null,
-    IReadOnlyList<SaccadeEventRecord>? SaccadeEvents = null)
+    IReadOnlyList<SaccadeEventRecord>? SaccadeEvents = null,
+    StruggleSignalsSnapshot? FinalStruggleSignals = null,
+    IReadOnlyList<StruggleSignalEventRecord>? StruggleSignalEvents = null)
 {
     public int RegressionCount => SaccadeEvents?.Count(item => item.Saccade.IsRegression) ?? 0;
 
@@ -478,7 +498,9 @@ public sealed record ExperimentReplayDerived(
                 ? null
                 : FinalTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy()),
             FixationEvents is null ? null : [.. FixationEvents.Select(item => item.Copy())],
-            SaccadeEvents is null ? null : [.. SaccadeEvents.Select(item => item.Copy())]);
+            SaccadeEvents is null ? null : [.. SaccadeEvents.Select(item => item.Copy())],
+            FinalStruggleSignals?.Copy(),
+            StruggleSignalEvents is null ? null : [.. StruggleSignalEvents.Select(item => item.Copy())]);
     }
 }
 

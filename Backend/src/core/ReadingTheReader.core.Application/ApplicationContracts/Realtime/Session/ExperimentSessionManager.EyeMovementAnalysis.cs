@@ -157,6 +157,13 @@ public sealed partial class ExperimentSessionManager
             var previousRuntimeState = _eyeMovementAnalysisRuntimeState;
             _eyeMovementAnalysisRuntimeState = EyeMovementAnalysisProjector.FromSnapshot(analysisSnapshot);
             RecordNewEyeMovementEvents(previousRuntimeState, _eyeMovementAnalysisRuntimeState);
+
+            var struggleSignals = _eyeMovementAnalysisRuntimeState.StruggleSignals;
+            if (struggleSignals is not null && struggleSignals != previousRuntimeState.StruggleSignals)
+            {
+                RecordStruggleSignalEvent(Math.Max(command.ObservedAtUnixMs, 0), struggleSignals);
+            }
+
             summary = EyeMovementAnalysisProjector.ToAttentionSummary(
                 _eyeMovementAnalysisRuntimeState,
                 Math.Max(command.ObservedAtUnixMs, 0));

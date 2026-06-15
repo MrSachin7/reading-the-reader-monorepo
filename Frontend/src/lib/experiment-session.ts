@@ -344,6 +344,14 @@ export type SaccadeSnapshot = {
   isRegression: boolean
 }
 
+export type StruggleSignalsSnapshot = {
+  readingStyle: string | null
+  cognitiveLoad: string | null
+  ripa2Load: string | null
+  ripa2Score: number | null
+  observedAtUnixMs: number
+}
+
 export type EyeMovementAnalysisSnapshot = {
   latestObservation: ReadingGazeObservationSnapshot | null
   currentFixation: FixationSnapshot | null
@@ -355,6 +363,7 @@ export type EyeMovementAnalysisSnapshot = {
   fixatedTokenCount: number
   skimmedTokenCount: number
   regressionCount: number
+  struggleSignals?: StruggleSignalsSnapshot | null
 }
 
 export type ReadingContextPreservationSnapshot = {
@@ -656,6 +665,7 @@ export const EMPTY_EYE_MOVEMENT_ANALYSIS: EyeMovementAnalysisSnapshot = {
   fixatedTokenCount: 0,
   skimmedTokenCount: 0,
   regressionCount: 0,
+  struggleSignals: null,
 }
 
 export const EMPTY_DECISION_STATE: DecisionState = {

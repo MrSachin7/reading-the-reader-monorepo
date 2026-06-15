@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useReaderAppearanceSync } from "@/hooks/use-reader-appearance-sync"
 import { ExperimentCompletionActions } from "@/components/experiment/experiment-completion-actions"
@@ -30,7 +30,7 @@ import { useLiveExperimentSession } from "@/lib/use-live-experiment-session"
 import type { ReadingInterventionCommitBoundary } from "@/lib/experiment-session"
 import { useRequiredFullscreen } from "@/hooks/use-required-fullscreen"
 import { calculateGazePoint } from "@/modules/pages/gaze/lib/gaze-helpers"
-import { useLiveGazeStream } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
+import { useGazeConnectionStats } from "@/modules/pages/gaze/lib/use-live-gaze-stream"
 import { parseMinimalMarkdown } from "@/modules/pages/reading/lib/minimalMarkdown"
 import { toSaccadeOverlaySegments } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import type { RemoteTokenAttentionSnapshot } from "@/modules/pages/reading/lib/useRemoteTokenAttentionHeatmap"
@@ -94,7 +94,7 @@ export default function ResearcherCurrentLivePage() {
     session?.isActive &&
       (session.sensingMode === "mouse" || session.sensingMode === "webcam" || session.eyeTrackerDevice)
   )
-  const liveGaze = useLiveGazeStream({ enabled: hasActiveGazeSource })
+  const liveGaze = useGazeConnectionStats({ enabled: hasActiveGazeSource })
   const [validityRate, setValidityRate] = useState(0)
 
   useEffect(() => {
@@ -208,11 +208,30 @@ function ResearcherCurrentLiveBody({
   const [tokenAttention, setTokenAttention] = useState<RemoteTokenAttentionSnapshot>(
     readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
   )
-  const latestTokenAttentionRef = useRef<RemoteTokenAttentionSnapshot>(
-    readingSession.attentionSummary ?? EMPTY_READING_ATTENTION_SUMMARY
-  )
-  const lastSyncedAttentionKeyRef = useRef("")
-  const effectiveTokenAttention = readingSession.attentionSummary ?? tokenAttention
+  const remoteAttentionSummary = readingSession.attentionSummary
+  // Heatmap stats come from the authoritative summary (which may lag by the
+  // external analyzer's window), but the current token must stay live and
+  // never wait on the external provider, so it comes from the locally derived
+  // focus tracker. Depend only on the live token id (which changes per word),
+  // never on the local tracker's 100ms tick, so the merged object's identity
+  // stays stable between word changes and downstream consumers do not re-run
+  // per-tick (which previously inflated the live connection RTT).
+  const liveCurrentTokenId = tokenAttention.currentTokenId
+  const hasLocalFocusTracker = tokenAttention.updatedAtUnixMs > 0
+  const effectiveTokenAttention = useMemo(() => {
+    if (!remoteAttentionSummary) {
+      return tokenAttention
+    }
+
+    if (!hasLocalFocusTracker || remoteAttentionSummary.currentTokenId === liveCurrentTokenId) {
+      return remoteAttentionSummary
+    }
+
+    return {
+      ...remoteAttentionSummary,
+      currentTokenId: liveCurrentTokenId,
+    }
+  }, [remoteAttentionSummary, hasLocalFocusTracker, liveCurrentTokenId, tokenAttention])
   const [followParticipant, setFollowParticipant] = useState(true)
   const persistedReaderOptions =
     readerShellSettings?.researcherMirror ?? READER_SHELL_SETTINGS_DEFAULTS.researcherMirror
@@ -237,6 +256,12 @@ function ResearcherCurrentLiveBody({
     () => toSaccadeOverlaySegments(session.eyeMovementAnalysis?.recentSaccades ?? []),
     [session.eyeMovementAnalysis]
   )
+
+  // Struggle labels are only meaningful while the external eye analyzer service
+  // is the selected provider and actually connected.
+  const externalAnalysisActive =
+    session.eyeMovementAnalysisConfiguration?.providerId === "external" &&
+    Boolean(session.eyeMovementAnalysisProviderStatus?.isConnected)
 
   const parsedDoc = useMemo(() => parseMinimalMarkdown(content.markdown), [content.markdown])
   const tokenizedBlocks = useMemo(
@@ -287,11 +312,6 @@ function ResearcherCurrentLiveBody({
     [content, readingSession.currentExperimentItemIndex, readingSession.experimentItems]
   )
   const currentExperimentTextIndex = experimentSequencePosition?.currentIndex ?? null
-
-  useEffect(() => {
-    latestTokenAttentionRef.current = effectiveTokenAttention
-    lastSyncedAttentionKeyRef.current = JSON.stringify(effectiveTokenAttention)
-  }, [effectiveTokenAttention])
 
   const setReaderOption = useCallback((key: keyof LiveReaderOptions, value: boolean) => {
     setLocalReaderOptions((previous) => ({
@@ -426,6 +446,8 @@ function ResearcherCurrentLiveBody({
           sampleRateHz={sampleRateHz}
           validityRate={validityRate}
           latencyMs={latencyMs}
+          struggleSignals={session.eyeMovementAnalysis?.struggleSignals ?? null}
+          externalAnalysisActive={externalAnalysisActive}
         />
 
         <LiveReaderColumn

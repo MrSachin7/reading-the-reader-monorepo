@@ -12,7 +12,8 @@ public sealed record EyeMovementAnalysisSnapshot(
     long? CurrentTokenDurationMs,
     int FixatedTokenCount,
     int SkimmedTokenCount,
-    int RegressionCount = 0)
+    int RegressionCount = 0,
+    StruggleSignalsSnapshot? StruggleSignals = null)
 {
     public static EyeMovementAnalysisSnapshot Empty { get; } = new(
         null,
@@ -40,6 +41,7 @@ public sealed record EyeMovementAnalysisSnapshot(
             CurrentTokenDurationMs,
             FixatedTokenCount,
             SkimmedTokenCount,
-            RegressionCount);
+            RegressionCount,
+            StruggleSignals?.Copy());
     }
 }

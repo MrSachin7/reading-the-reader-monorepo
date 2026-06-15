@@ -25,7 +25,8 @@ public sealed record EyeMovementAnalysisRuntimeState(
     IReadOnlyList<FixationSnapshot> RecentFixations,
     IReadOnlyList<SaccadeSnapshot> RecentSaccades,
     IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot> TokenStats,
-    int RegressionCount = 0)
+    int RegressionCount = 0,
+    StruggleSignalsSnapshot? StruggleSignals = null)
 {
     public static EyeMovementAnalysisRuntimeState Empty { get; } = new(
         null,
@@ -47,6 +48,7 @@ public sealed record EyeMovementAnalysisRuntimeState(
             TokenStats is null
                 ? new Dictionary<string, ReadingAttentionTokenSnapshot>(StringComparer.Ordinal)
                 : TokenStats.ToDictionary(entry => entry.Key, entry => entry.Value.Copy(), StringComparer.Ordinal),
-            RegressionCount);
+            RegressionCount,
+            StruggleSignals?.Copy());
     }
 }
