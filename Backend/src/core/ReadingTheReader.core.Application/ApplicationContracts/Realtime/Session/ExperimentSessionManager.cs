@@ -117,6 +117,36 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
         _externalProviderGateway = externalProviderGateway;
         _moduleProviderCoordinator = moduleProviderCoordinator;
         _sensingModeSettingsService = sensingModeSettingsService;
+
+        // When an external module provider (e.g. the eye-movement analysis service)
+        // connects or disconnects, push a fresh snapshot so live clients update
+        // their provider status/configuration. This is what flips the researcher
+        // view's reader-analysis (reading style / cognitive load) panel on and off
+        // live, instead of only at the next full-state broadcast.
+        _moduleProviderCoordinator.SourceChanged += OnModuleProviderSourceChanged;
+    }
+
+    private void OnModuleProviderSourceChanged(object? sender, ModuleProviderSourceChangedEventArgs e)
+    {
+        // Fire-and-forget: never block the provider registry thread, and never let a
+        // broadcast failure escape into it. GetCurrentSnapshot reads volatile state,
+        // so it is safe to call outside the lifecycle gate.
+        _ = BroadcastExperimentStateForProviderChangeAsync();
+    }
+
+    private async Task BroadcastExperimentStateForProviderChangeAsync()
+    {
+        try
+        {
+            await _clientBroadcasterAdapter.BroadcastAsync(
+                MessageTypes.ExperimentState,
+                GetCurrentSnapshot(),
+                CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to broadcast experiment state on module provider change: {ex.Message}");
+        }
     }
 
     private sealed record InterventionApplicationOutcome(
