@@ -1,17 +1,23 @@
 \section{Implementation Highlights}
 \label{sec:impl-highlights}
-% Authoring brief for this section lives in section.md (§6.3).
-% TikZ primitives for the relocated ports-and-adapters class diagram below.
+% Authoring brief for this section lives in section.md (§6.3). Organised by concern/RQ.
+% Each highlight is selective: a mechanism + a short listing + a figure where it earns one,
+% NOT the file-by-file detail of §6.2. Subsections are numbered so they can be cross-referenced.
+% TikZ primitives for the ports-and-adapters class diagram (relocated here from §6.2).
 \usetikzlibrary{shapes.multipart, arrows.meta}
-\todo[inline]{\S6.3 to be written. 2--4 deeper dives the walkthrough flags: real-time gaze hot path (lock-free, WebSocket; RQ2); pluggable modules + a worked "add an intervention" (RQ1); external-provider framework realized; session record schema + replay (RQ4). Each: prose + at most one short listing. Pick the dives during scaffolding.}
 
-% RELOCATED FROM §6.2 (decided 2026-06): the ports-and-adapters class diagram belongs
-% to the modularity dive (RQ1) as the seam where adapters/modules plug in behind a
-% core-declared port, not to the session flow. It is parked here under \iffalse until
-% this section is written; then introduce it from the prose (it is \cref'd from
-% \cref{sec:impl-session} as the seam examined here), reference \cref{fig:impl-session-manager},
-% and remove the \iffalse guard. Needs \usetikzlibrary{shapes.multipart, arrows.meta} (loaded above).
-\iffalse
+\Cref{sec:impl-session} followed one session end to end through the running code.
+This section steps back out and opens the realizations that the walkthrough named only in passing, organised by the four concerns the architecture separates (\cref{sec:design-modules}) and the research questions they answer.
+Each highlight is deliberately selective, a mechanism with a short listing and a figure where it earns one, rather than the file-by-file detail of the walkthrough.
+
+\FloatBarrier
+\subsection{Pluggable modules and the external-provider contract}
+\label{sec:impl-modularity}
+
+The architecture's central promise (RQ1) is that sensing, eye-movement analysis, decision strategy, and intervention execution are modules behind stable contracts, so a new intervention or a new decision or analysis provider can be added without modifying the core reading runtime.
+This is realised through two complementary mechanisms that meet the core through the same ports: an \emph{in-process} module registry for modules that ship with the platform, and an \emph{out-of-process} module-provider framework for external, possibly AI-driven, services.
+\Cref{fig:impl-session-manager} shows the seam they share: the \texttt{ExperimentSessionManager} depends only on the port interfaces declared in \texttt{Application}, and every concrete realisation (a hardware adapter, the broadcaster, the persistence store, or a module) plugs in from the infrastructure side, so a dependency never points outward from the core.
+
 \begin{figure}[htbp]
 \centering
 \resizebox{\linewidth}{!}{%
@@ -66,4 +72,409 @@
 \caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on the three port interfaces in the middle row (sensing, broadcast, and persistence). Each concrete adapter in the bottom row lives in an infrastructure project and realises the port above it. The dashed rule marks the \texttt{Application}/infrastructure boundary: every realisation (hollow triangle) and dependency (filled arrow) edge crosses it inward towards the core, so the modularity of \cref{sec:design-style} is visible at the level of individual classes. Members are abbreviated; the replay, recovery, and module-provider ports follow the same pattern and are omitted for clarity.}
 \label{fig:impl-session-manager}
 \end{figure}
-\fi
+
+\paragraph{In-process modules.}
+A module that ships with the platform satisfies one small interface, \cref{lst:impl-module-contract}: it exposes a descriptor declaring its identifier and parameters, validates a request, and executes it against the current presentation.
+The runtime never names a concrete module; it asks the registry to resolve one by identifier, so the set of modules is open.
+The eight built-in intervention modules required by FR7.5 (font family, font size, line width, line height, letter spacing, theme mode, palette, and the participant-edit lock) are simply entries in the registry's list, and adding a ninth is a matter of implementing the interface and registering it, with no change to the runtime or to any existing module (FR7.1--FR7.3).
+The same shape recurs for the other concerns: decision strategies and eye-movement analysis strategies are resolved from their own registries, so a built-in rule-based decider or fixation detector can be swapped without touching the loop that drives them.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public interface IReadingInterventionModule
+{
+    ReadingInterventionModuleDescriptor Descriptor { get; }      // id + declared parameters
+    ReadingInterventionValidationResult Validate(ReadingInterventionRequest request);
+    ReadingInterventionModuleExecutionResult Execute(
+        ReadingInterventionExecutionContext context, ReadingInterventionRequest request);
+}
+
+public interface IReadingInterventionModuleRegistry
+{
+    IReadOnlyList<ReadingInterventionModuleDescriptor> List();
+    bool TryResolve(string? moduleId, out IReadingInterventionModule? module);
+}
+\end{minted}
+\caption{The in-process module contract (from \texttt{Interventions/}). A module declares its parameters, validates a request, and executes it; the runtime only ever resolves a module from the registry by identifier, so adding one means implementing this interface and registering it, with no change to the runtime or any existing module.}
+\label{lst:impl-module-contract}
+\end{listing}
+
+\paragraph{External providers.}
+The same concern can instead be fulfilled by an external process, which is how the platform admits AI-driven deciders or third-party analysers without building them into this repository (the architectural, not end-to-end, scope of \cref{sec:final-problem-statement}).
+An external service connects over a dedicated WebSocket and speaks the documented module-provider protocol of \cref{lst:impl-provider-protocol} (FR19.4): it sends a \texttt{Hello} declaring its identifier and the modules and capabilities it can serve, and the system replies with a \texttt{Welcome} listing the modules it has accepted, or an error if the protocol or a module identifier does not match.
+Once registered, per-module context flows to the provider as \texttt{Inbound} envelopes and its decisions return as \texttt{Outbound} envelopes, which are applied through exactly the same validation and logging path as a built-in module, so an external decision is indistinguishable downstream from an internal one (FR19.2).
+A provider that stops sending heartbeats, or disconnects outright, is dropped by the gateway and the affected strategy degrades to its built-in fallback rather than stalling the experiment, with the transition recorded in the session log (FR19.3); \cref{fig:impl-provider-seq} traces this lifecycle.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+// The documented module-provider protocol (ModuleProviderProtocol.cs, FR19.4).
+public static class ModuleProviderMessageTypes
+{
+    public const string Hello     = "moduleProviderHello";      // provider -> system
+    public const string Welcome   = "moduleProviderWelcome";    // system  -> provider
+    public const string Heartbeat = "moduleProviderHeartbeat";
+    public const string Inbound   = "moduleProviderInbound";    // context  -> provider
+    public const string Outbound  = "moduleProviderOutbound";   // command  <- provider
+}
+
+public sealed record ModuleProviderHelloPayload(
+    string ProviderId, string DisplayName, string ProtocolVersion,
+    string AuthToken, IReadOnlyList<ModuleProviderHelloModuleEntry> Modules);  // capabilities
+
+public sealed record ModuleProviderWelcomePayload(
+    string ProviderId, string AcceptedProtocolVersion, string Status,
+    long RegisteredAtUnixMs, int HeartbeatTimeoutMilliseconds,
+    IReadOnlyList<string> AcceptedModules);
+\end{minted}
+\caption{The external module-provider contract (abbreviated from \texttt{ModuleProviderProtocol.cs}). A provider declares the modules and capabilities it can serve in its \texttt{Hello}; the system answers \texttt{Welcome} with the accepted modules and a heartbeat timeout. Per-module context and commands then travel as \texttt{Inbound} and \texttt{Outbound} envelopes, and a missed heartbeat drops the provider. This record set is the contract a third party implements (FR19.4).}
+\label{lst:impl-provider-protocol}
+\end{listing}
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Chapters/06_Implementation/provider-handshake.pdf}%
+  {\includegraphics[width=0.92\linewidth]{Chapters/06_Implementation/provider-handshake.pdf}}%
+  {\fbox{\parbox[c][4cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/provider-handshake.mmd} to \texttt{provider-handshake.pdf} with \texttt{mmdc}.}}}%
+\caption{Lifecycle of an external module provider. The provider connects and declares its modules and capabilities (\texttt{Hello}); the system accepts or rejects them (\texttt{Welcome}/error); while active, context flows out as \texttt{Inbound} envelopes and decisions return as \texttt{Outbound} envelopes, applied through the same validation and logging path as a built-in module; a missed heartbeat or disconnect degrades the strategy to its built-in fallback and is logged.}
+\label{fig:impl-provider-seq}
+\end{figure}
+
+\FloatBarrier
+\subsection{The sensing pipeline: from gaze to oculomotor events}
+\label{sec:impl-sensing}
+
+RQ2 asks how a raw Tobii stream becomes oculomotor events, fixations, saccades, and regressions, fast enough for live adaptation and in a way that is inspectable and reproducible.
+The platform answers this with a three-stage pipeline (\cref{fig:impl-pipeline}) that is split across the tiers along a deliberate line: \emph{acquisition} and \emph{temporal analysis} run on the backend where the session state lives, while the \emph{spatial} mapping from a gaze point to a word runs on the front-end where the rendered layout lives.
+The two halves meet at one stable contract, a token-indexed reading observation, so neither side needs the other's concerns.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  be/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=blue!8, align=center, text width=2.7cm, minimum height=1.15cm, inner sep=3pt},
+  fe/.style={rectangle, rounded corners=3pt, draw=dtured, thick, fill=dtured!8, align=center, text width=2.7cm, minimum height=1.15cm, inner sep=3pt},
+  arr/.style={-{Stealth[length=5pt]}, thick, black!60},
+  tag/.style={font=\tiny\itshape, text=black!60, align=center},
+]
+\node[be] (acq) at (0,0)    {{\bfseries Acquisition}\\{\tiny Tobii or mouse $\rightarrow$ lock-free ingest}};
+\node[fe] (map) at (3.5,0)  {{\bfseries Spatial mapping}\\{\tiny gaze point $\rightarrow$ word token}};
+\node[be] (ana) at (7.0,0)  {{\bfseries Temporal analysis}\\{\tiny fixations, saccades, regressions}};
+\node[be] (use) at (10.5,0) {{\bfseries Use}\\{\tiny overlay, decisions, export}};
+\draw[arr] (acq) -- (map) node[tag, midway, above] {gaze\\sample};
+\draw[arr] (map) -- (ana) node[tag, midway, above] {token\\observation};
+\draw[arr] (ana) -- (use);
+\node[tag] at (0,-1.05)    {backend (data plane)};
+\node[tag] at (3.5,-1.05)  {front-end (reader DOM)};
+\node[tag] at (7.0,-1.05)  {backend (analysis strategy)};
+\node[tag] at (10.5,-1.05) {backend / both screens};
+\end{tikzpicture}
+\caption{The sensing pipeline. Acquisition and temporal analysis run on the backend; the spatial mapping from gaze point to word token runs on the front-end, where the rendered layout lives. The two halves meet at one stable contract, the token-indexed reading observation, which is also the interface a downstream decision strategy or the export consumes.}
+\label{fig:impl-pipeline}
+\end{figure}
+
+\paragraph{Acquisition on a lock-free path.}
+Each sample the sensing adapter raises (\cref{lst:impl-tobii}) is taken by the session manager on a path that never touches the lifecycle gate that serialises the control commands of \cref{sec:impl-session}.
+The manager keeps a clear split between this \emph{data plane} and the \emph{control plane}: the gate orders the slow, awaitable lifecycle operations, whereas the gaze path uses only an atomic counter and a volatile publish (\cref{lst:impl-hotpath}), so a sample is recorded and fanned out without waiting on any lock.
+This is what keeps the end-to-end latency within the budget that live adaptation needs; the measured figure is reported in \cref{ch:evaluation}.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public void UpdateGazeSample(GazeData gazeData)
+{
+    gazeData.Sanitize();
+    Interlocked.Increment(ref _receivedGazeSamples);    // atomic counter, no lock
+    Volatile.Write(ref _latestGazeSample, gazeData);     // publish without the lifecycle gate
+    RecordGazeSample(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), gazeData);
+}
+\end{minted}
+\caption{The lock-free ingest on the gaze data plane (from \texttt{ExperimentSessionManager.Gaze.cs}). It uses an \texttt{Interlocked} counter and a \texttt{Volatile} publish rather than the lifecycle gate, so high-frequency gaze samples are never blocked behind the slower control-plane operations.}
+\label{lst:impl-hotpath}
+\end{listing}
+
+\paragraph{Spatial mapping in the reader.}
+Mapping a gaze point to a word is done in the participant reader because only the reader knows where each word was actually laid out.
+The reader normalises each sample to a screen point (FR4.2), then maps it to the nearest word token (\cref{lst:impl-tokenmap}, FR4.3): it scores the rendered word boxes, choosing the best line first (biased towards the line already being read, which absorbs vertical jitter) and then the nearest word on that line.
+The crucial detail for FR5.4 is that the word boxes are re-measured from the live document, prompted by mutation, resize, and scroll observers, so the mapping stays valid after a typographic intervention reflows the text rather than referring to stale coordinates.
+The result is published as a token-indexed observation carrying the token identifier, its token, line, and block indices, and whether the gaze is inside the reading area; this observation is the stable interface (FR4.4) the analysis layer and the export both consume.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// Map a screen-space gaze point (x, y) to the nearest word. Word boxes are
+// re-measured from the live DOM, so the mapping survives presentation changes (FR5.4).
+function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex: number | null) {
+  const bestLine = pickBestLine(layouts, y, activeIndex);   // vertical score, biased to current line
+  let bestIndex: number | null = null, bestScore = Infinity;
+  for (const w of layouts) {
+    if (w.line !== bestLine) continue;
+    const score = getAxisDistance(x, w.left, w.right) * 1.35  // horizontal distance to the word box
+                + Math.abs(w.centerX - x) * 0.12;
+    if (score < bestScore) { bestScore = score; bestIndex = w.index; }
+  }
+  return bestIndex;                       // -> token id + token/line/block index in the observation
+}
+\end{minted}
+\caption{Gaze-to-content mapping in the reader (abbreviated from \texttt{useGazeTokenHighlight.ts}). The nearest word is chosen by a two-stage score, line then word; \texttt{layouts} is rebuilt from the rendered DOM on every mutation, resize, and scroll, which is what keeps the mapping valid across presentation changes.}
+\label{lst:impl-tokenmap}
+\end{listing}
+
+\paragraph{Temporal analysis as a replaceable strategy.}
+The oculomotor events themselves are derived on the backend by an eye-movement analysis strategy that consumes the stream of observations.
+The built-in strategy is a dwell-based detector: a new token is held as a \emph{candidate} and only confirmed as a fixation once it has been dwelt on past a threshold (90\,ms initially, then 70\,ms within a line and 135\,ms across a line), at which point the previous fixation is finalised and the connecting saccade is built.
+A saccade's direction is read from the change in line and token index, and a backward step is exactly a regression (\cref{lst:impl-saccade}), which is how the regression count the researcher sees is produced.
+Two properties matter for RQ2's ``inspectable and reproducible'' clause.
+First, the strategy is a pure function of the observation and the prior state: \texttt{AnalyzeAsync} returns a new immutable runtime state rather than mutating anything, so replaying the same observations yields the same events.
+Second, it is resolved from a registry behind the \texttt{IEyeMovementAnalysisStrategy} interface, so the built-in detector can be replaced by an external analysis provider over the contract of \cref{sec:impl-modularity} without changing anything that consumes its output (FR18.2).
+The events it produces drive the live overlay on the researcher console (\cref{fig:impl-screens-console}), feed the decision strategies, and are written into the session record (FR18.3).
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+private static SaccadeSnapshot? BuildSaccade(FixationSnapshot? from, FixationSnapshot to)
+{
+    if (from is null) return null;
+    var lineDelta = to.LineIndex - from.LineIndex;
+    var direction = lineDelta == 0
+        ? to.TokenIndex > from.TokenIndex ? SaccadeDirections.Forward
+        : to.TokenIndex < from.TokenIndex ? SaccadeDirections.Backward          // a regression
+                                          : SaccadeDirections.Unknown
+        : lineDelta > 0 ? SaccadeDirections.LineChangeForward
+                        : SaccadeDirections.LineChangeBackward;                   // line regression
+    return new SaccadeSnapshot(from.TokenId, to.TokenId, /* indices, timing, */ lineDelta, direction);
+}
+\end{minted}
+\caption{Saccade and regression classification (abbreviated from \texttt{BuiltInEyeMovementAnalysisStrategy.cs}). A saccade is built between two confirmed fixations; a backward move within or across lines is a regression, and the running regression count is incremented from this classification.}
+\label{lst:impl-saccade}
+\end{listing}
+
+\FloatBarrier
+\subsection{Calibration and validation}
+\label{sec:impl-calibration}
+
+Calibration is one of the four readiness gates of \cref{sec:impl-session} (\cref{fig:impl-calibration}); this section opens how it produces the quality metrics the researcher sees and the gate consults.
+The flow is two-phase and is orchestrated by a \texttt{CalibrationService} that talks to the eye tracker only through the sensing port, never the SDK directly.
+In the first phase the participant fixates the points of the selected preset while the tracker collects data, after which a calibration is computed and applied; the researcher can choose a 9-, 13-, or 16-point preset, and the choice is persisted so it survives a restart (FR3.5).
+In the second phase the participant fixates five fixed validation targets and the tracker is asked, through the same port, to compute the accuracy and precision of the now-applied calibration.
+Throughout, the service pauses gaze streaming, broadcasts the calibration snapshot after every step so both screens follow along, and leaves the application untouched between participants, so a recalibration is just another call rather than a restart (FR3.4).
+
+The metrics themselves are computed in the Tobii adapter, which keeps the eye-tracker-specific geometry on the infrastructure side of the port (\cref{lst:impl-validation}).
+Accuracy is the angular offset between where the eye actually looked and the validation target, measured from the eye's gaze origin; precision is the root-mean-square of the angular change between successive samples, that is, the jitter while the participant holds a single target.
+These two degree values, together with a quality grade, are the figures shown to the researcher before the session can start (FR3.2): a point is graded \emph{good} below \ang{0.5} accuracy and \ang{0.3} precision and \emph{fair} below \ang{1.0} and \ang{0.5}, and a validation passes only when the averages stay within the \emph{fair} bounds and at least four fifths of the points pass.
+Only a passing validation satisfies the calibration gate, and its accuracy, precision, and grade are carried in the setup snapshot into the session record for reproducibility (FR3.3); the values measured on real hardware are reported in \cref{ch:evaluation}.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+// Accuracy: angular offset (degrees) between where the eye looked and the target,
+// measured from the eye's gaze origin.
+private static double? CalculateAngularAccuracyDegrees(ValidationEyeSample sample, Point3D target) =>
+    CalculateAngleDegrees(CreateVector(sample.GazeOrigin, target),
+                          CreateVector(sample.GazeOrigin, sample.GazePointInUserCoordinates));
+
+// Precision: root-mean-square of the angle between successive gaze samples (jitter).
+private static double? CalculatePrecisionDegrees(IReadOnlyList<ValidationEyeSample> samples)
+{
+    var deltas = SuccessiveSampleAngles(samples);   // angle between each consecutive pair
+    return deltas.Count == 0 ? null : Math.Sqrt(deltas.Average(d => d * d));
+}
+
+private static double? CalculateAngleDegrees(Vector3 from, Vector3 to)
+{
+    var cos = Math.Clamp((from.X*to.X + from.Y*to.Y + from.Z*to.Z)
+                         / (from.Magnitude * to.Magnitude), -1d, 1d);
+    return Math.Acos(cos) * 180d / Math.PI;
+}
+\end{minted}
+\caption{Validation accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angular distance from the gaze to the target; precision is the root-mean-square angular jitter between successive samples. Keeping this geometry in the adapter leaves the core depending only on the resulting degree values.}
+\label{lst:impl-validation}
+\end{listing}
+
+\FloatBarrier
+\subsection{Sensing modes and hardware-free operation}
+\label{sec:impl-sensing-modes}
+
+The sensing \emph{source} is itself a swappable module.
+A sensing mode is a single setting (\texttt{eyeTracker}, \texttt{webcam}, or \texttt{mouse}) held by a small service, changed through a REST command without restarting the application (FR17.2) and persisted so it survives one.
+What makes the modes interchangeable is that they all converge on the same lock-free ingest of \cref{lst:impl-hotpath}: the Tobii adapter raises a \texttt{GazeData}, and the other sources produce the identical record by another route, after which the token mapping, the eye-movement analysis, the live overlay, and the export of \cref{sec:impl-sensing} cannot tell which source produced the sample.
+
+Mouse mode is the clearest case and the most useful one in practice (FR17.3).
+In the participant reader, when the mode is \texttt{mouse}, the cursor becomes the gaze source: each pointer movement is throttled and turned into a normalised \texttt{GazeData} of exactly the shape the Tobii adapter emits (\cref{lst:impl-mousegaze}) and sent over the WebSocket.
+On the backend, \texttt{SubmitMouseGazeSampleAsync} checks only that mouse mode is active and a session is running, then hands the sample to the very same \texttt{UpdateGazeSample} the hardware path uses (\cref{lst:impl-mouseingest}).
+Because nothing downstream distinguishes the source, the whole platform, gaze-to-content mapping, fixations and regressions, interventions, replay, can be operated, developed, and demonstrated on any machine with no eye tracker attached, which is what made day-to-day work on this thesis possible away from the hardware.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// In mouse mode the cursor is the gaze source: each pointer move (throttled to ~30 Hz)
+// becomes a normalised GazeData of the same shape the Tobii adapter emits.
+const handlePointerMove = (event: PointerEvent) => {
+  const x = Math.min(1, Math.max(0, event.clientX / window.innerWidth));
+  const y = Math.min(1, Math.max(0, event.clientY / window.innerHeight));
+  sendMouseGazeSample({
+    deviceTimeStamp: Date.now(), systemTimeStamp: Date.now(),
+    leftEyeX: x, leftEyeY: y, leftEyeValidity: "Valid",
+    rightEyeX: x, rightEyeY: y, rightEyeValidity: "Valid",
+  });
+};
+\end{minted}
+\caption{The browser as a gaze source (abbreviated from \texttt{ReadingPage.tsx}). When the sensing mode is \texttt{mouse}, pointer movements are normalised into the same \texttt{GazeData} shape the eye tracker produces and streamed over the WebSocket.}
+\label{lst:impl-mousegaze}
+\end{listing}
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public async ValueTask SubmitMouseGazeSampleAsync(
+    string connectionId, GazeData gazeData, CancellationToken ct = default)
+{
+    if (!SensingModes.UsesMouse(_sensingModeSettingsService.CurrentMode)) return;  // wrong mode
+    if (!Volatile.Read(ref _session).IsActive) return;                             // no session
+
+    UpdateGazeSample(gazeData);                  // the same lock-free path as the Tobii source
+    await BroadcastGazeSampleAsync(_gazeSubscribers.Keys.ToArray(),
+        ShouldPublishToExternalProvider(), ShouldPublishToExternalAnalysisProvider(), gazeData);
+}
+\end{minted}
+\caption{Mouse samples join the hardware path (abbreviated from \texttt{ExperimentSessionManager.Gaze.cs}). After two guards, a mouse sample is handed to the same \texttt{UpdateGazeSample} (\cref{lst:impl-hotpath}) the Tobii adapter feeds, so the entire downstream pipeline is source-agnostic.}
+\label{lst:impl-mouseingest}
+\end{listing}
+
+\FloatBarrier
+\subsection{Context-preserving interventions}
+\label{sec:impl-context}
+
+RQ3 asks how a typographic micro-intervention can change the text while preserving the reader's context, the recovery concern raised in the literature \cite{jensen2025context}.
+\Cref{sec:impl-session} surfaced one half of the answer as an operator control: appearance changes (colour, theme) commit immediately, but a layout-changing intervention (font size, line width) waits for a chosen commit boundary so the reflow lands at a natural reading break rather than mid-line.
+This section opens the other half, what happens to the reader's position when the reflow does land, which is realised in the participant reader as a capture-and-restore around every change.
+
+While reading, the reader continuously captures an \emph{anchor} for the participant's current position (\cref{lst:impl-anchor-capture}, FR9.1): it prefers the word currently being looked at, falls back to the first word near the top of the viewport, and falls back again to the enclosing paragraph, recording the chosen element's identifiers together with its offset from the top of the viewport.
+When an intervention then commits, the reader restores that anchor to the same on-screen offset (\cref{lst:impl-anchor-restore}, FR9.2).
+It chooses between two restore modes: a layout-changing intervention triggers a \emph{semantic restart} from the sentence or paragraph the change committed against, whereas a non-layout change uses a plain \emph{offset preserve} of the captured anchor.
+In both modes the reader scrolls so the located anchor returns to its previous offset and then measures the residual \texttt{anchorErrorPx}, which classifies the outcome as preserved, degraded, or failed.
+
+That outcome is not merely cosmetic: it is reported to the backend, which records it in the session log alongside the intervention and checkpoints it (FR9.3), following the same gate-and-record shape as every other state change (\cref{lst:impl-state-change}).
+A context-preservation failure (a missing anchor, or a residual error beyond the threshold) is therefore an auditable event in the export, so the cost of an intervention to the reader's continuity can be analysed after the session rather than only felt during it.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// Capture the reader's current position: the word being looked at, else the first
+// word near the top of the viewport, else the enclosing paragraph (FR9.1).
+function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnapshot | null {
+  const view = container.getBoundingClientRect();
+  const active = content.querySelector("[data-gaze-active='true'][data-token-id]");
+  const token = active && inView(active, view) ? active : getFirstVisibleWord(content, view);
+  if (!token) return blockAnchor(content, view);                 // paragraph fallback
+  const rect = token.getBoundingClientRect();
+  return {
+    anchorSentenceId: token.dataset.sentenceId, anchorTokenId: token.dataset.tokenId,
+    anchorBlockId: token.closest("[data-block-id]")?.dataset.blockId ?? null,
+    anchorViewportOffsetPx: rect.top - view.top,                 // where it sits on screen
+    scrollTopPx: container.scrollTop, capturedAtUnixMs: Date.now(),
+  };
+}
+\end{minted}
+\caption{Capturing the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor prefers the gazed-at word and degrades to a visible word and then a paragraph, storing the element's identifiers and its offset from the top of the viewport so the same position can be re-found after a reflow.}
+\label{lst:impl-anchor-capture}
+\end{listing}
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// After the change, scroll so the anchor returns to the same on-screen offset it
+// had before, then measure the residual error and classify the outcome (FR9.2).
+const located = locateAnchor(content, anchor);          // sentence -> token -> block fallback
+const view = container.getBoundingClientRect();
+const top = located.primaryElement.getBoundingClientRect().top - view.top;
+container.scrollTop += top - located.anchorViewportOffsetPx;    // re-align to the captured offset
+
+const finalTop = located.primaryElement.getBoundingClientRect().top - view.top;
+const anchorErrorPx = Math.abs(finalTop - located.anchorViewportOffsetPx);
+const status = anchorErrorPx <= 48 ? "preserved" : anchorErrorPx > 120 ? "degraded" : "preserved";
+onContextPreservationChange({ status, anchorErrorPx, /* anchor ids, boundary, ... */ });
+\end{minted}
+\caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The reader re-finds the anchor (degrading from sentence to token to paragraph), scrolls it back to its captured offset, measures the residual error, and reports the outcome, which the backend records in the session log.}
+\label{lst:impl-anchor-restore}
+\end{listing}
+
+\FloatBarrier
+\subsection{Experiment templates and session sequencing}
+\label{sec:impl-templates}
+
+For RQ4 the platform has to let a researcher define a repeatable experiment, not just a single reading.
+An experiment template is a named, ordered sequence of items (\cref{fig:impl-template}); each item references one reading material from the library and may carry its own typographic configuration, so the same text can be presented differently across conditions (FR15.1, FR15.2).
+Templates are persisted and reusable across sessions and participants (FR15.3), which is what makes a run reproducible from a stored definition rather than reassembled by hand each time.
+
+A session may then play through the whole sequence rather than a single item (FR16.1).
+When the session starts, the manager resolves the running order from the template (\cref{lst:impl-order}): in \texttt{fixed} mode it keeps the authored order, and in \texttt{random} mode it shuffles the items and re-indexes them, which is the counterbalancing a within-subject comparison of interventions needs.
+The resolved first item becomes the active reading content, the rest follow in order, and each transition between items is written into the session log as a timestamped event (FR16.2), so the sequence the participant actually saw is recoverable from the record.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+private void ResolveExperimentOrderForStart()
+{
+    var run = _liveReadingSession.ExperimentRun;
+    var items = _liveReadingSession.ExperimentItems?.Select(i => i.Copy()).ToArray() ?? [];
+    if (run is null || items.Length == 0) return;
+
+    var ordered = string.Equals(run.OrderMode, "random", StringComparison.OrdinalIgnoreCase)
+        ? items.OrderBy(_ => Random.Shared.Next()).Select((item, i) => item with { Order = i }).ToArray()
+        : items.OrderBy(item => item.Order).Select((item, i) => item with { Order = i }).ToArray();
+    // ...seed ordered[0] as the current reading content; the rest advance in order...
+}
+\end{minted}
+\caption{Resolving the running order at session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). A template runs in its authored order, or, in \texttt{random} mode, is shuffled and re-indexed for counterbalancing; either way the items are renumbered so the rest of the run is a simple ordered walk.}
+\label{lst:impl-order}
+\end{listing}
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ExperimentTemplate.png}
+\caption{The experiment template editor. A template is a named, ordered sequence of reading items, each bound to a library material and optionally given its own typographic configuration; the template is persisted and reused across sessions, and its order is replayed (fixed) or counterbalanced (random) when a session starts.}
+\label{fig:impl-template}
+\end{figure}
+
+\FloatBarrier
+\subsection{Record, export, and replay}
+\label{sec:impl-replay}
+
+The auditable record is the other half of RQ4, and it is what \cref{sec:impl-session} sealed at the end of a session.
+Everything the walkthrough produced, every raw gaze sample, every derived fixation, saccade, and regression, every intervention and context-preservation outcome, every lifecycle and quiz event, is written into a single export document with a versioned manifest that names the schema, its version, and the producer (down to the Tobii SDK version), alongside the calibration metrics and the presentation configuration (FR12.5).
+At finish, two such documents are built, a full raw export and a processed one, so downstream analysis can take either the unabridged record or a flattened summary.
+
+A document serialises to JSON or to CSV through CsvHelper (\cref{lst:impl-export}, FR12.4).
+The CSV is not a lossy flattening: alongside the per-event rows it carries the entire export as a base64-encoded JSON payload in a dedicated row, so a spreadsheet-friendly CSV is still a fully replayable record and the two formats round-trip to the same document.
+On import, the front-end reconstructs a session from such a file but first checks that the manifest schema and version are ones it can interpret (\cref{lst:impl-import}, FR21.1), rejecting anything else rather than mis-rendering it; this version gate is what lets the format evolve without silently breaking old recordings.
+
+Replay then reconstructs the reading view as a timed playback (\cref{fig:impl-replay}).
+Because every event stream is ordered by time, the player can build the exact frame at any instant by binary-searching each stream for the latest event at or before the playhead, which is what gives scrubbing, variable-speed playback, and jump-to-event navigation with intervention markers on the timeline (FR21.2--FR21.4).
+Finally, durability does not depend on a clean finish: during a run a checkpoint worker periodically persists the live session state, so an interrupted session can be detected and offered for recovery on the next start rather than lost (FR22).
+Together the versioned record, the dual-format export, the version-gated import, and the deterministic replay are what make a session on this platform reproducible and comparable after the fact, which is the auditability RQ4 asks for.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public string Serialize(ExperimentReplayExport exportDocument, string format)
+{
+    if (ExperimentReplayExportFormats.Normalize(format) == ExperimentReplayExportFormats.Csv)
+    {
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csv.WriteRecords(BuildCsvRows(exportDocument));   // event rows + a base64 "replay-json" row
+        return writer.ToString();
+    }
+    return JsonSerializer.Serialize(exportDocument, _jsonOptions);
+}
+\end{minted}
+\caption{Dual-format export (abbreviated from \texttt{ExperimentReplayExportSerializer.cs}). CsvHelper writes per-event rows for spreadsheet analysis, but one row embeds the whole export as base64-encoded JSON, so the CSV remains fully replayable and both formats deserialise back to the same document.}
+\label{lst:impl-export}
+\end{listing}
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+export function parseExperimentReplayExport(input: string | unknown): ExperimentReplayExport {
+  const parsed = typeof input === "string" ? JSON.parse(input) : input;   // (or decoded from CSV)
+  if (!isRecord(parsed) || !isRecord(parsed.manifest) || !isRecord(parsed.experiment) /* ...sections... */)
+    throw new Error("The file does not match the replay export format.");
+  if (parsed.manifest.schema !== "rtr.experiment-export" ||
+      ![2, 3, 4, 5, 6, 7].includes(parsed.manifest.version as number))
+    throw new Error("Unsupported replay format.");          // version gate: reject what we can't replay
+  return parsed as ExperimentReplayExport;
+}
+\end{minted}
+\caption{Version-gated import (abbreviated from \texttt{experiment-replay.ts}). Before reconstruction, the front-end checks the export's structure and its manifest schema and version against the set it can interpret, so the format can evolve without an older or unknown recording being mis-rendered.}
+\label{lst:impl-import}
+\end{listing}
+\FloatBarrier

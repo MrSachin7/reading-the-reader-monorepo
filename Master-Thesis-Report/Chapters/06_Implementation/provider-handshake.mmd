@@ -1,0 +1,28 @@
+%% Lifecycle of an external module provider connecting over the module-provider protocol.
+%% Render to PDF like the Ch.5 figures:  mmdc -i provider-handshake.mmd -o provider-handshake.pdf
+sequenceDiagram
+    autonumber
+    participant P as External provider<br/>(e.g. AI service)
+    participant G as Module-provider gateway
+    participant M as ExperimentSessionManager
+    participant L as Session log
+
+    P->>G: Hello (providerId, modules, capabilities)
+    alt protocol and modules accepted
+        G-->>P: Welcome (acceptedModules, heartbeatTimeout)
+    else mismatch or already claimed
+        G-->>P: Error (code)
+    end
+
+    loop while active
+        P-->>G: Heartbeat
+        M->>G: per-module context
+        G-->>P: Inbound (moduleId, context)
+        P-->>G: Outbound (moduleId, command)
+        G->>M: apply via standard validation + logging
+        M->>L: record intervention (source = external provider)
+    end
+
+    Note over P,M: missed heartbeat or disconnect
+    G->>M: degrade strategy to built-in fallback
+    M->>L: record provider disconnect (FR19.3)
