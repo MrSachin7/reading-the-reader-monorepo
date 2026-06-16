@@ -1,4 +1,69 @@
 \section{Implementation Highlights}
 \label{sec:impl-highlights}
 % Authoring brief for this section lives in section.md (§6.3).
+% TikZ primitives for the relocated ports-and-adapters class diagram below.
+\usetikzlibrary{shapes.multipart, arrows.meta}
 \todo[inline]{\S6.3 to be written. 2--4 deeper dives the walkthrough flags: real-time gaze hot path (lock-free, WebSocket; RQ2); pluggable modules + a worked "add an intervention" (RQ1); external-provider framework realized; session record schema + replay (RQ4). Each: prose + at most one short listing. Pick the dives during scaffolding.}
+
+% RELOCATED FROM §6.2 (decided 2026-06): the ports-and-adapters class diagram belongs
+% to the modularity dive (RQ1) as the seam where adapters/modules plug in behind a
+% core-declared port, not to the session flow. It is parked here under \iffalse until
+% this section is written; then introduce it from the prose (it is \cref'd from
+% \cref{sec:impl-session} as the seam examined here), reference \cref{fig:impl-session-manager},
+% and remove the \iffalse guard. Needs \usetikzlibrary{shapes.multipart, arrows.meta} (loaded above).
+\iffalse
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  mgr/.style={rectangle split, rectangle split parts=3, draw=navyblue, very thick, fill=blue!8, align=left, text width=5.0cm, inner sep=4pt},
+  iface/.style={rectangle split, rectangle split parts=2, draw=black!65, thick, fill=grey!15, align=left, text width=3.7cm, inner sep=3pt},
+  adapter/.style={rectangle split, rectangle split parts=2, draw=dtured, very thick, fill=dtured!8, align=left, text width=3.7cm, inner sep=3pt},
+  realise/.style={dashed, -{Triangle[open, length=7pt, width=7pt]}, semithick, black!70},
+  use/.style={dashed, -{Stealth[length=5pt]}, semithick, black!55},
+  bnd/.style={dashed, black!40, thick},
+  note/.style={font=\scriptsize\itshape, text=black!75},
+]
+% ---- core: the session manager (Application layer) ----
+\node[mgr] (mgr) at (0,5.9)
+  {{\bfseries ExperimentSessionManager}\\{\itshape sealed, partial}\\[2pt]{\tiny realises \mbox{IExperimentRuntimeAuthority}, \mbox{IExperimentSessionManager},\\\mbox{IExperimentSessionQueryService}, \mbox{IExperimentReplayRecoveryBuffer}}
+   \nodepart{two}$-$\_lifecycleGate : SemaphoreSlim\\$-$\_session : ExperimentSession
+   \nodepart{three}$+$StartSessionAsync() : bool\\$+$FinishSessionAsync(cmd) : Snapshot\\$+$GetCurrentSnapshot() : Snapshot};
+% ---- core: the port interfaces (Application layer) ----
+\node[iface] (psen) at (-5.8,1.5)
+  {{\itshape interface}\\{\bfseries IEyeTrackerAdapter}
+   \nodepart{two}$+$GazeDataReceived : event\\$+$StartEyeTracking()\\$+$BeginCalibrationAsync()};
+\node[iface] (pbrd) at (0,1.5)
+  {{\itshape interface}\\{\bfseries IClientBroadcaster\\Adapter}
+   \nodepart{two}$+$BroadcastAsync(type, \mbox{payload})\\$+$ConnectedClients : int};
+\node[iface] (psto) at (5.8,1.5)
+  {{\itshape interface}\\{\bfseries IExperimentStateStore\\Adapter}
+   \nodepart{two}$+$SaveActiveReplayAsync(doc)\\$+$LoadActiveReplayAsync() : Replay?};
+% ---- Application / infrastructure boundary ----
+\draw[bnd] (-7.8,-0.6) -- (7.8,-0.6);
+\node[note, anchor=west] at (8.1,-0.12) {Application};
+\node[note, anchor=west] at (8.1,-0.52) {(core, ports)};
+\node[note, anchor=west] at (8.1,-1.0) {Infrastructure};
+\node[note, anchor=west] at (8.1,-1.4) {(adapters)};
+% ---- infrastructure: concrete adapters ----
+\node[adapter] (asen) at (-5.8,-2.9)
+  {{\bfseries TobiiEyeTracker\\Adapter}\nodepart{two}{\itshape project:\\TobiiEyetracker}};
+\node[adapter] (abrd) at (0,-2.9)
+  {{\bfseries WebSocketRealtime\\Messenger}\nodepart{two}{\itshape project:\\RealtimeMessenger}};
+\node[adapter] (asto) at (5.8,-2.9)
+  {{\bfseries FileSnapshotExperiment\\StateStoreAdapter}\nodepart{two}{\itshape project:\\Realtime.Persistence}};
+% ---- dependencies: the manager uses the ports ----
+\draw[use] (mgr.south) -- (pbrd.north) node[note, midway, fill=white, inner sep=1pt] {depends on};
+\draw[use] (mgr.south west) to[out=-120,in=65] (psen.north);
+\draw[use] (mgr.south east) to[out=-60,in=115] (psto.north);
+% ---- realisations: the adapters realise the ports ----
+\draw[realise] (asen.north) -- (psen.south) node[note, midway, fill=white, inner sep=1pt] {realises};
+\draw[realise] (abrd.north) -- (pbrd.south);
+\draw[realise] (asto.north) -- (psto.south);
+\end{tikzpicture}%
+}
+\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on the three port interfaces in the middle row (sensing, broadcast, and persistence). Each concrete adapter in the bottom row lives in an infrastructure project and realises the port above it. The dashed rule marks the \texttt{Application}/infrastructure boundary: every realisation (hollow triangle) and dependency (filled arrow) edge crosses it inward towards the core, so the modularity of \cref{sec:design-style} is visible at the level of individual classes. Members are abbreviated; the replay, recovery, and module-provider ports follow the same pattern and are omitted for clarity.}
+\label{fig:impl-session-manager}
+\end{figure}
+\fi
