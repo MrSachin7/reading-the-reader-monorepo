@@ -1,6 +1,8 @@
 % F2: two-screen hero (sec:design-style). Schematic, not a screenshot.
 % \input this inside the §5.2 prose where it is referenced.
 % Colours (dtured, blue, navyblue, grey, yellow, orange) are defined in Setup/Settings.tex.
+% The two screens are shifted apart (scopes) so the flow labels fit the gaps;
+% the four flow arrows fan from distinct attach points on the core (no tangle).
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
 \begin{figure}[htbp]
 \centering
@@ -9,62 +11,68 @@
   >={Stealth[length=2.4mm]},
   screen/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=white},
   titlebar/.style={font=\scriptsize\bfseries, text=white},
-  core/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!14, align=center, text width=2.0cm, minimum height=1.2cm, inner sep=3pt, font=\scriptsize},
-  prov/.style={rectangle, rounded corners=2pt, draw=dtured!80, very thick, dashed, fill=grey!25, align=center, text width=3.8cm, minimum height=1.1cm, inner sep=4pt, font=\scriptsize},
+  core/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!14, align=center, text width=2.0cm, minimum height=1.5cm, inner sep=3pt, font=\scriptsize},
+  prov/.style={rectangle, rounded corners=2pt, draw=dtured!80, very thick, dashed, fill=grey!25, align=center, text width=4.0cm, minimum height=1.1cm, inner sep=4pt, font=\scriptsize},
   bar/.style={rounded corners=1pt, draw=none, fill=black!18},
   real/.style={->, very thick, navyblue},
   ext/.style={<->, very thick, dashed, dtured!85},
   flbl/.style={font=\scriptsize, align=center, text=navyblue, fill=white, inner sep=1.5pt},
   caplbl/.style={font=\scriptsize\itshape, text=black!65, align=center},
 ]
-%================= PARTICIPANT READING SURFACE =================
-\draw[screen] (-8.6,-1.0) rectangle (-5.1,2.0);
-\fill[navyblue] (-8.6,1.55) rectangle (-5.1,2.0);
-\node[titlebar] at (-6.85,1.78) {Participant};
-\foreach \y/\w in {1.15/2.9, 0.85/2.6, 0.55/2.9, 0.25/2.4, -0.05/1.8}{
-  \fill[bar] (-8.3,\y) rectangle (-8.3+\w,\y+0.12);}
-\fill[navyblue] (-6.9,0.61) circle (0.085);
-\draw[navyblue, opacity=0.5] (-6.9,0.61) circle (0.16);
-\node[caplbl] at (-6.85,-1.45) {reading surface: text only};
+%================= PARTICIPANT READING SURFACE (shifted left) =================
+\begin{scope}[xshift=-1.3cm]
+  \draw[screen] (-8.6,-1.0) rectangle (-5.1,2.0);
+  \fill[navyblue] (-8.6,1.55) rectangle (-5.1,2.0);
+  \node[titlebar] at (-6.85,1.78) {Participant};
+  \foreach \y/\w in {1.15/2.9, 0.85/2.6, 0.55/2.9, 0.25/2.4, -0.05/1.8}{
+    \fill[bar] (-8.3,\y) rectangle (-8.3+\w,\y+0.12);}
+  \fill[navyblue] (-6.9,0.61) circle (0.085);
+  \draw[navyblue, opacity=0.5] (-6.9,0.61) circle (0.16);
+  \node[caplbl] at (-6.85,-1.45) {reading surface: text only};
+\end{scope}
 %================= BACKEND CORE =================
 \node[core] (core) at (-2.9,0.5) {Backend core\\{\scriptsize real-time loop}};
-%================= RESEARCHER CONSOLE =================
-\draw[screen] (-0.3,-1.4) rectangle (7.4,2.4);
-\fill[navyblue] (-0.3,1.95) rectangle (7.4,2.4);
-\node[titlebar] at (3.55,2.18) {Researcher $\cdot$ console};
-\foreach \y/\w in {1.5/2.6, 1.2/2.3, 0.9/2.6, 0.6/2.1, 0.3/1.6}{
-  \fill[bar] (-0.05,\y) rectangle (-0.05+\w,\y+0.12);}
-\fill[yellow] (0.65,1.2) rectangle (1.15,1.32);
-\fill[orange] (1.15,1.2) rectangle (1.5,1.32);
-\fill[orange] (0.35,0.9) rectangle (0.85,1.02);
-\fill[yellow] (1.45,0.9) rectangle (1.95,1.02);
-\draw[->, thick, dtured] (0.5,0.78) .. controls (1.0,0.45) and (1.6,0.45) .. (2.05,0.78);
-\fill[navyblue] (1.7,1.26) circle (0.075);
-\node[caplbl, text width=2.6cm] at (1.25,-0.05) {mirror + fixation heat map + saccades};
-\draw[rounded corners=2pt, draw=navyblue!40] (2.9,0.15) rectangle (7.15,1.85);
-\node[font=\scriptsize\bfseries, text=navyblue] at (5.0,1.62) {Controls};
-\draw[rounded corners=2pt, draw=navyblue, fill=navyblue!12] (3.15,1.0) rectangle (6.9,1.35);
-\draw[rounded corners=2pt, fill=navyblue, draw=navyblue] (3.15,1.0) rectangle (5.0,1.35);
-\node[font=\scriptsize, text=white] at (4.07,1.18) {Advisory};
-\node[font=\scriptsize, text=navyblue] at (5.95,1.18) {Autonomous};
-\draw[rounded corners=3pt, fill=dtured, draw=dtured] (3.15,0.35) rectangle (4.8,0.78);
-\node[font=\scriptsize, text=white] at (3.97,0.56) {Apply};
-\draw[rounded corners=3pt, draw=navyblue!50, fill=blue!6] (4.95,0.35) rectangle (6.9,0.78);
-\node[font=\scriptsize, text=navyblue!80, align=center] at (5.92,0.56) {proposal:\\ +spacing};
-\node[caplbl] at (3.55,-1.85) {live mirror, gaze analytics, and the controls that steer the session};
-%================= EXTERNAL PROVIDER =================
-\node[prov] (prov) at (-2.9,-3.3) {External decision provider\\{\scriptsize out of scope (C3)}};
+%================= RESEARCHER CONSOLE (shifted right) =================
+\begin{scope}[xshift=1.3cm]
+  \draw[screen] (-0.3,-1.4) rectangle (7.4,2.4);
+  \fill[navyblue] (-0.3,1.95) rectangle (7.4,2.4);
+  \node[titlebar] at (3.55,2.18) {Researcher $\cdot$ console};
+  \foreach \y/\w in {1.5/2.6, 1.2/2.3, 0.9/2.6, 0.6/2.1, 0.3/1.6}{
+    \fill[bar] (-0.05,\y) rectangle (-0.05+\w,\y+0.12);}
+  \fill[yellow] (0.65,1.2) rectangle (1.15,1.32);
+  \fill[orange] (1.15,1.2) rectangle (1.5,1.32);
+  \fill[orange] (0.35,0.9) rectangle (0.85,1.02);
+  \fill[yellow] (1.45,0.9) rectangle (1.95,1.02);
+  \draw[->, thick, dtured] (0.5,0.78) .. controls (1.0,0.45) and (1.6,0.45) .. (2.05,0.78);
+  \fill[navyblue] (1.7,1.26) circle (0.075);
+  \node[caplbl, text width=2.6cm] at (1.25,-0.05) {mirror + fixation heat map + saccades};
+  \draw[rounded corners=2pt, draw=navyblue!40] (2.9,0.15) rectangle (7.15,1.85);
+  \node[font=\scriptsize\bfseries, text=navyblue] at (5.0,1.62) {Controls};
+  \draw[rounded corners=2pt, draw=navyblue, fill=navyblue!12] (3.15,1.0) rectangle (6.9,1.35);
+  \draw[rounded corners=2pt, fill=navyblue, draw=navyblue] (3.15,1.0) rectangle (5.0,1.35);
+  \node[font=\scriptsize, text=white] at (4.07,1.18) {Advisory};
+  \node[font=\scriptsize, text=navyblue] at (5.95,1.18) {Autonomous};
+  \draw[rounded corners=3pt, fill=dtured, draw=dtured] (3.15,0.35) rectangle (4.8,0.78);
+  \node[font=\scriptsize, text=white] at (3.97,0.56) {Apply};
+  \draw[rounded corners=3pt, draw=navyblue!50, fill=blue!6] (4.95,0.35) rectangle (6.9,0.78);
+  \node[font=\scriptsize, text=navyblue!80, align=center] at (5.92,0.56) {proposal:\\ +spacing};
+  \node[caplbl] at (3.55,-1.85) {live mirror, gaze analytics, and the controls that steer the session};
+\end{scope}
 %================= ARROWS =================
-\draw[real] (-5.1,0.75) -- (core.west|-0,0.75) node[flbl, midway, above] {gaze};
-\draw[real] (core.west|-0,0.25) -- (-5.1,0.25) node[flbl, midway, below] {adapted text};
-\draw[real] (core.east|-0,0.75) -- (-0.3,0.75) node[flbl, midway, above] {mirror +\\ fixations / saccades};
-\draw[real] (-0.3,0.25) -- (core.east|-0,0.25) node[flbl, midway, below] {approve / apply};
+% participant (right edge -6.4) <-> core
+\draw[real] (-6.4,0.85) -- ($(core.north west)!0.3!(core.south west)$) node[flbl, pos=0.5, above] {gaze};
+\draw[real] ($(core.north west)!0.7!(core.south west)$) -- (-6.4,0.15) node[flbl, pos=0.5, below] {adapted text};
+% core <-> console (left edge 1.0)
+\draw[real] ($(core.north east)!0.3!(core.south east)$) -- (1.0,0.85) node[flbl, pos=0.5, above] {mirror +\\fixations / saccades};
+\draw[real] (1.0,0.15) -- ($(core.north east)!0.7!(core.south east)$) node[flbl, pos=0.5, below] {approve / apply};
+% external provider
+\node[prov] (prov) at (-2.9,-3.3) {External decision provider\\{\scriptsize out of scope (C3)}};
 \draw[ext] (prov.north) -- (core.south) node[flbl, midway, right, text=dtured] {context / proposals};
 %================= LEGEND =================
-\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-8.6,-4.3) {Legend};
-\draw[real] (-8.6,-4.75) -- (-8.0,-4.75); \node[anchor=west, font=\scriptsize] at (-7.9,-4.75) {real-time live loop and control};
-\draw[ext]  (-3.5,-4.75) -- (-2.9,-4.75); \node[anchor=west, font=\scriptsize] at (-2.8,-4.75) {external provider (out of scope, C3)};
-\draw[rounded corners=2pt, draw=black!25] (-8.8,-5.15) rectangle (3.2,-4.05);
+\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-9.9,-4.3) {Legend};
+\draw[real] (-9.9,-4.75) -- (-9.3,-4.75); \node[anchor=west, font=\scriptsize] at (-9.2,-4.75) {real-time live loop and control};
+\draw[ext]  (-4.7,-4.75) -- (-4.1,-4.75); \node[anchor=west, font=\scriptsize] at (-4.0,-4.75) {external provider (out of scope, C3)};
+\draw[rounded corners=2pt, draw=black!25] (-10.1,-5.15) rectangle (1.4,-4.05);
 \end{tikzpicture}%
 }
 \caption{The two coupled surfaces of the platform, shown schematically (not as screenshots). The participant's reading surface presents only the text, whereas the researcher's console mirrors that same text and augments it with the live gaze, a fixation heat map, and a saccade overlay derived by the core, alongside the controls that steer the session (the choice between advisory and autonomous operation and the approval of individual interventions). The two surfaces are joined by the real-time loop through the backend core, and an external decision provider may attach through the out-of-scope seam (C3). This separation, a clean reading surface for the participant and an analytic, controllable console for the researcher, is the platform's central user-facing structure.}

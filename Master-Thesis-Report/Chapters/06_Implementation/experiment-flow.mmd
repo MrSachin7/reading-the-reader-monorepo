@@ -1,0 +1,53 @@
+%% End-to-end flow of one experiment session across the two channels.
+%% Solid arrows: REST commands (browser->backend) and in-process port calls.
+%% Dashed arrows: WebSocket realtime frames to/from the browser.
+%% Render to PDF like the Ch.5 figures:  mmdc -i experiment-flow.mmd -o experiment-flow.pdf
+sequenceDiagram
+    autonumber
+    actor R as Researcher
+    participant C as Console<br/>(researcher screen)
+    participant API as REST API<br/>(FastEndpoints)
+    participant M as ExperimentSessionManager
+    participant T as Tobii adapter
+    participant B as Broadcaster
+    participant P as Reader<br/>(participant screen)
+
+    Note over R,P: Configuring (REST commands)
+    R->>C: prepare participant, material, device, calibration
+    C->>API: POST setup commands
+    API->>M: SetCurrent...Async / SetCalibrationState
+    M->>B: broadcast snapshot
+    B-->>C: experimentState
+    B-->>P: experimentState
+
+    Note over R,P: Start
+    R->>C: Start session
+    C->>API: POST /eyetrackers/start
+    API->>M: StartSessionAsync (re-check four gates)
+    M->>B: broadcast experimentStarted
+    B-->>C: experimentStarted
+    B-->>P: experimentStarted
+
+    Note over R,P: Running (realtime over WebSocket)
+    P-->>M: subscribeGazeData
+    loop per gaze sample
+        T->>M: GazeDataReceived
+        M->>B: gazeSample + snapshot
+        B-->>P: gaze + adapted text
+        B-->>C: live mirror + latency
+    end
+    opt researcher intervention
+        R->>C: apply intervention / typography
+        C->>M: command (REST or WebSocket)
+        M->>B: interventionEvent + snapshot
+        B-->>P: text adapts in place
+        B-->>C: mirror updates
+    end
+
+    Note over R,P: Finishing
+    R->>C: Finish session
+    C->>API: POST /experiment-session/finish
+    API->>M: FinishSessionAsync (seal + export)
+    M->>B: broadcast experimentStopped
+    B-->>C: experimentStopped
+    B-->>P: experimentStopped

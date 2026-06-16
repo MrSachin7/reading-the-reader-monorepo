@@ -1,19 +1,334 @@
 \section{Anatomy of an Experiment Session}
 \label{sec:impl-session}
 % Authoring brief for this section lives in section.md (§6.2). The spine of the chapter.
+% Rewritten as a top-down, frontend-first flow: the researcher acts on a screen, the
+% action travels over one of two channels (REST commands / WebSocket realtime), the
+% backend session manager answers, and one authoritative snapshot updates both screens.
 % UML class-diagram primitives (multipart class boxes + UML arrowheads) for this chapter's structural figures.
 \usetikzlibrary{shapes.multipart, arrows.meta}
 
-\Cref{sec:impl-structure} mapped where the code lives; this section sets it in motion by following one experiment session from the researcher's first preparation step to the sealed record it leaves behind.
-It is the concrete counterpart of the abstract adaptive loop of \cref{sec:design-loop}, and it is the part of the system a researcher actually operates.
+\Cref{sec:impl-structure} mapped where the code lives; this section sets it in motion by following one experiment session end to end, told from the two screens the researcher operates and tracing each action inward to the code that answers it.
+It is the concrete counterpart of the abstract adaptive loop of \cref{sec:design-loop}, and it is the part of the system a researcher actually drives.
 
-A single component, the \texttt{ExperimentSessionManager}, orchestrates the session and is the one place its state lives.
-Its responsibilities are divided by concern across partial classes (a lifecycle facet, a gaze facet, and analysis, decision, intervention, and replay facets), but they share one object behind one lifecycle lock and reach the rest of the system only through ports.
+\subsection*{Two screens, two channels}
+
+The platform is operated as two browser surfaces backed by one Next.js front-end (\cref{sec:impl-structure}): a researcher console on the operator's screen and a participant reader on the second screen.
+The researcher prepares and steers the session from the console while the participant only ever sees the reader, and the two are kept consistent not by talking to each other but by both rendering the same backend-owned snapshot.
+Two channels connect the front-end to the backend, and the distinction between them organises the whole walkthrough: a request and response REST interface carries the researcher's discrete \emph{commands}, while a single long-lived WebSocket carries the continuous realtime \emph{stream} in both directions.
+
+Commands travel over REST.
+The front-end's REST access is centralised in RTK Query slices (\cref{sec:impl-structure}); each researcher command (save the participant, choose the material, start the session, finish it, change an intervention policy) is a mutation that posts to a FastEndpoints route and receives the updated \texttt{ExperimentSessionSnapshot} in reply.
+\Cref{lst:impl-rest-command} shows two of them: starting and finishing the session.
+Marking each mutation as invalidating the \texttt{Experiment} cache tag means that after any command the front-end re-reads the authoritative state rather than trusting a locally computed one.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+export const experimentSessionApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    startExperimentSession: builder.mutation<void, void>({
+      query: () => ({ url: "/eyetrackers/start", method: "POST" }),
+      invalidatesTags: ["Experiment"],
+    }),
+    finishExperimentSession: builder.mutation<ExperimentSessionSnapshot, { source: string }>({
+      query: (body) => ({ url: "/experiment-session/finish", method: "POST", body }),
+      invalidatesTags: ["Experiment"],
+    }),
+    // ...participant, reading-material, decision- and intervention-policy commands...
+  }),
+})
+\end{minted}
+\caption{Researcher commands as RTK Query mutations (abbreviated from \texttt{redux/api/experiment-session-api.ts}). Each command posts to a FastEndpoints route and returns the updated snapshot; invalidating the \texttt{Experiment} tag forces the front-end to re-read the authoritative state.}
+\label{lst:impl-rest-command}
+\end{listing}
+
+The realtime stream travels over the WebSocket.
+On the client a single connection is shared across the whole front-end by the \texttt{gaze-socket} module (\cref{lst:impl-ws-client}): it connects lazily, and on open it asks for the current state and re-establishes any subscriptions, then routes every inbound frame through one handler.
+On the server the \texttt{/ws} endpoint is deliberately just as thin (\cref{lst:impl-ws-server}): it accepts the socket, reads each text frame as a typed envelope, and forwards it as a command to the session manager through an ingress interface, so the transport layer holds no session logic of its own.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+function connect() {
+  if (socket?.readyState === WebSocket.OPEN ||
+      socket?.readyState === WebSocket.CONNECTING) return;
+  socket = new WebSocket(getWsUrl());            // ws(s)://host/ws
+  socket.addEventListener("open", () => {
+    requestExperimentState();                    // pull the current snapshot
+    if (wantsGazeSubscription) send({ type: "subscribeGazeData", payload: {} });
+    startPingLoop();
+  });
+  socket.addEventListener("message", handleMessage);   // route every ServerEnvelope
+  socket.addEventListener("close", scheduleReconnect); // reconnect after 1s
+}
+\end{minted}
+\caption{The shared WebSocket client (abbreviated from \texttt{lib/gaze-socket.ts}). One connection serves the whole front-end; on open it requests the current snapshot and re-establishes subscriptions, routes every inbound frame through a single handler, and reconnects automatically when the socket closes.}
+\label{lst:impl-ws-client}
+\end{listing}
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connections,
+                      IExperimentCommandIngress ingress) =>
+{
+    using var socket = await context.WebSockets.AcceptWebSocketAsync();
+    var connectionId = connections.Add(socket);
+    while (socket.State == WebSocketState.Open && !context.RequestAborted.IsCancellationRequested)
+    {
+        var message = await ReadTextMessageAsync(socket, buffer, context.RequestAborted);
+        if (message is null) break;
+        var envelope = JsonSerializer.Deserialize<InboundRealtimeEnvelope>(message, JsonOptions);
+        var command = RealtimeIngressCommandFactory.Create(
+            connectionId, envelope.Type, envelope.Payload);
+        await ingress.HandleAsync(command, context.RequestAborted);  // -> ExperimentSessionManager
+    }
+});
+\end{minted}
+\caption{The server's WebSocket endpoint (abbreviated from \texttt{WebApi/Websockets/WebSocketConfiguration.cs}). It accepts the socket, reads each text frame as a typed envelope, and forwards it through the command ingress to the session manager; no session logic lives in the transport layer.}
+\label{lst:impl-ws-server}
+\end{listing}
+
+Each frame the server sends back is a small JSON envelope tagged with a message type and a server timestamp.
+Because no client code is generated from the backend (\cref{sec:impl-structure}), the front-end mirrors the backend's message catalogue by hand as the discriminated union in \cref{lst:impl-envelope}, in which the three lifecycle messages all carry the same \texttt{ExperimentSessionSnapshot} the manager assembled.
+Both screens therefore render directly from the authoritative snapshot rather than recomputing session state, which is what keeps them consistent without drift; the cost is that this union and the backend's message-type constants must be aligned by discipline, a seam revisited in \cref{sec:impl-engineering}.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+type ServerEnvelope =
+  | { type: "gazeSample"; sentAtUnixMs: number; payload: GazeData }
+  | { type: "experimentStarted" | "experimentStopped" | "experimentState";
+      sentAtUnixMs: number; payload: ExperimentSessionSnapshot }
+  | { type: "readingFocusChanged"; sentAtUnixMs: number; payload: ReadingFocusSnapshot }
+  | { type: "interventionEvent"; sentAtUnixMs: number; payload: InterventionEventSnapshot }
+  // ...one further variant per backend message type...
+  | { type: "error"; sentAtUnixMs: number; payload: { message: string } };
+\end{minted}
+\caption{The front-end's inbound message union (abbreviated from \texttt{lib/gaze-socket.ts}). Each variant mirrors one backend message type; the three lifecycle messages carry the same \texttt{ExperimentSessionSnapshot} the manager broadcasts, so both screens render from one authoritative payload.}
+\label{lst:impl-envelope}
+\end{listing}
+
+\Cref{fig:impl-flow} traces a complete session across these two channels, from the researcher's first command to the sealed record.
+The remainder of this section walks the same flow phase by phase, and \cref{fig:impl-session-states} names the three phases the session moves through (configuring, running, and completed, with a reset back to the beginning).
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Chapters/06_Implementation/experiment-flow.pdf}%
+  {\includegraphics[width=\linewidth]{Chapters/06_Implementation/experiment-flow.pdf}}%
+  {\fbox{\parbox[c][4.2cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/experiment-flow.mmd} to \texttt{experiment-flow.pdf} with \texttt{mmdc} (as for the Ch.~5 Mermaid figures).}}}%
+\caption{End-to-end flow of one experiment session across the two channels. The researcher's commands travel over REST (solid) and the realtime stream over the WebSocket (dashed); both converge on the single \texttt{ExperimentSessionManager}, which answers with one authoritative snapshot broadcast to both the console and the reader. Sensing, broadcast, and persistence are reached only through ports.}
+\label{fig:impl-flow}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.97\linewidth}{!}{%
+\begin{tikzpicture}[
+  state/.style={rectangle, rounded corners=4pt, draw=navyblue, very thick, fill=blue!8, align=center, text width=3.7cm, minimum height=1.5cm, inner sep=4pt, font=\small},
+  lbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
+  arr/.style={->, thick, black!65},
+]
+\fill[black!75] (-9.0,0) circle (2.4pt);
+\node[state] (cfg)  at (-6.6,0) {{\bfseries Configuring}\\[2pt]{\scriptsize gates: participant, eye tracker + licence, calibration + validation, reading material}};
+\node[state] (run)  at ( 0.0,0) {{\bfseries Running}\\[2pt]{\scriptsize per item: read with the adaptive loop, then comprehension quiz}};
+\node[state] (done) at ( 6.6,0) {{\bfseries Completed}\\[2pt]{\scriptsize record sealed and exported}};
+\draw[arr] (-9.0,0) -- (cfg.west);
+\draw[arr] (cfg.east) -- (run.west) node[lbl, midway, above] {start\\\mbox{[all gates ready]}};
+\draw[arr] (run.east) -- (done.west) node[lbl, midway, above] {finish};
+\draw[arr] (run.north) to[out=60,in=120,looseness=8] (run.north);
+\node[lbl] at (0,1.75) {next item};
+\draw[arr] (done.south) to[out=-118,in=-62,looseness=0.9] (cfg.south);
+\node[lbl] at (0,-2.15) {reset};
+\end{tikzpicture}%
+}
+\caption{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
+\label{fig:impl-session-states}
+\end{figure}
+
+\subsection*{Configuring: preparing the session}
+
+In the configuring phase the researcher prepares the session through a guided, role-sequenced stepper, shown in \cref{fig:impl-setup}.
+Each step is a REST command of the kind in \cref{lst:impl-rest-command}: selecting the participant, for example, posts to the participant route, whose endpoint calls \texttt{SetCurrentParticipantAsync} on the session manager.
+That backend method shows the shape every state-changing command takes (\cref{lst:impl-state-change}): it awaits the lifecycle gate, publishes a new immutable session record with \texttt{Volatile.Write}, and persists a checkpoint before releasing the gate, copying the participant so that no caller can mutate published state.
+The gate is a one-permit \texttt{SemaphoreSlim} rather than a plain lock because these operations are asynchronous and may \texttt{await}, and it serialises the slow command path so that, for example, one request cannot start a session while another is still stopping it.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public async ValueTask SetCurrentParticipantAsync(
+    Participant participant, CancellationToken ct = default)
+{
+    await _lifecycleGate.WaitAsync(ct);                 // serialise the command path
+    try
+    {
+        var current = Volatile.Read(ref _session);
+        Volatile.Write(ref _session,
+            current with { Participant = participant.Copy() });   // publish new state
+        await SaveCurrentCheckpointAsync(ct);                     // persist a checkpoint
+    }
+    finally
+    {
+        _lifecycleGate.Release();
+    }
+}
+\end{minted}
+\caption{The shape of every state-changing command (from \texttt{ExperimentSessionManager.Lifecycle.cs}). The lifecycle gate is awaited, a new immutable session record is published with \texttt{Volatile.Write}, and a checkpoint is persisted before the gate is released; the participant object is copied so that no caller can mutate published state.}
+\label{lst:impl-state-change}
+\end{listing}
+
+The backend tracks four independent readiness gates, a participant, a selected eye tracker with a valid licence, a passed calibration, and the reading material, each of which reports whether it is satisfied and, if not, the reason it blocks the start.
+The stepper sequences these into a recommended order, researcher preparation (the eye tracker and the reading material) before participant setup (the participant details and calibration), and locks each step until its prerequisites are met, so the researcher is never offered a control that cannot yet be used.
+The eye-tracker step in the figure shows the detail of this preparation: a real Tobii device is selected and its licence is managed, with an explicit overwrite guard so that a saved licence is not replaced by accident.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Stepper.png}
+\caption{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
+\label{fig:impl-setup}
+\end{figure}
+
+Calibration is one of the four gates and runs as its own immersive sub-flow, shown in \cref{fig:impl-calibration}.
+The participant follows a sequence of on-screen targets (sixteen in the configuration shown) while the device collects samples, after which a calibration is computed and applied and a validation pass measures its accuracy and precision.
+Only a calibration whose validation passes satisfies the gate, and the accuracy and precision it reports are carried in the setup snapshot and evaluated in \cref{ch:evaluation}.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
+\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (sixteen here) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
+\label{fig:impl-calibration}
+\end{figure}
+
+\subsection*{Starting: committing to the run}
+
+When all four gates are satisfied the researcher starts the session from the console, which sends the \texttt{startExperimentSession} mutation of \cref{lst:impl-rest-command}; on the backend this resolves to \texttt{StartSessionAsync} (\cref{lst:impl-start}), which re-checks readiness before committing to the run.
+If anything is incomplete it refuses with the blocking step's reason, so a misconfigured run cannot be started rather than merely being discouraged; otherwise it resolves the order of the experiment's material items (fixed or randomised), resets the gaze counters and the event sequence, and marks the session active.
+The readiness re-check matters because the gates are also the front-end's, and a control surface can lag the truth by a frame; performing the same check on the authoritative state at the moment of commit means the gating is enforced by the backend rather than merely reflected in a disabled button.
+Only after the check passes does the manager publish the now-active session and broadcast the \texttt{experimentStarted} snapshot, which flips both screens into the running phase at once.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public async Task<bool> StartSessionAsync(CancellationToken ct = default)
+{
+    await _lifecycleGate.WaitAsync(ct);
+    try
+    {
+        var current = Volatile.Read(ref _session);
+        if (current.IsActive) return false;
+
+        EnsureSetupIsReadyForStart(current, _calibrationSnapshot, _liveReadingSession);
+        ResolveExperimentOrderForStart();                  // fixed or randomised order
+
+        Interlocked.Exchange(ref _receivedGazeSamples, 0);
+        Volatile.Write(ref _session,
+            ExperimentSession.StartNew(startedAt, current.Participant, current.EyeTrackerDevice));
+        // ...initialise the replay-recovery buffer for this session...
+        var snapshot = GetCurrentSnapshot();
+        await _clientBroadcasterAdapter.BroadcastAsync(
+            MessageTypes.ExperimentStarted, snapshot, ct);
+        return true;
+    }
+    finally { _lifecycleGate.Release(); }
+}
+\end{minted}
+\caption{Starting a session (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). \texttt{EnsureSetupIsReadyForStart} re-evaluates the four gates against the authoritative state and throws with the blocking step's reason if any is unmet, so a misconfigured run cannot start; only on success is the active session published and the snapshot broadcast.}
+\label{lst:impl-start}
+\end{listing}
+
+\subsection*{Running: reading with the live adaptive loop}
+
+From this point the realtime channel does the work.
+The participant's reader registers itself and subscribes to the gaze stream over the WebSocket, and both screens consume the broadcast through one small hook, \texttt{useLiveExperimentSession} (\cref{lst:impl-live-hook}).
+Because the manager re-emits the snapshot several times per gaze observation (focus, attention summary, and analysis each update it), the hook coalesces those bursts to a single React commit per animation frame, so the live tree re-renders at roughly \SI{60}{\hertz} regardless of the inbound message rate while never dropping the newest snapshot.
+The adaptive loop of \cref{sec:design-loop} then runs over the modules resolved from the registries of \cref{sec:design-modules}, fed by the lock-free gaze path examined in \cref{sec:impl-highlights}.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+export function useLiveExperimentSession() {
+  const [session, setSession] = useState<ExperimentSessionSnapshot | null>(null);
+  useEffect(() => {
+    // Coalesce snapshot bursts to one React commit per animation frame (~60Hz).
+    let latest = null, hasPending = false, frameId = null;
+    const flush = () => {
+      frameId = null;
+      if (hasPending) { hasPending = false; setSession(latest); }
+    };
+    const unsubscribe = subscribeToExperimentSession((next) => {
+      latest = next; hasPending = true;
+      if (frameId === null) frameId = requestAnimationFrame(flush);
+    });
+    requestExperimentState();
+    return () => { unsubscribe(); if (frameId !== null) cancelAnimationFrame(frameId); };
+  }, []);
+  return session;
+}
+\end{minted}
+\caption{The live-session hook both screens use (abbreviated from \texttt{lib/use-live-experiment-session.ts}). It subscribes to the broadcast snapshot and coalesces high-frequency updates to one render per animation frame, so the live tree re-renders at about \SI{60}{\hertz} regardless of the inbound message rate, while \texttt{latest} guarantees the newest snapshot is never lost.}
+\label{lst:impl-live-hook}
+\end{listing}
+
+The participant sees only the reader (\cref{fig:impl-reader}), where the text adapts under the loop.
+The researcher observes and steers the same session through the live control surface (\cref{fig:impl-live}), which is the second screen of \cref{sec:design-style}: it mirrors the participant's text, reports the live end-to-end latency, and offers the manual interventions and typography controls through which the researcher adapts the presentation.
+Its behaviour makes the commit discipline of driver~D7 visible in the interface, since appearance changes are applied immediately whereas typography changes wait for the selected boundary, which is the two-phase, context-preserving commit of \cref{sec:design-loop} exposed as an operator control.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ReadingView.png}
+\caption{The participant's reader during a running session. The participant sees only the reading text, which the adaptive loop adjusts in place; gaze is streamed to the backend and the presentation it renders comes from the same authoritative snapshot that drives the researcher's console.}
+\label{fig:impl-reader}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ResearcherLiveView.png}
+\caption{The researcher's live control surface during a running session. It mirrors the participant's reader (the second screen of \cref{sec:design-style}), reports the live end-to-end latency, and exposes the manual interventions and typography controls. Appearance changes apply immediately while typography changes wait for the selected commit boundary, which is the context-preserving discipline of driver~D7 surfaced as an operator control.}
+\label{fig:impl-live}
+\end{figure}
+
+The session then proceeds item by item.
+For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz submitted over REST, and both the reading events and the answers are written into the session record alongside every gaze sample, intervention, and lifecycle event.
+
+\subsection*{Finishing: sealing and replaying the record}
+
+Finishing the session ends it and seals its record.
+The researcher's \texttt{finishExperimentSession} command (\cref{lst:impl-rest-command}) resolves to \texttt{FinishSessionAsync}: the manager stops the loop, flushes any buffered events, and builds two exports from the recovery buffer, a full raw export and a processed one, saves them as the latest, marks the recovery completed, and clears the active record, after which the session is sealed exactly as \cref{sec:design-data} described.
+A sealed session is then available for replay, shown in \cref{fig:impl-replay}: the recording is reconstructed as a timed playback, with the gaze token heat map drawn over the text and a filterable timeline of lifecycle, quiz, and intervention events beside it.
+Replay is therefore the operational proof of \cref{sec:design-data}, that a session can be re-presented and re-analysed from its record alone.
+
+\begin{figure}[htbp]
+\centering
+\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Replay.png}
+\caption{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
+\label{fig:impl-replay}
+\end{figure}
+
+\subsection*{Where it all converges}
+
+Every command and every realtime frame in this walkthrough meets at one component, the \texttt{ExperimentSessionManager}, which is the one place the session's state lives.
+Its responsibilities are divided by concern across partial classes (a lifecycle facet, a gaze facet, and analysis, decision, intervention, and replay facets), but they share one object and reach the rest of the system only through ports.
+In source this is a single \mbox{C\#} class declared \texttt{sealed partial} and spread across a dozen files, one per concern, which together realise the four runtime interfaces the rest of the system depends on and hold their shared state in a handful of private fields, as \cref{lst:impl-manager-class} abbreviates.
+The split is purely a source-level organisation: the concerns compile into one type and one object, so the gaze facet and the lifecycle facet act on the same \texttt{\_session} field behind the same \texttt{\_lifecycleGate}, and no concern can hold a private copy of the session that the others cannot see.
+
+\begin{listing}[htbp]
+\begin{minted}{csharp}
+public sealed partial class ExperimentSessionManager :
+    IExperimentSessionManager,        // command surface (setup, lifecycle)
+    IExperimentRuntimeAuthority,      // realtime authority used by adapters
+    IExperimentSessionQueryService,   // read-only snapshot queries
+    IExperimentReplayRecoveryBuffer   // record/recovery buffer
+{
+    private readonly IEyeTrackerAdapter        _eyeTrackerAdapter;
+    private readonly IClientBroadcasterAdapter _clientBroadcasterAdapter;
+    private readonly IExperimentStateStoreAdapter _experimentStateStoreAdapter;
+    private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
+    private ExperimentSession _session = ExperimentSession.Inactive;
+    // ...realised across partial files, one per concern:
+    //   .Lifecycle  .Gaze  .EyeMovementAnalysis  .Decisions
+    //   .Interventions  .Quiz  .ReadingSession  .Replay  ...
+}
+\end{minted}
+\caption{The session orchestrator (abbreviated from \texttt{ExperimentSessionManager.cs} and its partial files). One \texttt{sealed partial} class realises the four runtime interfaces, depends only on core ports, and is split across one file per concern; all facets share the single \texttt{\_session} field and the single \texttt{\_lifecycleGate}.}
+\label{lst:impl-manager-class}
+\end{listing}
+
 \Cref{fig:impl-session-manager} shows that arrangement at the level of types: the manager is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on port interfaces also declared in \texttt{Application}, while the concrete adapters that drive the Tobii device, broadcast to the connected clients, and persist the session record live in the infrastructure projects and realise those ports.
 Every realisation and dependency edge in the figure therefore crosses the \texttt{Application}/infrastructure boundary inward, which is the dependency rule of \cref{sec:design-style} holding at the granularity of individual classes rather than whole projects.
-Every operation that changes session state then follows the same shape: it acquires the lifecycle lock, mutates the state, writes a checkpoint, and broadcasts the authoritative session snapshot that every connected surface renders.
 Because all session state lives behind this one component and is published as a single snapshot, the researcher's control surface and the participant's reader never hold competing copies of the truth.
-The session moves through three phases, configuring, running, and completed, with a reset back to the beginning, as \cref{fig:impl-session-states} shows.
 
 \begin{figure}[htbp]
 \centering
@@ -68,82 +383,6 @@ The session moves through three phases, configuring, running, and completed, wit
 }
 \caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on the three port interfaces in the middle row (sensing, broadcast, and persistence). Each concrete adapter in the bottom row lives in an infrastructure project and realises the port above it. The dashed rule marks the \texttt{Application}/infrastructure boundary: every realisation (hollow triangle) and dependency (filled arrow) edge crosses it inward towards the core, so the dependency rule of \cref{sec:design-style} is visible at the level of individual classes. Members are abbreviated; the replay, recovery, and module-provider ports follow the same pattern and are omitted for clarity.}
 \label{fig:impl-session-manager}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\resizebox{0.97\linewidth}{!}{%
-\begin{tikzpicture}[
-  state/.style={rectangle, rounded corners=4pt, draw=navyblue, very thick, fill=blue!8, align=center, text width=3.7cm, minimum height=1.5cm, inner sep=4pt, font=\small},
-  lbl/.style={font=\scriptsize\itshape, text=black!70, align=center, fill=white, inner sep=1.5pt},
-  arr/.style={->, thick, black!65},
-]
-\fill[black!75] (-9.0,0) circle (2.4pt);
-\node[state] (cfg)  at (-6.6,0) {{\bfseries Configuring}\\[2pt]{\scriptsize gates: participant, eye tracker + licence, calibration + validation, reading material}};
-\node[state] (run)  at ( 0.0,0) {{\bfseries Running}\\[2pt]{\scriptsize per item: read with the adaptive loop, then comprehension quiz}};
-\node[state] (done) at ( 6.6,0) {{\bfseries Completed}\\[2pt]{\scriptsize record sealed and exported}};
-\draw[arr] (-9.0,0) -- (cfg.west);
-\draw[arr] (cfg.east) -- (run.west) node[lbl, midway, above] {start\\\mbox{[all gates ready]}};
-\draw[arr] (run.east) -- (done.west) node[lbl, midway, above] {finish};
-\draw[arr] (run.north) to[out=60,in=120,looseness=8] (run.north);
-\node[lbl] at (0,1.75) {next item};
-\draw[arr] (done.south) to[out=-118,in=-62,looseness=0.9] (cfg.south);
-\node[lbl] at (0,-2.15) {reset};
-\end{tikzpicture}%
-}
-\caption{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
-\label{fig:impl-session-states}
-\end{figure}
-
-In the configuring phase the researcher prepares the session through a guided, role-sequenced stepper, shown in \cref{fig:impl-setup}.
-The backend tracks four independent readiness gates, a participant, a selected eye tracker with a valid licence, a passed calibration, and the reading material, each of which reports whether it is satisfied and, if not, the reason it blocks the start.
-The stepper sequences these into a recommended order, researcher preparation (the eye tracker and the reading material) before participant setup (the participant details and calibration), and locks each step until its prerequisites are met, so the researcher is never offered a control that cannot yet be used.
-The eye-tracker step in the figure shows the detail of this preparation: a real Tobii device is selected and its licence is managed, with an explicit overwrite guard so that a saved licence is not replaced by accident.
-
-\begin{figure}[htbp]
-\centering
-\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Stepper.png}
-\caption{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
-\label{fig:impl-setup}
-\end{figure}
-
-Calibration is one of the four gates and runs as its own immersive sub-flow, shown in \cref{fig:impl-calibration}.
-The participant follows a sequence of on-screen targets (sixteen in the configuration shown) while the device collects samples, after which a calibration is computed and applied and a validation pass measures its accuracy and precision.
-Only a calibration whose validation passes satisfies the gate, and the accuracy and precision it reports are carried in the setup snapshot and evaluated in \cref{ch:evaluation}.
-
-\begin{figure}[htbp]
-\centering
-\screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
-\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (sixteen here) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
-\label{fig:impl-calibration}
-\end{figure}
-
-When all four gates are satisfied the researcher starts the session, and the manager re-checks readiness before committing to the run (\texttt{StartSessionAsync}).
-If anything is incomplete it refuses with the blocking step's reason, so a misconfigured run cannot be started rather than merely being discouraged; otherwise it resolves the order of the experiment's material items (fixed or randomised), resets the gaze counters and the event sequence, and marks the session active.
-From this point the adaptive loop of \cref{sec:design-loop} runs over the modules resolved from the registries of \cref{sec:design-modules}, and the researcher observes and steers it through the live control surface of \cref{fig:impl-live}.
-That surface is the second screen of \cref{sec:design-style}: it mirrors the participant's text, reports the live end-to-end latency, and offers the manual interventions and typography controls through which the researcher adapts the presentation.
-Its behaviour makes the commit discipline of driver~D7 visible in the interface, since appearance changes are applied immediately whereas typography changes wait for the selected boundary, which is the two-phase, context-preserving commit of \cref{sec:design-loop} exposed as an operator control.
-
-\begin{figure}[htbp]
-\centering
-\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ResearcherLiveView.png}
-\caption{The researcher's live control surface during a running session. It mirrors the participant's reader (the second screen of \cref{sec:design-style}), reports the live end-to-end latency, and exposes the manual interventions and typography controls. Appearance changes apply immediately while typography changes wait for the selected commit boundary, which is the context-preserving discipline of driver~D7 surfaced as an operator control.}
-\label{fig:impl-live}
-\end{figure}
-
-The session then proceeds item by item.
-For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz, and both the reading events and the answers are written into the session record alongside every gaze sample, intervention, and lifecycle event.
-
-Finishing the session ends it and seals its record.
-The manager stops the loop, flushes any buffered events, and builds two exports from the recovery buffer (\texttt{FinishSessionAsync}), a full raw export and a processed one, saves them as the latest, marks the recovery completed, and clears the active record, after which the session is sealed exactly as \cref{sec:design-data} described.
-A sealed session is then available for replay, shown in \cref{fig:impl-replay}: the recording is reconstructed as a timed playback, with the gaze token heat map drawn over the text and a filterable timeline of lifecycle, quiz, and intervention events beside it.
-Replay is therefore the operational proof of \cref{sec:design-data}, that a session can be re-presented and re-analysed from its record alone.
-
-\begin{figure}[htbp]
-\centering
-\screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Replay.png}
-\caption{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
-\label{fig:impl-replay}
 \end{figure}
 
 The walkthrough has named several mechanisms only in passing: the lock-free gaze path that keeps the live latency low, the registries that resolve the modules the loop drives, and the export that replay consumes.
