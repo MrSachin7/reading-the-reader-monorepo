@@ -149,25 +149,28 @@ The two halves meet at one stable contract, a token-indexed reading observation,
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
   font=\scriptsize,
-  be/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=blue!8, align=center, text width=2.7cm, minimum height=1.15cm, inner sep=3pt},
-  fe/.style={rectangle, rounded corners=3pt, draw=dtured, thick, fill=dtured!8, align=center, text width=2.7cm, minimum height=1.15cm, inner sep=3pt},
+  be/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=blue!8, align=center, text width=2.7cm, minimum height=1.2cm, inner sep=3pt},
+  fe/.style={rectangle, rounded corners=3pt, draw=dtured, thick, fill=dtured!8, align=center, text width=2.7cm, minimum height=1.2cm, inner sep=3pt},
   arr/.style={-{Stealth[length=5pt]}, thick, black!60},
+  edgelbl/.style={font=\tiny\itshape, text=black!60, align=center, fill=white, inner sep=1.5pt},
   tag/.style={font=\tiny\itshape, text=black!60, align=center},
 ]
-\node[be] (acq) at (0,0)    {{\bfseries Acquisition}\\{\tiny Tobii or mouse $\rightarrow$ lock-free ingest}};
-\node[fe] (map) at (3.5,0)  {{\bfseries Spatial mapping}\\{\tiny gaze point $\rightarrow$ word token}};
-\node[be] (ana) at (7.0,0)  {{\bfseries Temporal analysis}\\{\tiny fixations, saccades, regressions}};
-\node[be] (use) at (10.5,0) {{\bfseries Use}\\{\tiny overlay, decisions, export}};
-\draw[arr] (acq) -- (map) node[tag, midway, above] {gaze\\sample};
-\draw[arr] (map) -- (ana) node[tag, midway, above] {token\\observation};
+\node[be] (acq) at (0,0)     {{\bfseries Acquisition}\\{\tiny Tobii or mouse $\rightarrow$ lock-free ingest}};
+\node[fe] (map) at (4.4,0)   {{\bfseries Spatial mapping}\\{\tiny gaze point $\rightarrow$ word token}};
+\node[be] (ana) at (8.8,0)   {{\bfseries Temporal analysis}\\{\tiny fixations, saccades, regressions}};
+\node[be] (use) at (13.2,0)  {{\bfseries Use}\\{\tiny overlay, decisions, export}};
+\draw[arr] (acq) -- (map) node[edgelbl, midway, above] {gaze\\sample};
+\draw[arr] (map) -- (ana) node[edgelbl, midway, above] {token\\observation};
 \draw[arr] (ana) -- (use);
-\node[tag] at (0,-1.05)    {backend (data plane)};
-\node[tag] at (3.5,-1.05)  {front-end (reader DOM)};
-\node[tag] at (7.0,-1.05)  {backend (analysis strategy)};
-\node[tag] at (10.5,-1.05) {backend / both screens};
-\end{tikzpicture}
+\node[tag] at (0,-1.15)    {backend (data plane)};
+\node[tag] at (4.4,-1.15)  {front-end (reader DOM)};
+\node[tag] at (8.8,-1.15)  {backend (analysis strategy)};
+\node[tag] at (13.2,-1.15) {backend / both screens};
+\end{tikzpicture}%
+}
 \caption{The sensing pipeline. Acquisition and temporal analysis run on the backend; the spatial mapping from gaze point to word token runs on the front-end, where the rendered layout lives. The two halves meet at one stable contract, the token-indexed reading observation, which is also the interface a downstream decision strategy or the export consumes.}
 \label{fig:impl-pipeline}
 \end{figure}
@@ -194,15 +197,42 @@ public void UpdateGazeSample(GazeData gazeData)
 \paragraph{Spatial mapping in the reader.}
 Mapping a gaze point to a word is done in the participant reader because only the reader knows where each word was actually laid out.
 The reader normalises each sample to a screen point (FR4.2), then maps it to the nearest word token (\cref{lst:impl-tokenmap}, FR4.3): it scores the rendered word boxes, choosing the best line first (biased towards the line already being read, which absorbs vertical jitter) and then the nearest word on that line.
+Choosing the line is the part that most affects stability, so it is scored explicitly (\cref{fig:impl-gazemap}): each line is reduced to a vertical band (its top, bottom, and centre), and a sample is charged for how far it falls outside the band, weighted heavily, plus a smaller pull towards the band centre that breaks ties, with the lowest-scoring band winning.
+A fixed discount is then subtracted from the score of the line already being read, which acts as hysteresis: a sample that strays slightly above or below the current line stays attributed to it rather than flickering to a neighbour, the failure mode that vertical gaze jitter of the order of the line spacing would otherwise produce.
+Only once the line is fixed is the word chosen, by horizontal distance to each word box on that line, so vertical noise can no longer pull the mapping to a word that merely happens to sit nearby in an adjacent line.
 The crucial detail for FR5.4 is that the word boxes are re-measured from the live document, prompted by mutation, resize, and scroll observers, so the mapping stays valid after a typographic intervention reflows the text rather than referring to stale coordinates.
 The result is published as a token-indexed observation carrying the token identifier, its token, line, and block indices, and whether the gaze is inside the reading area; this observation is the stable interface (FR4.4) the analysis layer and the export both consume.
 
 \begin{listing}[htbp]
 \begin{minted}{typescript}
-// Map a screen-space gaze point (x, y) to the nearest word. Word boxes are
+// getAxisDistance(p, lo, hi): 0 if p is inside [lo, hi], else the gap to the nearer edge.
+
+// Stage 1 -- choose the line. Each line is collapsed to a vertical band; the band
+// closest to y wins, with a standing discount for the line already being read.
+function pickBestLine(layouts: WordLayout[], y: number, activeIndex: number | null) {
+  const preferredLine = activeIndex === null ? null : layouts[activeIndex]?.line ?? null;
+  // collapse word boxes into one vertical band per line { line, top, bottom, centerY }
+  const bands = new Map<number, LineRange>();
+  for (const w of layouts) {
+    const b = bands.get(w.line);
+    if (!b) { bands.set(w.line, { line: w.line, top: w.top, bottom: w.bottom, centerY: w.centerY }); continue; }
+    b.top = Math.min(b.top, w.top); b.bottom = Math.max(b.bottom, w.bottom);
+    b.centerY = (b.centerY + w.centerY) / 2;
+  }
+  let bestLine: number | null = null, bestScore = Infinity;
+  for (const b of bands.values()) {
+    let score = getAxisDistance(y, b.top, b.bottom) * 14     // distance outside the band (weighted hard)
+              + Math.abs(b.centerY - y) * 0.45;              // gentler pull to the band centre (tie-break)
+    if (b.line === preferredLine) score -= 24;               // hysteresis: hold the current line
+    if (score < bestScore) { bestScore = score; bestLine = b.line; }
+  }
+  return bestLine;
+}
+
+// Stage 2 -- choose the word on that line by horizontal distance to its box. Word boxes are
 // re-measured from the live DOM, so the mapping survives presentation changes (FR5.4).
 function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex: number | null) {
-  const bestLine = pickBestLine(layouts, y, activeIndex);   // vertical score, biased to current line
+  const bestLine = pickBestLine(layouts, y, activeIndex);
   let bestIndex: number | null = null, bestScore = Infinity;
   for (const w of layouts) {
     if (w.line !== bestLine) continue;
@@ -213,9 +243,72 @@ function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex:
   return bestIndex;                       // -> token id + token/line/block index in the observation
 }
 \end{minted}
-\caption{Gaze-to-content mapping in the reader (abbreviated from \texttt{useGazeTokenHighlight.ts}). The nearest word is chosen by a two-stage score, line then word; \texttt{layouts} is rebuilt from the rendered DOM on every mutation, resize, and scroll, which is what keeps the mapping valid across presentation changes.}
+\caption{Gaze-to-content mapping in the reader (abbreviated from \texttt{useGazeTokenHighlight.ts}). The nearest word is chosen by a two-stage score: \texttt{pickBestLine} fixes the line, weighting vertical distance to the line band heavily and discounting the line already being read so jitter does not jump lines, and \texttt{pickWordIndex} then takes the nearest word on that line. \texttt{layouts} is rebuilt from the rendered DOM on every mutation, resize, and scroll, which is what keeps the mapping valid across presentation changes.}
 \label{lst:impl-tokenmap}
 \end{listing}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  inactiveband/.style={rounded corners=2pt, draw=grey!55, fill=grey!12},
+  activeband/.style={rounded corners=2pt, draw=dtured, thick, fill=dtured!8},
+  wbox/.style={draw=black!45, fill=white, thin},
+  selword/.style={draw=dtured, very thick, fill=dtured!22},
+  conn/.style={-{Stealth[length=5pt]}, semithick, black!60},
+  leader/.style={black!50, thin},
+  dist/.style={{Stealth[length=4pt]}-{Stealth[length=4pt]}, thin, black!60},
+  lbl/.style={font=\tiny\itshape, text=black!70},
+  ptitle/.style={font=\scriptsize\bfseries},
+  obs/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=blue!8, align=center, text width=4.7cm, font=\tiny, inner sep=4pt},
+]
+% =================== Stage 1: choose the line ===================
+\node[ptitle] at (2.2,3.95) {Stage 1 --- choose the line};
+% inactive line bands (top, bottom, bottom-most)
+\foreach \yy in {3.0,1.4,0.6} \filldraw[inactiveband] (0.1,\yy-0.22) rectangle (4.3,\yy+0.22);
+% the line already being read carries a fixed bias
+\filldraw[activeband] (0.1,1.98) rectangle (4.3,2.42);
+% word boxes on every line
+\foreach \yy in {3.0,2.2,1.4,0.6}
+  \foreach \lx in {0.25,1.05,1.85,2.65,3.45}
+    \draw[wbox] (\lx,\yy-0.13) rectangle (\lx+0.65,\yy+0.13);
+\node[lbl, anchor=south west] at (0.15,2.5) {line being read ($-24$ bias)};
+% jitter cloud straddling the L2/L3 boundary
+\foreach \jx/\jy in {2.40/1.94,2.72/1.68,2.50/1.84,2.66/1.96} \fill[dtured!35] (\jx,\jy) circle (1.1pt);
+% the live gaze sample, drifted down towards the next line
+\fill[dtured] (2.55,1.80) circle (2.3pt);
+\draw[dtured, thin] (2.55,1.80) circle (3.2pt);
+\node[lbl] (gl) at (2.05,0.12) {gaze point $(x,y)$};
+\draw[leader] (gl.north) -- (2.45,1.72);
+% near-equal vertical gaps up and down: the bias breaks the tie
+\draw[dist] (2.95,1.80) -- (2.95,1.98) node[lbl, midway, right=1pt] {$d_\uparrow$};
+\draw[dist] (2.95,1.80) -- (2.95,1.62) node[lbl, midway, right=1pt] {$d_\downarrow$};
+% =================== link the two stages ===================
+\draw[conn] (4.95,2.2) -- (6.85,2.2) node[lbl, midway, above, text=black!60] {chosen line};
+% =================== Stage 2: choose the word ===================
+\node[ptitle] at (10.1,3.95) {Stage 2 --- choose the word on the line};
+\filldraw[activeband] (7.0,1.98) rectangle (13.2,2.42);
+\foreach \lx in {7.2,8.2,9.2,10.2,11.2,12.2}
+  \draw[wbox] (\lx,2.07) rectangle (\lx+0.8,2.33);
+% the selected word: nearest box to the projected gaze x
+\draw[selword] (9.2,2.07) rectangle (10.0,2.33);
+% project the gaze x onto the chosen line
+\draw[dtured, dashed, thin] (9.6,2.55) -- (9.6,1.85);
+\node[lbl, anchor=south] at (9.6,2.56) {gaze $x$};
+% horizontal distance to a neighbouring (rejected) box
+\draw[dist] (9.6,1.72) -- (10.2,1.72) node[lbl, midway, below=1pt] {horizontal distance};
+\node[lbl, anchor=west] at (7.0,1.55) {chosen line (zoomed)};
+% =================== output: the published observation ===================
+\node[obs] (obs) at (10.1,0.35)
+  {\textbf{reading observation}\\[1pt]\texttt{tokenId, token, lineIndex,}\\\texttt{blockIndex, insideReadingArea}};
+\draw[conn] (9.6,2.0) to[out=-90,in=90] (obs.north);
+\node[lbl, text=black!60, anchor=west] at (10.55,1.35) {publish (FR4.4)};
+\end{tikzpicture}%
+}
+\caption[Two-stage gaze-to-word mapping in the reader.]{How a gaze point is mapped to a word (\cref{lst:impl-tokenmap}). \emph{Stage~1} fixes the line: each line is a vertical band, and the sample is charged for the distance outside the band (weight $14$) plus a small pull to the band centre (weight $0.45$); a fixed $-24$ discount on the line already being read acts as hysteresis, so the drifted sample shown here (near-equal gaps $d_\uparrow \approx d_\downarrow$ to the line above and below) is held on the current line rather than flickering to its neighbour under vertical jitter. \emph{Stage~2} then takes the nearest word on that line by horizontal distance to its box (weight $1.35$, with a $0.12$ centre tie-break), and the result is published as the token-indexed observation that the analysis layer and the export consume.}
+\label{fig:impl-gazemap}
+\end{figure}
 
 \paragraph{Temporal analysis as a replaceable strategy.}
 The oculomotor events themselves are derived on the backend by an eye-movement analysis strategy that consumes the stream of observations.
@@ -262,27 +355,42 @@ Only a passing validation satisfies the calibration gate, and its accuracy, prec
 
 \begin{listing}[htbp]
 \begin{minted}{csharp}
-// Accuracy: angular offset (degrees) between where the eye looked and the target,
-// measured from the eye's gaze origin.
-private static double? CalculateAngularAccuracyDegrees(ValidationEyeSample sample, Point3D target) =>
-    CalculateAngleDegrees(CreateVector(sample.GazeOrigin, target),
-                          CreateVector(sample.GazeOrigin, sample.GazePointInUserCoordinates));
+// Accuracy: angular offset between the eye->target ray and the eye->gaze ray,
+// both measured from the eye's gaze origin (degrees).
+private static double? CalculateAngularAccuracyDegrees(ValidationEyeSample s, Point3D target) =>
+    CalculateAngleDegrees(CreateVector(s.GazeOrigin, target),
+                          CreateVector(s.GazeOrigin, s.GazePointInUserCoordinates));
 
-// Precision: root-mean-square of the angle between successive gaze samples (jitter).
+// Precision: RMS of the angle between successive gaze samples, i.e. the jitter
+// while the participant holds one validation target (degrees).
 private static double? CalculatePrecisionDegrees(IReadOnlyList<ValidationEyeSample> samples)
 {
-    var deltas = SuccessiveSampleAngles(samples);   // angle between each consecutive pair
-    return deltas.Count == 0 ? null : Math.Sqrt(deltas.Average(d => d * d));
+    if (samples.Count < 2) return null;
+    var deltas = new List<double>(samples.Count - 1);
+    for (var i = 1; i < samples.Count; i++)
+    {
+        var previous = samples[i - 1];
+        var current = samples[i];
+        var delta = CalculateAngleDegrees(
+            CreateVector(previous.GazeOrigin, previous.GazePointInUserCoordinates),
+            CreateVector(current.GazeOrigin, current.GazePointInUserCoordinates));
+        if (delta.HasValue) deltas.Add(delta.Value);   // skip degenerate pairs
+    }
+    return deltas.Count == 0 ? null : Math.Sqrt(deltas.Average(d => d * d));   // RMS
 }
 
+// Shared geometry: the angle between two 3-D rays via the dot product, in degrees.
 private static double? CalculateAngleDegrees(Vector3 from, Vector3 to)
 {
-    var cos = Math.Clamp((from.X*to.X + from.Y*to.Y + from.Z*to.Z)
-                         / (from.Magnitude * to.Magnitude), -1d, 1d);
-    return Math.Acos(cos) * 180d / Math.PI;
+    if (from.Magnitude <= double.Epsilon || to.Magnitude <= double.Epsilon) return null;
+    var cos = (from.X*to.X + from.Y*to.Y + from.Z*to.Z) / (from.Magnitude * to.Magnitude);
+    return Math.Acos(Math.Clamp(cos, -1d, 1d)) * 180d / Math.PI;   // clamp guards acos domain
 }
+
+private static Vector3 CreateVector(Point3D from, Point3D to) =>
+    new(to.X - from.X, to.Y - from.Y, to.Z - from.Z);
 \end{minted}
-\caption{Validation accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angular distance from the gaze to the target; precision is the root-mean-square angular jitter between successive samples. Keeping this geometry in the adapter leaves the core depending only on the resulting degree values.}
+\caption{Validation accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angle between the ray to the target and the ray to the measured gaze point; precision is the root-mean-square of the angle between every consecutive pair of gaze samples. Both reduce to one dot-product angle helper that returns null for degenerate rays, and both are averaged per eye before grading, so the core depends only on the resulting degree values and never on the eye-tracker geometry.}
 \label{lst:impl-validation}
 \end{listing}
 
@@ -339,31 +447,58 @@ public async ValueTask SubmitMouseGazeSampleAsync(
 \label{sec:impl-context}
 
 RQ3 asks how a typographic micro-intervention can change the text while preserving the reader's context, the recovery concern raised in the literature \cite{jensen2025context}.
-\Cref{sec:impl-session} surfaced one half of the answer as an operator control: appearance changes (colour, theme) commit immediately, but a layout-changing intervention (font size, line width) waits for a chosen commit boundary so the reflow lands at a natural reading break rather than mid-line.
-This section opens the other half, what happens to the reader's position when the reflow does land, which is realised in the participant reader as a capture-and-restore around every change.
+A change such as a larger font or a narrower measure reflows the entire document, so the line a participant was reading moves to a new position on screen, and without compensation the reader is left hunting for their place in the middle of an experiment.
+\Cref{sec:impl-session} surfaced one half of our answer as an operator control: appearance changes (colour, theme) commit immediately, but a layout-changing intervention (font family, size, line width, line height, or letter spacing) waits for a chosen commit boundary so the reflow lands at a natural reading break rather than mid-line.
+This section opens the other half, namely what happens to the reader's position when the reflow does land, which we realise in the participant reader as a continuous \emph{capture-and-restore} around every change (FR9).
 
-While reading, the reader continuously captures an \emph{anchor} for the participant's current position (\cref{lst:impl-anchor-capture}, FR9.1): it prefers the word currently being looked at, falls back to the first word near the top of the viewport, and falls back again to the enclosing paragraph, recording the chosen element's identifiers together with its offset from the top of the viewport.
-When an intervention then commits, the reader restores that anchor to the same on-screen offset (\cref{lst:impl-anchor-restore}, FR9.2).
-It chooses between two restore modes: a layout-changing intervention triggers a \emph{semantic restart} from the sentence or paragraph the change committed against, whereas a non-layout change uses a plain \emph{offset preserve} of the captured anchor.
-In both modes the reader scrolls so the located anchor returns to its previous offset and then measures the residual \texttt{anchorErrorPx}, which classifies the outcome as preserved, degraded, or failed.
+The mechanism is a small pipeline implemented in one hook, \idtt{usePreserveReadingContext}, and it runs in two phases separated in time (\cref{fig:impl-context-seq}).
+Before any intervention, the reader continuously records an \emph{anchor} for the participant's current reading position and keeps only the newest one.
+When an intervention commits, the reader chooses a restore strategy from the intervention's declared effect, re-finds the anchor in the now-reflowed document, scrolls it back to the screen position it held before, measures how far off the result landed, and grades the outcome as preserved, degraded, or failed.
+That grade is reported to the backend and written into the session record, so the cost of every intervention to the reader's continuity is auditable after the fact rather than only felt during the session (FR9.3).
+The branching that turns a raw residual error into a graded outcome is summarised in \cref{fig:impl-context-decision}, and each stage below maps to one of the listings that follow.
 
-That outcome is not merely cosmetic: it is reported to the backend, which records it in the session log alongside the intervention and checkpoints it (FR9.3), following the same gate-and-record shape as every other state change (\cref{lst:impl-state-change}).
-A context-preservation failure (a missing anchor, or a residual error beyond the threshold) is therefore an auditable event in the export, so the cost of an intervention to the reader's continuity can be analysed after the session rather than only felt during it.
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Chapters/06_Implementation/context-preservation.pdf}%
+  {\includegraphics[width=0.95\linewidth]{Chapters/06_Implementation/context-preservation.pdf}}%
+  {\fbox{\parbox[c][5cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/context-preservation.mmd} to \texttt{context-preservation.pdf} with \texttt{mmdc}.}}}%
+\caption{The capture-and-restore lifecycle of a context-preserving intervention. Before any change the reader captures an anchor for the current reading position every \SI{120}{\milli\second} and keeps the newest one; when an intervention commits, the reader chooses a restore mode, re-finds the anchor in the reflowed document, scrolls it back to its captured on-screen offset, grades the residual error, and reports the outcome, which the backend appends to the session record (FR9.3).}
+\label{fig:impl-context-seq}
+\end{figure}
+
+\paragraph{Continuously capturing an anchor.}
+The capture phase re-measures the anchor on a fixed cadence (every \SI{120}{\milli\second}) and again whenever the content changes, so a fresh anchor is almost always available the moment an intervention arrives (\cref{lst:impl-anchor-capture}, FR9.1).
+\texttt{measureAnchor} chooses the most semantically specific target that is actually visible: it prefers the word the participant is currently looking at, falls back to the first word near the top of the viewport, and falls back again to the enclosing paragraph.
+It records which of these three sources it used, the chosen element's sentence, token, and block identifiers, and, crucially, the element's offset from the top of the viewport, because that on-screen offset, rather than the raw scroll position, is what the restore phase will reproduce.
+Each anchor also carries a capture timestamp, which lets the restore phase reject an anchor older than \SI{15}{\second} as stale rather than scroll to a position the participant has long since left.
 
 \begin{listing}[htbp]
 \begin{minted}{typescript}
 // Capture the reader's current position: the word being looked at, else the first
 // word near the top of the viewport, else the enclosing paragraph (FR9.1).
 function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnapshot | null {
-  const view = container.getBoundingClientRect();
-  const active = content.querySelector("[data-gaze-active='true'][data-token-id]");
-  const token = active && inView(active, view) ? active : getFirstVisibleWord(content, view);
-  if (!token) return blockAnchor(content, view);                 // paragraph fallback
-  const rect = token.getBoundingClientRect();
+  const view = getContainerRect(container);
+  const candidate = content.querySelector("[data-gaze-active='true'][data-token-id]");
+  const active = candidate && intersectsViewport(candidate.getBoundingClientRect(), view) ? candidate : null;
+  const token = active ?? getFirstVisibleWord(content, view);
+  if (token) {
+    const rect = token.getBoundingClientRect();
+    return {
+      source: active ? "active-token" : "fallback-token",       // recorded; drives the restore tolerance
+      anchorSentenceId: token.dataset.sentenceId ?? null, anchorTokenId: token.dataset.tokenId ?? null,
+      anchorBlockId: token.closest("[data-block-id]")?.dataset.blockId ?? null,
+      anchorViewportOffsetPx: rect.top - view.top,              // where it sits on screen
+      scrollTopPx: container.scrollTop, capturedAtUnixMs: Date.now(),
+    };
+  }
+  // paragraph fallback: the first block intersecting the viewport
+  const block = Array.from(content.querySelectorAll("[data-block-id]"))
+    .find((el) => intersectsViewport(el.getBoundingClientRect(), view));
+  if (!block) return null;
+  const rect = block.getBoundingClientRect();
   return {
-    anchorSentenceId: token.dataset.sentenceId, anchorTokenId: token.dataset.tokenId,
-    anchorBlockId: token.closest("[data-block-id]")?.dataset.blockId ?? null,
-    anchorViewportOffsetPx: rect.top - view.top,                 // where it sits on screen
+    source: "block-anchor", anchorSentenceId: null, anchorTokenId: null,
+    anchorBlockId: block.dataset.blockId ?? null, anchorViewportOffsetPx: rect.top - view.top,
     scrollTopPx: container.scrollTop, capturedAtUnixMs: Date.now(),
   };
 }
@@ -372,23 +507,168 @@ function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnap
 \label{lst:impl-anchor-capture}
 \end{listing}
 
+\paragraph{Choosing a restore strategy at commit.}
+When an intervention commits, its declared effect selects one of two restore modes (\cref{lst:impl-restore-mode}, \cref{fig:impl-context-decision}).
+A layout-affecting change (one that lists any affected presentation property) triggers a \emph{semantic restart}: because the whole document reflows, the safest reference point is not the old pixel offset but the sentence or paragraph the change committed against, which the reader re-establishes near the top of the reading area.
+An appearance-only change (colour or theme) instead uses an \emph{offset preserve}, which holds the captured anchor at its exact previous offset because nothing about the layout has moved.
+Two early exits avoid needless work: an appearance-only change committed at a frozen sentence or paragraph boundary moves nothing on screen, so it is reported preserved without any restore, and an offset preserve whose anchor is missing or stale cannot be compensated and is reported failed.
+
 \begin{listing}[htbp]
 \begin{minted}{typescript}
-// After the change, scroll so the anchor returns to the same on-screen offset it
-// had before, then measure the residual error and classify the outcome (FR9.2).
-const located = locateAnchor(content, anchor);          // sentence -> token -> block fallback
-const view = container.getBoundingClientRect();
-const top = located.primaryElement.getBoundingClientRect().top - view.top;
-container.scrollTop += top - located.anchorViewportOffsetPx;    // re-align to the captured offset
+// On commit, the intervention's declared effect selects the restore strategy (FR9.2).
+const restoreMode = isLayoutAffectingIntervention(latestIntervention)  // any affected layout property?
+  ? "semantic-restart"     // font family / size / line width / line height / spacing: the document reflows
+  : "offset-preserve";     // colour / theme: nothing moves, keep the captured offset
+const boundary = latestIntervention?.appliedBoundary ?? "immediate";
+
+// An appearance-only change at a frozen sentence/paragraph boundary moves nothing on screen:
+// there is no reflow to undo, so report it preserved and skip the restore entirely.
+if (restoreMode === "offset-preserve" && boundary !== "immediate" && boundary !== "page-turn") {
+  onContextPreservationChange?.({ status: "preserved", anchorSource: "scroll-only", anchorErrorPx: 0, /* ... */ });
+  return;
+}
+// An offset preserve with no fresh anchor (missing, or older than 15 s) cannot be compensated.
+if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
+  commitFailure("Anchor snapshot was unavailable or stale.");   // status "failed"
+  return;
+}
+\end{minted}
+\caption{Selecting a restore mode and the two early exits (abbreviated from \texttt{usePreserveReadingContext.ts}). The intervention's declared layout effect picks semantic restart versus offset preserve; an appearance-only change at a frozen boundary needs no restore, and an offset preserve without a fresh anchor is reported as a failure rather than guessed.}
+\label{lst:impl-restore-mode}
+\end{listing}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  mode/.style={rectangle, rounded corners=2pt, draw=navyblue, very thick, fill=blue!8, align=center, text width=2.0cm, inner sep=3pt, minimum height=0.9cm},
+  dec/.style={rectangle, rounded corners=2pt, draw=black!65, thick, fill=grey!12, align=center, text width=3.2cm, inner sep=3pt, minimum height=0.85cm},
+  pres/.style={rectangle, rounded corners=3pt, draw=navyblue, thick, fill=blue!8, align=center, text width=2.5cm, inner sep=3pt},
+  degr/.style={rectangle, rounded corners=3pt, draw=dtured, thick, fill=dtured!10, align=center, text width=2.5cm, inner sep=3pt},
+  fail/.style={rectangle, rounded corners=3pt, draw=black!70, thick, fill=grey!28, align=center, text width=2.5cm, inner sep=3pt},
+  arr/.style={-{Stealth[length=5pt]}, semithick, black!60},
+  elbl/.style={font=\tiny\itshape, text=black!60, fill=white, inner sep=1pt},
+  note/.style={font=\tiny, text=black!75, align=left},
+]
+\node[mode] (mode) at (0,1.4) {restore\\mode?};
+% semantic branch
+\node[dec]  (s)   at (4.2,3.5) {\texttt{anchorErrorPx}\\$\le 72$?};
+\node[pres] (sp)  at (11.4,4.1) {preserved};
+\node[degr] (sd)  at (11.4,3.0) {degraded};
+% offset branch
+\node[dec]  (o1)  at (4.2,0.3) {sentence anchor\\and err $\le 48$?};
+\node[dec]  (o2)  at (8.0,-1.0) {err $>120$, or\\block anchor?};
+\node[pres] (o1p) at (11.4,1.3) {preserved};
+\node[degr] (o2d) at (11.4,0.0) {degraded};
+\node[pres] (o2p) at (11.4,-1.4) {preserved};
+% edges (labels added afterwards as standalone nodes so they mask the lines cleanly)
+\draw[arr] (mode) to[out=70,in=180]  (s);
+\draw[arr] (mode) to[out=-70,in=180] (o1);
+\draw[arr] (s)  to[out=0,in=180] (sp);
+\draw[arr] (s)  to[out=0,in=180] (sd);
+\draw[arr] (o1) to[out=0,in=180]   (o1p);
+\draw[arr] (o1) to[out=-50,in=180] (o2);
+\draw[arr] (o2) to[out=0,in=180]   (o2d);
+\draw[arr] (o2) to[out=0,in=180]   (o2p);
+% edge labels
+\node[elbl] at (1.9,2.75)  {semantic-restart};
+\node[elbl] at (1.9,0.05)  {offset-preserve};
+\node[elbl] at (6.7,3.95)  {yes};
+\node[elbl] at (6.7,3.10)  {no};
+\node[elbl] at (6.9,1.15)  {yes};
+\node[elbl] at (5.7,-0.45) {no};
+\node[elbl] at (9.95,-0.30) {yes};
+\node[elbl] at (9.95,-1.25) {no};
+% short-circuit outcomes
+\node[note, anchor=north west, font=\scriptsize] at (-0.6,-2.6) {Short-circuit outcomes (no measurement):};
+\node[pres, text width=3.0cm] (scp) at (2.0,-3.6) {preserved (scroll-only)};
+\node[degr, text width=3.0cm] (scd) at (6.4,-3.6) {degraded (scroll-only)};
+\node[fail, text width=2.6cm] (scf) at (10.8,-3.6) {failed};
+\node[note, text width=3.2cm] at (2.0,-4.5) {appearance-only change at a frozen boundary};
+\node[note, text width=3.2cm] at (6.4,-4.5) {anchor missing, stale fallback exists};
+\node[note, text width=2.8cm] at (10.8,-4.5) {anchor missing, no fresh fallback};
+\end{tikzpicture}%
+}
+\caption{How the residual error becomes a graded outcome. After re-alignment the reader classifies the result from the restore mode, the anchor source it resolved to, and the residual \texttt{anchorErrorPx}: a semantic restart is preserved within 72 pixels, whereas an offset preserve is preserved only within 48 pixels at a precise sentence anchor and is treated as degraded beyond 120 pixels or at a coarse block anchor. Three outcomes short-circuit the measurement entirely: an appearance-only change at a frozen boundary is preserved with no reflow, and a missing anchor is reported failed, or degraded with a scroll-only restore when a stale anchor still exists.}
+\label{fig:impl-context-decision}
+\end{figure}
+
+\paragraph{Locating the anchor after the reflow.}
+Once the mode is fixed, the reader must find the anchor again in a DOM the reflow may have rebuilt (\cref{lst:impl-anchor-locate}, FR9.2).
+For an offset preserve, \texttt{locateAnchor} degrades through the same three levels the capture used, in order of decreasing precision: it tries the recorded sentence, then the token, then the block, returning the first that still exists together with the source it resolved to.
+For a semantic restart, \idtt{locateSemanticRestartAnchor} instead resolves the sentence or block the intervention committed against, so the reader resumes from the start of that segment.
+If nothing can be located, the reader does not guess: it reports failed, or, when a stale anchor still exists, restores the previous scroll position only and reports the weaker degraded outcome with an anchor source of \texttt{scroll-only}.
+Recording the resolved source matters because it feeds directly into how strictly the next step grades the result.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// Re-find the captured anchor in the reflowed DOM, degrading sentence -> token -> block (FR9.2).
+function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnchor {
+  const offset = anchor.anchorViewportOffsetPx;
+  if (anchor.anchorSentenceId) {
+    const els = findSentenceElements(content, anchor.anchorSentenceId);
+    if (els.length) return { anchorSource: "sentence-anchor", primaryElement: els[0], anchorElements: els,
+                             anchorViewportOffsetPx: offset, reason: null };
+  }
+  if (anchor.anchorTokenId) {
+    const token = content.querySelector(`[data-token-id="${escapeAttributeValue(anchor.anchorTokenId)}"]`);
+    if (token) return { anchorSource: anchor.source === "active-token" ? "active-token" : "fallback-token",
+                        primaryElement: token, anchorElements: [token],
+                        anchorViewportOffsetPx: offset, reason: "Sentence anchor unavailable." };
+  }
+  if (anchor.anchorBlockId) {
+    const block = content.querySelector(`[data-block-id="${escapeAttributeValue(anchor.anchorBlockId)}"]`);
+    if (block) return { anchorSource: "block-anchor", primaryElement: block, anchorElements: [block],
+                        anchorViewportOffsetPx: offset, reason: "Semantic anchors unavailable." };
+  }
+  return null;                  // caller reports "failed", or scroll-only "degraded" if a stale anchor exists
+}
+\end{minted}
+\caption{Re-finding the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}). The offset-preserve path degrades from the precise sentence wrapper to the token to the enclosing block, recording which source it resolved to; the semantic-restart path uses the companion \texttt{locateSemanticRestartAnchor} to resume from the committed segment. A null result drives the failed or scroll-only degraded outcomes of \cref{fig:impl-context-decision}.}
+\label{lst:impl-anchor-locate}
+\end{listing}
+
+\paragraph{Re-aligning and grading the outcome.}
+With the anchor located, the reader re-aligns the viewport and measures the result (\cref{lst:impl-anchor-restore}).
+It scrolls so the located element returns to the offset stored at capture, then measures the residual \texttt{anchorErrorPx} as the distance, in pixels, between where the element actually landed and where it should have.
+The residual is graded against a tolerance that depends on both the restore mode and the anchor source (\cref{fig:impl-context-decision}): a semantic restart is preserved within 72 pixels, whereas an offset preserve is preserved only within 48 pixels when it resolved to a precise sentence anchor, and is treated as degraded beyond 120 pixels or whenever it could only fall back to a coarse block anchor.
+This asymmetry encodes a deliberate judgement on our part: a coarse anchor or a full reflow earns a wider tolerance, because demanding pixel-exact restoration there would label a perfectly acceptable resume as a failure.
+
+\begin{listing}[htbp]
+\begin{minted}{typescript}
+// After the change, re-find the anchor (mode-dependent) and scroll it back to the same
+// on-screen offset; if it cannot be found, restore scroll only and report it (FR9.2).
+const located = restoreMode === "semantic-restart"
+  ? locateSemanticRestartAnchor(content, latestIntervention)   // the sentence/paragraph the change committed against
+  : locateAnchor(content, anchor);                             // the captured anchor: token -> sentence -> block
+if (!located) { commitFailure("Anchor was unavailable or stale."); return; }   // status "failed"
+
+const view = getContainerRect(container);
+const currentTop = located.primaryElement.getBoundingClientRect().top - view.top;
+container.scrollTop += currentTop - located.anchorViewportOffsetPx;    // re-align to the captured offset
 
 const finalTop = located.primaryElement.getBoundingClientRect().top - view.top;
 const anchorErrorPx = Math.abs(finalTop - located.anchorViewportOffsetPx);
-const status = anchorErrorPx <= 48 ? "preserved" : anchorErrorPx > 120 ? "degraded" : "preserved";
-onContextPreservationChange({ status, anchorErrorPx, /* anchor ids, boundary, ... */ });
+
+// Tolerance depends on the restore mode and on which anchor we fell back to.
+const status =
+  restoreMode === "semantic-restart"
+    ? (anchorErrorPx <= 72 ? "preserved" : "degraded")
+    : located.anchorSource === "sentence-anchor" && anchorErrorPx <= 48 ? "preserved"
+    : anchorErrorPx > 120 || located.anchorSource === "block-anchor"    ? "degraded"
+    : "preserved";
+onContextPreservationChange?.({ status, anchorErrorPx, anchorSource: located.anchorSource, /* ... */ });
 \end{minted}
 \caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The reader re-finds the anchor (degrading from sentence to token to paragraph), scrolls it back to its captured offset, measures the residual error, and reports the outcome, which the backend records in the session log.}
 \label{lst:impl-anchor-restore}
 \end{listing}
+
+\paragraph{Closing the loop.}
+Two things happen once the outcome is known.
+When a semantic restart has highlighting enabled, the reader briefly flashes the restored sentence so the participant's eye is drawn back to where they should resume, then fades it after about \SI{3}{\second}.
+Independently, the graded outcome is handed to \idtt{onContextPreservationChange}, which sends it to the backend, where it is appended to the session log next to the triggering intervention, checkpointed, and carried into the export as a \idtt{ReadingContextPreservationEventSnapshot} (FR9.3), following the same gate-and-record shape as every other state change (\cref{lst:impl-state-change}).
+Because the outcome of every intervention is recorded with its residual error and anchor source, a later analysis can ask not just whether an intervention helped a reader but what it cost them in lost position, which is exactly the kind of auditable evidence RQ4 asks the platform to produce.
 
 \FloatBarrier
 \subsection{Experiment templates and session sequencing}
