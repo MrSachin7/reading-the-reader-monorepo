@@ -62,6 +62,7 @@ Master-Thesis-Report/*.bcf
 Master-Thesis-Report/*.run.xml
 Master-Thesis-Report/*.fdb_latexmk
 Master-Thesis-Report/*.synctex.gz
+Master-Thesis-Report/*.synctex(busy)
 Master-Thesis-Report/*.xdv
 Master-Thesis-Report/*.pdf
 Master-Thesis-Report/_minted-*/
