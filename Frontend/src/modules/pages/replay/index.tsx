@@ -16,6 +16,8 @@ import {
   resolveReplayDurationMs,
   type ExperimentReplayExport,
 } from "@/lib/experiment-replay"
+import { convertReplayPayloadToProcessed } from "@/lib/experiment-export"
+import { getErrorMessage } from "@/lib/error-utils"
 import { READER_SHELL_SETTINGS_DEFAULTS } from "@/lib/reader-shell-settings"
 import { toSaccadeOverlaySegments } from "@/modules/pages/reading/components/SaccadePathOverlay"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
@@ -46,6 +48,7 @@ export default function ReplayPage() {
   const [localReaderOptions, setLocalReaderOptions] = useState<ReplayReaderOptions | null>(null)
   const readerOptions = localReaderOptions ?? persistedReaderOptions
   const [loadingExportId, setLoadingExportId] = useState<string | null>(null)
+  const [convertingExportId, setConvertingExportId] = useState<string | null>(null)
   const isPlayingRef = useRef(isPlaying)
   const { data: savedExports = [], isLoading: isLoadingSavedExports } =
     useGetSavedExperimentReplayExportsQuery()
@@ -227,6 +230,23 @@ export default function ReplayPage() {
     [getSavedExperimentReplayExportById]
   )
 
+  const handleConvertSavedExport = useCallback(
+    async (id: string) => {
+      setConvertingExportId(id)
+      try {
+        const payload = await getSavedExperimentReplayExportById(id).unwrap()
+        const savedName = savedExports.find((item) => item.id === id)?.name
+        await convertReplayPayloadToProcessed(payload, savedName)
+        setErrorMessage(null)
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error, "Could not convert the saved export to a processed report."))
+      } finally {
+        setConvertingExportId(null)
+      }
+    },
+    [getSavedExperimentReplayExportById, savedExports]
+  )
+
   const handleInputChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
@@ -304,11 +324,13 @@ export default function ReplayPage() {
           isLoadingSavedExports={isLoadingSavedExports}
           savedExports={savedExports}
           loadingExportId={loadingExportId}
+          convertingExportId={convertingExportId}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onInputChange={handleInputChange}
           onSelectSavedExport={(id) => void handleLoadSavedExport(id)}
+          onConvertSavedExport={(id) => void handleConvertSavedExport(id)}
         />
       )
   }

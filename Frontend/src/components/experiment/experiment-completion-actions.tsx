@@ -113,7 +113,7 @@ export function ExperimentCompletionActions({
     setDownloadingFormat(format)
 
     try {
-      await downloadExperimentExport(format)
+      await downloadExperimentExport(format, saveName)
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not download the experiment export."))
     } finally {
@@ -127,7 +127,7 @@ export function ExperimentCompletionActions({
     setDownloadingFormat("processed")
 
     try {
-      await downloadProcessedExperimentExport()
+      await downloadProcessedExperimentExport(saveName)
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Could not download the processed experiment export."))
     } finally {

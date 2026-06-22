@@ -1,7 +1,7 @@
 "use client"
 
 import type { ChangeEventHandler, DragEventHandler } from "react"
-import { FileUp, Upload } from "lucide-react"
+import { FileCog, FileUp, LoaderCircle, Upload } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { ConvertToProcessedCard } from "@/modules/pages/replay/components/ConvertToProcessedCard"
 import type { SavedExperimentReplayExportSummary } from "@/redux"
 
 type ReplayUploadStateProps = {
@@ -18,11 +19,13 @@ type ReplayUploadStateProps = {
   isLoadingSavedExports: boolean
   savedExports: SavedExperimentReplayExportSummary[]
   loadingExportId: string | null
+  convertingExportId: string | null
   onDragOver: DragEventHandler<HTMLLabelElement>
   onDragLeave: DragEventHandler<HTMLLabelElement>
   onDrop: DragEventHandler<HTMLLabelElement>
   onInputChange: ChangeEventHandler<HTMLInputElement>
   onSelectSavedExport: (id: string) => void
+  onConvertSavedExport: (id: string) => void
 }
 
 function formatDate(unixMs: number) {
@@ -39,11 +42,13 @@ export function ReplayUploadState({
   isLoadingSavedExports,
   savedExports,
   loadingExportId,
+  convertingExportId,
   onDragOver,
   onDragLeave,
   onDrop,
   onInputChange,
   onSelectSavedExport,
+  onConvertSavedExport,
 }: ReplayUploadStateProps) {
   return (
     <main className="h-[100dvh] overflow-hidden bg-background px-4 py-5 md:px-8 md:py-8">
@@ -82,7 +87,8 @@ export function ReplayUploadState({
           </Button>
         </label>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm">
           <div className="space-y-1">
             <p className="text-lg font-semibold">Saved files</p>
             <p className="text-sm text-muted-foreground">
@@ -101,29 +107,53 @@ export function ReplayUploadState({
                 </div>
               ) : (
                 savedExports.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    onClick={() => onSelectSavedExport(item.id)}
-                    disabled={loadingExportId === item.id}
-                    className="w-full rounded-xl border p-4 text-left transition-colors hover:border-primary/35 hover:bg-accent/30"
+                    className="rounded-xl border transition-colors hover:border-primary/35"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">{item.name}</p>
-                      <Badge variant="outline" className="uppercase">
-                        {item.format}
-                      </Badge>
+                    <button
+                      type="button"
+                      onClick={() => onSelectSavedExport(item.id)}
+                      disabled={loadingExportId === item.id}
+                      className="w-full rounded-t-xl p-4 text-left transition-colors hover:bg-accent/30"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold">{item.name}</p>
+                        <Badge variant="outline" className="uppercase">
+                          {item.format}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.fileName}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Saved {formatDate(item.updatedAtUnixMs)}
+                      </p>
+                    </button>
+                    <div className="border-t px-4 py-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto px-2 py-1 text-xs"
+                        disabled={convertingExportId === item.id}
+                        onClick={() => onConvertSavedExport(item.id)}
+                      >
+                        {convertingExportId === item.id ? (
+                          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <FileCog className="h-3.5 w-3.5" />
+                        )}
+                        {convertingExportId === item.id ? "Converting..." : "Convert to processed"}
+                      </Button>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.fileName}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Saved {formatDate(item.updatedAtUnixMs)}
-                    </p>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
           </ScrollArea>
         </section>
+
+          <ConvertToProcessedCard />
+        </div>
 
         {errorMessage ? (
           <Alert variant="destructive" className="lg:col-span-2">
