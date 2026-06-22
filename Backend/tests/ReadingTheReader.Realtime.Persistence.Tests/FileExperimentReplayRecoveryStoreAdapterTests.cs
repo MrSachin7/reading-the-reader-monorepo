@@ -180,6 +180,60 @@ public sealed class FileExperimentReplayRecoveryStoreAdapterTests : IDisposable
         Assert.Equal("Beta", exportDocument.GazeSamples[2].Focus?.ActiveTokenText);
     }
 
+    [Fact]
+    public async Task BuildTelemetryExportAsync_MergesChunkedSamplesAndSummarizes()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        var snapshot = harness.SessionManager.GetCurrentSnapshot();
+        var sessionId = Assert.IsType<Guid>(snapshot.SessionId);
+
+        var store = new FileExperimentReplayRecoveryStoreAdapter(_tempDirectory);
+        await store.InitializeSessionAsync(new ExperimentReplayRecoverySessionSeed(
+            sessionId,
+            snapshot,
+            snapshot.StartedAtUnixMs));
+        await store.AppendChunkAsync(new ExperimentReplayRecoveryChunkBatch(
+            sessionId,
+            snapshot,
+            snapshot.StartedAtUnixMs + 3_000,
+            [], [], [], [], [], [], [],
+            TelemetrySamples:
+            [
+                new ExperimentTelemetrySampleRecord(1, snapshot.StartedAtUnixMs + 1_000, "participant", 40, 118, 0.97),
+                new ExperimentTelemetrySampleRecord(2, snapshot.StartedAtUnixMs + 2_000, "researcher", 150, 90, 0.80),
+            ]));
+        await store.AppendChunkAsync(new ExperimentReplayRecoveryChunkBatch(
+            sessionId,
+            snapshot,
+            snapshot.StartedAtUnixMs + 6_000,
+            [], [], [], [], [], [], [],
+            TelemetrySamples:
+            [
+                new ExperimentTelemetrySampleRecord(3, snapshot.StartedAtUnixMs + 5_000, "participant", 60, 117, 0.95),
+            ]));
+
+        // A fresh store instance must rebuild telemetry from the chunk files on disk.
+        var recoveredStore = new FileExperimentReplayRecoveryStoreAdapter(_tempDirectory);
+        var telemetry = await recoveredStore.BuildTelemetryExportAsync(
+            sessionId,
+            ExperimentReplayRecoveryStatuses.RecoveredIncomplete,
+            snapshot.StartedAtUnixMs + 6_000);
+
+        Assert.NotNull(telemetry);
+        Assert.Equal(ExperimentTelemetryExportSchema.Name, telemetry!.Manifest.Schema);
+        Assert.Equal(sessionId, telemetry.SessionId);
+        Assert.Equal(3, telemetry.Samples.Count);
+        Assert.Equal([1L, 2L, 3L], telemetry.Samples.Select(item => item.SequenceNumber).ToArray());
+        Assert.Equal(3, telemetry.Summary.RttMs.Count);
+        Assert.Equal(40d, telemetry.Summary.RttMs.Min);
+        Assert.Equal(150d, telemetry.Summary.RttMs.Max);
+        Assert.Equal(100d, telemetry.Summary.RttMs.BudgetMs);
+        // One of three RTT samples (150 ms) is over the 100 ms budget.
+        Assert.Equal(Math.Round(100d / 3d, 2), telemetry.Summary.RttMs.OverBudgetPct);
+    }
+
     private static RawGazeSampleRecord CreateGazeSampleRecord(long sequenceNumber, long capturedAtUnixMs)
     {
         return new RawGazeSampleRecord(

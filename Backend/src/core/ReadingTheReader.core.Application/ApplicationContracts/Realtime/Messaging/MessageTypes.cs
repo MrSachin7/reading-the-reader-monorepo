@@ -9,6 +9,7 @@ public static class MessageTypes
     public const string Stats = "stats";
     public const string Ping = "ping";
     public const string Pong = "pong";
+    public const string ReportClientTelemetry = "reportClientTelemetry";
     public const string InterventionEvent = "interventionEvent";
 
     public const string StartExperiment = "startExperiment";

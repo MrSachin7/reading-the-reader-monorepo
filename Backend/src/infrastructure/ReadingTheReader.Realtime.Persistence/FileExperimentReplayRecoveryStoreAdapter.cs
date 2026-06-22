@@ -112,6 +112,33 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         return BuildMergedProcessedExportFromChunks(metadata, chunks, completionSource, exportedAtUnixMs);
     }
 
+    public async ValueTask<ExperimentTelemetryExport?> BuildTelemetryExportAsync(
+        Guid sessionId,
+        string completionSource,
+        long exportedAtUnixMs,
+        CancellationToken ct = default)
+    {
+        var metadata = await ReadMetadataAsync(sessionId, ct);
+        if (metadata?.InitialSnapshot is null || metadata.LatestSnapshot is null)
+        {
+            return null;
+        }
+
+        var sessionDirectoryPath = GetSessionDirectoryPath(sessionId);
+        var chunks = await ReadAllChunksAsync(sessionDirectoryPath, ct);
+        var telemetrySamples = chunks
+            .SelectMany(c => c.TelemetrySamples ?? [])
+            .OrderBy(item => item.SequenceNumber)
+            .ToArray();
+
+        return ExperimentTelemetryExportFactory.Create(
+            metadata.InitialSnapshot,
+            metadata.LatestSnapshot,
+            completionSource,
+            exportedAtUnixMs,
+            telemetrySamples);
+    }
+
     public async ValueTask MarkCompletedAsync(
         Guid sessionId,
         ExperimentReplayExport completedExport,
@@ -293,6 +320,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
             QuizLifecycleEvents = batch.QuizLifecycleEvents?.ToArray(),
             QuizFocusEvents = batch.QuizFocusEvents?.ToArray(),
             QuizSelectionEvents = batch.QuizSelectionEvents?.ToArray(),
+            TelemetrySamples = batch.TelemetrySamples?.ToArray(),
             LatestTokenStats = batch.LatestTokenStats?.ToDictionary(e => e.Key, e => e.Value.Copy(), StringComparer.Ordinal),
         };
 
@@ -626,6 +654,7 @@ public sealed class FileExperimentReplayRecoveryStoreAdapter : IExperimentReplay
         public QuizLifecycleRecord[]? QuizLifecycleEvents { get; set; }
         public QuizFocusRecord[]? QuizFocusEvents { get; set; }
         public QuizSelectionRecord[]? QuizSelectionEvents { get; set; }
+        public ExperimentTelemetrySampleRecord[]? TelemetrySamples { get; set; }
         public Dictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats { get; set; }
     }
 

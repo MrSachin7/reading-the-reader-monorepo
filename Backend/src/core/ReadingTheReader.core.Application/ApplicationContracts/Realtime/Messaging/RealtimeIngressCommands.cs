@@ -12,6 +12,16 @@ public interface IRealtimeIngressCommand
 
 public sealed record PingRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
+public sealed record ClientTelemetrySamplePayload(
+    string? Role,
+    double? RttMs,
+    double? SampleRateHz,
+    double? ValidityRate);
+
+public sealed record ReportClientTelemetryRealtimeCommand(
+    string ConnectionId,
+    ClientTelemetrySamplePayload Payload) : IRealtimeIngressCommand;
+
 public sealed record StartExperimentRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
 
 public sealed record StopExperimentRealtimeCommand(string ConnectionId) : IRealtimeIngressCommand;
@@ -170,6 +180,11 @@ public static class RealtimeIngressCommandFactory
         return messageType switch
         {
             MessageTypes.Ping => new PingRealtimeCommand(connectionId),
+            MessageTypes.ReportClientTelemetry => Deserialize<ClientTelemetrySamplePayload>(
+                payload,
+                connectionId,
+                "Client telemetry payload is invalid.",
+                parsed => new ReportClientTelemetryRealtimeCommand(connectionId, parsed)),
             MessageTypes.StartExperiment => new StartExperimentRealtimeCommand(connectionId),
             MessageTypes.StopExperiment => new StopExperimentRealtimeCommand(connectionId),
             MessageTypes.SubscribeGazeData => new SubscribeGazeDataRealtimeCommand(connectionId),

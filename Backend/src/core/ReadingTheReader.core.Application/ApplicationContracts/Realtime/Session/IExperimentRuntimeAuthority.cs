@@ -103,6 +103,13 @@ public interface IExperimentRuntimeAuthority
 
     ValueTask SubmitMouseGazeSampleAsync(string connectionId, GazeData gazeData, CancellationToken ct = default);
 
+    ValueTask RecordClientTelemetrySampleAsync(
+        string? role,
+        double? rttMs,
+        double? sampleRateHz,
+        double? validityRate,
+        CancellationToken ct = default);
+
     ValueTask PauseGazeStreamingAsync(CancellationToken ct = default);
 
     ValueTask ResumeGazeStreamingAsync(CancellationToken ct = default);

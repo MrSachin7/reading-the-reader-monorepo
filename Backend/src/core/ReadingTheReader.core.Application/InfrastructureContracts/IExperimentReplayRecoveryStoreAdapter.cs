@@ -20,6 +20,12 @@ public interface IExperimentReplayRecoveryStoreAdapter
         long exportedAtUnixMs,
         CancellationToken ct = default);
 
+    ValueTask<ExperimentTelemetryExport?> BuildTelemetryExportAsync(
+        Guid sessionId,
+        string completionSource,
+        long exportedAtUnixMs,
+        CancellationToken ct = default);
+
     ValueTask MarkCompletedAsync(
         Guid sessionId,
         ExperimentReplayExport completedExport,

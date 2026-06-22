@@ -20,6 +20,11 @@ public sealed partial class ExperimentSessionManager
         return _experimentReplayExportStoreAdapter.LoadLatestProcessedAsync(ct);
     }
 
+    public ValueTask<ExperimentTelemetryExport?> GetLatestTelemetryExportAsync(CancellationToken ct = default)
+    {
+        return _experimentReplayExportStoreAdapter.LoadLatestTelemetryAsync(ct);
+    }
+
     public async ValueTask<SavedExperimentReplayExportSummary> SaveLatestReplayExportAsync(
         SaveExperimentReplayExportCommand command,
         CancellationToken ct = default)
@@ -131,7 +136,42 @@ public sealed partial class ExperimentSessionManager
             _pendingQuizLifecycleEvents = [];
             _pendingQuizFocusEvents = [];
             _pendingQuizSelectionEvents = [];
+            _pendingTelemetrySamples = [];
             _latestAttentionTokenStats = null;
+        }
+    }
+
+    public ValueTask RecordClientTelemetrySampleAsync(
+        string? role,
+        double? rttMs,
+        double? sampleRateHz,
+        double? validityRate,
+        CancellationToken ct = default)
+    {
+        RecordClientTelemetrySample(role, rttMs, sampleRateHz, validityRate);
+        return ValueTask.CompletedTask;
+    }
+
+    private void RecordClientTelemetrySample(string? role, double? rttMs, double? sampleRateHz, double? validityRate)
+    {
+        lock (_historyGate)
+        {
+            // Telemetry is diagnostic and only meaningful while a session is recording;
+            // ignoring it otherwise also keeps the pending buffer from growing unbounded
+            // between sessions (the ping loop runs continuously).
+            if (!_activeReplayRecoverySessionId.HasValue)
+            {
+                return;
+            }
+
+            _pendingTelemetrySamples.Add(new ExperimentTelemetrySampleRecord(
+                NextSequenceNumber(),
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                ExperimentTelemetryRoles.Normalize(role),
+                rttMs,
+                sampleRateHz,
+                validityRate));
+            _hasPendingReplayPersistence = true;
         }
     }
 
@@ -490,6 +530,7 @@ public sealed partial class ExperimentSessionManager
         QuizLifecycleRecord[] quizLifecycleEvents;
         QuizFocusRecord[] quizFocusEvents;
         QuizSelectionRecord[] quizSelectionEvents;
+        ExperimentTelemetrySampleRecord[] telemetrySamples;
         IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? latestTokenStats;
 
         lock (_historyGate)
@@ -524,6 +565,7 @@ public sealed partial class ExperimentSessionManager
             quizLifecycleEvents = _pendingQuizLifecycleEvents.Select(item => item.Copy()).ToArray();
             quizFocusEvents = _pendingQuizFocusEvents.Select(item => item.Copy()).ToArray();
             quizSelectionEvents = _pendingQuizSelectionEvents.Select(item => item.Copy()).ToArray();
+            telemetrySamples = _pendingTelemetrySamples.Select(item => item.Copy()).ToArray();
             latestTokenStats = _latestAttentionTokenStats is null
                 ? null
                 : _latestAttentionTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy());
@@ -550,6 +592,7 @@ public sealed partial class ExperimentSessionManager
             _pendingQuizLifecycleEvents = [];
             _pendingQuizFocusEvents = [];
             _pendingQuizSelectionEvents = [];
+            _pendingTelemetrySamples = [];
             _hasPendingReplayPersistence = false;
         }
 
@@ -584,7 +627,8 @@ public sealed partial class ExperimentSessionManager
                     quizSelectionEvents,
                     fixationEvents,
                     saccadeEvents,
-                    struggleSignalEvents),
+                    struggleSignalEvents,
+                    telemetrySamples),
                 ct);
         }
         catch
@@ -613,6 +657,7 @@ public sealed partial class ExperimentSessionManager
                 _pendingQuizLifecycleEvents = [.. quizLifecycleEvents.Select(item => item.Copy()), .. _pendingQuizLifecycleEvents];
                 _pendingQuizFocusEvents = [.. quizFocusEvents.Select(item => item.Copy()), .. _pendingQuizFocusEvents];
                 _pendingQuizSelectionEvents = [.. quizSelectionEvents.Select(item => item.Copy()), .. _pendingQuizSelectionEvents];
+                _pendingTelemetrySamples = [.. telemetrySamples.Select(item => item.Copy()), .. _pendingTelemetrySamples];
                 _hasPendingReplayPersistence = true;
             }
 

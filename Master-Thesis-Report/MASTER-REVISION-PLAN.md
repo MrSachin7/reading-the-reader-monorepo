@@ -37,6 +37,18 @@
 
 ---
 
+- **2026-06-20 — Use-case diagram aligned with the glossary + design vocabulary (Phase 2, matrix #13; build green):**
+  - The actor labels in `04_Requirements/03_use_cases.tex` were already glossary-clean (Researcher, Participant, Eye Tracker Device [§5 actor-name exception], External Module Provider [correct umbrella], Data Consumer). The defects were in the surrounding prose and one node label.
+  - **Terminology fixes:** "primary operator" → "primary actor" (§4 retire "operator"); two "researcher control panel" → "researcher console" (§1); "automated mode"/"hybrid mode" → "autonomous mode"/"advisory mode" (§4 locked control terms); activity-diagram caption "applied automatically" → "applied autonomously".
+  - **Traceability touch-ups (closes supervisor comment, `feedback2-analysis.md:237` — use-case keywords must recur in the architecture):** use case "Control Decision Automation" → "Control Decision Mode" (node + prose; echoes the advisory/autonomous *mode* vocabulary); the advisory-path sentence now reads "the researcher approves or rejects through Control Decision Mode" (echoes the approve/reject seam). "Monitor Live Session" already ties to the mirror/attention-summary wording in the prose; left as-is.
+  - Out of scope (untouched): "Eye Tracker Device" actor name (glossary §5 explicitly permits it) and the "Ex-periment" hyphenation break (separate `todo.md` polish-pass item). Build green, Fig 4.1 rendered and verified.
+
+- **2026-06-20 (later) — Concept loop F1 verified + closed (Phase 2, matrix #32; build green):** Reading `02_KeyConceptsAndRelatedWork/01_key_concepts.tex` showed the F1 redraw was **already substantially done**: the (a)/(b) split exists as two figures (`fig:reading-concept` = the published RTR concept PNG, part (a); `fig:adaptive-loop` = "our modular interpretation", part (b)), with explicit contrasting prose between them; the reader and researcher are both **person icons** (not boxes); and the **external-provider seam** is present (red "External / AI" chip + legend "external decision provider (contract; out of scope)"). The only outstanding F1 sub-item was "label it a flowchart". Since the figure is a data-flow pipeline rather than a strict flowchart (no decision diamonds), it was **not** mislabelled; instead the lead-in prose (line 19) now names the diagram type honestly: "redraws the same loop as a **flow diagram** of four sequential stages". No figure redraw. Optional chip-relabel for exact parity with the Fig 5.3 hexagon vocabulary ("External" → "External analysis/decision provider") was **deferred** to the Phase 8 sweep (chips are terse, non-contradictory, and tied to canonical terms by the legend). **This completes Phase 2's diagram set** — the redrawn figures are ready for Review Gate 1.
+
+- **2026-06-22 — Fig 5.1 SVG re-rendered + I-AOI method stated explicitly (matrix #20; build green):**
+  - **Fig 5.1 update:** integrated the author's revised Excalidraw master (`architecture_overview.svg`, now showing the four named modules inside the backend, a "Provider API (WebSocket contract)" node, researcher sliders + approve/reject). Build fix: Inkscape 1.4.4 corrupts the PDF export of this SVG because of the embedded Excalidraw "Virgil" woff2 font ("Catalog dictionary not located" → graphics "Division by 0"). Resolved by passing `inkscapeopt={--export-text-to-path}` on the single `\includesvg` line in `02_approach.tex:17` (vectorises the labels; no `Setup/` change). **Any future Excalidraw SVG re-export needs this flag.** §5.2 caption/prose already matched the new artwork — no text change. (Author confirmed the "realizes provider api for intervention" arrow is intentional as-is.)
+  - **I-AOI (#20), the 🔴 wrong-live-answer fix:** the Salvucci & Goldberg citation + AOI declaration already existed in Ch2 (`01_key_concepts.tex:270-271`); the gap was the Implementation chapter. Edited `06_Implementation/03_highlights.tex` (the "Temporal analysis as a replaceable strategy" paragraph) to: name the **area-of-interest (I-AOI), dwell-based** branch and cross-ref `subsec:oculomotor-events`; state explicitly the detector uses **neither the velocity threshold of I-VT nor the dispersion threshold of I-DT**; justify AOI for reading (events already bound to words); and report **both** threshold families with the real code constants — fixation-confirmation dwell **90/70/135 ms** (initial / within-line / across-line) plus the attention-summary binning **<45 ms dropped, ≥130 ms = fixation, 45–130 ms = skim** (`SkimThresholdMs=45`, `FixationThresholdMs=130`, verified in `BuiltInEyeMovementAnalysisStrategy.cs`). Companion Ch2 edit (flagged, §3.5): added the standard abbreviations "velocity (I-VT), dispersion (I-DT), or area of interest (I-AOI)" and an explicit "and not the velocity- or dispersion-based variants" at the conceptual home. No fabricated numbers; citation pre-existing. Closes `todo.md` "describe I-AOI/dwell extraction".
+
 ## A. Current-state correction (do NOT redo these — verify only)
 
 Reading the actual files shows several feedback-1 asks are **already done and good**. Marking them so we spend zero effort re-doing them:
@@ -259,14 +271,14 @@ Each phase lists: **goal · depends on · tasks (with file pointers) · definiti
 | 10 | Captions too long → move prose to body | P2 | ☐ |
 | 11 | Split long titles 5.2 / 5.6 / 7.4 | P1 | ☐ |
 | 12 | Fig 5.4: rename "Domain"; pipeline arrows; built-in/ext consistency; numbering | P2 | ☐ |
-| 13 | Use-case actor terms must match design diagrams | P2 | ☐ |
+| 13 | Use-case actor terms must match design diagrams | P2 | ✅ |
 | 14 | Hyphenation glitches | P1 | ☐ |
 | 15 | Fewer diagrams / kill redundant ones (e.g. WS envelope) | P0+P2 | ☐ |
 | 16 | Requirements: show iterative refinement evidence (table) | P3 | ☐ |
 | 17 | Prioritisation rationale (MoSCoW/FR/NFR) | P3 | ☐ |
 | 18 | Coherency Ch4→Ch5 (constraints→requirements→drivers→decisions) | P3 | ☐ |
 | 19 | Backend/frontend + Tobii SDK + screen/resolution headings | P4 | ☐ |
-| 20 | I-AOI method explicit; NO velocity threshold (fix wrong live answer) | P4 | ☐ |
+| 20 | I-AOI method explicit; NO velocity threshold (fix wrong live answer) | P4 | ✅ |
 | 21 | AOI survives interventions/reflow — say it louder | P4 | ☐ |
 | 22 | Fixation duration / per-word AOI overlay (low priority) | Track M | ☐ |
 | 23 | Kalman-filter framing in Discussion | P6 | ☐ |
@@ -278,7 +290,7 @@ Each phase lists: **goal · depends on · tasks (with file pointers) · definiti
 | 29 | Declare generative-AI use | P7 | ☐ |
 | 30 | Abstract/Conclusion name the pillars | P7 | ☐ |
 | 31 | Defense: both speak, demo, individual Q&A, drill answers | P9 | ☐ |
-| 32 | (M1 open) Concept loop F1 split + person icon | P2 | ☐ |
+| 32 | (M1 open) Concept loop F1 split + person icon | P2 | ✅ |
 | 33 | (M1 open) "How might we" RQs (optional) | P3 | ☐ |
 
 ---

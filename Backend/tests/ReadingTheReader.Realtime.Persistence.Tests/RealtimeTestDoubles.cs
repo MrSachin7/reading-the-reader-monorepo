@@ -272,6 +272,7 @@ public sealed class RealtimeTestDoubles
 
         public ExperimentReplayExport? LatestExport { get; private set; }
         public ExperimentProcessedExport? LatestProcessedExport { get; private set; }
+        public ExperimentTelemetryExport? LatestTelemetryExport { get; private set; }
 
         public IReadOnlyCollection<SavedExperimentReplayExportSummary> Saved => _saved.AsReadOnly();
 
@@ -295,6 +296,17 @@ public sealed class RealtimeTestDoubles
         public ValueTask<ExperimentProcessedExport?> LoadLatestProcessedAsync(CancellationToken ct = default)
         {
             return ValueTask.FromResult(LatestProcessedExport?.Copy());
+        }
+
+        public ValueTask SaveLatestTelemetryAsync(ExperimentTelemetryExport exportDocument, CancellationToken ct = default)
+        {
+            LatestTelemetryExport = exportDocument.Copy();
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask<ExperimentTelemetryExport?> LoadLatestTelemetryAsync(CancellationToken ct = default)
+        {
+            return ValueTask.FromResult(LatestTelemetryExport?.Copy());
         }
 
         public ValueTask<SavedExperimentReplayExportSummary> SaveNamedAsync(
@@ -359,6 +371,7 @@ public sealed class RealtimeTestDoubles
                 [],
                 [],
                 [],
+                [],
                 []);
             return ValueTask.CompletedTask;
         }
@@ -386,7 +399,8 @@ public sealed class RealtimeTestDoubles
                 ContextPreservationEvents = [.. session.ContextPreservationEvents, .. (batch.ContextPreservationEvents ?? []).Select(item => item.Copy())],
                 DecisionProposalEvents = [.. session.DecisionProposalEvents, .. (batch.DecisionProposalEvents ?? []).Select(item => item.Copy())],
                 ScheduledInterventionEvents = [.. session.ScheduledInterventionEvents, .. (batch.ScheduledInterventionEvents ?? []).Select(item => item.Copy())],
-                InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())]
+                InterventionEvents = [.. session.InterventionEvents, .. (batch.InterventionEvents ?? []).Select(item => item.Copy())],
+                TelemetrySamples = [.. session.TelemetrySamples, .. (batch.TelemetrySamples ?? []).Select(item => item.Copy())]
             };
 
             return ValueTask.CompletedTask;
@@ -444,6 +458,25 @@ public sealed class RealtimeTestDoubles
                 session.EnrichedGazeSamples.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.DecisionProposalEvents.OrderBy(item => item.SequenceNumber).ToArray(),
                 session.InterventionEvents.OrderBy(item => item.SequenceNumber).ToArray()));
+        }
+
+        public ValueTask<ExperimentTelemetryExport?> BuildTelemetryExportAsync(
+            Guid sessionId,
+            string completionSource,
+            long exportedAtUnixMs,
+            CancellationToken ct = default)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return ValueTask.FromResult<ExperimentTelemetryExport?>(null);
+            }
+
+            return ValueTask.FromResult<ExperimentTelemetryExport?>(ExperimentTelemetryExportFactory.Create(
+                session.InitialSnapshot,
+                session.LatestSnapshot,
+                completionSource,
+                exportedAtUnixMs,
+                session.TelemetrySamples.OrderBy(item => item.SequenceNumber).ToArray()));
         }
 
         public ValueTask MarkCompletedAsync(
@@ -518,7 +551,8 @@ public sealed class RealtimeTestDoubles
             IReadOnlyList<ReadingContextPreservationEventRecord> ContextPreservationEvents,
             IReadOnlyList<DecisionProposalEventRecord> DecisionProposalEvents,
             IReadOnlyList<ScheduledInterventionEventRecord> ScheduledInterventionEvents,
-            IReadOnlyList<InterventionEventRecord> InterventionEvents);
+            IReadOnlyList<InterventionEventRecord> InterventionEvents,
+            IReadOnlyList<ExperimentTelemetrySampleRecord> TelemetrySamples);
     }
 
     public sealed class FakeEyeTrackerAdapter : IEyeTrackerAdapter

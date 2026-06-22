@@ -274,6 +274,17 @@ public sealed partial class ExperimentSessionManager
                 ct) ?? throw new InvalidOperationException("No processed export data is available for this session.");
             await _experimentReplayExportStoreAdapter.SaveLatestAsync(exportDocument, ct);
             await _experimentReplayExportStoreAdapter.SaveLatestProcessedAsync(processedExportDocument, ct);
+            // Telemetry is diagnostic, not part of the consumer export; an empty samples
+            // list is acceptable, so build it best-effort and never fail the stop on it.
+            var telemetryExportDocument = await _experimentReplayRecoveryStoreAdapter.BuildTelemetryExportAsync(
+                snapshot.SessionId.Value,
+                source,
+                stoppedAtUnixMs,
+                ct);
+            if (telemetryExportDocument is not null)
+            {
+                await _experimentReplayExportStoreAdapter.SaveLatestTelemetryAsync(telemetryExportDocument, ct);
+            }
             await _experimentReplayRecoveryStoreAdapter.MarkCompletedAsync(snapshot.SessionId.Value, exportDocument, stoppedAtUnixMs, ct);
             await _experimentStateStoreAdapter.ClearActiveReplayAsync(ct);
             ResetReplayHistory();

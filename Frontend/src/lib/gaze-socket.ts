@@ -147,6 +147,15 @@ type ServerEnvelope =
 
 type ClientEnvelope =
   | { type: "ping"; payload: Record<string, never> }
+  | {
+      type: "reportClientTelemetry";
+      payload: {
+        role: "participant" | "researcher";
+        rttMs: number | null;
+        sampleRateHz: number | null;
+        validityRate: number | null;
+      };
+    }
   | { type: "getExperimentState"; payload: Record<string, never> }
   | { type: "subscribeGazeData"; payload: Record<string, never> }
   | { type: "unsubscribeGazeData"; payload: Record<string, never> }
@@ -337,6 +346,13 @@ let lastPingSentAt = 0;
 let wantsGazeSubscription = false;
 let wantsParticipantViewRegistration = false;
 
+// Rolling counters for the telemetry sample reported alongside each pong. They
+// measure the transport-level gaze throughput and validity observed by this
+// client over the window since the previous report.
+let telemetryWindowStartMs = 0;
+let gazeSamplesInWindow = 0;
+let validGazeSamplesInWindow = 0;
+
 let stats: ConnectionStats = {
   status: "closed",
   lastPongAtUnixMs: null,
@@ -433,6 +449,9 @@ function startPingLoop() {
     window.clearInterval(pingTimer);
   }
 
+  telemetryWindowStartMs = Date.now();
+  gazeSamplesInWindow = 0;
+  validGazeSamplesInWindow = 0;
   pingTimer = window.setInterval(() => {
     lastPingSentAt = Date.now();
     send({ type: "ping", payload: {} });
@@ -570,6 +589,13 @@ function handleMessage(raw: MessageEvent<string>) {
     }
 
     if (message.type === "gazeSample") {
+      gazeSamplesInWindow += 1;
+      if (
+        message.payload.leftEyeValidity === "Valid" ||
+        message.payload.rightEyeValidity === "Valid"
+      ) {
+        validGazeSamplesInWindow += 1;
+      }
       for (const listener of gazeListeners) {
         listener(message.payload);
       }
@@ -578,11 +604,34 @@ function handleMessage(raw: MessageEvent<string>) {
 
     if (message.type === "pong") {
       const now = Date.now();
+      const rttMs = lastPingSentAt > 0 ? now - lastPingSentAt : null;
       setStats({
         lastPongAtUnixMs: now,
         lastServerTimeUnixMs: message.payload.serverTimeUnixMs,
-        lastRttMs: lastPingSentAt > 0 ? now - lastPingSentAt : null,
+        lastRttMs: rttMs,
       });
+
+      const windowMs = telemetryWindowStartMs > 0 ? now - telemetryWindowStartMs : 0;
+      const sampleRateHz =
+        windowMs > 0 && gazeSamplesInWindow > 0
+          ? (gazeSamplesInWindow * 1000) / windowMs
+          : null;
+      const validityRate =
+        gazeSamplesInWindow > 0
+          ? validGazeSamplesInWindow / gazeSamplesInWindow
+          : null;
+      send({
+        type: "reportClientTelemetry",
+        payload: {
+          role: wantsParticipantViewRegistration ? "participant" : "researcher",
+          rttMs,
+          sampleRateHz,
+          validityRate,
+        },
+      });
+      telemetryWindowStartMs = now;
+      gazeSamplesInWindow = 0;
+      validGazeSamplesInWindow = 0;
       return;
     }
 

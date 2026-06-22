@@ -13,6 +13,7 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
     private readonly string _latestFilePath;
     private readonly string _latestProcessedFilePath;
+    private readonly string _latestTelemetryFilePath;
     private readonly string _savedDirectoryPath;
     private readonly IExperimentReplayExportSerializer _serializer;
 
@@ -22,7 +23,8 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         IExperimentReplayExportSerializer serializer)
     {
         _latestFilePath = latestFilePath;
-        _latestProcessedFilePath = BuildProcessedLatestFilePath(latestFilePath);
+        _latestProcessedFilePath = BuildLatestVariantFilePath(latestFilePath, "processed");
+        _latestTelemetryFilePath = BuildLatestVariantFilePath(latestFilePath, "telemetry");
         _savedDirectoryPath = savedDirectoryPath;
         _serializer = serializer;
     }
@@ -75,6 +77,31 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
 
         var content = await File.ReadAllTextAsync(_latestProcessedFilePath, ct);
         return JsonSerializer.Deserialize<ExperimentProcessedExport>(content, SummaryJsonOptions);
+    }
+
+    public async ValueTask SaveLatestTelemetryAsync(ExperimentTelemetryExport exportDocument, CancellationToken ct = default)
+    {
+        var directory = Path.GetDirectoryName(_latestTelemetryFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await WriteContentAsync(
+            _latestTelemetryFilePath,
+            JsonSerializer.Serialize(exportDocument, SummaryJsonOptions),
+            ct);
+    }
+
+    public async ValueTask<ExperimentTelemetryExport?> LoadLatestTelemetryAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(_latestTelemetryFilePath))
+        {
+            return null;
+        }
+
+        var content = await File.ReadAllTextAsync(_latestTelemetryFilePath, ct);
+        return JsonSerializer.Deserialize<ExperimentTelemetryExport>(content, SummaryJsonOptions);
     }
 
     public async ValueTask<SavedExperimentReplayExportSummary> SaveNamedAsync(
@@ -213,12 +240,12 @@ public sealed class FileExperimentReplayExportStoreAdapter : IExperimentReplayEx
         return string.IsNullOrWhiteSpace(normalized) ? "experiment-file" : normalized;
     }
 
-    private static string BuildProcessedLatestFilePath(string latestFilePath)
+    private static string BuildLatestVariantFilePath(string latestFilePath, string variant)
     {
         var directory = Path.GetDirectoryName(latestFilePath) ?? string.Empty;
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(latestFilePath);
         var extension = Path.GetExtension(latestFilePath);
-        return Path.Combine(directory, $"{fileNameWithoutExtension}-processed{extension}");
+        return Path.Combine(directory, $"{fileNameWithoutExtension}-{variant}{extension}");
     }
 
     private async ValueTask<ExperimentReplayExport?> ReadExportAsync(string path, CancellationToken ct)

@@ -32,6 +32,15 @@ public sealed class ExperimentCommandIngress : IExperimentCommandIngress
                 }, ct);
                 return;
 
+            case ReportClientTelemetryRealtimeCommand telemetry:
+                await _runtimeAuthority.RecordClientTelemetrySampleAsync(
+                    telemetry.Payload.Role,
+                    telemetry.Payload.RttMs,
+                    telemetry.Payload.SampleRateHz,
+                    telemetry.Payload.ValidityRate,
+                    ct);
+                return;
+
             case StartExperimentRealtimeCommand:
                 await _runtimeAuthority.StartSessionAsync(ct);
                 return;

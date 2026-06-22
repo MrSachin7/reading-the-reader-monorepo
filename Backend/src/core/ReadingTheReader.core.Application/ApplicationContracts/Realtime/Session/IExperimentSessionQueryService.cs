@@ -15,6 +15,8 @@ public interface IExperimentSessionQueryService
 
     ValueTask<ExperimentProcessedExport?> GetLatestProcessedExportAsync(CancellationToken ct = default);
 
+    ValueTask<ExperimentTelemetryExport?> GetLatestTelemetryExportAsync(CancellationToken ct = default);
+
     ValueTask<IReadOnlyCollection<SavedExperimentReplayExportSummary>> ListSavedReplayExportsAsync(CancellationToken ct = default);
 
     ValueTask<ExperimentReplayExport?> GetSavedReplayExportByIdAsync(string id, CancellationToken ct = default);

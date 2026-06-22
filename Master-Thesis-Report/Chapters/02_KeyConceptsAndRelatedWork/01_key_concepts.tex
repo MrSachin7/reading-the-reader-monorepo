@@ -16,7 +16,7 @@ Fig.~\ref{fig:reading-concept} reproduces the concept as published by the progra
 \end{figure}
 
 This thesis adopts that vision but reframes it for engineering.
-Fig.~\ref{fig:adaptive-loop} redraws the same loop as four sequential stages, sensing, analysis, decision, and intervention, whose output changes what the reader sees and so feeds the next cycle of sensing.
+Fig.~\ref{fig:adaptive-loop} redraws the same loop as a flow diagram of four sequential stages, sensing, analysis, decision, and intervention, whose output changes what the reader sees and so feeds the next cycle of sensing.
 Treating each stage as an independently replaceable module behind a stable contract is the central architectural commitment of this thesis, and it is the property examined in the chapters that follow.
 
 \usetikzlibrary{arrows.meta, positioning, fit, backgrounds}
@@ -267,8 +267,8 @@ Fig.~\ref{fig:oculomotor} illustrates these events two ways for a single line of
 \label{fig:oculomotor}
 \end{figure}
 
-Extracting these events from a raw gaze stream is the task of fixation-identification algorithms, for which Salvucci and Goldberg proposed an influential taxonomy organised by the criterion each algorithm uses, such as velocity, dispersion, or area of interest \cite{salvucci2000identifying}.
-The platform developed in this thesis performs this extraction online using the area-of-interest variant of that taxonomy: each gaze observation is first resolved to the word it falls on, and the dwell time on that word is thresholded into fixations and saccades, so that downstream decision strategies can reason over reading behaviour rather than over raw coordinates.
+Extracting these events from a raw gaze stream is the task of fixation-identification algorithms, for which Salvucci and Goldberg proposed an influential taxonomy organised by the criterion each algorithm uses, chiefly velocity (I-VT), dispersion (I-DT), or area of interest (I-AOI) \cite{salvucci2000identifying}.
+The platform developed in this thesis performs this extraction online using the area-of-interest variant (I-AOI), and not the velocity- or dispersion-based variants: each gaze observation is first resolved to the word it falls on, and the dwell time on that word is thresholded into fixations and saccades, so that downstream decision strategies can reason over reading behaviour rather than over raw coordinates.
 These definitions therefore underpin the sensing and analysis layers described in later chapters.
 
 \subsection{Typography as an Intervention Medium}

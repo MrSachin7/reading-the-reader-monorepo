@@ -12,7 +12,7 @@ natural phases of system use: \textit{Setup \& Calibration}, \textit{Content Man
 \textit{Session Configuration}, \textit{Live Session}, and \textit{Post-Session}.
 
 The system involves five actors.
-The \textbf{Researcher} is the primary operator and is associated with fourteen of the
+The \textbf{Researcher} is the primary actor and is associated with fourteen of the
 twenty-one use cases, spanning all five bands.
 The \textbf{Participant} is involved in three use cases: they fixate on calibration
 points during setup, read the presented text during the live phase, and answer
@@ -104,7 +104,7 @@ Sec.~\ref{sec:functional-requirements}.
 % Row: Live Session — researcher-driven controls (y = 14.2)
 \node[uc] (uc-monitor)   at (4.0,  14.2) {Monitor Live\\Session};
 \node[uc] (uc-intervene) at (8.5,  14.2) {Apply Manual\\Intervention};
-\node[uc] (uc-decision)  at (13.0, 14.2) {Control Decision\\Automation};
+\node[uc] (uc-decision)  at (13.0, 14.2) {Control Decision\\Mode};
 
 % Row: Live Session — concurrent runtime activities (y = 11.5)
 \node[uc] (uc-advance)   at (4.0,  11.5) {Advance\\Reading Item};
@@ -284,7 +284,7 @@ The researcher selects the active sensing source via \textit{Configure Sensing
 Mode}: a physical Tobii device for a real experiment, or mouse-cursor simulation
 when running a demonstration without hardware.
 \textit{Start Experiment Session} then simultaneously opens the participant
-reading interface on a second screen and activates the researcher control panel.
+reading interface on a second screen and activates the researcher console.
 This use case carries a \texttt{<<include>>} dependency on \textit{Perform
 Calibration}, enforcing that the calibration gate from UC-1 has been passed.
 
@@ -297,9 +297,9 @@ live gaze highlighting, and a rolling attention summary.
 
 The configured decision strategy processes the incoming gaze and eye-movement
 analysis signals.
-In automated mode it applies typographic changes directly; in hybrid mode it
-emits a proposal that the researcher acts on through \textit{Control Decision
-Automation}.
+In autonomous mode it applies typographic changes directly; in advisory mode it
+emits a proposal that the researcher approves or rejects through \textit{Control
+Decision Mode}.
 The researcher may also bypass the strategy entirely and apply an immediate change
 via \textit{Apply Manual Intervention}.
 In all cases the context-preservation mechanism anchors the participant's reading
@@ -332,7 +332,7 @@ For the remainder of the live session the provider executes \textit{Provide
 Decision or Analysis} on an ongoing basis.
 Commands it returns pass through the same parameter-validation and
 intervention-logging path as built-in strategies, and therefore appear
-identically in the session record and in the researcher's control panel.
+identically in the session record and on the researcher console.
 If the provider disconnects unexpectedly the session is not interrupted: the
 platform logs the event and continues with the mode that was active before the
 provider connected.
@@ -488,7 +488,7 @@ Each activity sits in the lane of the actor that performs it: the researcher
 prepares and operates the session, the participant performs the calibration and
 reads, and the system validates, senses, and adapts.
 The intervention activity straddles the researcher and system lanes because an
-intervention may be applied automatically by the system or proposed by the system
+intervention may be applied autonomously by the system or proposed by the system
 and approved by the researcher.
 The diagram stays at the analysis level, describing what happens, under what
 conditions, and by whom, rather than how the system is structured internally.%

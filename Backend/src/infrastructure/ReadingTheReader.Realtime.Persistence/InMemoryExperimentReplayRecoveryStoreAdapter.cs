@@ -44,7 +44,8 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 [],
                 [],
                 [],
-                null);
+                null,
+                []);
         }
 
         return ValueTask.CompletedTask;
@@ -85,6 +86,7 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
                 QuizLifecycleEvents = [.. session.QuizLifecycleEvents, .. (batch.QuizLifecycleEvents ?? []).Select(item => item.Copy())],
                 QuizFocusEvents = [.. session.QuizFocusEvents, .. (batch.QuizFocusEvents ?? []).Select(item => item.Copy())],
                 QuizSelectionEvents = [.. session.QuizSelectionEvents, .. (batch.QuizSelectionEvents ?? []).Select(item => item.Copy())],
+                TelemetrySamples = [.. session.TelemetrySamples, .. (batch.TelemetrySamples ?? []).Select(item => item.Copy())],
                 LatestTokenStats = batch.LatestTokenStats is null
                     ? session.LatestTokenStats
                     : batch.LatestTokenStats.ToDictionary(e => e.Key, e => e.Value.Copy())
@@ -167,6 +169,28 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         }
     }
 
+    public ValueTask<ExperimentTelemetryExport?> BuildTelemetryExportAsync(
+        Guid sessionId,
+        string completionSource,
+        long exportedAtUnixMs,
+        CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return ValueTask.FromResult<ExperimentTelemetryExport?>(null);
+            }
+
+            return ValueTask.FromResult<ExperimentTelemetryExport?>(ExperimentTelemetryExportFactory.Create(
+                session.InitialSnapshot,
+                session.LatestSnapshot,
+                completionSource,
+                exportedAtUnixMs,
+                session.TelemetrySamples.OrderBy(item => item.SequenceNumber).ToArray()));
+        }
+    }
+
     public ValueTask MarkCompletedAsync(
         Guid sessionId,
         ExperimentReplayExport completedExport,
@@ -236,5 +260,6 @@ public sealed class InMemoryExperimentReplayRecoveryStoreAdapter : IExperimentRe
         IReadOnlyList<FixationEventRecord> FixationEvents,
         IReadOnlyList<SaccadeEventRecord> SaccadeEvents,
         IReadOnlyList<StruggleSignalEventRecord> StruggleSignalEvents,
-        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats);
+        IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? LatestTokenStats,
+        IReadOnlyList<ExperimentTelemetrySampleRecord> TelemetrySamples);
 }
