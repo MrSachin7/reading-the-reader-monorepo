@@ -1,0 +1,103 @@
+% Master platform diagram (user-centric, illustrative), drawn in TikZ.
+% Visual language deliberately echoes Fig 2.1 (real screens, a tracker at the bottom of the
+% monitor, people, a cloud for external software) so it builds on what the reader already knows,
+% but shows OUR two-screen POV with more detail. This single canvas is the source for the
+% cropped section figures (see master-diagram-spec.md). Colours come from Setup/Settings.tex.
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  >={Latex[length=2.8mm]},
+  flow/.style={->, line width=1.1pt, navyblue},
+  ctrl/.style={->, line width=1.1pt, blue},
+  look/.style={->, dashed, line width=0.8pt, black!50},
+  ext/.style={<->, dashed, line width=1.1pt, dtured!85},
+  hub/.style={rectangle, rounded corners=7pt, draw=dtured, line width=1.4pt, fill=dtured!7,
+              align=center, text width=3.2cm, minimum height=2.1cm, inner sep=4pt},
+  store/.style={cylinder, shape border rotate=90, aspect=0.3, draw=navyblue, very thick,
+                fill=blue!8, align=center, text width=2.7cm, minimum height=1.2cm, inner sep=3pt, font=\scriptsize},
+  fl/.style={font=\scriptsize, align=center, text=navyblue, fill=white, inner sep=1.4pt},
+  cl/.style={font=\scriptsize, align=center, text=blue!70!black, fill=white, inner sep=1.4pt},
+  dl/.style={font=\scriptsize, align=center, text=dtured, fill=white, inner sep=1.4pt},
+  ll/.style={font=\scriptsize\itshape, align=center, text=black!55},
+  who/.style={font=\small\bfseries, align=center, text=navyblue},
+  % ---- a desktop monitor on a stand, drawn at the origin ----
+  pics/monitor/.style={code={
+    \draw[draw=navyblue!88, line width=1.3pt, fill=navyblue!88, rounded corners=4pt] (-1.9,-1.5) rectangle (1.9,1.5);
+    \fill[white] (-1.72,-0.95) rectangle (1.72,1.3);           % screen interior (thick lower bezel)
+    \fill[black!28] (-0.3,-1.5) rectangle (0.3,-2.0);          % stand neck
+    \draw[fill=black!28, draw=black!28, rounded corners=2pt] (-1.08,-2.18) rectangle (1.08,-1.97); % base
+  }},
+]
+% =================== participant station (left) ===================
+% person (bust, facing the screen)
+\begin{scope}[shift={(-11.7,-0.15)}]
+  \fill[navyblue!72] (-0.72,-1.15) .. controls (-0.72,-0.18) and (0.72,-0.18) .. (0.72,-1.15) -- cycle;
+  \fill[navyblue!72] (0,0.12) circle (0.46);
+  \begin{scope} \clip (0,0.12) circle (0.46); \fill[navyblue!92] (-0.5,0.2) rectangle (0.5,0.62); \end{scope}
+\end{scope}
+\node[who] at (-11.7,-1.55) {Participant};
+% monitor
+\pic at (-7.4,0.8) {monitor};
+% screen content: lines of text + the "a aa" typography cue + a gaze dot
+\foreach \y/\w in {1.78/3.0, 1.5/2.6, 0.7/3.0, 0.42/2.4, 0.14/2.7}{\fill[black!16] (-8.95,\y) rectangle (-8.95+\w*1,\y+0.12);}
+\node[font=\large] at (-8.4,1.12) {a}; \node[font=\Large\bfseries] at (-7.95,1.12) {a}; \node[font=\huge\bfseries] at (-7.4,1.12) {a};
+\fill[dtured] (-7.95,1.12) circle (0.09); \draw[dtured,opacity=0.5] (-7.95,1.12) circle (0.17);
+% Tobii eye tracker, at the bottom of the monitor (cf. Fig 2.1)
+\draw[fill=black!82, draw=black!82, rounded corners=1.5pt] (-8.8,0.18) rectangle (-6.0,0.40);
+\fill[red!65] (-8.2,0.29) circle (0.045); \fill[red!65] (-6.6,0.29) circle (0.045);
+\draw[look] (-7.4,-0.05) -- (-7.4,0.16); \node[ll, text width=2.8cm] at (-7.4,-1.75) {Tobii eye tracker\\(at the foot of the screen)};
+% gaze: the participant looks at the screen and is sensed
+\draw[look] (-11.0,0.25) -- (-9.0,0.95); \node[fl] at (-10.2,0.95) {gaze};
+
+% =================== researcher station (right) ===================
+\begin{scope}[shift={(11.7,-0.15)}]
+  \fill[navyblue!60] (-0.72,-1.15) .. controls (-0.72,-0.18) and (0.72,-0.18) .. (0.72,-1.15) -- cycle;
+  \fill[navyblue!60] (0,0.12) circle (0.46);
+  \begin{scope} \clip (0,0.12) circle (0.46); \fill[navyblue!85] (-0.5,0.2) rectangle (0.5,0.62); \end{scope}
+\end{scope}
+\node[who] at (11.7,-1.55) {Researcher};
+\pic at (7.4,0.8) {monitor};
+% console content: mirrored text + gaze heat overlay + control chips
+\foreach \y/\w in {1.78/2.9, 1.5/2.5}{\fill[black!16] (5.95,\y) rectangle (5.95+\w,\y+0.12);}
+\foreach \x/\y in {6.2/1.05, 6.55/1.05, 6.9/1.1, 6.5/0.78, 6.95/0.8}{\fill[orange!75] (\x,\y) rectangle (\x+0.18,\y+0.11);}
+\draw[rounded corners=2pt, fill=navyblue, draw=navyblue] (5.95,0.1) rectangle (6.95,0.36);
+\node[font=\tiny, text=white] at (6.45,0.23){Advisory};
+\node[font=\tiny, text=navyblue!80] at (7.55,0.23){Auto.};
+\draw[rounded corners=2pt, draw=dtured, fill=dtured!15] (8.0,0.1) rectangle (8.8,0.36);
+\node[font=\tiny, text=dtured] at (8.4,0.23){proposal};
+\draw[look] (11.0,0.25) -- (9.0,0.95); \node[fl] at (10.2,0.95) {operates};
+
+% =================== backend (centre) ===================
+\node[hub] (be) at (0,0.8) {{\bfseries Reading the Reader}\\{\bfseries backend}\\{\scriptsize (application core)}\\[3pt]{\scriptsize sensing $\cdot$ analysis $\cdot$}\\{\scriptsize decision $\cdot$ intervention}};
+
+% =================== external decision provider (cloud, top-right) ===================
+\begin{scope}[shift={(5.0,4.2)}]
+  \fill[dtured!16] (-0.95,-0.12) circle (0.55) (-0.2,0.28) circle (0.66) (0.62,0.1) circle (0.56) (0.05,-0.3) circle (0.52) (0.92,-0.22) circle (0.42);
+  \node[font=\scriptsize\bfseries, text=dtured] at (0,0.12){AI / rule-based};
+\end{scope}
+\node[dl, text width=3.6cm] at (5.0,3.25) {External decision provider\\\textmd{\itshape well-defined API $\cdot$ out of scope (C3)}};
+
+% =================== session record (cylinder, bottom) ===================
+\node[store] (rec) at (0,-2.75) {{\bfseries Session record}\\export $\cdot$ replay $\cdot$ re-import};
+
+% =================== flows ===================
+\draw[flow] (-5.5,0.95) to[bend left=6] (be.west);                 \node[fl] at (-3.5,1.35) {gaze};
+\draw[flow] (be.north west) to[bend left=18] (-5.5,2.25);          \node[fl] at (-3.5,2.5) {adapted text};
+\draw[flow] (be.east) to[bend left=6] (5.5,1.1);                   \node[fl] at (3.5,1.5) {live mirror};
+\draw[ctrl] (5.5,0.45) to[bend left=6] (be.south east);           \node[cl] at (3.5,0.0) {control};
+\draw[ext]  (be.north east) to[bend left=10] (4.1,3.7);           \node[dl] at (3.0,2.65) {context /\\ proposals};
+\draw[flow] (be.south) -- (rec.north);                            \node[fl] at (0.55,-1.55) {writes};
+
+% =================== legend ===================
+\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-12.4,-3.55) {Legend (an arrowhead shows who initiates):};
+\draw[flow] (-12.4,-4.05) -- (-11.8,-4.05); \node[anchor=west,font=\scriptsize] at (-11.7,-4.05){real-time loop (gaze + adaptation)};
+\draw[ctrl] (-6.7,-4.05) -- (-6.1,-4.05);   \node[anchor=west,font=\scriptsize] at (-6.0,-4.05){researcher control};
+\draw[look] (-2.0,-4.05) -- (-1.4,-4.05);   \node[anchor=west,font=\scriptsize] at (-1.3,-4.05){looks at / operates the screen};
+\draw[ext]  (3.6,-4.05) -- (4.2,-4.05);     \node[anchor=west,font=\scriptsize] at (4.3,-4.05){external API seam (out of scope, C3)};
+\end{tikzpicture}%
+}
+\caption{The Reading the Reader platform as a researcher--participant adaptive loop. The participant reads on one screen while a Tobii eye tracker at the foot of that screen senses their gaze; the backend turns gaze into oculomotor events, adapts the text, and mirrors the gaze and analysis to the researcher's screen, where the session is steered (manual, advisory, or autonomous). An external decision provider may propose interventions through a defined API, and every session is written to a reproducible record.}
+\label{fig:design-platform-master}
+\end{figure}

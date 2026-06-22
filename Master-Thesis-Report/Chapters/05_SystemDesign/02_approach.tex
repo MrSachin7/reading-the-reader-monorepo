@@ -4,172 +4,35 @@
 
 The drivers of \cref{sec:design-drivers} specify the forces the architecture must reconcile, but not the form it should take.
 This section fixes that form in two steps, moving from the system in outline to the style that governs its internal structure, before any single concern is opened in \cref{sec:design-modules}.
-We first present the platform at two levels of abstraction, the system in its environment and the runtime containers it comprises, and then name and justify the architectural style that the dominant driver D1 demands.
+We first present the platform at two levels of abstraction, the system in its environment and the runtime parts beneath it, and then name and justify the architectural style that the dominant driver D1 demands.
 
 At the highest level of abstraction the platform is a single, researcher-operated system that mediates a participant's reading session, shown in its environment in \cref{fig:design-context}.
-Four external actors surround it (\cref{sec:stakeholders}): the researcher operates the session, the participant reads, the eye tracker (a Tobii device in this work) supplies the gaze signal, and an external decision provider supplies the adaptive intelligence that this thesis treats as out of scope (C3, \cref{sec:constraints}).
-We adopt the C4 model \cite{c4model} for this view and the next, because its context and container levels match the two altitudes at which we wish to reveal the system.
+The platform sits between the two people it serves: the participant, who reads, and the researcher, who operates and monitors the session through a separate console (\cref{sec:stakeholders}).
+Two further elements meet the platform at its boundary rather than forming part of its core: the eye tracker (a Tobii device in this work) is the sensing interface that supplies the gaze signal, and an external decision provider may attach through a well-defined API to supply the adaptive intelligence that this thesis treats as out of scope (C3, \cref{sec:constraints}).
+We frame this outermost view as a system context in the sense of the C4 model \cite{c4model}; the runtime parts beneath it and the internal module structure are opened in the sections that follow.
 This outermost view fixes the system boundary, and with it the division of responsibility that the rest of the chapter elaborates: the platform owns the capture of gaze, its analysis, the execution of interventions, and the session record, whereas it deliberately owns neither the internals of the eye-tracking hardware nor the decision intelligence behind the provider seam.
 
 \begin{figure}[htbp]
 \centering
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[
-  person/.style={rectangle, rounded corners=7pt, draw=navyblue, very thick, fill=navyblue!12, align=center, text width=3.1cm, minimum height=1.35cm, inner sep=5pt},
-  system/.style={rectangle, rounded corners=9pt, draw=dtured, very thick, fill=dtured!10, align=center, text width=4.6cm, minimum height=2.0cm, inner sep=6pt},
-  extsys/.style={rectangle, rounded corners=7pt, draw=black!55, very thick, dashed, fill=grey!40, align=center, text width=3.4cm, minimum height=1.35cm, inner sep=5pt},
-  rel/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
-  link/.style={->, very thick, black!65},
-  bilink/.style={<->, very thick, black!65},
-  extlink/.style={<->, very thick, dashed, dtured!80},
-  pics/icperson/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[navyblue,thick] (0,0) circle (0.27);
-    \fill[navyblue] (0,0.08) circle (0.085);
-    \fill[navyblue] (-0.13,-0.18) .. controls (-0.13,-0.02) and (0.13,-0.02) .. (0.13,-0.18) -- cycle;}},
-  pics/iceye/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
-    \draw[black!70] (-0.17,0) .. controls (-0.06,0.13) and (0.06,0.13) .. (0.17,0) .. controls (0.06,-0.13) and (-0.06,-0.13) .. (-0.17,0) -- cycle;
-    \fill[black!70] (0,0) circle (0.05);}},
-  pics/iccloud/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
-    \fill[black!45] (-0.13,-0.09) rectangle (0.12,-0.02);
-    \fill[black!45] (-0.1,-0.02) circle (0.08);
-    \fill[black!45] (0.07,-0.02) circle (0.07);
-    \fill[black!45] (-0.01,0.05) circle (0.09);}},
-  pics/icplatform/.style={code={
-    \fill[white] (0,0) circle (0.30); \draw[dtured,thick] (0,0) circle (0.30);
-    \draw[dtured,thick] (-0.16,-0.09) rectangle (0.16,0.13);
-    \draw[dtured] (-0.11,0.06) -- (0.11,0.06);
-    \draw[dtured] (-0.11,0.005) -- (0.05,0.005);
-    \draw[dtured,thick] (-0.06,-0.15) -- (0.06,-0.15);}},
-]
-\node[system] (plat) at (0,0) {{\bfseries Reading the Reader Platform}\\[3pt]\footnotesize Researcher-operated adaptive reading system};
-\node[person] (res)  at (-5.8, 2.8) {{\bfseries Researcher}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Operates sessions, monitors via the console};
-\node[person] (par)  at ( 5.8, 2.8) {{\bfseries Participant}\\[1pt]{\scriptsize\itshape Person}\\[1pt]\footnotesize Reads the presented text};
-\node[extsys] (tob)  at (-5.8,-2.8) {{\bfseries Eye Tracker}\\[1pt]{\scriptsize\itshape External device, e.g.\ Tobii}};
-\node[extsys] (prov) at ( 5.8,-2.8) {{\bfseries External Decision\\Provider}\\[1pt]{\scriptsize\itshape External system}};
-\draw[link]    (res)  -- (plat) node[rel, midway] {operates,\\ monitors};
-\draw[bilink]  (plat) -- (par)  node[rel, midway] {presents\\ adapted text};
-\draw[link]    (tob)  -- (plat) node[rel, midway] {streams\\ raw gaze};
-\draw[extlink] (plat) -- (prov) node[rel, midway] {requests\\ decisions};
-\pic at (plat.north west) {icplatform};
-\pic at (res.north west)  {icperson};
-\pic at (par.north west)  {icperson};
-\pic at (tob.north west)  {iceye};
-\pic at (prov.north west) {iccloud};
-\end{tikzpicture}%
-}
-\caption{System context for the Reading the Reader platform, showing the researcher-operated system and the four external actors it mediates between.}
+\includesvg[width=\linewidth]{Chapters/05_SystemDesign/architecture_overview}
+\caption{Overview of the Reading the Reader platform as a researcher--participant adaptive loop. The participant reads on one screen while a Tobii eye tracker at the foot of that screen senses gaze; the backend turns the gaze stream into oculomotor events, adapts the participant's text, and mirrors the gaze and derived analysis to the researcher's console, where the session is steered and proposed interventions are approved or rejected. An external decision provider may attach through a well-defined API, to which the platform sends gaze and context and from which it receives intervention commands (out of scope, C3); every session is written to a reproducible record.}
 \label{fig:design-context}
 \end{figure}
 
-Resolving the platform one level further reveals the runtime containers it comprises, shown in \cref{fig:design-containers}.
-The researcher's console and the participant's reading surface are presented as two distinct surfaces of a single web front-end rather than a single shared screen, so that the participant sees only the text while the researcher retains a mirror of that view together with the controls around it (D6).
-A backend application host carries the core logic and mediates between the two surfaces, the hardware, and the store.
-Two channels connect the front-ends to the host: a request and response channel carries discrete operator commands and setup data, whereas a separate high-frequency channel carries the live gaze stream, a separation we introduce here and justify against the responsiveness budget D2 in \cref{sec:design-loop}.
+Beneath this overview, the platform resolves into a small set of runtime parts whose relationships the rest of the chapter elaborates.
+The researcher's console and the participant's reading surface are two distinct surfaces of a single web front-end rather than a shared screen, so that the participant sees only the text while the researcher retains a mirror of that view together with the controls around it (D6).
+Neither surface communicates with the other: both talk only to the backend (the application core), which carries the core logic and mediates between the two surfaces, the eye tracker, and the store.
+Two channels connect the front-end to the backend: a request and response channel carries discrete operator commands and setup data, whereas a separate high-frequency channel carries the live gaze stream, a separation we introduce here and justify against the responsiveness budget D2 in \cref{sec:design-loop}.
 Session state is written to a local, file-backed store rather than an external database, a choice we introduce here and defend on grounds of reproducibility and scope in \cref{sec:design-data,sec:design-decisions}.
-The external decision provider attaches through a single, well-defined seam rather than being embedded in the host, which is the structural expression of the out-of-scope constraint C3.
-The concrete technologies named on these containers (a Next.js and React front-end, an ASP.NET Core backend) are justified, together with the alternatives considered, in \cref{sec:technology-selection}.
+The external decision provider attaches through a single, well-defined API rather than being embedded in the backend, which is the structural expression of the out-of-scope constraint C3.
+The concrete technologies (a Next.js and React front-end, an ASP.NET Core backend) are justified, together with the alternatives considered, in \cref{sec:technology-selection}.
 
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
-\begin{figure}[htbp]
-\centering
-\resizebox{0.96\linewidth}{!}{%
-\begin{tikzpicture}[
-  >={Stealth[length=2.4mm]},
-  % --- node types: each kind of element gets its own shape ---
-  person/.style={rectangle, rounded corners=10pt, draw=navyblue, very thick, fill=navyblue!10, align=center, text width=2.5cm, minimum height=1.1cm, inner sep=3pt},
-  container/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=blue!14, align=center, text width=5.4cm, minimum height=1.3cm, inner sep=5pt},
-  store/.style={cylinder, shape border rotate=90, aspect=0.28, draw=navyblue, very thick, fill=blue!8, align=center, text width=2.3cm, minimum height=1.5cm, inner sep=3pt},
-  extsys/.style={rectangle, rounded corners=2pt, draw=black!55, very thick, dashed, fill=grey!35, align=center, text width=3.0cm, minimum height=1.1cm, inner sep=3pt},
-  rel/.style={font=\scriptsize, align=center, text=black!75, fill=white, inner sep=1.5pt},
-  relkey/.style={font=\scriptsize\bfseries, align=center, text=navyblue, fill=white, inner sep=1.5pt},
-  % --- relationship styles: navy = the two architectural channels; grey = incidental I/O; dashed = external seam ---
-  chan/.style={->, very thick, navyblue},
-  chanbi/.style={<->, very thick, navyblue},
-  flow/.style={->, thick, black!55},
-  extseam/.style={<->, very thick, dashed, dtured!80},
-  % --- icon badges (pure TikZ, drawn on the north-west corner of each node) ---
-  pics/icperson/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[navyblue,thick] (0,0) circle (0.27);
-    \fill[navyblue] (0,0.08) circle (0.085);
-    \fill[navyblue] (-0.13,-0.18) .. controls (-0.13,-0.02) and (0.13,-0.02) .. (0.13,-0.18) -- cycle;}},
-  pics/icmonitor/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[navyblue,thick] (0,0) circle (0.27);
-    \draw[navyblue,thick] (-0.15,-0.05) rectangle (0.15,0.13);
-    \draw[navyblue] (0,-0.05) -- (0,-0.13); \draw[navyblue,thick] (-0.08,-0.13) -- (0.08,-0.13);}},
-  pics/icserver/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[navyblue,thick] (0,0) circle (0.27);
-    \draw[navyblue,thick] (-0.15,0.01) rectangle (0.15,0.13);
-    \draw[navyblue,thick] (-0.15,-0.14) rectangle (0.15,-0.02);
-    \fill[navyblue] (-0.1,0.07) circle (0.02); \fill[navyblue] (-0.1,-0.08) circle (0.02);}},
-  pics/iceye/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
-    \draw[black!70] (-0.17,0) .. controls (-0.06,0.13) and (0.06,0.13) .. (0.17,0) .. controls (0.06,-0.13) and (-0.06,-0.13) .. (-0.17,0) -- cycle;
-    \fill[black!70] (0,0) circle (0.05);}},
-  pics/iccloud/.style={code={
-    \fill[white] (0,0) circle (0.27); \draw[black!55,thick] (0,0) circle (0.27);
-    \fill[black!45] (-0.13,-0.09) rectangle (0.12,-0.02);
-    \fill[black!45] (-0.1,-0.02) circle (0.08);
-    \fill[black!45] (0.07,-0.02) circle (0.07);
-    \fill[black!45] (-0.01,0.05) circle (0.09);}},
-]
-% system boundary (drawn first, behind the nodes), with a title tab on the top edge
-\draw[dashed, rounded corners=5pt, draw=dtured!75, very thick] (-2.9,-3.0) rectangle (8.6,5.4);
-\node[anchor=center, font=\footnotesize\bfseries, text=white, fill=dtured, rounded corners=2pt, inner sep=3pt] at (1.0,5.4) {Reading the Reader Platform};
-% containers (inside the boundary)
-\node[container] (fe) at (1.0, 3.95) {{\bfseries Web Frontend}\\{\scriptsize[Container: Next.js / React]}\\[2pt]\footnotesize Researcher console \& participant reading surface (second screen)};
-\node[container] (be) at (1.0, -0.75) {{\bfseries Backend Application Host}\\{\scriptsize[Container: ASP.NET Core]}\\[2pt]\footnotesize Sensing, analysis, decision \& intervention core behind ports};
-\node[store]     (st) at (6.6, -0.75) {{\bfseries Session Store}\\[1pt]{\scriptsize local filesystem}\\[2pt]\footnotesize Checkpoints \& exports};
-% "two stacked surfaces" hint behind the frontend card (background layer, so it sits behind)
-\begin{scope}[on background layer]
-  \draw[rounded corners=3pt, draw=navyblue, thick, fill=blue!9] ($(fe.south west)+(0.2,0.2)$) rectangle ($(fe.north east)+(0.2,0.2)$);
-\end{scope}
-% persons (outside boundary, above the top edge)
-\node[person] (res) at (-1.7, 6.6) {{\bfseries Researcher}\\{\scriptsize\itshape Person}};
-\node[person] (par) at ( 6.8, 6.6) {{\bfseries Participant}\\{\scriptsize\itshape Person}};
-% external systems (outside boundary, below the bottom edge)
-\node[extsys] (tob)  at (-1.9,-4.6) {{\bfseries Eye Tracker}\\{\scriptsize\itshape External device, e.g.\ Tobii}};
-\node[extsys] (prov) at ( 6.8,-4.6) {{\bfseries External Decision Provider}\\{\scriptsize\itshape External system}};
-% persons use the frontend
-\draw[flow] (res.south) -- (fe.north west) node[rel, pos=0.45, left] {operates};
-\draw[flow] (par.south) -- (fe.north east) node[rel, pos=0.4, sloped] {reads};
-% frontend <-> backend, two channels (the architecturally significant ones, in navy)
-\draw[chan]   ([xshift=-15mm]fe.south) -- ([xshift=-15mm]be.north) node[relkey, midway] {commands\\\& setup};
-\draw[chanbi] ([xshift=15mm]fe.south)  -- ([xshift=15mm]be.north)  node[relkey, midway] {gaze \&\\live updates};
-% backend -> store
-\draw[flow] (be.east) -- (st.west) node[rel, midway, above] {checkpoints\\\& exports};
-% backend <- tobii
-\draw[flow] (tob.north) -- (be.south west) node[rel, near end, sloped] {raw gaze};
-% backend <-> external provider (the out-of-scope seam, dashed)
-\draw[extseam] (be.south east) -- (prov.north) node[relkey, near end, sloped, text=dtured] {decision\\requests};
-% --- legend: decode the relationship styles and carry the protocol tags ---
-\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-2.7,-6.35) {Relationships};
-\draw[chan]    (-2.7,-6.8) -- (-2.1,-6.8); \node[anchor=west, font=\scriptsize, align=left] at (-2.0,-6.8) {REST \texttt{/api}};
-\draw[chanbi]  ( 0.7,-6.8) -- ( 1.3,-6.8); \node[anchor=west, font=\scriptsize, align=left] at ( 1.4,-6.8) {WebSocket \texttt{/ws}};
-\draw[extseam] ( 4.5,-6.8) -- ( 5.1,-6.8); \node[anchor=west, font=\scriptsize, align=left] at ( 5.2,-6.8) {external seam (C3)};
-\draw[rounded corners=2pt, draw=black!25] (-2.9,-7.2) rectangle (8.6,-6.05);
-% icon badges (drawn last so they sit cleanly on top of the node corners)
-\pic at (fe.north west)  {icmonitor};
-\pic at (be.north west)  {icserver};
-\pic at (res.north west) {icperson};
-\pic at (par.north west) {icperson};
-\pic at (tob.north west)  {iceye};
-\pic at (prov.north west) {iccloud};
-\end{tikzpicture}%
-}
-\caption{Runtime container view of the platform, showing the two front-end surfaces, the backend host, the two communication channels (REST for operator commands and a WebSocket for the live gaze stream), the local session store, and the dashed external-provider seam. Distinct shapes mark the kind of each element (actors, containers, the file-backed store, and external systems), and the legend decodes the relationship styles.}
-\label{fig:design-containers}
-\end{figure}
-
-\Cref{fig:design-containers} named the two surfaces; \cref{fig:design-twoscreen} shows what each one presents.
+The two front-end surfaces differ in what they present.
 The participant's reading surface shows only the text, whereas the researcher's console mirrors that text and overlays the live gaze together with the fixation heat map and saccades that the core derives, so that the researcher sees not merely where the participant looks but how they read.
 The same console carries the controls that steer the session, the choice between advisory and autonomous operation and the approval of individual interventions, while an external decision provider may attach through the out-of-scope seam.
 This pairing of a clean reading surface for the participant with an analytic, controllable console for the researcher is the platform's central user-facing structure, whose behaviour in motion and whose control by the researcher are taken up in \cref{sec:design-loop,sec:design-extensibility}.
 
-\input{Chapters/05_SystemDesign/two-screen-hero.tikz}
-
-The internal structure of the backend host follows one organising principle, namely that dependencies point inward, from volatile detail towards stable abstraction.
+The internal structure of the backend follows one organising principle, namely that dependencies point inward, from volatile detail towards stable abstraction.
 Hardware access, transport, persistence, and presentation are treated as replaceable detail that depends on the core through abstractions, while the core itself depends on nothing outward \cite{martin2017cleanarch, martin1996dip}.
 Expressed in the vocabulary of ports and adapters, each external concern meets the core at a port, an interface owned by the core, and each concrete technology is an adapter that the infrastructure supplies behind that port \cite{cockburn2005hexagonal}.
 This is one idea seen from two angles, the dependency rule describing the direction and the ports-and-adapters metaphor describing the seam, and we use both terms in the sections that follow.

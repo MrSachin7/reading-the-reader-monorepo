@@ -1,0 +1,38 @@
+%% The capture-and-restore lifecycle that preserves the reader's place across an intervention reflow.
+%% Render to PDF like the other Ch.6 figures:  mmdc -i context-preservation.mmd -o context-preservation.pdf
+sequenceDiagram
+    autonumber
+    participant D as Reader DOM<br/>(viewport + tokens)
+    participant C as Anchor capture<br/>(every 120 ms)
+    participant V as Intervention commit<br/>(boundary gate)
+    participant R as Restore<br/>(locate, re-align, classify)
+    participant B as Session log<br/>(backend)
+
+    loop while reading, every 120 ms
+        C->>D: measureAnchor()
+        D-->>C: anchor { source, ids, viewportOffsetPx, t }
+    end
+    Note over C: newest anchor kept in latestAnchorRef
+
+    V->>V: hold a layout change until its commit boundary
+    V->>R: intervention committed (reflow lands)
+    R->>R: choose mode = layout-affecting ? semantic-restart : offset-preserve
+
+    alt appearance-only change at a frozen boundary
+        R->>B: report preserved (scroll-only, no reflow to compensate)
+    else reflow must be compensated
+        R->>D: locate anchor (sentence -> token -> block, or committed sentence/block)
+        alt anchor located
+            R->>D: scroll located element back to the captured offset
+            D-->>R: residual anchorErrorPx
+            R->>R: classify preserved / degraded (mode + source thresholds)
+            opt semantic restart with highlight enabled
+                R->>D: flash the restored sentence (~3 s)
+            end
+        else anchor missing or stale
+            R->>D: restore scroll position only
+            R->>R: degraded, or failed if no fresh fallback exists
+        end
+        R->>B: report { status, anchorErrorPx, anchorSource, viewportDeltaPx, ... }
+    end
+    B->>B: append to session log, checkpoint, and export (FR9.3)

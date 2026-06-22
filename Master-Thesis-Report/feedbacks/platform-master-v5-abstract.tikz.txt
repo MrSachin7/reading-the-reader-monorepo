@@ -1,0 +1,134 @@
+% Master platform diagram (user-centric), drawn in TikZ.
+% This single canvas is the source for the cropped Fig 5.1 (context), Fig 5.3
+% (two-screen hero) and Fig 5.5 (cross-session). Colours come from Setup/Settings.tex
+% (navyblue, dtured, blue, grey, yellow, orange).
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, backgrounds}
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  >={Stealth[length=2.6mm]},
+  human/.style={align=center, font=\small\bfseries, text=navyblue},
+  screen/.style={rectangle, rounded corners=3pt, draw=navyblue, very thick, fill=white},
+  rolelbl/.style={align=center, font=\scriptsize\bfseries, text=navyblue},
+  subcap/.style={align=center, font=\scriptsize\itshape, text=black!60},
+  core/.style={rectangle, rounded corners=6pt, draw=dtured, very thick, fill=dtured!7,
+               align=center, text width=3.0cm, minimum height=2.0cm, inner sep=5pt},
+  device/.style={rectangle, rounded corners=2pt, draw=navyblue, very thick, fill=blue!16,
+                 align=center, text width=2.7cm, minimum height=1.0cm, inner sep=3pt, font=\scriptsize},
+  store/.style={cylinder, shape border rotate=90, aspect=0.28, draw=navyblue, very thick,
+                fill=blue!8, align=center, text width=2.4cm, minimum height=1.15cm, inner sep=3pt, font=\scriptsize},
+  ext/.style={rectangle, rounded corners=3pt, draw=dtured!80, very thick, dashed, fill=grey!22,
+              align=center, text width=3.4cm, minimum height=1.2cm, inner sep=4pt, font=\scriptsize},
+  real/.style={->, very thick, navyblue},
+  ctrl/.style={->, very thick, blue},
+  inc/.style={->, thick, black!50},
+  seam/.style={<->, very thick, dashed, dtured!85},
+  faint/.style={->, thick, dashed, black!45},
+  rl/.style={font=\scriptsize, align=center, text=navyblue, fill=white, inner sep=1.3pt},
+  cl/.style={font=\scriptsize, align=center, text=blue!70!black, fill=white, inner sep=1.3pt},
+  dl/.style={font=\scriptsize, align=center, text=dtured, fill=white, inner sep=1.3pt},
+  fnt/.style={font=\scriptsize\itshape, align=center, text=black!55, fill=white, inner sep=1.3pt},
+  pics/human/.style={code={
+    \draw[navyblue, very thick, fill=navyblue!12] (0,0.62) circle (0.40);
+    \draw[navyblue, very thick, fill=navyblue!12] (-0.74,-1.12) .. controls (-0.74,-0.06) and (0.74,-0.06) .. (0.74,-1.12) -- cycle;}},
+  pics/eye/.style={code={
+    \draw[navyblue,thick] (-0.28,0) .. controls (-0.1,0.22) and (0.1,0.22) .. (0.28,0)
+                          .. controls (0.1,-0.22) and (-0.1,-0.22) .. (-0.28,0) -- cycle;
+    \fill[navyblue] (0,0) circle (0.09);}},
+  pics/cloud/.style={code={
+    \fill[dtured!50] (-0.2,-0.1) rectangle (0.18,0.0);
+    \fill[dtured!50] (-0.13,0.0) circle (0.12);
+    \fill[dtured!50] (0.1,0.0) circle (0.1);
+    \fill[dtured!50] (-0.02,0.08) circle (0.13);}},
+  pics/dots/.style={code={
+    \fill[white] (0,0) circle (0.05); \fill[white] (0.16,0) circle (0.05); \fill[white] (0.32,0) circle (0.05);}},
+]
+% ---------- platform boundary (drawn behind everything) ----------
+\begin{scope}[on background layer]
+  \draw[rounded corners=10pt, draw=dtured!65, very thick, dash pattern=on 4pt off 2pt, fill=dtured!3]
+    (-9.8,-1.8) rectangle (9.8,3.6);
+\end{scope}
+\node[font=\footnotesize\bfseries, text=white, fill=dtured, rounded corners=2pt, inner sep=3pt]
+  at (0,3.6) {The Reading the Reader platform};
+
+% ---------- the two humans (outside the platform, focal) ----------
+\pic at (-12.6,0.9) {human}; \node[human] at (-12.6,-0.95) {Participant};
+\pic at ( 12.6,0.9) {human}; \node[human] at ( 12.6,-0.95) {Researcher};
+
+% ---------- participant reading surface ----------
+\draw[screen] (-8.0,0.7) rectangle (-5.0,3.0);
+\fill[navyblue] (-8.0,2.62) rectangle (-5.0,3.0);
+\pic at (-7.8,2.81) {dots};
+\foreach \y/\w in {2.28/2.6, 2.02/2.3, 1.76/2.6, 1.5/2.0, 1.24/1.5}
+  {\fill[black!16] (-7.75,\y) rectangle (-7.75+\w,\y+0.1);}
+\fill[dtured] (-6.6,1.81) circle (0.08); \draw[dtured,opacity=0.5] (-6.6,1.81) circle (0.15);
+\node[rolelbl] at (-6.5,0.45) {Reading surface};
+\node[subcap]  at (-6.5,0.15) {text only};
+
+% ---------- researcher console ----------
+\draw[screen] (5.0,0.7) rectangle (8.0,3.0);
+\fill[navyblue] (5.0,2.62) rectangle (8.0,3.0);
+\pic at (5.2,2.81) {dots};
+\foreach \y/\w in {2.28/2.4, 2.04/2.0}{\fill[black!16] (5.25,\y) rectangle (5.25+\w,\y+0.1);}
+\foreach \x/\y in {5.45/1.62, 5.75/1.62, 6.05/1.66, 5.72/1.4, 6.1/1.42}
+  {\fill[orange!75] (\x,\y) rectangle (\x+0.16,\y+0.1);}
+\draw[rounded corners=2pt, draw=navyblue, fill=navyblue!10] (5.28,0.92) rectangle (7.78,1.26);
+\draw[rounded corners=2pt, fill=navyblue, draw=navyblue] (5.33,0.96) rectangle (6.26,1.22);
+\node[font=\tiny, text=white] at (5.79,1.09) {Advisory};
+\node[font=\tiny, text=navyblue] at (6.5,1.09) {Auto.};
+\draw[rounded corners=2pt, draw=dtured, fill=dtured!15] (6.74,0.96) rectangle (7.74,1.22);
+\node[font=\tiny, text=dtured] at (7.24,1.09) {proposal};
+\node[rolelbl] at (6.5,0.45) {Console};
+\node[subcap] at (6.5,0.13) {mirror + overlay + controls};
+
+% ---------- backend (application core) ----------
+\node[core] (be) at (0,1.7) {{\bfseries Backend}\\{\scriptsize (application core)}\\[4pt]\scriptsize sensing / analysis /\\ decision / intervention};
+
+% ---------- eye tracker: the sensing interface, straddling the boundary ----------
+\node[device] (eye) at (-9.8,-0.05) {{\bfseries Eye tracker}\\\emph{sensing interface}\\(Tobii / mouse)};
+\pic at (-9.8,0.78) {eye};
+
+% ---------- session record + external decision provider (below) ----------
+\node[store] (rec)  at (0,-3.3) {{\bfseries Session record}\\sealed, versioned};
+\node[ext]   (prov) at (5.7,-3.3) {{\bfseries External Decision Provider}\\well-defined API, out of scope (C3)};
+\pic at (prov.north west) {cloud};
+
+% ================= flows (labels placed at explicit, open coordinates) =================
+% participant reads the surface; the eye tracker senses the participant
+\draw[inc]  (-11.6,1.3) to[bend left=7] (-8.0,2.2);     \node[rl] at (-9.5,2.18) {reads};
+\draw[real] (-11.7,0.45) to[bend right=7] (eye.west);
+% eye tracker -> backend (gaze enters the platform)
+\draw[real] (eye.east) to[bend right=10] (be.south west); \node[rl] at (-5.2,0.0) {gaze};
+% backend -> participant reading surface
+\draw[real] ([yshift=2pt]be.west) -- (-5.0,1.95);          \node[rl] at (-3.4,2.18) {adapted text};
+% backend <-> researcher console (two arrows, clearly fanned; labels in the gap)
+\draw[real] ([yshift=8pt]be.east) to[bend left=7] (5.0,2.35);  \node[rl] at (3.3,2.42) {live mirror};
+\draw[ctrl] (5.0,1.15) to[bend left=7] ([yshift=-8pt]be.east); \node[cl] at (3.3,1.18) {control};
+% researcher operates the console (kept on the far-right periphery)
+\draw[inc]  (11.7,1.05) to[bend right=7] (8.0,2.15);      \node[rl] at (10.3,1.98) {operates};
+% backend -> session record (straight down)
+\draw[inc]  (be.south) -- (rec.north);                    \node[rl] at (0.5,-1.5) {writes};
+% backend <-> external decision provider (the API seam)
+\draw[seam] (be.south east) to[bend left=10] (prov.north west); \node[dl, align=center] at (3.05,-1.05) {context /\\ proposals};
+% (No direct provider->console arrow: the provider talks to the backend through the API
+%  seam, and its proposals reach the researcher via the backend->console mirror and surface
+%  as the "proposal" chip on the console, resolved by the Advisory/Autonomous toggle.)
+% cross-session: record exported, used to fine-tune the provider offline
+\draw[faint] (rec.east) -- (prov.west);                   \node[fnt, align=center] at (2.85,-3.02) {export,\\ fine-tune};
+
+% ================= legend =================
+\node[anchor=west, font=\scriptsize\itshape, text=black!70] at (-12.9,-4.65)
+  {Legend (an arrowhead shows who initiates):};
+% row 1
+\draw[real] (-12.9,-5.15) -- (-12.3,-5.15); \node[anchor=west,font=\scriptsize] at (-12.2,-5.15){real-time loop (gaze + adaptation)};
+\draw[ctrl] (-6.6,-5.15) -- (-6.0,-5.15);   \node[anchor=west,font=\scriptsize] at (-5.9,-5.15){researcher control};
+\draw[inc]  (-1.4,-5.15) -- (-0.8,-5.15);   \node[anchor=west,font=\scriptsize] at (-0.7,-5.15){supporting I/O (reads, operates, writes)};
+% row 2
+\draw[seam]  (-12.9,-5.7) -- (-12.3,-5.7); \node[anchor=west,font=\scriptsize] at (-12.2,-5.7){external API seam (out of scope, C3)};
+\draw[faint] (-6.6,-5.7) -- (-6.0,-5.7);   \node[anchor=west,font=\scriptsize] at (-5.9,-5.7){cross-session, offline (record $\to$ provider)};
+\end{tikzpicture}%
+}
+\caption{The Reading the Reader platform as a researcher--participant adaptive loop. The eye tracker is the sensing interface between the participant and the platform; the backend adapts the participant's text and mirrors the gaze and the derived analysis (fixations, saccades, regressions) to the researcher console, where the session is steered. An external decision provider may propose interventions through a defined API, which the researcher approves in advisory mode or which apply directly in autonomous mode.}
+\label{fig:design-platform-master}
+\end{figure}

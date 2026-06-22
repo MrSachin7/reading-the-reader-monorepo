@@ -23,14 +23,15 @@ Intervention is the sink: it validates a proposal and then commits a context-pre
   port/.style={rectangle, rounded corners=2pt, draw=dtured, very thick, fill=dtured!12, align=center, text width=1.7cm, minimum height=0.8cm, inner sep=2pt, font=\small},
   impl/.style={rectangle, rounded corners=2pt, draw=black!55, thick, fill=grey!30, align=center, text width=2.4cm, minimum height=0.7cm, inner sep=2pt, font=\scriptsize},
   inlink/.style={->, thick, black!60},
+  cyc/.style={->, semithick, navyblue!75, shorten >=1pt, shorten <=1pt},
   note/.style={font=\scriptsize\itshape, text=black!70, align=center},
 ]
 % outer hexagon: the application core boundary (ports sit on it)
 \draw[hexcore] (-1.5,2.6) -- (1.5,2.6) -- (3.0,0) -- (1.5,-2.6) -- (-1.5,-2.6) -- (-3.0,0) -- cycle;
 % inner hexagon: the domain
 \draw[hexdom] (-0.65,1.13) -- (0.65,1.13) -- (1.3,0) -- (0.65,-1.13) -- (-0.65,-1.13) -- (-1.3,0) -- cycle;
-\node[font=\small\bfseries] at (0,0) {Domain};
-\node[note] at (0,1.78) {Reading Runtime\\(Application)};
+\node[font=\small\bfseries, align=center] at (0,0) {Application\\core};
+\node[note] at (0,1.82) {domain + reading runtime};
 % ports, sitting on the hexagon boundary
 \node[port] (psen) at (-3.0, 0)  {{\bfseries Sensing}\\{\scriptsize port (1)}};
 \node[port] (pana) at (0, 2.6)   {{\bfseries Analysis}\\{\scriptsize port (2)}};
@@ -40,9 +41,9 @@ Intervention is the sink: it validates a proposal and then commits a context-pre
 \node[impl] (tobii)  at (-6.3, 0.6)  {Tobii adapter};
 \node[impl] (sims)   at (-6.3,-0.6)  {Simulated (mouse) source};
 \node[impl] (anab)   at (-1.8, 4.4) {Built-in strategy};
-\node[impl] (anae)   at ( 1.8, 4.4) {External strategy};
+\node[impl] (anae)   at ( 1.8, 4.4) {External analysis provider};
 \node[impl] (decr)   at (6.3, 1.0)  {Rule-based strategy};
-\node[impl] (dece)   at (6.3,-1.0)  {External provider};
+\node[impl] (dece)   at (6.3,-1.0)  {External decision provider};
 \node[impl] (intb)   at (-1.8,-4.4) {Built-in modules};
 \node[impl] (inte)   at ( 1.8,-4.4) {Additional modules};
 % inward dependency arrows (adapters depend on the ports)
@@ -54,11 +55,16 @@ Intervention is the sink: it validates a proposal and then commits a context-pre
 \draw[inlink] (dece.west)   -- (pdec.east);
 \draw[inlink] (intb.north)  -- (pint.south);
 \draw[inlink] (inte.north)  -- (pint.south);
-% dependency-direction legend
-\node[note, align=left, anchor=west] at (-6.7,-3.5) {Arrows show the direction of\\dependency: inward, towards\\the core that owns the ports.};
+% adaptive-cycle order between the ports (sensing -> analysis -> decision -> intervention -> ...)
+\draw[cyc] (psen.north) to[bend right=12] (pana.west);
+\draw[cyc] (pana.east)  to[bend right=12] (pdec.north);
+\draw[cyc] (pdec.south) to[bend right=12] (pint.east);
+\draw[cyc] (pint.west)  to[bend right=12] (psen.south);
+% legend: the two arrow kinds
+\node[note, align=left, anchor=west] at (-6.7,-3.4) {Grey arrows: dependency direction\\(inward, to the core that owns the ports).\\Navy arrows: the adaptive-cycle order.};
 \end{tikzpicture}%
 }
-\caption{The four-module decomposition. Each concern (sensing, analysis, decision, intervention) is a port owned by the application core, while concrete implementations sit outside the core and depend inward upon the ports (solid arrows), so that the core depends on none of them. The numbers indicate the data-flow order of one adaptive cycle, from sensing (1) to intervention (4). Each port resolves its implementation through a registry, so that adding an implementation is an additive change.}
+\caption{The four-module decomposition. Each concern (sensing, analysis, decision, intervention) is a port owned by the application core, while concrete implementations sit outside the core and depend inward upon the ports (solid arrows), so that the core depends on none of them. The numbers and the curved navy arrows between the ports trace the data-flow order of one adaptive cycle, from sensing (1) through analysis (2) and decision (3) to intervention (4) and back to sensing. Each port resolves its implementation through a registry, so that adding an implementation is an additive change.}
 \label{fig:design-modules}
 \end{figure}
 
