@@ -13,7 +13,16 @@
 %   04_engineering  -> \cref{sec:impl-engineering}
 %   06_summary      -> \cref{sec:impl-summary}
 
-% TODO: §6.0 chapter preamble (on-ramp + roadmap), written last with the summary.
+This chapter shows how the architecture of \cref{ch:design} becomes running code.
+Where the previous chapter argued why the platform is shaped as it is, this one is concerned with how that shape is realised and with the evidence that it behaves as intended, stopping short of the quantitative evaluation that \cref{ch:evaluation} provides.
+Rather than catalogue the source file by file, the chapter takes a single experiment session as its organising spine: it first locates the code, then follows one session through it from setup to a sealed record, and only then opens the individual mechanisms that the session exercises.
+The emphasis throughout is on the realisations that carry the four concerns of \cref{sec:design-modules} and answer the research questions of \cref{sec:final-problem-statement}, illustrated with short excerpts of the actual repository code rather than exhaustive listings.
+
+\Cref{sec:impl-structure} locates the code, mapping the two monorepo roots and the project structure that enforces the architecture's inward-pointing dependency rule, and records the concrete technology stack behind the system.
+\Cref{sec:impl-session} is the spine: it follows one experiment session end to end, from the researcher's first command to the sealed record, across the two screens and two channels through which the platform is operated.
+\Cref{sec:impl-highlights} then opens the mechanisms that walkthrough names only in passing, organised by the four separated concerns and the research questions they answer.
+\Cref{sec:impl-engineering} steps back to the engineering practices that hold the two code roots together, from continuous integration to the documentation produced alongside the code.
+\Cref{sec:impl-summary} draws the chapter together and hands off to the evaluation.
 
 % \screenshotfig{path}: include a UI screenshot if the file is present, otherwise
 % render a "pending" placeholder so the build stays green until the image is added.

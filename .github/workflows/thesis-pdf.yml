@@ -22,21 +22,16 @@ jobs:
           root_file: main.tex
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
-          # minted needs the Pygments/latexminted backend at build time.
+          # font-liberation supplies the metric-compatible Arial substitute
+          # (Liberation Sans); minted needs the Pygments/latexminted backend.
           extra_system_packages: font-liberation py3-pip py3-pygments
           pre_compile: |
-            mkdir -p /etc/fonts/conf.d
-            cat > /etc/fonts/conf.d/99-arial.conf << 'EOF'
-            <?xml version="1.0"?>
-            <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
-            <fontconfig>
-              <alias binding="same">
-                <family>Arial</family>
-                <prefer><family>Liberation Sans</family></prefer>
-              </alias>
-            </fontconfig>
-            EOF
-            fc-cache -f -v
+            # Do NOT alias Arial -> Liberation Sans in fontconfig. Settings.tex
+            # guards the body font with \IfFontExistsTF{Arial}{...}{Liberation Sans};
+            # an alias makes the probe report Arial as present, so XeLaTeX takes the
+            # Arial branch and then aborts with "I can't find file 'Arial'". Leaving
+            # Arial genuinely absent lets the .tex fall back to Liberation Sans.
+            fc-cache -f
             # minted 3 drives Pygments through the latexminted backend; install it
             # if the TeX Live image does not already ship it. Non-fatal if present.
             python3 -m pip install --break-system-packages --no-warn-script-location latexminted || true
