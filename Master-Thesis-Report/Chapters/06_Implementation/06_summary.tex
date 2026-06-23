@@ -1,4 +1,12 @@
 \section{Summary}
 \label{sec:impl-summary}
-% Authoring brief for this section lives in section.md (§6.6).
-\todo[inline]{\S6.6 to be written last. Recap what was realized (code structure, the session in motion, selected realizations, the UI, engineering practice) and hand off to \cref{ch:evaluation}, which measures how well the realized system meets RQ1--RQ4.}
+
+This chapter has shown how the architecture of \cref{ch:design} is realised in running code.
+\Cref{sec:impl-structure} located that code in a monorepo of two independently built roots, a .NET backend whose project references enforce the inward-pointing dependency rule and a Next.js front-end that separates thin routing from feature logic, and recorded the concrete stack behind them.
+\Cref{sec:impl-session} then set that structure in motion, following one experiment session from the researcher's first command to the sealed record: two browser surfaces over one front-end, two channels (REST commands and a realtime WebSocket stream), and a single \texttt{ExperimentSessionManager} that owns the session state behind a lifecycle gate and publishes one authoritative snapshot to both screens.
+
+\Cref{sec:impl-highlights} then opened the mechanisms that walkthrough had named only in passing, organised by the four concerns the architecture separates and the research questions they answer: the registry-backed module seams and the external-provider protocol that make the loop pluggable (RQ1); the dwell-based, area-of-interest sensing pipeline that turns a raw gaze stream into oculomotor events on a lock-free path and survives reflow (RQ2); the capture-and-restore mechanism that preserves the reader's position across an intervention and grades its cost (RQ3); and the experiment templates, the versioned dual-format record, and the deterministic replay that make a session repeatable and auditable after the fact (RQ4).
+\Cref{sec:impl-engineering} closed the chapter with the practices that hold the two roots together: their continuous-integration pipelines, the conventions for error handling, logging, configuration, and concurrency, the testing approach and its honest asymmetry between the tiers, and the documentation produced as a deliverable in its own right.
+
+What the chapter has established is that the system exists and behaves as designed; what it has not done is measure how well it does so.
+\Cref{ch:evaluation} takes that step, verifying the realised platform against its functional requirements and non-functional budgets and reporting the latency and calibration figures that this chapter has so far only promised.

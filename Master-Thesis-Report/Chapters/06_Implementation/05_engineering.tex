@@ -1,7 +1,43 @@
 \section{Engineering Practice}
 \label{sec:impl-engineering}
-% Authoring brief for this section lives in section.md (§6.5).
-\todo[inline]{\S6.5 to be written. Build \& CI (frontend-ci, backend-ci; per-subproject deps; Windows/Tobii constraint); cross-cutting concerns (error handling conventions, hot-path vs gated concurrency, configuration, logging style); testing approach; challenges \& resolutions (gaze-to-content mapping over Markdown, latency, Windows-only Tobii SDK, context preservation across re-render).}
+% Authoring brief for this section lives in section.md.
+
+The preceding sections followed the system from its structure to its realised concerns; this one steps back to the practices that hold the two code roots together: how they are built and checked, the conventions that recur across them, the engineering challenges that shaped the implementation, and the documentation produced alongside the code.
+
+\subsection{Build and continuous integration}
+\label{subsec:impl-ci}
+
+The two roots are built and checked independently, which the monorepo layout of \cref{sec:impl-structure} makes possible and a pair of GitHub Actions workflows enforces.
+A change under \texttt{Frontend/} triggers a Linux job that installs dependencies from the frozen lockfile with Bun and runs the production Next.js build, so that a type error or a broken import fails the change before it merges; the same workflow runs a test step only if a test script is present.
+A change under \texttt{Backend/} triggers a separate job that restores, builds the solution in release configuration, and runs the test suite with the .NET SDK.
+That backend job runs on a \emph{Windows} runner rather than Linux, which is the continuous-integration consequence of the Windows-only Tobii SDK (C1): building the solution requires the platform on which its sensing adapter compiles.
+Both workflows are scoped by path so that a front-end change does not rebuild the backend or the reverse, and both cancel an in-progress run when a newer commit arrives, which keeps feedback fast.
+
+\subsection{Cross-cutting conventions}
+\label{subsec:impl-conventions}
+
+A few conventions recur across the codebase and are worth stating once rather than at each occurrence.
+Errors are handled at the boundary of each tier: the backend's application services raise domain or argument exceptions and never write a response, leaving the endpoint classes to translate them into status codes at the transport edge, while the front-end normalises every unknown failure through a single error utility and a Redux middleware before it reaches the interface, so that a raw thrown value never surfaces to the participant or researcher.
+Logging is deliberately lightweight: both tiers log directly to the console at the transport and hardware boundaries rather than through a structured logging framework, which suits a single-operator research tool where the console is the operator's own.
+Configuration that varies between environments is bound through typed options on the backend (the calibration, module-provider, and persistence settings registered at the composition root of \cref{sec:impl-structure}) and through a small set of environment variables on the front-end (the REST and WebSocket endpoints).
+The one convention that is load-bearing rather than cosmetic is the concurrency split introduced in \cref{sec:impl-session}: the high-frequency gaze data plane is lock-free while the slower control plane is serialised behind a lifecycle gate, and keeping the two apart is what holds the latency budget under live load.
+
+\subsection{Testing}
+\label{subsec:impl-testing}
+
+Testing is concentrated where behaviour is most intricate and least observable by eye, which is the backend application core.
+A dedicated xUnit project exercises that core directly against its contracts rather than through the transport: it covers the session authority and its lifecycle gating, the decision-strategy and intervention-module contracts, the sensing and regression-detection logic of \cref{sec:impl-sensing}, and the setup-workflow and persistence adapters, and it includes characterization tests that pin the current realtime command-ingress behaviour so that a refactor cannot change it unnoticed.
+The front-end is not covered by an automated test suite; its quality gate is the typed production build that continuous integration runs on every change, and its behaviour was validated by driving the full reading, intervention, and replay loop through the simulated mouse source of \cref{sec:impl-sensing-modes}, which exercises every path except the physical device on any machine.
+We state this asymmetry plainly: the backend's contract tests are the stronger guarantee, and an automated front-end suite is a natural candidate for future work.
+
+\subsection{Challenges and resolutions}
+\label{subsec:impl-challenges}
+
+Four engineering challenges shaped the implementation more than any others, and each was met by a mechanism described earlier rather than worked around.
+Mapping a gaze point to a word over reflowable Markdown, where there are no fixed coordinates, was met by hit-testing against word boxes re-measured from the live document together with the line hysteresis of \cref{sec:impl-sensing}, so the mapping survives both jitter and intervention-driven reflow.
+Holding the gaze-to-intervention path within its latency budget at a high sample rate was met by the lock-free data plane of \cref{sec:impl-session}, which keeps gaze ingest off the serialised control path.
+The Windows-only Tobii SDK was met by compiling the adapter behind a platform guard with a mock in its place (\cref{subsec:impl-tobii-sdk}), so that development and continuous integration of everything except the physical device proceed on any platform.
+Preserving the reader's position across a re-render, where a typographic change reflows the whole page, was met by the capture-and-restore mechanism of \cref{sec:impl-context}, which re-finds and re-anchors the reading position once the new layout settles.
 
 \subsection{Documentation as an engineering deliverable}
 \label{subsec:impl-docs-site}

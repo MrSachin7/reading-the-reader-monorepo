@@ -110,6 +110,7 @@ builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 The front-end is a single Next.js application whose source mirrors the same discipline of separating routing from logic.
 The \texttt{app/} directory contains only routes and layouts, organised into two route groups, a researcher-facing group with the operator sidebar and a participant-facing group without it, which are the two surfaces of the container view of \cref{sec:design-style}.
 Feature UI lives in \texttt{modules/pages}, cross-feature state and the typed REST clients in \texttt{redux}, and shared helpers including the realtime gaze socket in \texttt{lib}, with common components and hooks factored into \texttt{components} and \texttt{hooks}.
+The high-frequency realtime state in particular is kept out of the presentation components and exposed through a single hook in \texttt{lib}, \idtt{useLiveExperimentSession}, layered over the gaze socket, so that the console and reader render from a live session view without owning the transport that feeds it.
 Routing therefore stays thin and hands off to feature logic that is kept separately, in the same spirit as the backend's separation of transport from core.
 
 Because there is no generated package shared between the two roots, the TypeScript types the front-end uses are hand-written mirrors of the backend records, and keeping the two aligned is a manual discipline rather than a compiler-checked one.

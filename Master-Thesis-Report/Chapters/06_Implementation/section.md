@@ -140,22 +140,17 @@ the order a reader meets them.
 - **Defer:** the "why" (Ch5); numbers (Ch7); exhaustive code (appendix/repo path).
 - **Budget:** ~3–4 pp.
 
-## §6.4 — User Interface Realization  `sec:impl-ui`
+## §6.4 — User Interface Realization  *(REMOVED 2026-06-22 — was `sec:impl-ui`)*
 
-- **Role:** document the operated interface, proportionately.
-- **Covers:** the researcher control surface and the participant reader as the
-  two faces of one front-end; calibration, live monitor/second-screen mirror,
-  and the replay viewer. Brief rationale only for decisions that matter
-  (readiness gating in the UI, control/presentation separation — `\cref` Ch5
-  §5.6 rather than re-arguing). A few representative screenshots in the body;
-  the fuller set → appendix gallery.
-- **Screenshots needed (ask the user):** researcher dashboard/control, reader
-  view, calibration, live monitor, replay. (Reuse any already shown in §6.2.)
-- **Defer:** UI architecture rationale (Ch5 §5.6); exhaustive screen catalogue
-  (appendix).
-- **Budget:** ~1.5–2 pp + appendix.
+- **Status:** deleted as redundant. Its slimmed scope (single Next.js front-end;
+  thin routing `app/` vs feature UI `modules/pages`; the two route groups
+  realizing console vs reader; shared realtime state in `lib`) was already
+  covered by §6.1; the in-context screenshots live in §6.2 and the UI behaviour
+  in §6.3. The one unique point (the `useLiveExperimentSession` hook +
+  control/presentation separation) was folded into §6.1. The fuller screenshot
+  set still belongs in an appendix UI gallery (not yet created).
 
-## §6.5 — Engineering Practice  `sec:impl-engineering`
+## §6.4 — Engineering Practice  `sec:impl-engineering`  *(was §6.5)*
 
 - **Role:** the practices that make the system buildable, operable, and credible.
 - **Covers:** build & CI (`frontend-ci`, `backend-ci` workflows; per-subproject
@@ -168,7 +163,7 @@ the order a reader meets them.
 - **Defer:** anything already covered in Ch3 tools; deep CI YAML.
 - **Budget:** ~2–3 pp.
 
-## §6.6 — Summary  `sec:impl-summary`
+## §6.5 — Summary  `sec:impl-summary`  *(was §6.6)*
 
 - **Role:** recap what was realized (code structure, the session in motion,
   selected realizations, the UI, the engineering practice), and hand off to Ch7.
