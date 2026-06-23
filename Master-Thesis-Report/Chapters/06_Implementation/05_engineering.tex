@@ -2,3 +2,12 @@
 \label{sec:impl-engineering}
 % Authoring brief for this section lives in section.md (§6.5).
 \todo[inline]{\S6.5 to be written. Build \& CI (frontend-ci, backend-ci; per-subproject deps; Windows/Tobii constraint); cross-cutting concerns (error handling conventions, hot-path vs gated concurrency, configuration, logging style); testing approach; challenges \& resolutions (gaze-to-content mapping over Markdown, latency, Windows-only Tobii SDK, context preservation across re-render).}
+
+\subsection{Documentation as an engineering deliverable}
+\label{subsec:impl-docs-site}
+
+We treat documentation as part of the engineering work of this thesis rather than as an afterthought to it.
+The reasoning is intrinsic to the system's own claims: a platform whose central promise is that others can extend it (RQ1) is only as extensible as its contracts are documented, and a researcher-operated platform is only reproducible if its setup and operation are written down for someone other than its authors to follow.
+We therefore produced a companion documentation site as a deliverable in its own right, developed alongside the code and in the same repository, published at \url{https://mrsachin7.github.io/reading-the-reader-monorepo/}.
+The site is written for the developer and operator rather than the participant: alongside the architecture and data-flow overviews it provides a local-setup and run-an-experiment guide, a reference for the REST endpoints and the session-record export format, and, most relevant to the extensibility claim, the module-provider integration protocol together with a worked guide to adding a new analysis or decision module and mock providers to develop against.
+Keeping it aligned with the implementation and mirroring the structure of this report is a deliberate practice: it turns the extension path argued in \cref{sec:design-extensibility} into something operational rather than implicit, and leaves the teams who continue the project a maintained entry point rather than a codebase to reverse-engineer.

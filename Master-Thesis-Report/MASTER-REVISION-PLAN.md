@@ -49,6 +49,16 @@
   - **Fig 5.1 update:** integrated the author's revised Excalidraw master (`architecture_overview.svg`, now showing the four named modules inside the backend, a "Provider API (WebSocket contract)" node, researcher sliders + approve/reject). Build fix: Inkscape 1.4.4 corrupts the PDF export of this SVG because of the embedded Excalidraw "Virgil" woff2 font ("Catalog dictionary not located" → graphics "Division by 0"). Resolved by passing `inkscapeopt={--export-text-to-path}` on the single `\includesvg` line in `02_approach.tex:17` (vectorises the labels; no `Setup/` change). **Any future Excalidraw SVG re-export needs this flag.** §5.2 caption/prose already matched the new artwork — no text change. (Author confirmed the "realizes provider api for intervention" arrow is intentional as-is.)
   - **I-AOI (#20), the 🔴 wrong-live-answer fix:** the Salvucci & Goldberg citation + AOI declaration already existed in Ch2 (`01_key_concepts.tex:270-271`); the gap was the Implementation chapter. Edited `06_Implementation/03_highlights.tex` (the "Temporal analysis as a replaceable strategy" paragraph) to: name the **area-of-interest (I-AOI), dwell-based** branch and cross-ref `subsec:oculomotor-events`; state explicitly the detector uses **neither the velocity threshold of I-VT nor the dispersion threshold of I-DT**; justify AOI for reading (events already bound to words); and report **both** threshold families with the real code constants — fixation-confirmation dwell **90/70/135 ms** (initial / within-line / across-line) plus the attention-summary binning **<45 ms dropped, ≥130 ms = fixation, 45–130 ms = skim** (`SkimThresholdMs=45`, `FixationThresholdMs=130`, verified in `BuiltInEyeMovementAnalysisStrategy.cs`). Companion Ch2 edit (flagged, §3.5): added the standard abbreviations "velocity (I-VT), dispersion (I-DT), or area of interest (I-AOI)" and an explicit "and not the velocity- or dispersion-based variants" at the conceptual home. No fabricated numbers; citation pre-existing. Closes `todo.md` "describe I-AOI/dwell extraction".
 
+- **2026-06-22 (later) — AOI-survives-reflow elevated to a first-class strength (matrix #21; build green):** The reflow-robustness point in `06_Implementation/03_highlights.tex` (spatial-mapping paragraph) was one buried sentence; it is now a stated strength of the I-AOI choice. **Verified in code first** (`Frontend/src/modules/pages/reading/lib/useGazeTokenHighlight.ts`): `refreshLayouts()` re-reads word boxes from the live DOM on MutationObserver, ResizeObserver (container + content + window resize), and scroll (synchronously, per the "Bug 6 fix" comment); the gaze sample arrives normalised (0–1) and is scaled to `window.innerWidth/innerHeight`, then matched against `getBoundingClientRect` boxes. New prose makes three points: (1) boxes refreshed from the rendered DOM on mutation/resize/scroll, so a reflowing intervention (larger font / narrower measure) moves every word without invalidating the mapping; (2) this is exactly the failure mode a coordinate-based detector would suffer, which is *why* analysis reasons over word tokens (reinforces #20); (3) the mapping is therefore independent of screen resolution and window size (resolution-independence claim verified, not assumed). No new citations. Closes the Phase-4 "make AOI-survives-reflow explicit" item.
+
+- **2026-06-22 (later) — Concrete stack + Tobii SDK + resolution headlined (matrix #19; build green):** Two new headed subsections, all facts verified against repo files (no number unread). **§6.1.1 "Technology stack and dependencies"** (`01_structure.tex`, `subsec:impl-stack`) with **Table 6.1** (`tab:impl-stack`, tier/technology/version/role): backend .NET 10, ASP.NET Core + FastEndpoints 8.0.1, CsvHelper 33.1.0, Tobii.Research.x64 1.11.0.1334; frontend Next.js 16.1.6, React 19.2.3, TypeScript 5.x, Bun (left **unversioned** — CI pins `bun-version: latest`, not 1.3), Redux Toolkit/RTK Query 2.11.x, Tailwind 4.x. Rationale cross-refs §5.8 (no re-justification); CI = one-line pointer to §6.5 per the agreed option (a). **§6.3.3 "Tobii SDK integration"** (`03_highlights.tex`, `subsec:impl-tobii-sdk`) cross-refs the existing adapter listing `lst:impl-tobii` and adds the parts that were missing: device discovery (`FindAllEyeTrackers` → first connected tracker), licence path (`LicenseKey` → `TryApplyLicenses`, throws on invalid/empty licence — verified in `TobiiEyeTrackerAdapter.cs`), the `GazeData` field mapping, the `#if WINDOWS`/mock split, and the **screen/resolution assumptions** (gaze arrives as `PositionOnDisplayArea` normalised 0–1, so the mapping fixes no resolution — ties to the #21 resolution-independence). Fixed a self-introduced "Fas-tEndpoints" hyphenation in the table via `\mbox`. Closes `todo.md` "concrete stack and supporting libraries".
+
+- **2026-06-22 (later) — Supplementary documentation pointer added (matrix #28; build green):** New subsection §6.5.1 "Supplementary documentation for future contributors" (`05_engineering.tex`, `subsec:impl-docs-site`) points to the published companion site `https://mrsachin7.github.io/reading-the-reader-monorepo/` (URL supplied by the author). Described accurately from the site's actual contents (verified by listing `DocsSite/app`): setup + run-an-experiment guide, REST/export-format reference, and — tied to the RQ1 extensibility claim — the module-provider integration protocol, a worked "adding a new module" guide, and mock providers; cross-refs §5.6. Placed in Engineering Practice (its logical home) above the still-pending build/CI `\todo`; the §6.6 summary stub was left untouched (written last). **Optional follow-up:** a screenshot of the site could go in the planned UI-gallery appendix (per the §6.4 todo box) — deferred, and would need a user-provided image per `CLAUDE.md` §2.4.
+
+- **2026-06-22 (later) — Documentation reframed as a deliverable + registered as a contribution (author-approved; build green):** Per author direction that documentation is part of the software-engineering work, two changes. (1) §6.5.1 reworded from "Supplementary documentation for future contributors" to **"Documentation as an engineering deliverable"** (`05_engineering.tex`): now argues documentation on the system's own terms (extensibility needs documented contracts; reproducibility needs documented operation) and presents the companion site as a deliverable produced alongside the code. (2) Added a seventh **"Developer and operator documentation"** bullet to the Intro contributions list (`01_Introduction/03_contributions.tex`) — flagged as narrative-spine content per §3.5 and **author-approved before editing**; framed so it enables the extensibility/reproducibility claims rather than standing alone. Follow-on (when written): carry the framing into the Discussion (Phase 6, achievements + lessons) and optionally the Abstract pillars (Phase 7). Narrative-spine note: co-author may want a glance at the new contribution bullet.
+
+- **2026-06-22 (later) — Missed P1 quick wins closed + matrix reconciled to reality (build green):** Pre-Evaluation audit found the matrix was stale (only this-session rows were ticked) and two P1 items genuinely *missed*. Both now done: **#11 (split long titles)** — §5.2 "Architectural Approach and System Overview" → **"Architectural Overview"**; §5.6 "Extensibility, the Provider Seam, and Researcher Control" → **"Extensibility and Researcher Control"** (3→2 concepts, seam folded in as mechanism; label `sec:design-extensibility` unchanged so the ~15 cross-refs still resolve); §7.4 stub "Experimentability and Developer Experience" → two sections **"Experimentability"** + **"Developer Experience"**. **#14 (hyphenation)** — use-case nodes rebroken to "Define\\Experiment\\Template" and "Start\\Experiment\\Session" (no more "Ex-periment"); Fig 5.6 "Built-in\\implementation\\in-process" (no more "im-plementation"). Note: the "Deci-sion Provider" glitch was already gone (old TikZ Fig 5.1 replaced by the SVG master). Both diagrams re-rendered and checked for overlap. **Matrix reconciled** with a ✅/◑/⊘/☐ legend: marked ✅ the genuinely-closed earlier-session diagram work (#4, #6, #8, #9, #12, #15) plus #11/#14; marked ◑ the items substantially done with residual P3-prose or P8-sweep work (#1, #2, #3, #5, #7, #10); #22 marked ⊘ (deferred future work).
+
 ## A. Current-state correction (do NOT redo these — verify only)
 
 Reading the actual files shows several feedback-1 asks are **already done and good**. Marking them so we spend zero effort re-doing them:
@@ -257,36 +267,38 @@ Each phase lists: **goal · depends on · tasks (with file pointers) · definiti
 
 ## E. Comment-traceability matrix  *(the closure guarantee — nothing ships until every row is "done")*
 
+**Legend:** ✅ closed · ◑ substantially done, residual work in the noted phase (mostly the Phase 8 consistency sweep or Phase 3 prose alignment) · ⊘ deliberately deferred (future work) · ☐ not started.
+
 | # | Supervisor comment (meeting 2 + open meeting 1) | Phase | Status |
 |---|---|---|---|
-| 1 | Same concept named differently across figures/chapters | P0+P2+P8 | ☐ |
-| 2 | "decision requests" → bidirectional context/proposals | P2+P3 | ☐ |
-| 3 | Reconcile decision provider vs module provider vs strategy | P0+P2 | ☐ |
-| 4 | Eye tracker = interface, not a 4th external box | P2 | ☐ |
-| 5 | Decision provider coupled to researcher; show the API | P2+P3 | ☐ |
-| 6 | Be user-centric (participant/researcher at centre) | P2 | ☐ |
-| 7 | One master diagram, then crop into parts | P0+P2 | ☐ |
-| 8 | Fig 5.2 arrow/legend semantics (who initiates; kill grey) | P2 | ☐ |
-| 9 | Captions one size smaller | P1 | ☐ |
-| 10 | Captions too long → move prose to body | P2 | ☐ |
-| 11 | Split long titles 5.2 / 5.6 / 7.4 | P1 | ☐ |
-| 12 | Fig 5.4: rename "Domain"; pipeline arrows; built-in/ext consistency; numbering | P2 | ☐ |
+| 1 | Same concept named differently across figures/chapters | P0+P2+P8 | ◑ (P8 sweep) |
+| 2 | "decision requests" → bidirectional context/proposals | P2+P3 | ◑ (figures done; P3 prose) |
+| 3 | Reconcile decision provider vs module provider vs strategy | P0+P2 | ◑ (glossary+figures done; P8 verify) |
+| 4 | Eye tracker = interface, not a 4th external box | P2 | ✅ |
+| 5 | Decision provider coupled to researcher; show the API | P2+P3 | ◑ (figure done; P3 prose) |
+| 6 | Be user-centric (participant/researcher at centre) | P2 | ✅ |
+| 7 | One master diagram, then crop into parts | P0+P2 | ◑ (master done; zoom-in crop map owed) |
+| 8 | Fig 5.2 arrow/legend semantics (who initiates; kill grey) | P2 | ✅ (resolved by deleting Fig 5.2) |
+| 9 | Captions one size smaller | P1 | ✅ |
+| 10 | Captions too long → move prose to body | P2 | ◑ (touched figures done; P8 audit) |
+| 11 | Split long titles 5.2 / 5.6 / 7.4 | P1 | ✅ |
+| 12 | Fig 5.4: rename "Domain"; pipeline arrows; built-in/ext consistency; numbering | P2 | ✅ |
 | 13 | Use-case actor terms must match design diagrams | P2 | ✅ |
-| 14 | Hyphenation glitches | P1 | ☐ |
-| 15 | Fewer diagrams / kill redundant ones (e.g. WS envelope) | P0+P2 | ☐ |
+| 14 | Hyphenation glitches | P1 | ✅ |
+| 15 | Fewer diagrams / kill redundant ones (e.g. WS envelope) | P0+P2 | ✅ |
 | 16 | Requirements: show iterative refinement evidence (table) | P3 | ☐ |
 | 17 | Prioritisation rationale (MoSCoW/FR/NFR) | P3 | ☐ |
 | 18 | Coherency Ch4→Ch5 (constraints→requirements→drivers→decisions) | P3 | ☐ |
-| 19 | Backend/frontend + Tobii SDK + screen/resolution headings | P4 | ☐ |
+| 19 | Backend/frontend + Tobii SDK + screen/resolution headings | P4 | ✅ |
 | 20 | I-AOI method explicit; NO velocity threshold (fix wrong live answer) | P4 | ✅ |
-| 21 | AOI survives interventions/reflow — say it louder | P4 | ☐ |
-| 22 | Fixation duration / per-word AOI overlay (low priority) | Track M | ☐ |
+| 21 | AOI survives interventions/reflow — say it louder | P4 | ✅ |
+| 22 | Fixation duration / per-word AOI overlay (low priority) | Track M | ⊘ (deferred to future work, supervisor-marked low priority) |
 | 23 | Kalman-filter framing in Discussion | P6 | ☐ |
 | 24 | Evaluation methodology (V-model + per-requirement + walkthroughs) | P5 | ☐ |
 | 25 | Report measured latency / calibration numbers | P5 (Track M) | ☐ |
 | 26 | Discussion: 80/20, answer problem statement, compare related work | P6 | ☐ |
 | 27 | Real two-screen screenshots/photos | P2/P6 | ☐ |
-| 28 | Supplementary website/guide for next students | P4 | ☐ |
+| 28 | Supplementary website/guide for next students | P4 | ✅ |
 | 29 | Declare generative-AI use | P7 | ☐ |
 | 30 | Abstract/Conclusion name the pillars | P7 | ☐ |
 | 31 | Defense: both speak, demo, individual Q&A, drill answers | P9 | ☐ |

@@ -200,7 +200,10 @@ The reader normalises each sample to a screen point (FR4.2), then maps it to the
 Choosing the line is the part that most affects stability, so it is scored explicitly (\cref{fig:impl-gazemap}): each line is reduced to a vertical band (its top, bottom, and centre), and a sample is charged for how far it falls outside the band, weighted heavily, plus a smaller pull towards the band centre that breaks ties, with the lowest-scoring band winning.
 A fixed discount is then subtracted from the score of the line already being read, which acts as hysteresis: a sample that strays slightly above or below the current line stays attributed to it rather than flickering to a neighbour, the failure mode that vertical gaze jitter of the order of the line spacing would otherwise produce.
 Only once the line is fixed is the word chosen, by horizontal distance to each word box on that line, so vertical noise can no longer pull the mapping to a word that merely happens to sit nearby in an adjacent line.
-The crucial detail for FR5.4 is that the word boxes are re-measured from the live document, prompted by mutation, resize, and scroll observers, so the mapping stays valid after a typographic intervention reflows the text rather than referring to stale coordinates.
+Re-measuring the word boxes from the live document is the property that lets the area-of-interest mapping survive reflow, and it is a first-class strength of the AOI choice rather than an implementation detail (FR5.4).
+The boxes are refreshed from the rendered DOM whenever it changes, prompted by mutation, resize, and scroll observers, so a typographic intervention that reflows the whole page (a larger font or a narrower measure) moves every word to a new position without invalidating the mapping, because the next gaze sample is hit-tested against the boxes as they are now rather than against coordinates baked in at load.
+This is exactly the failure mode a coordinate-based detector would suffer, and avoiding it is why the analysis reasons over word tokens rather than raw screen positions.
+The same live measurement also makes the mapping independent of screen resolution and window size, since the normalised gaze sample is scaled to the current viewport and matched against boxes measured in that same space.
 The result is published as a token-indexed observation carrying the token identifier, its token, line, and block indices, and whether the gaze is inside the reading area; this observation is the stable interface (FR4.4) the analysis layer and the export both consume.
 
 \begin{listing}[htbp]
@@ -341,6 +344,21 @@ private static SaccadeSnapshot? BuildSaccade(FixationSnapshot? from, FixationSna
 \caption{Saccade and regression classification (abbreviated from \texttt{BuiltInEyeMovementAnalysisStrategy.cs}). A saccade is built between two confirmed fixations; a backward move within or across lines is a regression, and the running regression count is incremented from this classification.}
 \label{lst:impl-saccade}
 \end{listing}
+
+\FloatBarrier
+\subsection{Tobii SDK integration}
+\label{subsec:impl-tobii-sdk}
+
+The sensing pipeline above starts where the gaze stream enters the backend; this subsection opens the hardware boundary at which it starts, namely how the adapter of \cref{lst:impl-tobii} talks to the device through the vendor SDK.
+That adapter is the only place in the system that names the Tobii API, and the whole file compiles behind a \texttt{\#if WINDOWS} guard because the \texttt{Tobii.Research.x64} binding is distributed for Windows only (C1); off Windows a mock adapter is compiled in its place, which is what lets the rest of the platform build and run on any machine (\cref{sec:impl-sensing-modes}).
+
+Selecting a device is a discovery step rather than fixed configuration: the adapter calls the SDK's \texttt{FindAllEyeTrackers} and takes the first connected tracker, so no serial number or address is hard-coded and a session runs on whatever Tobii unit is attached.
+Before any gaze is allowed to flow, an optional licence is applied: when a licence file is present the adapter wraps its bytes in a \texttt{LicenseKey}, applies it to the selected tracker, and checks that every entry validates as \texttt{Ok}, refusing to proceed on an invalid licence rather than silently running unlicensed.
+Once a tracker is selected and licensed, \texttt{StartEyeTracking} subscribes to the SDK's gaze callback, and from that point each callback is translated into the domain's \texttt{GazeData} and raised for the session manager, as \cref{lst:impl-tobii} showed.
+
+Each callback carries a binocular sample, of which the adapter maps the parts the rest of the system needs: the device timestamp, and for each eye the on-display gaze point with its validity, together with the eye position and gaze origin in user coordinates and the pupil measurement.
+The detail that matters downstream is that the gaze point arrives as a position on the display area normalised to the unit square rather than in pixels, which is the hardware-side counterpart of the resolution independence established in \cref{sec:impl-sensing}: the device reports where the participant looked as a fraction of the display, the reader maps that fraction onto the live word boxes, and so neither half of the mapping is tied to a particular screen size or resolution.
+The platform therefore assumes a single calibrated participant display and a binocular Tobii tracker, but fixes no resolution, and the same ingest path carries the simulated mouse source of \cref{sec:impl-sensing-modes}, which produces the identical normalised \texttt{GazeData} by another route.
 
 \FloatBarrier
 \subsection{Calibration and validation}

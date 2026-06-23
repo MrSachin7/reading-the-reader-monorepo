@@ -113,4 +113,40 @@ Feature UI lives in \texttt{modules/pages}, cross-feature state and the typed RE
 Routing therefore stays thin and hands off to feature logic that is kept separately, in the same spirit as the backend's separation of transport from core.
 
 Because there is no generated package shared between the two roots, the TypeScript types the front-end uses are hand-written mirrors of the backend records, and keeping the two aligned is a manual discipline rather than a compiler-checked one.
+\subsection{Technology stack and dependencies}
+\label{subsec:impl-stack}
+
+\Cref{sec:technology-selection} argued why React with TypeScript on the front-end and C\# on .NET on the backend were preferred over the alternatives; this subsection records the concrete stack that realises those choices, so that the versions and the supporting libraries behind the system are visible in one place rather than scattered through the prose.
+\Cref{tab:impl-stack} lists them by tier.
+
+\begin{table}[htbp]
+\centering
+\caption{The realised technology stack by tier, with the resolved version and the role each part plays. The selection rationale is argued in \cref{sec:technology-selection}; the versions and supporting libraries recorded here are its concrete realisation.}
+\label{tab:impl-stack}
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.12\linewidth} p{0.25\linewidth} p{0.11\linewidth} p{0.36\linewidth}}
+\toprule
+\textbf{Tier} & \textbf{Technology} & \textbf{Version} & \textbf{Role} \\
+\midrule
+Backend & .NET / C\# & 10 & Runtime and language for the application core and infrastructure. \\
+ & ASP.NET Core with \mbox{FastEndpoints} & 8.0.1 & REST endpoints under \texttt{/api} and the OpenAPI surface. \\
+ & CsvHelper & 33.1.0 & CSV serialisation of the session record on export (\cref{sec:impl-replay}). \\
+ & Tobii.Research.x64 & 1.11.0.1334 & Windows-only binding to the eye-tracker SDK (\cref{lst:impl-tobii}). \\
+\addlinespace
+Frontend & Next.js (App Router) & 16.1.6 & React application shell and routing (\cref{sec:impl-structure}). \\
+ & React & 19.2.3 & Component model for the participant and researcher surfaces. \\
+ & TypeScript & 5.x & Static typing across the hand-mirrored cross-tier contracts. \\
+ & Bun & --- & JavaScript runtime and package manager (lockfile \texttt{bun.lock}). \\
+ & Redux Toolkit with RTK Query & 2.11.x & Application state and the typed REST clients. \\
+ & Tailwind CSS & 4.x & Utility-first styling of both surfaces. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The backend runs on .NET~10, with FastEndpoints providing the REST layer that complements the WebSocket channel of \cref{sec:impl-session}, CsvHelper serialising the session record into the export of \cref{sec:impl-replay}, and the Windows-only Tobii.Research.x64 binding sitting behind the sensing adapter of \cref{lst:impl-tobii}.
+The front-end is a Next.js~16 application on React~19, written in TypeScript and built with Bun; Redux Toolkit with RTK Query holds the cross-feature state and the typed REST clients noted above, and Tailwind CSS styles both surfaces.
+Two GitHub Actions pipelines, \texttt{frontend-ci} and \texttt{backend-ci}, build each root independently, with the wider build and continuous-integration practice taken up in \cref{sec:impl-engineering}.
+
 With the territory mapped, the next section puts it in motion: \cref{sec:impl-session} follows a single experiment session through these projects, from the researcher's first setup action to the sealed record left behind.

@@ -1,4 +1,4 @@
-\section{Extensibility, the Provider Seam, and Researcher Control}
+\section{Extensibility and Researcher Control}
 \label{sec:design-extensibility}
 % Authoring brief for this section lives in section.md (§5.6).
 \Cref{sec:design-modules} declared the seams between the four concerns, and \cref{sec:design-loop,sec:design-data} showed the platform exercising its own built-in implementations behind them.
@@ -43,7 +43,7 @@ Because the seam is keyed by module identity and falls back to the built-in when
 \node[box]  (rt)  at (-6.3,-0.2)   {Reading runtime\\{\scriptsize reaches the seam}};
 \node[gate] (gw)  at (-2.5,-0.2)   {Seam gateway\\{\scriptsize provider active for this module?}};
 \node[ext]  (ex)  at ( 2.5, 1.7)   {External provider\\{\scriptsize out-of-process}};
-\node[box]  (bi)  at ( 2.5,-2.15)  {Built-in implementation\\{\scriptsize in-process}};
+\node[box]  (bi)  at ( 2.5,-2.15)  {Built-in\\implementation\\{\scriptsize in-process}};
 \node[box]  (pr)  at ( 6.4,-0.2)   {Proposal\\{\scriptsize re-enters the loop}};
 % routing
 \draw[arrow]  (rt.east) -- (gw.west);
