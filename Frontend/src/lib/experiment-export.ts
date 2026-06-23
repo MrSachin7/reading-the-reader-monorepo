@@ -102,6 +102,24 @@ export async function downloadProcessedExperimentExport(desiredName?: string) {
   triggerBlobDownload(blob, fileName)
 }
 
+export async function downloadExperimentTelemetry(desiredName?: string) {
+  const response = await fetch(`${API_BASE_URL}/experiment-session/telemetry`, {
+    method: "GET",
+  })
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+
+  const blob = await response.blob()
+  const fileName =
+    buildFileNameFromUserInput(desiredName, "json") ??
+    (response.headers.get("content-disposition")
+      ? getFileName(response.headers.get("content-disposition"), "json")
+      : "experiment-telemetry.json")
+  triggerBlobDownload(blob, fileName)
+}
+
 // Posts a full replay export to the backend, which derives the processed report
 // from it and streams the result back for download. The /from-replay endpoint
 // reads the JSON straight from the request body and only accepts the full JSON

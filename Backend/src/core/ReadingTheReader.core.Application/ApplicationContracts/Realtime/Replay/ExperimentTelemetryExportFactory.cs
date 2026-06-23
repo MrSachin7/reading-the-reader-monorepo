@@ -35,8 +35,14 @@ public static class ExperimentTelemetryExportFactory
                 "reading-the-reader",
                 ExperimentTelemetryExportSchema.Version.ToString()));
 
+        // The budgeted RTT summary keeps its original meaning (client browser->server
+        // ping). Latency roles (pipeline-decision, decision-provider-rtt) also carry a
+        // value in RttMs but are summarised separately by the analysis notebooks, so
+        // they are excluded here to avoid blending distinct latencies into one figure.
         var summary = new ExperimentTelemetrySummary(
-            SummarizeWithBudget(orderedSamples.Select(item => item.RttMs), RttBudgetMs),
+            SummarizeWithBudget(
+                orderedSamples.Where(item => IsClientRole(item.Role)).Select(item => item.RttMs),
+                RttBudgetMs),
             Summarize(orderedSamples.Select(item => item.SampleRateHz)),
             Summarize(orderedSamples.Select(item => item.ValidityRate)));
 
@@ -49,6 +55,12 @@ public static class ExperimentTelemetryExportFactory
             latestSnapshot.SignalSources?.Copy() ?? initialSnapshot.SignalSources?.Copy(),
             orderedSamples,
             summary);
+    }
+
+    private static bool IsClientRole(string? role)
+    {
+        return string.Equals(role, ExperimentTelemetryRoles.Participant, StringComparison.Ordinal)
+            || string.Equals(role, ExperimentTelemetryRoles.Researcher, StringComparison.Ordinal);
     }
 
     private static ExperimentTelemetryMetricSummary Summarize(IEnumerable<double?> values)

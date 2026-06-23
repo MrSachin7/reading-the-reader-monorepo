@@ -10,19 +10,27 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interv
 public sealed class InterventionsOutboundPublisher : IExternalProviderGateway
 {
     private readonly IModuleProviderGateway _gateway;
+    private readonly IModuleProviderRttTracker _rttTracker;
 
-    public InterventionsOutboundPublisher(IModuleProviderGateway gateway)
+    public InterventionsOutboundPublisher(IModuleProviderGateway gateway, IModuleProviderRttTracker rttTracker)
     {
         _gateway = gateway;
+        _rttTracker = rttTracker;
     }
 
     public async ValueTask PublishDecisionContextAsync(DecisionContextSnapshot context, CancellationToken ct = default)
     {
+        // Stamp a backend-issued correlation id and record the send time so that the
+        // decision provider's echoed reply yields a single-clock round-trip latency:
+        // the cost of delegating the decision out-of-process (evaluation RQ2).
+        var correlationId = Guid.NewGuid().ToString("D");
+        _rttTracker.MarkSent(correlationId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
         await _gateway.PublishAsync(
             InterventionsModuleIds.ModuleId,
             InterventionsOutboundMessageTypes.DecisionContext,
             context,
-            new ModuleProviderPublishContext(context.SessionId?.ToString("D")),
+            new ModuleProviderPublishContext(context.SessionId?.ToString("D"), correlationId),
             ct);
     }
 

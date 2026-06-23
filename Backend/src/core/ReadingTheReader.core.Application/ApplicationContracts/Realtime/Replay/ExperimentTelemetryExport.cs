@@ -14,12 +14,20 @@ public static class ExperimentTelemetryRoles
     public const string Researcher = "researcher";
     public const string Unknown = "unknown";
 
+    // Latency roles (RttMs carries a latency in milliseconds, disambiguated by Role):
+    // the in-process built-in decision pipeline (freshest gaze sample to decision
+    // dispatch) and the out-of-process decision-provider round trip.
+    public const string PipelineDecision = "pipeline-decision";
+    public const string DecisionProviderRtt = "decision-provider-rtt";
+
     public static string Normalize(string? role)
     {
         return role?.Trim().ToLowerInvariant() switch
         {
             Participant => Participant,
             Researcher => Researcher,
+            PipelineDecision => PipelineDecision,
+            DecisionProviderRtt => DecisionProviderRtt,
             _ => Unknown
         };
     }

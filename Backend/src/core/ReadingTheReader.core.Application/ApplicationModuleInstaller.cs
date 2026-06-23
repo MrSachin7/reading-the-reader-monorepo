@@ -40,6 +40,7 @@ public static class ApplicationModuleInstaller
         collection.AddSingleton<IEyeMovementAnalysisStrategyCoordinator, EyeMovementAnalysisStrategyCoordinator>();
         collection.AddSingleton<IDecisionContextFactory, DecisionContextFactory>();
         collection.AddSingleton<IDecisionStrategy, RuleBasedDecisionStrategy>();
+        collection.AddSingleton<IModuleProviderRttTracker, ModuleProviderRttTracker>();
         collection.AddSingleton<InterventionsOutboundPublisher>();
         collection.AddSingleton<IExternalProviderGateway>(sp => sp.GetRequiredService<InterventionsOutboundPublisher>());
         collection.AddSingleton<IModuleDefinition, InterventionsModuleDefinition>();

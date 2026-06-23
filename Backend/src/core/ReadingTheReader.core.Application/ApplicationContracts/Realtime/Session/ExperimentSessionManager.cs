@@ -84,6 +84,7 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
     private List<QuizSelectionRecord> _pendingQuizSelectionEvents = [];
     private List<ExperimentTelemetrySampleRecord> _pendingTelemetrySamples = [];
     private IReadOnlyDictionary<string, ReadingAttentionTokenSnapshot>? _latestAttentionTokenStats;
+    private long _latestGazeIngestUnixMs;
     private WebcamSensingStatusSnapshot _webcamStatus = WebcamSensingStatusSnapshot.Default;
 
     public ExperimentSessionManager(
@@ -129,6 +130,20 @@ public sealed partial class ExperimentSessionManager : IExperimentSessionManager
 
     private void OnModuleProviderSourceChanged(object? sender, ModuleProviderSourceChangedEventArgs e)
     {
+        // Record the provider attach/detach as an auditable lifecycle event so a
+        // disconnect (and the graceful degradation to the built-in fallback) is
+        // visible in the exported record, not only in the live snapshot (FR19.3).
+        // RecordLifecycleEvent takes its own history lock, so it is safe to call on
+        // the registry thread outside the lifecycle gate.
+        if (Volatile.Read(ref _session).IsActive)
+        {
+            var eventType = e.IsExternalActive
+                ? "module-provider-attached"
+                : "module-provider-detached";
+            var source = e.ActiveProvider?.ProviderId ?? e.ModuleId;
+            RecordLifecycleEvent(eventType, source, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        }
+
         // Fire-and-forget: never block the provider registry thread, and never let a
         // broadcast failure escape into it. GetCurrentSnapshot reads volatile state,
         // so it is safe to call outside the lifecycle gate.

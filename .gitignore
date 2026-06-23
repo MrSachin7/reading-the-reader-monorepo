@@ -4,10 +4,6 @@
 .vscode/
 docs/.obsidian/
 
-# Collaborator project checked out locally as its own git repo. It is wrapped
-# via a connector, never edited internally, and is not versioned by this monorepo.
-reading-the-struggle/
-
 # Shared build artifacts
 **/[Bb]in/
 **/[Oo]bj/

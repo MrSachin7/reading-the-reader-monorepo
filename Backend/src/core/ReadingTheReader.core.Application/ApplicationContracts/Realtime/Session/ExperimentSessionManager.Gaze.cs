@@ -40,6 +40,7 @@ public sealed partial class ExperimentSessionManager
         var capturedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Interlocked.Increment(ref _receivedGazeSamples);
         Volatile.Write(ref _latestGazeSample, gazeData);
+        Volatile.Write(ref _latestGazeIngestUnixMs, capturedAtUnixMs);
         RecordGazeSample(capturedAtUnixMs, gazeData);
     }
 

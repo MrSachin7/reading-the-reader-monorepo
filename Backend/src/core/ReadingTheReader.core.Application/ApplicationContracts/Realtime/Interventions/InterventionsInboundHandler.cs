@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Providers;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain.Decisioning;
 using ReadingTheReader.core.Domain.Reading;
@@ -18,15 +19,18 @@ public sealed class InterventionsInboundHandler : IModuleInboundHandler
     private readonly IExperimentRuntimeAuthority _runtimeAuthority;
     private readonly IModuleProviderCoordinator _coordinator;
     private readonly IModuleProviderGateway _gateway;
+    private readonly IModuleProviderRttTracker _rttTracker;
 
     public InterventionsInboundHandler(
         IExperimentRuntimeAuthority runtimeAuthority,
         IModuleProviderCoordinator coordinator,
-        IModuleProviderGateway gateway)
+        IModuleProviderGateway gateway,
+        IModuleProviderRttTracker rttTracker)
     {
         _runtimeAuthority = runtimeAuthority;
         _coordinator = coordinator;
         _gateway = gateway;
+        _rttTracker = rttTracker;
     }
 
     public string ModuleId => InterventionsModuleIds.ModuleId;
@@ -66,6 +70,8 @@ public sealed class InterventionsInboundHandler : IModuleInboundHandler
             Console.WriteLine($"InterventionsInboundHandler: empty submitProposal payload from {context.ProviderId}.");
             return;
         }
+
+        await TryRecordDecisionProviderRttAsync(context, ct);
 
         var caps = GetProviderCapabilities(context);
         if (!caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAdvisoryExecution))
@@ -110,6 +116,8 @@ public sealed class InterventionsInboundHandler : IModuleInboundHandler
             return;
         }
 
+        await TryRecordDecisionProviderRttAsync(context, ct);
+
         var caps = GetProviderCapabilities(context);
         if (!caps.HasFlag(InterventionsModuleCapabilityKeys.SupportsAutonomousExecution))
         {
@@ -149,6 +157,23 @@ public sealed class InterventionsInboundHandler : IModuleInboundHandler
         Console.WriteLine(
             $"InterventionsInboundHandler received provider error from {context.ProviderId}. " +
             $"Code={payload?.Code ?? "unknown"}, Message={payload?.Message ?? "unknown"}");
+    }
+
+    private async ValueTask TryRecordDecisionProviderRttAsync(ModuleProviderContext context, CancellationToken ct)
+    {
+        // The provider echoes the backend-issued correlation id from the decision
+        // context; matching it against the recorded send time gives a single-clock
+        // round-trip latency for the out-of-process decision path (evaluation RQ2).
+        if (string.IsNullOrWhiteSpace(context.CorrelationId))
+        {
+            return;
+        }
+
+        if (_rttTracker.TryComplete(context.CorrelationId, context.ReceivedAtUnixMs, out var rttMs))
+        {
+            await _runtimeAuthority.RecordClientTelemetrySampleAsync(
+                ExperimentTelemetryRoles.DecisionProviderRtt, rttMs, null, null, ct);
+        }
     }
 
     private ModuleCapabilities GetProviderCapabilities(ModuleProviderContext context)

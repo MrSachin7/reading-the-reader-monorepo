@@ -80,11 +80,14 @@ class MockDecisionEngine:
 
         if message_type == "providerDecisionContext":
             self._memory.latest_decision_context = payload
-            return self._build_decision_reply(payload)
+            inbound_correlation_id = self._read_optional_text(envelope, "correlationId")
+            return self._build_decision_reply(payload, inbound_correlation_id)
 
         return []
 
-    def _build_decision_reply(self, context: dict[str, Any]) -> list[dict[str, Any]]:
+    def _build_decision_reply(
+        self, context: dict[str, Any], inbound_correlation_id: str | None = None
+    ) -> list[dict[str, Any]]:
         execution_mode = self._read_text(context, "executionMode", default=ADVISORY_MODE)
         session_id = self._read_optional_text(context, "sessionId") or self._memory.session_id
         if session_id is None:
@@ -122,6 +125,9 @@ class MockDecisionEngine:
                 if elapsed < self._config.min_proposal_interval_ms:
                     return []
 
+        # Echo the backend-issued correlation id so the backend can match this reply
+        # to the decision context it sent and measure the round-trip latency
+        # (evaluation RQ2, the cost of the out-of-process decision path).
         active_token_id = self._read_optional_text(attention_summary, "currentTokenId") or "unknown-token"
         proposal_key = f"{session_id}:{active_token_id}:{target_font_size}:{execution_mode}"
         if (
@@ -139,7 +145,7 @@ class MockDecisionEngine:
             "Mock decision-maker detected sustained attention on the current token "
             "and proposes a small font-size increase."
         )
-        correlation_id = str(uuid.uuid4())
+        correlation_id = inbound_correlation_id or str(uuid.uuid4())
 
         proposed_intervention = {
             "moduleId": MODULE_ID_FONT_SIZE,

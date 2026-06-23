@@ -498,6 +498,24 @@ export function usePreserveReadingContext({
       const applyFinalAlignment = (viewportDeltaPx: number | null) => {
         const finalContainerRect = getContainerRect(container)
         const beforeScrollTop = container.scrollTop
+
+        // Uncompensated displacement: how far the reader's captured reading position
+        // has shifted from its on-screen offset due to the reflow, measured BEFORE we
+        // scroll to compensate. This is what the reader would experience WITHOUT
+        // context preservation, whereas anchorErrorPx below is the residual WITH it.
+        // Recording both yields the on/off comparison from a single run (evaluation RQ3).
+        // (For offset-preserve the located anchor is the reading anchor itself, so this
+        // matches the scroll delta; for semantic-restart it is measured separately.)
+        let uncompensatedDisplacementPx: number | null = null
+        if (anchor) {
+          const capturedLocated = locateAnchor(content, anchor)
+          if (capturedLocated) {
+            const capturedTop =
+              capturedLocated.primaryElement.getBoundingClientRect().top - finalContainerRect.top
+            uncompensatedDisplacementPx = Math.abs(capturedTop - anchor.anchorViewportOffsetPx)
+          }
+        }
+
         const currentTop = located.primaryElement.getBoundingClientRect().top - finalContainerRect.top
         container.scrollTop += currentTop - located.anchorViewportOffsetPx
 
@@ -505,7 +523,8 @@ export function usePreserveReadingContext({
         const anchorErrorPx = Math.abs(finalTop - located.anchorViewportOffsetPx)
         const scrollDeltaPx = Math.abs(container.scrollTop - beforeScrollTop)
         const effectiveViewportDeltaPx =
-          viewportDeltaPx === null ? scrollDeltaPx : Math.max(viewportDeltaPx, scrollDeltaPx)
+          uncompensatedDisplacementPx ??
+          (viewportDeltaPx === null ? scrollDeltaPx : Math.max(viewportDeltaPx, scrollDeltaPx))
         const status =
           restoreMode === "semantic-restart"
             ? anchorErrorPx <= 72

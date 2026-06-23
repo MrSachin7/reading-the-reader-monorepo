@@ -1,0 +1,27 @@
+[project]
+name = "reading-the-reader-struggle-connector"
+version = "0.1.0"
+description = "Connector that runs the Reading-The-Struggle analysis pipeline as an external fixation-analysis module provider for the Reading The Reader thesis platform."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "websockets>=12,<16",
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    # Pinned to the version the collaborator's kmeans_cognitive_load.pkl was trained with.
+    "scikit-learn~=1.7.2",
+]
+
+[project.scripts]
+struggle-connector = "struggle_connector.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

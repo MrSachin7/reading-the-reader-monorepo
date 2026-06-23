@@ -340,7 +340,8 @@ public sealed class DecisionProposalLifecycleTests
         return new InterventionsInboundHandler(
             harness.SessionManager,
             harness.ModuleProviderCoordinator,
-            new RealtimeTestDoubles.FakeModuleProviderGateway());
+            new RealtimeTestDoubles.FakeModuleProviderGateway(),
+            new ModuleProviderRttTracker());
     }
 
     private static string SerializePayload<T>(T payload)

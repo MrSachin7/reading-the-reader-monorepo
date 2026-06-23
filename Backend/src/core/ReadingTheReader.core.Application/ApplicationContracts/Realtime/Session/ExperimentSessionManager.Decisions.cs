@@ -282,6 +282,11 @@ public sealed partial class ExperimentSessionManager
             var updatedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             SupersedeActiveProposal(updatedAtUnixMs, "system");
 
+            if (string.Equals(_decisionConfiguration.ProviderId, DecisionProviderIds.RuleBased, StringComparison.Ordinal))
+            {
+                RecordInProcessDecisionPipelineLatency(updatedAtUnixMs);
+            }
+
             if (string.Equals(_decisionConfiguration.ExecutionMode, DecisionExecutionModes.Autonomous, StringComparison.Ordinal))
             {
                 var outcome = ScheduleOrApplyIntervention(proposal.ProposedIntervention, updatedAtUnixMs);

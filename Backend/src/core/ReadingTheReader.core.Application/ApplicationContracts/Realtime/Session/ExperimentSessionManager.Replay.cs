@@ -175,6 +175,25 @@ public sealed partial class ExperimentSessionManager
         }
     }
 
+    private void RecordInProcessDecisionPipelineLatency(long dispatchedAtUnixMs)
+    {
+        // In-process counterpart to the out-of-process decision-provider RTT: time
+        // from the freshest gaze sample's backend ingest to the moment the built-in
+        // strategy dispatches a decision. Measured on a single backend clock and
+        // taken at decision formation, so it excludes any commit-boundary wait.
+        var latestGazeIngestUnixMs = Volatile.Read(ref _latestGazeIngestUnixMs);
+        if (latestGazeIngestUnixMs <= 0)
+        {
+            return;
+        }
+
+        RecordClientTelemetrySample(
+            ExperimentTelemetryRoles.PipelineDecision,
+            Math.Max(0, dispatchedAtUnixMs - latestGazeIngestUnixMs),
+            null,
+            null);
+    }
+
     public ValueTask FlushPendingReplayChunksAsync(CancellationToken ct = default)
     {
         return FlushPendingReplayChunksCoreAsync(null, forceFlush: false, ct);

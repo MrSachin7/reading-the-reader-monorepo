@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import {
   downloadExperimentExport,
+  downloadExperimentTelemetry,
   downloadProcessedExperimentExport,
 } from "@/lib/experiment-export"
 import type { ExperimentSessionSnapshot } from "@/lib/experiment-session"
@@ -55,7 +56,7 @@ export function ExperimentCompletionActions({
     useResetExperimentSessionMutation()
   const [saveExperimentReplayExport, { isLoading: isSaving }] =
     useSaveExperimentReplayExportMutation()
-  const [downloadingFormat, setDownloadingFormat] = useState<ReplayExportFormat | "processed" | null>(null)
+  const [downloadingFormat, setDownloadingFormat] = useState<ReplayExportFormat | "processed" | "telemetry" | null>(null)
   const [savingFormat, setSavingFormat] = useState<ReplayExportFormat | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
@@ -135,6 +136,20 @@ export function ExperimentCompletionActions({
     }
   }
 
+  const handleTelemetryDownload = async () => {
+    setErrorMessage(null)
+    setSaveSuccessMessage(null)
+    setDownloadingFormat("telemetry")
+
+    try {
+      await downloadExperimentTelemetry(saveName)
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Could not download the experiment telemetry."))
+    } finally {
+      setDownloadingFormat(null)
+    }
+  }
+
   const handleSave = async (format: ReplayExportFormat) => {
     setErrorMessage(null)
     setSaveSuccessMessage(null)
@@ -190,6 +205,13 @@ export function ExperimentCompletionActions({
               disabled={downloadingFormat !== null || isResetting}
             >
               {downloadingFormat === "processed" ? "Downloading Processed..." : "Download Processed"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => void handleTelemetryDownload()}
+              disabled={downloadingFormat !== null || isResetting}
+            >
+              {downloadingFormat === "telemetry" ? "Downloading Telemetry..." : "Download Telemetry"}
             </Button>
           </>
         ) : null}
