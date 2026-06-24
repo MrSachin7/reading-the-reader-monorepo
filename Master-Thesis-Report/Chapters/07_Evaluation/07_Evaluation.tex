@@ -39,7 +39,7 @@ Suhani & Without preservation & 141 & 12697 & 694  & 2 \\
 
 Every session is exported as a schema-versioned record together with a separate telemetry record, and the analysis that produces the figures and tables below reads only those exported files.
 The analysis pipeline is scripted and re-runnable, so each figure traces to a recorded session rather than to a live observation.
-We make no inferential claim from these sessions: with two participants the behavioural numbers in \cref{sec:eval-context} are descriptive, consistent with the scope set out in \cref{sec:final-problem-statement}, which places a controlled human-subjects effect study outside this thesis.
+We make no inferential claim from these sessions: with four participants the behavioural numbers in \cref{sec:eval-context} are descriptive, consistent with the scope set out in \cref{sec:final-problem-statement}, which places a controlled human-subjects effect study outside this thesis.
 
 \section{Functional Verification and Requirements Coverage}
 \label{sec:eval-functional}
@@ -216,7 +216,7 @@ Each outcome, including its graded status, is written into the session record, s
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition.pdf}
+\includegraphics[width=0.68\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition.pdf}
 \caption{Restore residual against the displacement the reflow induced, with one point per intervention in the four preservation-enabled sessions. Points above the dashed line of equality indicate that the restore repositioned the reader further than the reflow had moved them.}
 \label{fig:eval-overreposition}
 \end{figure}
@@ -243,7 +243,7 @@ As a two-person team we authored the requirements, implemented the platform, and
 We mitigate this by leaning on the automated tests and the build-enforced boundary test, which encode pass-or-fail criteria independently of judgement, by publishing the codebase and the analysis pipeline for inspection, and by integrating a third party's model through the same provider contract; we note, however, that the reference providers were built by the same team and so evidence the sufficiency of the contract rather than constituting its independent validation.
 
 The external threats are the most limiting.
-The behavioural results rest on two participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
+The behavioural results rest on four participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
 The latency result is the transport round trip, and the decision-pipeline and provider round-trip latencies were not exercised, so the latency budget is demonstrated for transport but not for an automated decision path.
 
 Two construct threats bear on the context-preservation result.
@@ -251,7 +251,7 @@ The reading-resume time and the regression rate are proxies for reading disrupti
 The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
 
 The conclusion threat is the sample size.
-With two participants we report no inferential statistics and draw no statistical conclusion; the numbers indicate direction and magnitude on this sample and nothing more.
+With four participants we report no inferential statistics and draw no statistical conclusion; the numbers indicate direction and magnitude on this sample and nothing more.
 
 \section{Summary}
 \label{sec:eval-summary}

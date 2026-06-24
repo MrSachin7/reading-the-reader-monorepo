@@ -29,22 +29,25 @@ This tension between adaptation and continuity runs through every layer of the p
   flow/.style={-{Latex[length=3mm]}, very thick, black!55},
 ]
 
-\node[block, draw=black!15, fill=gray!5, text width=3.8cm,
-      font=\footnotesize, text=black!72] (before)
+% Both columns share the same text width so the comparison is honest: with the
+% width held constant, the larger adapted type necessarily wraps onto MORE lines
+% than the default type, rather than fewer.
+\node[block, draw=black!15, fill=gray!5, text width=4.6cm,
+      font=\normalsize, text=black!72] (before)
   {Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.};
 \node[lbl, above=2.5mm of before] {Default typography};
 
-\node[block, draw=black!35, fill=blue!5, text width=5.6cm,
+\node[block, draw=black!35, fill=blue!5, text width=4.6cm,
       right=2.6cm of before, font=\large, text=black!92] (after)
   {{\linespread{1.45}\selectfont Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.}};
 \node[lbl, above=2.5mm of after] {Adapted typography};
 
 \draw[flow] (before.east) -- (after.west)
-  node[midway, above, font=\footnotesize\itshape, text=black!70, align=center]
+  node[midway, above, font=\small, text=black!70, align=center]
   {adaptive\\intervention};
 
 \end{tikzpicture}
-\caption{A typographic intervention of the kind an adaptive reading system applies, shown as a before-and-after comparison of the same sentence. The adapted version on the right increases font size, line spacing, and contrast to improve legibility. Changes such as this can support a reader, but if applied abruptly or at the wrong moment they risk disrupting reading flow; reconciling these two effects is the central challenge of this thesis.}
+\caption{An adaptive reading intervention: increased font size, line spacing, and contrast for improved readability, balancing reading support against reading flow.}
 \label{fig:typo-intervention}
 \end{figure}
 

@@ -1,5 +1,5 @@
 %% The capture-and-restore lifecycle that preserves the reader's place across an intervention reflow.
-%% Render to PDF like the other Ch.6 figures:  mmdc -i context-preservation.mmd -o context-preservation.pdf
+%% Render with: ./render-diagrams.sh  (mmdc + mermaid-config.json + --pdfFit, keeps text legible at \linewidth)
 sequenceDiagram
     autonumber
     participant D as Reader DOM<br/>(viewport + tokens)
