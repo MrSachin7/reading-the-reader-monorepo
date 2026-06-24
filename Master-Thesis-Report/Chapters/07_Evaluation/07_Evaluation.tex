@@ -12,13 +12,13 @@ We state results as measurements, distributions, and demonstrations; we do not a
 The evidence in this chapter comes from three sources: the automated test suite together with a static inspection of the implemented system, a set of recorded reading sessions on real hardware, and the session records those sessions export.
 
 The reading sessions were run with a Tobii eye tracker on a 2560$\times$1440 display.
-Two participants each read under two conditions, namely with and without the context-preserving restore enabled, giving four sessions.
+Four participants each read under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
 \Cref{tab:eval-sessions} summarises them.
-All four sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during these sessions, a point we return to in \cref{sec:eval-performance}.
+All eight sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during these sessions, a point we return to in \cref{sec:eval-performance}.
 
 \begin{table}[htbp]
 \centering
-\caption{The four recorded reading sessions that supply the runtime evidence in this chapter. Each participant read under both conditions, and the durations and counts are taken from the exported session records.}
+\caption{The eight recorded reading sessions that supply the runtime evidence in this chapter. Each participant read under both conditions, and the durations and counts are taken from the exported session records.}
 \label{tab:eval-sessions}
 \small
 \begin{tabular}{llrrrr}
@@ -26,8 +26,12 @@ All four sessions used the eye tracker as the sensing source and applied typogra
 Participant & Condition & Duration (s) & Gaze samples & Fixations & Interventions \\
 \midrule
 Oliwer & With preservation    & 186 & 16664 & 656  & 5 \\
+Sachin & With preservation    & 252 & 22688 & 1525 & 7 \\
+Satish & With preservation    & 171 & 15305 & 866  & 3 \\
 Suhani & With preservation    & 224 & 20136 & 943  & 4 \\
 Oliwer & Without preservation & 475 & 42683 & 1914 & 9 \\
+Sachin & Without preservation & 123 & 11063 & 719  & 4 \\
+Satish & Without preservation & 386 & 34624 & 1994 & 11 \\
 Suhani & Without preservation & 141 & 12697 & 694  & 2 \\
 \bottomrule
 \end{tabular}
@@ -136,15 +140,15 @@ We report these as facts about the implemented system, and we read them against 
 The second research question concerns the sensing pipeline: whether a real Tobii stream is converted into oculomotor events within a latency budget that preserves live adaptation, in a manner that is inspectable and reproducible.
 We report the sensing throughput and validity first, then the transport latency against the budget fixed in \cref{sec:non-functional-requirements}.
 
-Across the four sessions the eye tracker delivered a steady stream at its rated rate.
-The achieved sampling rate, computed from the device timestamps, lay between \SI{89.9}{\hertz} and \SI{90.0}{\hertz}, and the gaze-validity rate ranged from 93.9\% to 96.2\%.
+Across the eight sessions the eye tracker delivered a steady stream at its rated rate.
+The achieved sampling rate, computed from the device timestamps, lay between \SI{89.4}{\hertz} and \SI{90.1}{\hertz}, and the gaze-validity rate ranged from 92.5\% to 98.0\%.
 \Cref{fig:eval-sensing} shows the achieved rate and validity per session, and \cref{fig:eval-intersample} shows the inter-sample interval, which clusters tightly at the nominal period of \SI{11.1}{\milli\second}.
-The calibration that gated each session, the sub-flow shown in \cref{fig:impl-calibration}, passed with an average accuracy between \ang{0.30} and \ang{0.62} and an average precision between \ang{0.08} and \ang{0.33}.
+The calibration that gated each session, the sub-flow shown in \cref{fig:impl-calibration}, passed with an average accuracy between \ang{0.30} and \ang{0.69} and an average precision between \ang{0.08} and \ang{0.33}.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\linewidth]{Chapters/07_Evaluation/eval-sensing-rate-validity.pdf}
-\caption{Achieved sampling rate and gaze validity for each of the four sessions. The achieved rate sits at the tracker's nominal \SI{90}{\hertz} and validity stays above 93\% throughout.}
+\caption{Achieved sampling rate and gaze validity for each of the eight sessions. The achieved rate sits at the tracker's nominal \SI{90}{\hertz} and validity stays above 92\% throughout.}
 \label{fig:eval-sensing}
 \end{figure}
 
@@ -157,7 +161,7 @@ The calibration that gated each session, the sub-flow shown in \cref{fig:impl-ca
 
 The low-latency requirement (NFR2) fixes a budget of \SI{100}{\milli\second}, the threshold at which an interface response ceases to be perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and well within the duration of a single reading fixation \cite{rayner1998eyemovements}.
 The telemetry record carries the round-trip time between each client and the backend.
-For the participant client the median round trip was \SI{1}{\milli\second} and the 95th percentile \SI{3}{\milli\second}, and for the researcher client the median was \SI{2}{\milli\second} and the 95th percentile \SI{9}{\milli\second}.
+For the participant client the median round trip was \SI{1}{\milli\second} and the 95th percentile \SI{3}{\milli\second}, and for the researcher client the median was \SI{1}{\milli\second} and the 95th percentile \SI{8}{\milli\second}.
 No sample in either stream exceeded the \SI{100}{\milli\second} budget.
 \Cref{fig:eval-rtt} shows the two distributions against the budget.
 
@@ -171,22 +175,22 @@ No sample in either stream exceeded the \SI{100}{\milli\second} budget.
 The round trip reported above is the transport latency between a client and the backend.
 The platform also records the in-process decision-pipeline latency, from the freshest gaze sample to the dispatch of an automated decision, and the out-of-process round-trip latency to an external decision provider, each on a single backend clock.
 Both are recorded only when an automated decision strategy is active.
-The four sessions were operated in manual mode, in which the researcher applies interventions directly, so neither latency was exercised and the telemetry contains no decision-latency samples.
+The eight sessions were operated in manual mode, in which the researcher applies interventions directly, so neither latency was exercised and the telemetry contains no decision-latency samples.
 The instrumentation is therefore present and available but unexercised in this dataset, and we treat the question it would answer as future work in \cref{ch:discussion}.
 
 \section{Context Preservation}
 \label{sec:eval-context}
 
 The third research question asks how a typographic micro-intervention can change the text while preserving the reader's context.
-The four sessions form a with-and-without comparison: in two of them the context-preserving restore is enabled, and in two it is disabled.
-We report two behavioural measures aligned to each intervention, and then the mechanism's own per-intervention record from the two sessions in which it ran.
+The eight sessions form a with-and-without comparison: in four of them the context-preserving restore is enabled, and in four it is disabled.
+We report two behavioural measures aligned to each intervention, and then the mechanism's own per-intervention record from the four sessions in which it ran.
 
 A regression, a backward saccade against the reading direction, is a standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
 Because context preservation acts only in the moments after a reflow, we aligned the measures to each intervention rather than averaging over the session: for every applied intervention we measured the reading-resume time, the time to the first forward saccade after it, and the regression rate in the five seconds after it against a matched five-second baseline before it.
-The reading-resume time was shorter with preservation than without, with a median of \SI{376}{\milli\second} against \SI{613}{\milli\second} and a mean of \SI{617}{\milli\second} against \SI{865}{\milli\second} (\cref{fig:eval-rrt}).
-The regression rate diverged in the same direction: without preservation it rose after an intervention, from 35\% in the baseline window to 41\% after, whereas with preservation it did not rise, moving from 28\% to 22\% (\cref{fig:eval-postreg}).
-This pattern held across three-, five-, and ten-second windows.
-We state the direction of these numbers without drawing an inference from them, as two participants (nine interventions with preservation, eleven without) do not support one.
+The reading-resume time was shorter with preservation than without, with a median of \SI{482}{\milli\second} against \SI{650}{\milli\second} and a mean of \SI{670}{\milli\second} against \SI{923}{\milli\second} (\cref{fig:eval-rrt}).
+The regression rate showed the same separation: in the five seconds after an intervention it was 23\% with preservation against 33\% without, having fallen from a 29\% baseline with preservation while staying near its 32\% baseline without (\cref{fig:eval-postreg}).
+This pattern held across three-, five-, and ten-second windows, and the resume-time direction held for three of the four participants.
+We state the direction of these numbers without drawing an inference from them, as four participants (nineteen interventions with preservation, twenty-six without) do not support one.
 
 \begin{figure}[htbp]
 \centering
@@ -202,18 +206,18 @@ We state the direction of these numbers without drawing an inference from them, 
 \label{fig:eval-postreg}
 \end{figure}
 
-Within the two sessions in which preservation ran, the reader recorded an outcome for each intervention, namely the displacement the reflow induced (the shift of the reader's position before any compensation) and the residual after the restore, together with a graded status.
-All nine interventions in these two sessions were font-size changes, which trigger the semantic-restart strategy.
-Two interventions were graded preserved and seven degraded.
-For the degraded interventions the median residual was 396\,px, while the median induced displacement was only 39\,px.
+Within the four sessions in which preservation ran, the reader recorded an outcome for each intervention, namely the displacement the reflow induced (the shift of the reader's position before any compensation) and the residual after the restore, together with a graded status.
+Most of the nineteen interventions were layout-changing (a font-size, line-width, or line-height change), which trigger the semantic-restart strategy, and one was an appearance-only change.
+Three interventions were graded preserved and sixteen degraded.
+For the degraded interventions the median residual was 389\,px, while the median induced displacement was only 38\,px.
 \Cref{fig:eval-overreposition} plots the residual against the induced displacement for each intervention, and the points lie above the line of equality, that is, the restore moved the reader's position further than the reflow itself had.
-This is the measured behaviour of the semantic-restart strategy on small font-size reflows, and we examine why it occurs, and what it implies for the restore strategy, in \cref{ch:discussion}.
+This is the measured behaviour of the semantic-restart strategy on small layout reflows, and we examine why it occurs, and what it implies for the restore strategy, in \cref{ch:discussion}.
 Each outcome, including its graded status, is written into the session record, so the cost of every intervention to the reader's continuity is auditable after the fact.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.6\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition.pdf}
-\caption{Restore residual against the displacement the reflow induced, with one point per intervention in the two preservation-enabled sessions. Points above the dashed line of equality indicate that the restore repositioned the reader further than the reflow had moved them.}
+\caption{Restore residual against the displacement the reflow induced, with one point per intervention in the four preservation-enabled sessions. Points above the dashed line of equality indicate that the restore repositioned the reader further than the reflow had moved them.}
 \label{fig:eval-overreposition}
 \end{figure}
 
