@@ -1,0 +1,7 @@
+window_s,condition,post_reg_rate_pct,rrt_median_ms
+3.0,with,23.2,376.0
+3.0,without,38.6,613.0
+5.0,with,22.5,376.0
+5.0,without,41.1,613.0
+10.0,with,21.3,376.0
+10.0,without,39.0,613.0
