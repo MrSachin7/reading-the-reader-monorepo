@@ -31,10 +31,10 @@ class DecisionMakerConfig:
     @classmethod
     def from_env(cls) -> "DecisionMakerConfig":
         return cls(
-            ws_url=os.getenv("DECISION_MAKER_WS_URL", "ws://localhost:5190/ws/provider"),
+            ws_url=os.getenv("DECISION_MAKER_WS_URL", "ws://localhost:5190/ws/module-provider"),
             provider_id=os.getenv("DECISION_MAKER_PROVIDER_ID", "mock-python"),
             display_name=os.getenv("DECISION_MAKER_DISPLAY_NAME", "Mock Python Decision Maker"),
-            shared_secret=os.getenv("DECISION_MAKER_SHARED_SECRET", "change-me-local-provider-secret"),
+            shared_secret=os.getenv("DECISION_MAKER_SHARED_SECRET", "change-me-local-module-provider-secret"),
             heartbeat_interval_seconds=max(1, _read_int("DECISION_MAKER_HEARTBEAT_INTERVAL_SECONDS", 5)),
             reconnect_delay_seconds=max(1, _read_int("DECISION_MAKER_RECONNECT_DELAY_SECONDS", 3)),
             fixation_threshold_ms=max(1, _read_int("DECISION_MAKER_FIXATION_THRESHOLD_MS", 1200)),

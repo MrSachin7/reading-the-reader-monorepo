@@ -38,10 +38,11 @@ Owner key: 🟦 me (code/writing) · 🟨 you (hardware/experiments) · 🟩 joi
 - **A2 (provider RTT) — OPEN FORK (needs user):** RTT is only clean for **request/response** paths. The decision provider (mock decision-maker) is request/response (correlationId) → clean single-clock RTT. The analysis providers (struggle, eye-movement-analyzer) are **streaming** (gaze in continuously, analysis out every ~180 samples) → no natural RTT; would need a protocol-level ping/echo to get a comparable number, which means editing all three Python connectors. Decision pending: decision-path-only RTT vs. uniform protocol echo. Struggle is the RQ1 modularity headline regardless and needs no RTT.
 - **A3 (context-preservation off arm):** mechanism already computes/logs `anchorErrorPx` + status (preserved/degraded/failed) per intervention. Need a session-level "restore disabled" control that still measures where the anchor landed (residual), so on vs off is a clean comparison. Touch points: a session flag + the front-end `usePreserveReadingContext.ts` restore short-circuit that still records the residual.
 
-## Phase B — Architecture evidence (🟦, data-independent, parallel with A)
-- [ ] **B1. Boundary inspection.** Project-reference DAG + NetArchTest/namespace assertion (no cross-boundary imports) → reusable test + figure/table. → RQ1/NFR1
-- [ ] **B2. Modification locality.** From git history of past module additions (+ one fresh additive module if needed): files added vs. existing modified (expect 0). → RQ1/NFR6 + RQ4 DX
-- [ ] **B3. Provider-integration runbook.** Reproducible steps + evidence for all three providers connecting with zero core edits; struggle headline. Fix stale "Phase 2" claim in smoke-test README. → RQ1
+## Phase B — Architecture evidence (🟦, data-independent, parallel with A) — DONE
+Evidence consolidated in `Experiments/architecture-evidence.md`.
+- [x] **B1. Boundary inspection.** DONE. Project-reference DAG documented (Domain←Application←infra←WebApi; Application references only Domain, build-enforced). Executable `ArchitectureBoundaryTests.cs` (2 xUnit facts via `GetReferencedAssemblies`) added and passing (100/100). → RQ1/NFR1
+- [x] **B2. Modification locality.** DONE. In-process: adding an intervention module = one entry in `BuiltInReadingInterventionModules.All`, zero runtime/other-module changes (registry-by-id). Out-of-process: struggle connector commit `fb367fc` touched **0** `Backend/` files (git-confirmed). → RQ1/NFR6 + RQ4 DX
+- [x] **B3. Provider-integration runbook.** DONE. Runbook for all three providers in `architecture-evidence.md`; stale "Phase 2" claim fixed in `Experiments/module-provider-sample/README.md`. → RQ1
 
 ## Phase C — Analysis tooling for the new data (🟦)
 - [ ] **C1.** Update `Experiments/analysis/_lib.py` loader for new export fields (latency, RTT, preservation on/off).

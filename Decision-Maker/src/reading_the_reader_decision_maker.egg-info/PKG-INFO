@@ -10,7 +10,7 @@ Requires-Dist: websockets<16,>=12
 
 This service is a mock external decision provider for the Reading The Reader thesis platform.
 
-It connects to the backend provider websocket at `/ws/provider`, consumes the provider-facing realtime stream, and sends mock intervention proposals back to the backend. It does not implement any real AI. Instead, it imitates an external decision engine while preserving the public integration boundary for future teams.
+It connects to the backend provider websocket at `/ws/module-provider`, consumes the provider-facing realtime stream, and sends mock intervention proposals back to the backend. It does not implement any real AI. Instead, it imitates an external decision engine while preserving the public integration boundary for future teams.
 
 ## What It Does
 
@@ -56,9 +56,10 @@ Copy `.env.example` into your preferred local environment setup or export the va
 Important values:
 
 - `DECISION_MAKER_WS_URL`
-  - default: `ws://localhost:5190/ws/provider`
+  - default: `ws://localhost:5190/ws/module-provider`
 - `DECISION_MAKER_SHARED_SECRET`
-  - must match `Backend/src/ReadingTheReader.WebApi/appsettings.json`
+  - default: `change-me-local-module-provider-secret`
+  - must match the backend module-provider secret from `ModuleProviderOptions` / the `ModuleProvider` config section
 - `DECISION_MAKER_PROVIDER_ID`
   - default: `mock-python`
 
@@ -73,7 +74,7 @@ python -m decision_maker
 Or start it directly from PowerShell with the launcher script:
 
 ```powershell
-C:\Users\s243872\Desktop\reading-the-reader-monorepo\Decision-Maker\scripts\startService.ps1
+C:\Users\s243872\Desktop\Thesis\reading-the-reader-monorepo\Decision-Maker\scripts\startService.ps1
 ```
 
 The script will:

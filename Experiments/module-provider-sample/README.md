@@ -24,7 +24,7 @@ The smoke test runs four scenarios against the live backend:
 3. **Wrong framework protocol version** — expects `protocol-mismatch` error.
 4. **No modules in hello** — expects `invalid-payload` error.
 
-In Phase 2 no real modules are registered yet, so all scenarios should fail in predictable ways. Phase 3 will add the first real module (facial state); at that point a fifth scenario will exercise the happy path.
+These four scenarios all expect the framework to reject a malformed or unauthorized hello in predictable ways; they exercise the rejection paths of the protocol. The happy path (a successful hello, welcome, and live context/command exchange) is exercised by the real provider sub-projects — `Decision-Maker/`, `Eye-Movement-Analyzer/`, and `reading-the-struggle/connector/` — which register against the live `interventions`, `fixation-analysis`, and `facial-state` modules.
 
 ## Configuration
 

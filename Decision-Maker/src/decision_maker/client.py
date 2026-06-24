@@ -58,14 +58,16 @@ class DecisionMakerClient:
 
     async def _handle_inbound_message(self, websocket: Any, envelope: dict[str, Any]) -> None:
         message_type = envelope.get("type")
-        if message_type == "providerWelcome":
+        if message_type == "moduleProviderWelcome":
             self._registered = True
             LOGGER.info("Provider registration accepted by backend.")
             return
 
-        if message_type == "providerError":
+        if message_type == "moduleProviderError":
             LOGGER.warning("Backend provider error: %s", envelope.get("payload"))
             return
+
+        LOGGER.info("Received provider message '%s'.", message_type)
 
         try:
             outbound_envelopes = self._engine.handle_inbound_envelope(envelope)

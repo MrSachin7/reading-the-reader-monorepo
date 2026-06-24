@@ -10,7 +10,9 @@ from typing import Any
 
 from .config import DecisionMakerConfig
 
-PROTOCOL_VERSION = "provider.v1"
+PROTOCOL_VERSION = "module-provider.v1"
+MODULE_PROTOCOL_VERSION = "interventions.v1"
+MODULE_ID_INTERVENTIONS = "interventions"
 MODULE_ID_FONT_SIZE = "font-size"
 TRIGGER_ATTENTION_SUMMARY = "attention-summary"
 ADVISORY_MODE = "advisory"
@@ -44,11 +46,15 @@ class MockDecisionEngine:
 
     def handle_inbound_envelope(self, envelope: dict[str, Any]) -> list[dict[str, Any]]:
         message_type = self._read_text(envelope, "type")
-        payload = self._read_object(envelope, "payload")
         session_id = self._read_optional_text(envelope, "sessionId")
 
         if session_id:
             self._memory.session_id = session_id
+
+        if message_type == "moduleProviderOutbound":
+            return self._handle_module_outbound(envelope)
+
+        payload = self._read_object(envelope, "payload")
 
         if message_type == "providerSessionSnapshot":
             self._memory.latest_session_snapshot = payload
@@ -84,6 +90,43 @@ class MockDecisionEngine:
             return self._build_decision_reply(payload, inbound_correlation_id)
 
         return []
+
+    def _handle_module_outbound(self, envelope: dict[str, Any]) -> list[dict[str, Any]]:
+        payload = self._read_object(envelope, "payload")
+        module_id = self._read_text(payload, "moduleId", default="")
+        if module_id != MODULE_ID_INTERVENTIONS:
+            return []
+
+        message_type = self._read_text(payload, "messageType", default="")
+        payload_json = self._read_text(payload, "payloadJson", default="{}")
+        try:
+            message_payload = json.loads(payload_json)
+        except json.JSONDecodeError:
+            LOGGER.warning("Could not decode module provider payload for message '%s'.", message_type)
+            return []
+
+        normalized = {
+            "type": self._map_outbound_message_type(message_type),
+            "sessionId": self._read_optional_text(envelope, "sessionId"),
+            "correlationId": self._read_optional_text(envelope, "correlationId"),
+            "payload": message_payload,
+        }
+        return self.handle_inbound_envelope(normalized)
+
+    @staticmethod
+    def _map_outbound_message_type(message_type: str) -> str:
+        mapping = {
+            "sessionSnapshot": "providerSessionSnapshot",
+            "gazeSample": "providerGazeSample",
+            "readingFocusChanged": "providerReadingFocusChanged",
+            "viewportChanged": "providerViewportChanged",
+            "attentionSummaryChanged": "providerAttentionSummaryChanged",
+            "interventionEvent": "providerInterventionEvent",
+            "decisionModeChanged": "providerDecisionModeChanged",
+            "decisionContext": "providerDecisionContext",
+            "error": "providerError",
+        }
+        return mapping.get(message_type, message_type)
 
     def _build_decision_reply(
         self, context: dict[str, Any], inbound_correlation_id: str | None = None
@@ -173,8 +216,8 @@ class MockDecisionEngine:
         self._memory.last_proposal_sent_at_unix_ms = observed_at_unix_ms
 
         if execution_mode == AUTONOMOUS_MODE:
-            envelope = self._build_envelope(
-                "providerRequestAutonomousApply",
+            envelope = self._build_module_inbound_envelope(
+                "requestAutonomousApply",
                 {
                     "providerId": self._config.provider_id,
                     "sessionId": session_id,
@@ -205,8 +248,8 @@ class MockDecisionEngine:
             return [envelope]
 
         proposal_id = str(uuid.uuid4())
-        envelope = self._build_envelope(
-            "providerSubmitProposal",
+        envelope = self._build_module_inbound_envelope(
+            "submitProposal",
             {
                 "providerId": self._config.provider_id,
                 "sessionId": session_id,
@@ -239,21 +282,29 @@ class MockDecisionEngine:
 
     def build_hello_envelope(self) -> dict[str, Any]:
         return self._build_envelope(
-            "providerHello",
+            "moduleProviderHello",
             {
                 "providerId": self._config.provider_id,
                 "displayName": self._config.display_name,
                 "protocolVersion": PROTOCOL_VERSION,
                 "authToken": self._config.shared_secret,
-                "supportsAdvisoryExecution": True,
-                "supportsAutonomousExecution": True,
-                "supportedInterventionModuleIds": [MODULE_ID_FONT_SIZE],
+                "modules": [
+                    {
+                        "moduleId": MODULE_ID_INTERVENTIONS,
+                        "protocolVersion": MODULE_PROTOCOL_VERSION,
+                        "capabilities": {
+                            "supportsAdvisoryExecution": "true",
+                            "supportsAutonomousExecution": "true",
+                            "supportedInterventionModuleIds": MODULE_ID_FONT_SIZE,
+                        },
+                    }
+                ],
             },
         )
 
     def build_heartbeat_envelope(self) -> dict[str, Any]:
         return self._build_envelope(
-            "providerHeartbeat",
+            "moduleProviderHeartbeat",
             {
                 "providerId": self._config.provider_id,
                 "protocolVersion": PROTOCOL_VERSION,
@@ -263,15 +314,32 @@ class MockDecisionEngine:
         )
 
     def build_error_envelope(self, code: str, message: str, detail: str | None = None) -> dict[str, Any]:
-        return self._build_envelope(
+        return self._build_module_inbound_envelope(
             "providerError",
             {
-                "providerId": self._config.provider_id,
                 "code": code,
                 "message": message,
                 "detail": detail,
             },
-            session_id=self._memory.session_id,
+        )
+
+    def _build_module_inbound_envelope(
+        self,
+        message_type: str,
+        payload: dict[str, Any],
+        *,
+        session_id: str | None = None,
+        correlation_id: str | None = None,
+    ) -> dict[str, Any]:
+        return self._build_envelope(
+            "moduleProviderInbound",
+            {
+                "moduleId": MODULE_ID_INTERVENTIONS,
+                "messageType": message_type,
+                "payload": payload,
+            },
+            session_id=session_id,
+            correlation_id=correlation_id,
         )
 
     def _build_envelope(
