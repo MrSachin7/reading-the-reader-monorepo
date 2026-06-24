@@ -1,0 +1,10 @@
+sessionKey,participant,condition,sequenceNumber,eventType,source,occurredAtUnixMs
+Oliwer/with,Oliwer,with,1,session-started,system,1782220887541
+Oliwer/with,Oliwer,with,47730,session-stopped,researcher-live-view,1782221073062
+Suhani/with,Suhani,with,1,session-started,system,1782220292205
+Suhani/with,Suhani,with,57926,module-provider-detached,fixation-analysis,1782220461852
+Suhani/with,Suhani,with,71384,session-stopped,researcher-live-view,1782220516248
+Oliwer/without,Oliwer,without,1,session-started,system,1782221610782
+Oliwer/without,Oliwer,without,137908,session-stopped,participant-thank-you,1782222085871
+Suhani/without,Suhani,without,1,session-started,system,1782219972133
+Suhani/without,Suhani,without,40044,session-stopped,researcher-live-view,1782220113511

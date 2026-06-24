@@ -1,0 +1,10 @@
+sessionKey,participant,condition,occurredAtUnixMs,status,anchorSource,anchorErrorPx,viewportDeltaPx,commitBoundary,waitDurationMs,interventionAppliedAtUnixMs,measuredAtUnixMs,reason,appliedAtUnixMs,affectedProperties,restoreMode,fontSizePx
+Suhani/with,Suhani,with,1782220311909,degraded,sentence-anchor,165.0,65.65625,immediate,4904.0,1782220311878,1782220311909,,1782220311878,font-size,semantic-restart,20
+Suhani/with,Suhani,with,1782220323760,degraded,sentence-anchor,389.0,34.0,immediate,,1782220323736,1782220323760,,1782220323736,line-width,semantic-restart,20
+Suhani/with,Suhani,with,1782220404358,preserved,sentence-anchor,0.046875,50.953125,immediate,,1782220404329,1782220404358,,1782220404329,font-size,semantic-restart,22
+Suhani/with,Suhani,with,1782220418057,degraded,sentence-anchor,472.25,0.0,immediate,,1782220418036,1782220418057,,1782220418036,line-width,semantic-restart,22
+Oliwer/with,Oliwer,with,1782220905762,degraded,sentence-anchor,105.0,48.625,immediate,,1782220905720,1782220905762,,1782220905720,font-size,semantic-restart,20
+Oliwer/with,Oliwer,with,1782220931869,degraded,sentence-anchor,404.0,13.0,immediate,,1782220931849,1782220931869,,1782220931849,line-width,semantic-restart,20
+Oliwer/with,Oliwer,with,1782220952108,degraded,sentence-anchor,655.0,66.0,immediate,,1782220952086,1782220952108,,1782220952086,line-height,semantic-restart,20
+Oliwer/with,Oliwer,with,1782220968982,preserved,sentence-anchor,0.0,0.0,immediate,,1782220968958,1782220968982,,1782220968958,,offset-preserve,20
+Oliwer/with,Oliwer,with,1782220985826,degraded,scroll-only,,39.0,immediate,,1782220985806,1782220985826,Semantic anchor elements were not found; restored scroll position only.,1782220985806,font-size,semantic-restart,18

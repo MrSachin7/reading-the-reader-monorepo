@@ -44,9 +44,11 @@ Evidence consolidated in `Experiments/architecture-evidence.md`.
 - [x] **B2. Modification locality.** DONE. In-process: adding an intervention module = one entry in `BuiltInReadingInterventionModules.All`, zero runtime/other-module changes (registry-by-id). Out-of-process: struggle connector commit `fb367fc` touched **0** `Backend/` files (git-confirmed). → RQ1/NFR6 + RQ4 DX
 - [x] **B3. Provider-integration runbook.** DONE. Runbook for all three providers in `architecture-evidence.md`; stale "Phase 2" claim fixed in `Experiments/module-provider-sample/README.md`. → RQ1
 
-## Phase C — Analysis tooling for the new data (🟦)
-- [ ] **C1.** Update `Experiments/analysis/_lib.py` loader for new export fields (latency, RTT, preservation on/off).
-- [ ] **C2.** Notebooks output **vector PDF** (not PNG), parametrised over new sessions: latency distributions (p50/p95/p99 + tail vs 100 ms), RTT distribution, anchorErrorPx on-vs-off, sample yield/validity/Hz, degradation timeline, + a descriptive reading-signal plot if the new data supports one.
+## Phase C — Analysis tooling for the new data (🟦) — DONE (against real Tobii data)
+Data uploaded: 2 participants (Oliwer, Suhani) × with/without context-preservation = 4 full exports + 4 telemetry. Real Tobii, ~90 Hz, 94–96% validity, calibration 0.30–0.62°. All **manual** mode (no A1/A2 decision-latency data).
+- [x] **C1.** `Experiments/analysis/_lib.py` — folder-driven loader for the full export (v7) + telemetry (v1); tidy tables (sessions/gaze/fixations/saccades/interventions/context_preservation/lifecycle/telemetry); pickle cache; plotting helpers (vector PDF). Validated.
+- [x] **C2.** Notebooks `00_load`, `01_sensing_quality`, `02_latency`, `03_context_preservation` (both framings), `04_modularity_degradation` — built via `_build_notebooks.py`, executed via `_run_notebooks.py`, produce PDF figures + CSV tables in `outputs/`. Append-only (drop new files → re-run). README in `Experiments/analysis/`.
+- Key results: sensing 90 Hz / 95% validity; client RTT 0% over 100 ms budget; regression rate with-vs-without = Oliwer 22%→34%, Suhani 22%/22% (descriptive, N=2); context-preservation 7/9 "degraded" BUT that is the semantic-restart `anchorErrorPx` semantics (distance-to-target, not pixel-preservation) — `viewportDeltaPx` (displacement) median ~39 px. **Open framing question for the user** (see below).
 
 ## Phase D — Data-independent writing (🟦, hybrid — now)
 Two-stage: scaffold → prose. `\todo{verify N}` where live numbers go.
@@ -84,3 +86,10 @@ Two-stage: scaffold → prose. `\todo{verify N}` where live numbers go.
 
 ## Critical path
 A (now) → E (your runs) → F → G. B, C-tooling, D run in parallel while you experiment.
+
+## Progress — Evaluation chapter DRAFTED (2026-06-24)
+Phases A–D done; F done for the data we have; G mostly done.
+- **D + F (writing):** `Chapters/07_Evaluation/07_Evaluation.tex` fully drafted, RQ-spined (setup, requirements-coverage table, modularity, runtime performance, context preservation, researcher control, threats, summary). Real numbers from the analysis are in the prose. 5 figures copied to the chapter dir.
+- **G (build):** `latexmk -xelatex main.tex` clean (exit 0, 130 pages); all new refs/citations resolve in the final pass; 0 citation warnings. Result/interpretation split held (interpretation deferred to `ch:discussion`).
+- **E:** with/without context-preservation sessions done (2 participants). Decision-mode (A1/A2) runs NOT done — user chose client-RTT + sensing only for RQ2 latency.
+- **Remaining for the chapter:** (1) UI screenshots for §7.6 (user must provide per thesis rules); (2) a session-replay demonstration for FR21 (marked "Implemented"); (3) spell-check / British-spelling consistency pass; (4) user review. The Discussion chapter (interpretation, the semantic-restart over-reposition limitation + Kalman-filter future work, related-work comparison) is the next writing target.

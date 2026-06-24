@@ -1,0 +1,5 @@
+participant,condition,gazeSource,achievedHz,calibrationValidationPassed,calibrationAccuracyDeg,calibrationPrecisionDeg,durationSec,nGazeSamples,nFixations,nSaccades,nInterventions,nContextPreservationEvents
+Oliwer,with,tobii,89.98,True,0.6189229886715297,0.33014227666062335,185.521,16664,656,257,5,5
+Suhani,with,tobii,90.0,True,0.29558062830312515,0.08772431994853118,224.043,20136,943,418,4,4
+Oliwer,without,tobii,89.9,True,0.4707264865412748,0.1769581265093829,475.089,42683,1914,793,9,0
+Suhani,without,tobii,90.02,True,0.3276370443019425,0.08314775428322828,141.378,12697,694,251,2,0
