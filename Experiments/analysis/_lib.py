@@ -46,11 +46,20 @@ def apply_style() -> None:
     """Thesis-friendly matplotlib defaults (vector-safe, restrained)."""
     import matplotlib.pyplot as plt
 
+    # Font sizes are deliberately large: these figures are downscaled to
+    # 0.6--0.92\linewidth in the thesis, so native 10pt text rendered at
+    # ~6--8pt on the page (too small, per supervisor feedback). Native 13pt
+    # base lands at roughly 9--10pt after that downscaling, i.e. ~1--2pt below
+    # the body text, which is the target.
     plt.rcParams.update({
         "figure.dpi": 110,
         "savefig.bbox": "tight",
-        "font.size": 10,
-        "axes.titlesize": 11,
+        "font.size": 13,
+        "axes.titlesize": 13,
+        "axes.labelsize": 13,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.grid": True,

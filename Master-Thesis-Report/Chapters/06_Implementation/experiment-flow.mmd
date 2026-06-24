@@ -1,7 +1,7 @@
 %% End-to-end flow of one experiment session across the two channels.
 %% Solid arrows: REST commands (browser->backend) and in-process port calls.
 %% Dashed arrows: WebSocket realtime frames to/from the browser.
-%% Render to PDF like the Ch.5 figures:  mmdc -i experiment-flow.mmd -o experiment-flow.pdf
+%% Render with: ./render-diagrams.sh  (mmdc + mermaid-config.json + --pdfFit, keeps text legible at \linewidth)
 sequenceDiagram
     autonumber
     actor R as Researcher

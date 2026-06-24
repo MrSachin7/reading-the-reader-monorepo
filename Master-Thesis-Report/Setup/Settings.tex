@@ -89,9 +89,12 @@ purple,         fill=purple         \\%
 \titlespacing\section{0pt}{12pt plus 3pt minus 3pt}{2pt plus 1pt minus 1pt}
 \titlespacing\subsection{0pt}{8pt plus 2pt minus 2pt}{0pt plus 1pt minus 1pt}
 \titlespacing\subsubsection{0pt}{4pt plus 1pt minus 1pt}{-2pt plus 1pt minus 1pt}
-% Captions: one step smaller than body text and italic, with a bold label
-% ("Figure 5.1") so the number still stands out (supervisor feedback, meeting 2).
-\captionsetup{belowskip=\parskip,aboveskip=4pt plus 1pt minus 1pt,font={small,it},labelfont={small,bf}}
+% Captions: one step smaller than body text (\small is ~1--2pt below the body
+% size) and upright. Italics are NOT used for captions: within the thesis,
+% italics are reserved for quotations, equations, and terms in body text
+% (supervisor feedback). The label ("Figure 5.1") stays bold so the number
+% still stands out.
+\captionsetup{belowskip=\parskip,aboveskip=4pt plus 1pt minus 1pt,font={small},labelfont={small,bf}}
 
 % Setup header and footer
 \fancypagestyle{main}{% All normal pages

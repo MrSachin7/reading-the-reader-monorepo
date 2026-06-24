@@ -1,0 +1,17 @@
+{
+  "theme": "neutral",
+  "themeVariables": {
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "16px"
+  },
+  "sequence": {
+    "actorFontSize": 17,
+    "actorFontWeight": 400,
+    "messageFontSize": 16,
+    "noteFontSize": 15,
+    "wrap": true
+  },
+  "flowchart": {
+    "useMaxWidth": true
+  }
+}

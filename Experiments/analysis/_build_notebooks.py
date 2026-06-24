@@ -91,15 +91,18 @@ NOTEBOOKS["01_sensing_quality"] = nb(
          "_lib.save_table(summ, 'sensing_summary')\n"
          "summ.round(3)"),
     md("### Achieved sampling rate and validity per session"),
-    code("fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))\n"
+    code("fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.4))\n"
          "order = summ.sort_values(['condition','participant'])\n"
-         "labels = order['participant'] + '\\n(' + order['condition'] + ')'\n"
+         "labels = order['participant'] + ' (' + order['condition'] + ')'\n"
          "colors = [_lib.CONDITION_COLORS[c] for c in order['condition']]\n"
          "axes[0].bar(labels, order['achievedHz'], color=colors)\n"
          "axes[0].axhline(90, ls='--', c='gray', lw=1)\n"
          "axes[0].set_ylabel('Achieved rate (Hz)'); axes[0].set_title('Sampling rate'); axes[0].set_ylim(0, 100)\n"
          "axes[1].bar(labels, order['gazeValidityRate']*100, color=colors)\n"
          "axes[1].set_ylabel('Gaze validity (%)'); axes[1].set_title('Validity'); axes[1].set_ylim(0, 100)\n"
+         "for ax in axes:\n"
+         "    ax.set_xticks(range(len(labels)))\n"
+         "    ax.set_xticklabels(labels, rotation=25, ha='right')\n"
          "fig.tight_layout(); _lib.save_fig(fig, '01_sensing_rate_validity'); fig"),
     md("### Inter-sample interval (device clock)\n"
        "Tight clustering near the nominal period confirms a steady real-time stream."),
