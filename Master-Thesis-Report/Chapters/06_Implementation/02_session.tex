@@ -202,13 +202,13 @@ The eye-tracker step in the figure shows the detail of this preparation: a real 
 \end{figure}
 
 Calibration is one of the four gates and runs as its own immersive sub-flow, shown in \cref{fig:impl-calibration}.
-The participant follows a sequence of on-screen targets (sixteen in the configuration shown) while the device collects samples, after which a calibration is computed and applied and a validation pass measures its accuracy and precision.
+The participant follows a sequence of on-screen targets (a configurable number of points) while the device collects samples, after which a calibration is computed and applied and a validation pass measures its accuracy and precision.
 Only a calibration whose validation passes satisfies the gate, and the accuracy and precision it reports are carried in the setup snapshot and evaluated in \cref{ch:evaluation}.
 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
-\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (sixteen here) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
+\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (a configurable number of points) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
 \label{fig:impl-calibration}
 \end{figure}
 

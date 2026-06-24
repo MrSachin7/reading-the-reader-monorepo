@@ -146,7 +146,7 @@ NOTEBOOKS["02_latency"] = nb(
          "        ax.step(s, np.linspace(0, 1, len(s)), where='post', label=role, color=c)\n"
          "ax.axvline(_lib.LATENCY_BUDGET_MS, ls='--', c='gray', lw=1, label='100 ms budget')\n"
          "ax.set_xlabel('Client round-trip time (ms)'); ax.set_ylabel('Cumulative fraction')\n"
-         "ax.set_title('All samples within budget'); ax.legend()\n"
+         "ax.legend()\n"
          "fig.tight_layout(); _lib.save_fig(fig, '02_client_rtt_ecdf'); fig"),
     md("Sample rate and validity are also reported through the same telemetry channel "
        "(see notebook 01 for the sensing view)."),
@@ -247,9 +247,8 @@ NOTEBOOKS["03_context_preservation"] = nb(
          "lim = float(max(ev['viewportDeltaPx'].max(), ev['anchorErrorPx'].max())) * 1.05 + 1\n"
          "ax.plot([0, lim], [0, lim], ls='--', c='gray', lw=1, label='residual = induced displacement')\n"
          "ax.set_xlim(0, lim); ax.set_ylim(0, lim)\n"
-         "ax.set_xlabel('Induced displacement  viewportDeltaPx (px)')\n"
-         "ax.set_ylabel('Restore residual  anchorErrorPx (px)')\n"
-         "ax.set_title('Semantic-restart over-repositions on small reflows')\n"
+         "ax.set_xlabel('Induced displacement (px)')\n"
+         "ax.set_ylabel('Restore residual (px)')\n"
          "ax.legend(loc='lower right')\n"
          "fig.tight_layout(); _lib.save_fig(fig, '03_restore_overreposition'); fig"),
 )

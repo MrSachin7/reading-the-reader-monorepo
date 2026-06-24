@@ -11,8 +11,9 @@ We state results as measurements, distributions, and demonstrations; we do not a
 
 The evidence in this chapter comes from three sources: the automated test suite together with a static inspection of the implemented system, a set of recorded reading sessions on real hardware, and the session records those sessions export.
 
-The reading sessions were run with a Tobii eye tracker on a 2560$\times$1440 display.
-Four participants each read under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
+The reading sessions were run with a Tobii eye tracker (model \texttt{IS4\_Large\_Peripheral}) on a 2560$\times$1440 display, calibrated before each session with a nine-point screen-based procedure gated on a passing validation.
+The platform runs as a single-machine deployment: the backend and both browser surfaces, the participant reader and the researcher console, executed on one host, so the traffic between each client and the backend travels over the local loopback rather than a network, which is the intended single-operator setting and the context in which the latency of \cref{sec:eval-performance} should be read.
+Four participants each read an expository Markdown article under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
 \Cref{tab:eval-sessions} summarises them.
 All eight sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during these sessions, a point we return to in \cref{sec:eval-performance}.
 
@@ -79,7 +80,7 @@ FR2 Eye-tracker detection and licensing & Real Tobii sessions detected, licensed
 FR3 Calibration integration             & Calibration metrics recorded and gated on (M, W) & Met \\
 FR4 Gaze acquisition and mapping        & Sustained stream and token-level mapping in the record (M) & Met \\
 FR5 Reading content and presentation    & Markdown rendering and typographic controls exercised (W) & Met \\
-FR6 Researcher interface (second screen) & Live mirror and control panel operated (W) & Met \\
+FR6 Researcher interface (second screen) & Live mirror and researcher console operated (W) & Met \\
 FR7 Intervention runtime (pluggable)    & Module-contract test and registry inspection (T, I) & Met \\
 FR8 Decision-strategy abstraction       & Decision-proposal lifecycle tests and strategy registry (T, I) & Met \\
 FR9 Context preservation                & Per-intervention outcomes measured and logged (M, D) & Met \\
@@ -172,7 +173,7 @@ No sample in either stream exceeded the \SI{100}{\milli\second} budget.
 \label{fig:eval-rtt}
 \end{figure}
 
-The round trip reported above is the transport latency between a client and the backend.
+The round trip reported above is the transport latency between a client and the backend over the local loopback of the single-machine deployment (\cref{sec:eval-setup}).
 The platform also records the in-process decision-pipeline latency, from the freshest gaze sample to the dispatch of an automated decision, and the out-of-process round-trip latency to an external decision provider, each on a single backend clock.
 Both are recorded only when an automated decision strategy is active.
 The eight sessions were operated in manual mode, in which the researcher applies interventions directly, so neither latency was exercised and the telemetry contains no decision-latency samples.
@@ -225,7 +226,7 @@ Each outcome, including its graded status, is written into the session record, s
 \label{sec:eval-control}
 
 The fourth research question concerns the control and the auditable record the researcher needs to operate experiments.
-The recorded sessions were operated entirely through the researcher console of \cref{fig:impl-screens-console}: the session could not start until the setup prerequisites and calibration had passed, gated through the stepper of \cref{fig:impl-setup}, the interventions in \cref{tab:eval-sessions} were applied from the control panel during the run, and the participant's view was mirrored to the researcher throughout.
+The recorded sessions were operated entirely through the researcher console of \cref{fig:impl-screens-console}: the session could not start until the setup prerequisites and calibration had passed, gated through the stepper of \cref{fig:impl-setup}, the interventions in \cref{tab:eval-sessions} were applied from the console during the run, and the participant's view was mirrored to the researcher throughout.
 We verified these flows by walkthrough, as recorded in \cref{tab:req-coverage}.
 
 The auditable record is demonstrated by this chapter itself.
@@ -247,7 +248,7 @@ The behavioural results rest on four participants reading a single content item 
 The latency result is the transport round trip, and the decision-pipeline and provider round-trip latencies were not exercised, so the latency budget is demonstrated for transport but not for an automated decision path.
 
 Two construct threats bear on the context-preservation result.
-The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}.
+The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is computed by the platform's own dwell-based detector rather than against an external reference, so we read only its change from the matched pre-intervention baseline, not its absolute level.
 The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
 
 The conclusion threat is the sample size.
@@ -258,7 +259,7 @@ With four participants we report no inferential statistics and draw no statistic
 
 The evidence in this chapter addresses the four research questions as follows.
 For modularity (RQ1) the dependency boundary is build-enforced and checked by an executable test, an in-process module is added in one registration, and three external providers connect with no change to the core, one of them wrapping a third party's model.
-For the sensing pipeline (RQ2) the eye tracker streamed at its rated \SI{90}{\hertz} with validity above 93\%, and the client transport latency stayed within the \SI{100}{\milli\second} budget for every sample, while the automated decision-path latencies remained instrumented but unexercised.
+For the sensing pipeline (RQ2) the eye tracker streamed at its rated \SI{90}{\hertz} with validity above 92\%, and the client transport latency stayed within the \SI{100}{\milli\second} budget for every sample, while the automated decision-path latencies remained instrumented but unexercised.
 For context preservation (RQ3) the mechanism ran and recorded an audited outcome for every intervention, the reading-resume time and the post-intervention regression rate were both lower with preservation than without, and the restore over-repositioned on small reflows.
 For researcher control (RQ4) the sessions were operated through a single gated console, and the complete results of this chapter were reconstructed from the exported records alone.
 \Cref{ch:discussion} interprets these results, compares them with the problem statement and prior work, and develops the limitations they expose.
