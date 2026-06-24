@@ -90,7 +90,7 @@ FR17 Sensing-mode configuration         & Tobii and mouse sources both operable 
 FR18 Eye-movement analysis layer        & Built-in detector measured; external analyser connects (M, D) & Met \\
 FR19 External module-provider framework & Three providers connect; rejection paths smoke-tested (D, T) & Met \\
 FR20 Decision-proposal approval workflow & Proposal-gating lifecycle tests (T, I) & Met \\
-FR21 Session replay playback            & Replay reconstruction present (I) & Implemented \\
+FR21 Session replay playback            & Replay reconstructs a session from its record (D, I) & Met \\
 FR22 Session-state recovery             & File-backed recovery covered by tests (T) & Met \\
 FR23 Per-context reader-shell settings  & Independent per-view settings present (I) & Implemented \\
 FR24 Facial-state sensing (optional)    & Optional webcam path present (I) & Implemented \\
@@ -139,7 +139,7 @@ We report the sensing throughput and validity first, then the transport latency 
 Across the four sessions the eye tracker delivered a steady stream at its rated rate.
 The achieved sampling rate, computed from the device timestamps, lay between \SI{89.9}{\hertz} and \SI{90.0}{\hertz}, and the gaze-validity rate ranged from 93.9\% to 96.2\%.
 \Cref{fig:eval-sensing} shows the achieved rate and validity per session, and \cref{fig:eval-intersample} shows the inter-sample interval, which clusters tightly at the nominal period of \SI{11.1}{\milli\second}.
-The calibration that gated each session passed with an average accuracy between \ang{0.30} and \ang{0.62} and an average precision between \ang{0.08} and \ang{0.33}.
+The calibration that gated each session, the sub-flow shown in \cref{fig:impl-calibration}, passed with an average accuracy between \ang{0.30} and \ang{0.62} and an average precision between \ang{0.08} and \ang{0.33}.
 
 \begin{figure}[htbp]
 \centering
@@ -213,13 +213,13 @@ Each outcome, including its graded status, is written into the session record, s
 \label{sec:eval-control}
 
 The fourth research question concerns the control and the auditable record the researcher needs to operate experiments.
-The recorded sessions were operated entirely through the researcher console: the session could not start until the setup prerequisites and calibration had passed, the interventions in \cref{tab:eval-sessions} were applied from the control panel during the run, and the participant's view was mirrored to the researcher throughout.
+The recorded sessions were operated entirely through the researcher console of \cref{fig:impl-screens-console}: the session could not start until the setup prerequisites and calibration had passed, gated through the stepper of \cref{fig:impl-setup}, the interventions in \cref{tab:eval-sessions} were applied from the control panel during the run, and the participant's view was mirrored to the researcher throughout.
 We verified these flows by walkthrough, as recorded in \cref{tab:req-coverage}.
 
 The auditable record is demonstrated by this chapter itself.
 Every figure and table here was produced from the exported session records alone, without reference to any live state, which shows that a session can be reconstructed and analysed from its record (NFR5).
 The export carries the session parameters, the calibration metrics, the presentation configuration, the gaze stream, the derived events, and the intervention and context-preservation outcomes, which is what allowed the sensing, latency, and context-preservation results above to be computed after the fact.
-Session replay, which reconstructs a recorded session in the reading interface, is present in the system and is marked ``Implemented'' in \cref{tab:req-coverage}; a demonstration of replay is left as supporting material.
+Session replay reconstructs a recorded session in the reading interface from its exported record alone, shown in \cref{fig:impl-replay}, which is the same reproducibility property that this chapter exercises throughout (FR21).
 
 \section{Threats to Validity}
 \label{sec:eval-threats}
