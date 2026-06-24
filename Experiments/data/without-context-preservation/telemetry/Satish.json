@@ -1,0 +1,1283 @@
+{
+  "manifest": {
+    "schema": "rtr.experiment-telemetry",
+    "version": 1,
+    "exportedAtUnixMs": 1782301667874,
+    "completionSource": "researcher-live-view",
+    "producer": {
+      "appName": "reading-the-reader",
+      "exporterVersion": "1"
+    }
+  },
+  "sessionId": "e0b3ba85-00f4-44ff-8228-9be67357ad13",
+  "startedAtUnixMs": 1782301282285,
+  "endedAtUnixMs": 1782301667874,
+  "durationMs": 385589,
+  "signalSources": {
+    "gazeSource": "tobii",
+    "faceSource": "none"
+  },
+  "samples": [
+    {
+      "sequenceNumber": 1708,
+      "occurredAtUnixMs": 1782301287470,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 87.72981614708233,
+      "validityRate": 0.9362186788154897
+    },
+    {
+      "sequenceNumber": 1807,
+      "occurredAtUnixMs": 1782301287746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 88.96441423430628,
+      "validityRate": 0.9370786516853933
+    },
+    {
+      "sequenceNumber": 3458,
+      "occurredAtUnixMs": 1782301292471,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.14591245252848,
+      "validityRate": 0.9800443458980045
+    },
+    {
+      "sequenceNumber": 3568,
+      "occurredAtUnixMs": 1782301292746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.98
+    },
+    {
+      "sequenceNumber": 5203,
+      "occurredAtUnixMs": 1782301297471,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9844444444444445
+    },
+    {
+      "sequenceNumber": 5296,
+      "occurredAtUnixMs": 1782301297746,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9844789356984479
+    },
+    {
+      "sequenceNumber": 6972,
+      "occurredAtUnixMs": 1782301302478,
+      "role": "researcher",
+      "rttMs": 6,
+      "sampleRateHz": 90.05591054313099,
+      "validityRate": 0.9866962305986696
+    },
+    {
+      "sequenceNumber": 7080,
+      "occurredAtUnixMs": 1782301302745,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9866666666666667
+    },
+    {
+      "sequenceNumber": 8740,
+      "occurredAtUnixMs": 1782301307468,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 89.99799559029866,
+      "validityRate": 0.9755011135857461
+    },
+    {
+      "sequenceNumber": 8847,
+      "occurredAtUnixMs": 1782301307747,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.975609756097561
+    },
+    {
+      "sequenceNumber": 10536,
+      "occurredAtUnixMs": 1782301312470,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9866962305986696
+    },
+    {
+      "sequenceNumber": 10656,
+      "occurredAtUnixMs": 1782301312749,
+      "role": "participant",
+      "rttMs": 3,
+      "sampleRateHz": 89.9640143942423,
+      "validityRate": 0.9866666666666667
+    },
+    {
+      "sequenceNumber": 12392,
+      "occurredAtUnixMs": 1782301317473,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.94603238057165,
+      "validityRate": 0.9888888888888889
+    },
+    {
+      "sequenceNumber": 12479,
+      "occurredAtUnixMs": 1782301317746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.05403241945167,
+      "validityRate": 0.9888888888888889
+    },
+    {
+      "sequenceNumber": 14175,
+      "occurredAtUnixMs": 1782301322478,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.10989010989012,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 14281,
+      "occurredAtUnixMs": 1782301322747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9666666666666667
+    },
+    {
+      "sequenceNumber": 15935,
+      "occurredAtUnixMs": 1782301327472,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.10812975570686,
+      "validityRate": 0.9666666666666667
+    },
+    {
+      "sequenceNumber": 16019,
+      "occurredAtUnixMs": 1782301327747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 17710,
+      "occurredAtUnixMs": 1782301332466,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.10812975570686,
+      "validityRate": 0.9311111111111111
+    },
+    {
+      "sequenceNumber": 17828,
+      "occurredAtUnixMs": 1782301332746,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9311111111111111
+    },
+    {
+      "sequenceNumber": 19478,
+      "occurredAtUnixMs": 1782301337466,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9688888888888889
+    },
+    {
+      "sequenceNumber": 19570,
+      "occurredAtUnixMs": 1782301337747,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9689578713968958
+    },
+    {
+      "sequenceNumber": 21277,
+      "occurredAtUnixMs": 1782301342466,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 21406,
+      "occurredAtUnixMs": 1782301342747,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 90,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 23074,
+      "occurredAtUnixMs": 1782301347469,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 1
+    },
+    {
+      "sequenceNumber": 23182,
+      "occurredAtUnixMs": 1782301347747,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 1
+    },
+    {
+      "sequenceNumber": 24916,
+      "occurredAtUnixMs": 1782301352474,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.09188973232122,
+      "validityRate": 0.9068736141906873
+    },
+    {
+      "sequenceNumber": 25040,
+      "occurredAtUnixMs": 1782301352746,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.21804360872174,
+      "validityRate": 0.9002217294900222
+    },
+    {
+      "sequenceNumber": 26694,
+      "occurredAtUnixMs": 1782301357466,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 89.96193147665798,
+      "validityRate": 0.9465478841870824
+    },
+    {
+      "sequenceNumber": 26800,
+      "occurredAtUnixMs": 1782301357747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9533333333333334
+    },
+    {
+      "sequenceNumber": 28402,
+      "occurredAtUnixMs": 1782301362475,
+      "role": "researcher",
+      "rttMs": 7,
+      "sampleRateHz": 90.03793172289878,
+      "validityRate": 0.9889135254988913
+    },
+    {
+      "sequenceNumber": 28506,
+      "occurredAtUnixMs": 1782301362747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9888888888888889
+    },
+    {
+      "sequenceNumber": 30157,
+      "occurredAtUnixMs": 1782301367466,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.16229212582648,
+      "validityRate": 0.9844444444444445
+    },
+    {
+      "sequenceNumber": 30263,
+      "occurredAtUnixMs": 1782301367750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9844789356984479
+    },
+    {
+      "sequenceNumber": 31926,
+      "occurredAtUnixMs": 1782301372469,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.14591245252848,
+      "validityRate": 0.9778270509977827
+    },
+    {
+      "sequenceNumber": 32031,
+      "occurredAtUnixMs": 1782301372746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.05403241945167,
+      "validityRate": 0.9777777777777777
+    },
+    {
+      "sequenceNumber": 33648,
+      "occurredAtUnixMs": 1782301377468,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9711111111111111
+    },
+    {
+      "sequenceNumber": 33741,
+      "occurredAtUnixMs": 1782301377746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9711111111111111
+    },
+    {
+      "sequenceNumber": 35369,
+      "occurredAtUnixMs": 1782301382472,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 89.92805755395683,
+      "validityRate": 0.9955555555555555
+    },
+    {
+      "sequenceNumber": 35489,
+      "occurredAtUnixMs": 1782301382747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9822222222222222
+    },
+    {
+      "sequenceNumber": 37134,
+      "occurredAtUnixMs": 1782301387469,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9466666666666667
+    },
+    {
+      "sequenceNumber": 37225,
+      "occurredAtUnixMs": 1782301387746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.21804360872174,
+      "validityRate": 0.9600886917960089
+    },
+    {
+      "sequenceNumber": 38884,
+      "occurredAtUnixMs": 1782301392467,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.25415249149489,
+      "validityRate": 0.975609756097561
+    },
+    {
+      "sequenceNumber": 38997,
+      "occurredAtUnixMs": 1782301392747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9755555555555555
+    },
+    {
+      "sequenceNumber": 40663,
+      "occurredAtUnixMs": 1782301397478,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 89.98403830806066,
+      "validityRate": 0.9711751662971175
+    },
+    {
+      "sequenceNumber": 40753,
+      "occurredAtUnixMs": 1782301397746,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9711111111111111
+    },
+    {
+      "sequenceNumber": 42392,
+      "occurredAtUnixMs": 1782301402480,
+      "role": "researcher",
+      "rttMs": 13,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9688888888888889
+    },
+    {
+      "sequenceNumber": 42513,
+      "occurredAtUnixMs": 1782301402746,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.21804360872174,
+      "validityRate": 0.9689578713968958
+    },
+    {
+      "sequenceNumber": 44192,
+      "occurredAtUnixMs": 1782301407467,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.2346099859635,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 44304,
+      "occurredAtUnixMs": 1782301407751,
+      "role": "participant",
+      "rttMs": 3,
+      "sampleRateHz": 89.94603238057165,
+      "validityRate": 0.9444444444444444
+    },
+    {
+      "sequenceNumber": 45990,
+      "occurredAtUnixMs": 1782301412470,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.92805755395683,
+      "validityRate": 0.9688888888888889
+    },
+    {
+      "sequenceNumber": 46103,
+      "occurredAtUnixMs": 1782301412748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9888888888888889
+    },
+    {
+      "sequenceNumber": 47781,
+      "occurredAtUnixMs": 1782301417471,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9401330376940134
+    },
+    {
+      "sequenceNumber": 47874,
+      "occurredAtUnixMs": 1782301417747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9401330376940134
+    },
+    {
+      "sequenceNumber": 49563,
+      "occurredAtUnixMs": 1782301422473,
+      "role": "researcher",
+      "rttMs": 4,
+      "sampleRateHz": 89.9640143942423,
+      "validityRate": 0.98
+    },
+    {
+      "sequenceNumber": 49662,
+      "occurredAtUnixMs": 1782301422749,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.98
+    },
+    {
+      "sequenceNumber": 51387,
+      "occurredAtUnixMs": 1782301427468,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.10812975570686,
+      "validityRate": 0.8933333333333333
+    },
+    {
+      "sequenceNumber": 51483,
+      "occurredAtUnixMs": 1782301427747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.8933333333333333
+    },
+    {
+      "sequenceNumber": 53126,
+      "occurredAtUnixMs": 1782301432469,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.98
+    },
+    {
+      "sequenceNumber": 53236,
+      "occurredAtUnixMs": 1782301432747,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 54897,
+      "occurredAtUnixMs": 1782301437473,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.12789768185452,
+      "validityRate": 0.9512195121951219
+    },
+    {
+      "sequenceNumber": 55005,
+      "occurredAtUnixMs": 1782301437798,
+      "role": "participant",
+      "rttMs": 29,
+      "sampleRateHz": 89.89657915672235,
+      "validityRate": 0.9646017699115044
+    },
+    {
+      "sequenceNumber": 56674,
+      "occurredAtUnixMs": 1782301442468,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.09009009009009,
+      "validityRate": 0.9244444444444444
+    },
+    {
+      "sequenceNumber": 56789,
+      "occurredAtUnixMs": 1782301442747,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.10458567980692,
+      "validityRate": 0.9241071428571429
+    },
+    {
+      "sequenceNumber": 58333,
+      "occurredAtUnixMs": 1782301447466,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9711111111111111
+    },
+    {
+      "sequenceNumber": 58428,
+      "occurredAtUnixMs": 1782301447747,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.21804360872174,
+      "validityRate": 0.9711751662971175
+    },
+    {
+      "sequenceNumber": 59993,
+      "occurredAtUnixMs": 1782301452467,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9866962305986696
+    },
+    {
+      "sequenceNumber": 60095,
+      "occurredAtUnixMs": 1782301452747,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9866666666666667
+    },
+    {
+      "sequenceNumber": 61786,
+      "occurredAtUnixMs": 1782301457467,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9555555555555556
+    },
+    {
+      "sequenceNumber": 61882,
+      "occurredAtUnixMs": 1782301457748,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9555555555555556
+    },
+    {
+      "sequenceNumber": 63512,
+      "occurredAtUnixMs": 1782301462468,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9933333333333333
+    },
+    {
+      "sequenceNumber": 63650,
+      "occurredAtUnixMs": 1782301462748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9933333333333333
+    },
+    {
+      "sequenceNumber": 65332,
+      "occurredAtUnixMs": 1782301467471,
+      "role": "researcher",
+      "rttMs": 4,
+      "sampleRateHz": 90.14591245252848,
+      "validityRate": 0.9512195121951219
+    },
+    {
+      "sequenceNumber": 65429,
+      "occurredAtUnixMs": 1782301467752,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9512195121951219
+    },
+    {
+      "sequenceNumber": 67144,
+      "occurredAtUnixMs": 1782301472468,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.05403241945167,
+      "validityRate": 0.9466666666666667
+    },
+    {
+      "sequenceNumber": 67252,
+      "occurredAtUnixMs": 1782301472748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9466666666666667
+    },
+    {
+      "sequenceNumber": 68957,
+      "occurredAtUnixMs": 1782301477468,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9577777777777777
+    },
+    {
+      "sequenceNumber": 69046,
+      "occurredAtUnixMs": 1782301477748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9577777777777777
+    },
+    {
+      "sequenceNumber": 70817,
+      "occurredAtUnixMs": 1782301482470,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 70910,
+      "occurredAtUnixMs": 1782301482749,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 72621,
+      "occurredAtUnixMs": 1782301487474,
+      "role": "researcher",
+      "rttMs": 7,
+      "sampleRateHz": 89.91008991008991,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 72722,
+      "occurredAtUnixMs": 1782301487748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 74418,
+      "occurredAtUnixMs": 1782301492468,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.12617664730622,
+      "validityRate": 0.98
+    },
+    {
+      "sequenceNumber": 74515,
+      "occurredAtUnixMs": 1782301492749,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9800443458980045
+    },
+    {
+      "sequenceNumber": 76247,
+      "occurredAtUnixMs": 1782301497469,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9201773835920177
+    },
+    {
+      "sequenceNumber": 76355,
+      "occurredAtUnixMs": 1782301497748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9066666666666666
+    },
+    {
+      "sequenceNumber": 78076,
+      "occurredAtUnixMs": 1782301502468,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 78170,
+      "occurredAtUnixMs": 1782301502750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 79910,
+      "occurredAtUnixMs": 1782301507475,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.05591054313099,
+      "validityRate": 0.9334811529933481
+    },
+    {
+      "sequenceNumber": 80014,
+      "occurredAtUnixMs": 1782301507748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9333333333333333
+    },
+    {
+      "sequenceNumber": 81900,
+      "occurredAtUnixMs": 1782301512477,
+      "role": "researcher",
+      "rttMs": 6,
+      "sampleRateHz": 89.94603238057165,
+      "validityRate": 0.96
+    },
+    {
+      "sequenceNumber": 81988,
+      "occurredAtUnixMs": 1782301512749,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9467849223946785
+    },
+    {
+      "sequenceNumber": 83684,
+      "occurredAtUnixMs": 1782301517473,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9488888888888889
+    },
+    {
+      "sequenceNumber": 83780,
+      "occurredAtUnixMs": 1782301517748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9622222222222222
+    },
+    {
+      "sequenceNumber": 85450,
+      "occurredAtUnixMs": 1782301522470,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 85549,
+      "occurredAtUnixMs": 1782301522750,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9645232815964523
+    },
+    {
+      "sequenceNumber": 87143,
+      "occurredAtUnixMs": 1782301527469,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9866962305986696
+    },
+    {
+      "sequenceNumber": 87235,
+      "occurredAtUnixMs": 1782301527748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9866666666666667
+    },
+    {
+      "sequenceNumber": 88854,
+      "occurredAtUnixMs": 1782301532476,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 89.8921294446664,
+      "validityRate": 0.9466666666666667
+    },
+    {
+      "sequenceNumber": 88955,
+      "occurredAtUnixMs": 1782301532749,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9422222222222222
+    },
+    {
+      "sequenceNumber": 90590,
+      "occurredAtUnixMs": 1782301537471,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.09009009009009,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 90682,
+      "occurredAtUnixMs": 1782301537748,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9688888888888889
+    },
+    {
+      "sequenceNumber": 92334,
+      "occurredAtUnixMs": 1782301542472,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9512195121951219
+    },
+    {
+      "sequenceNumber": 92439,
+      "occurredAtUnixMs": 1782301542750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9401330376940134
+    },
+    {
+      "sequenceNumber": 94083,
+      "occurredAtUnixMs": 1782301547472,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9511111111111111
+    },
+    {
+      "sequenceNumber": 94189,
+      "occurredAtUnixMs": 1782301547749,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9422222222222222
+    },
+    {
+      "sequenceNumber": 95964,
+      "occurredAtUnixMs": 1782301552474,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9068736141906873
+    },
+    {
+      "sequenceNumber": 96050,
+      "occurredAtUnixMs": 1782301552749,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9266666666666666
+    },
+    {
+      "sequenceNumber": 97762,
+      "occurredAtUnixMs": 1782301557469,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 89.90788946736083,
+      "validityRate": 0.9755011135857461
+    },
+    {
+      "sequenceNumber": 97857,
+      "occurredAtUnixMs": 1782301557751,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.975609756097561
+    },
+    {
+      "sequenceNumber": 99567,
+      "occurredAtUnixMs": 1782301562472,
+      "role": "researcher",
+      "rttMs": 4,
+      "sampleRateHz": 90.12789768185452,
+      "validityRate": 0.9423503325942351
+    },
+    {
+      "sequenceNumber": 99656,
+      "occurredAtUnixMs": 1782301562750,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9422222222222222
+    },
+    {
+      "sequenceNumber": 101405,
+      "occurredAtUnixMs": 1782301567469,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9333333333333333
+    },
+    {
+      "sequenceNumber": 101515,
+      "occurredAtUnixMs": 1782301567749,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9333333333333333
+    },
+    {
+      "sequenceNumber": 103258,
+      "occurredAtUnixMs": 1782301572469,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.2,
+      "validityRate": 0.9645232815964523
+    },
+    {
+      "sequenceNumber": 103362,
+      "occurredAtUnixMs": 1782301572750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.18196360727855,
+      "validityRate": 0.9645232815964523
+    },
+    {
+      "sequenceNumber": 105504,
+      "occurredAtUnixMs": 1782301577472,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.94603238057165,
+      "validityRate": 0.9577777777777777
+    },
+    {
+      "sequenceNumber": 105614,
+      "occurredAtUnixMs": 1782301577749,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9533333333333334
+    },
+    {
+      "sequenceNumber": 107360,
+      "occurredAtUnixMs": 1782301582468,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9266666666666666
+    },
+    {
+      "sequenceNumber": 107451,
+      "occurredAtUnixMs": 1782301582748,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9311111111111111
+    },
+    {
+      "sequenceNumber": 109167,
+      "occurredAtUnixMs": 1782301587473,
+      "role": "researcher",
+      "rttMs": 3,
+      "sampleRateHz": 90.12789768185452,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 109275,
+      "occurredAtUnixMs": 1782301587750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9667405764966741
+    },
+    {
+      "sequenceNumber": 110894,
+      "occurredAtUnixMs": 1782301592472,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 110994,
+      "occurredAtUnixMs": 1782301592750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 112611,
+      "occurredAtUnixMs": 1782301597476,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.12789768185452,
+      "validityRate": 0.9534368070953437
+    },
+    {
+      "sequenceNumber": 112689,
+      "occurredAtUnixMs": 1782301597750,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90,
+      "validityRate": 0.9533333333333334
+    },
+    {
+      "sequenceNumber": 114377,
+      "occurredAtUnixMs": 1782301602474,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9555555555555556
+    },
+    {
+      "sequenceNumber": 114482,
+      "occurredAtUnixMs": 1782301602748,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 90.21804360872174,
+      "validityRate": 0.9423503325942351
+    },
+    {
+      "sequenceNumber": 116186,
+      "occurredAtUnixMs": 1782301607470,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.07125700560448,
+      "validityRate": 0.9325842696629213
+    },
+    {
+      "sequenceNumber": 116283,
+      "occurredAtUnixMs": 1782301607750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.18216356728654,
+      "validityRate": 0.9461883408071748
+    },
+    {
+      "sequenceNumber": 117982,
+      "occurredAtUnixMs": 1782301612472,
+      "role": "researcher",
+      "rttMs": 2,
+      "sampleRateHz": 90.1639344262295,
+      "validityRate": 0.9822616407982262
+    },
+    {
+      "sequenceNumber": 118078,
+      "occurredAtUnixMs": 1782301612751,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9822222222222222
+    },
+    {
+      "sequenceNumber": 119383,
+      "occurredAtUnixMs": 1782301617477,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.10989010989012,
+      "validityRate": 0.9889135254988913
+    },
+    {
+      "sequenceNumber": 119414,
+      "occurredAtUnixMs": 1782301617753,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.14591245252848,
+      "validityRate": 0.9844789356984479
+    },
+    {
+      "sequenceNumber": 120040,
+      "occurredAtUnixMs": 1782301622474,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9155555555555556
+    },
+    {
+      "sequenceNumber": 120074,
+      "occurredAtUnixMs": 1782301622750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.05403241945167,
+      "validityRate": 0.92
+    },
+    {
+      "sequenceNumber": 120692,
+      "occurredAtUnixMs": 1782301627469,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.05403241945167,
+      "validityRate": 0.94
+    },
+    {
+      "sequenceNumber": 120720,
+      "occurredAtUnixMs": 1782301627756,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.91008991008991,
+      "validityRate": 0.94
+    },
+    {
+      "sequenceNumber": 121310,
+      "occurredAtUnixMs": 1782301632471,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.98200359928015,
+      "validityRate": 0.9066666666666666
+    },
+    {
+      "sequenceNumber": 121345,
+      "occurredAtUnixMs": 1782301632753,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.25415249149489,
+      "validityRate": 0.9068736141906873
+    },
+    {
+      "sequenceNumber": 121912,
+      "occurredAtUnixMs": 1782301637473,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.14591245252848,
+      "validityRate": 0.9645232815964523
+    },
+    {
+      "sequenceNumber": 121945,
+      "occurredAtUnixMs": 1782301637751,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.0360144057623,
+      "validityRate": 0.9644444444444444
+    },
+    {
+      "sequenceNumber": 122531,
+      "occurredAtUnixMs": 1782301642470,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9666666666666667
+    },
+    {
+      "sequenceNumber": 122564,
+      "occurredAtUnixMs": 1782301642753,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": 89.9640143942423,
+      "validityRate": 0.9666666666666667
+    },
+    {
+      "sequenceNumber": 123106,
+      "occurredAtUnixMs": 1782301647475,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 81.31868131868131,
+      "validityRate": 0.8820638820638821
+    },
+    {
+      "sequenceNumber": 123147,
+      "occurredAtUnixMs": 1782301647751,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 81.43257302921168,
+      "validityRate": 0.8820638820638821
+    },
+    {
+      "sequenceNumber": 123698,
+      "occurredAtUnixMs": 1782301652480,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 90.10989010989012,
+      "validityRate": 0.9490022172949002
+    },
+    {
+      "sequenceNumber": 123734,
+      "occurredAtUnixMs": 1782301652750,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 90.01800360072015,
+      "validityRate": 0.9466666666666667
+    },
+    {
+      "sequenceNumber": 124295,
+      "occurredAtUnixMs": 1782301657476,
+      "role": "researcher",
+      "rttMs": 1,
+      "sampleRateHz": 89.8718975180144,
+      "validityRate": 0.9465478841870824
+    },
+    {
+      "sequenceNumber": 124330,
+      "occurredAtUnixMs": 1782301657754,
+      "role": "participant",
+      "rttMs": 1,
+      "sampleRateHz": 89.91008991008991,
+      "validityRate": 0.9488888888888889
+    },
+    {
+      "sequenceNumber": 124873,
+      "occurredAtUnixMs": 1782301662472,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 90.07205764611689,
+      "validityRate": 0.9666666666666667
+    },
+    {
+      "sequenceNumber": 124900,
+      "occurredAtUnixMs": 1782301662751,
+      "role": "participant",
+      "rttMs": 0,
+      "sampleRateHz": 85.06805444355484,
+      "validityRate": 0.9647058823529412
+    },
+    {
+      "sequenceNumber": 125304,
+      "occurredAtUnixMs": 1782301667471,
+      "role": "researcher",
+      "rttMs": 0,
+      "sampleRateHz": 84.41688337667533,
+      "validityRate": 0.34360189573459715
+    },
+    {
+      "sequenceNumber": 125331,
+      "occurredAtUnixMs": 1782301667753,
+      "role": "participant",
+      "rttMs": 2,
+      "sampleRateHz": null,
+      "validityRate": null
+    }
+  ],
+  "summary": {
+    "rttMs": {
+      "count": 154,
+      "min": 0,
+      "median": 1,
+      "p95": 4,
+      "max": 29,
+      "overBudgetPct": 0,
+      "budgetMs": 100
+    },
+    "sampleRateHz": {
+      "count": 153,
+      "min": 81.31868131868131,
+      "median": 90.0360144057623,
+      "p95": 90.2072174434887,
+      "max": 90.25415249149489,
+      "overBudgetPct": null,
+      "budgetMs": null
+    },
+    "validityRate": {
+      "count": 153,
+      "min": 0.34360189573459715,
+      "median": 0.9644444444444444,
+      "p95": 0.9888888888888889,
+      "max": 1,
+      "overBudgetPct": null,
+      "budgetMs": null
+    }
+  }
+}

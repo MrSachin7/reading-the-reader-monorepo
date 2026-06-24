@@ -179,19 +179,27 @@ The instrumentation is therefore present and available but unexercised in this d
 
 The third research question asks how a typographic micro-intervention can change the text while preserving the reader's context.
 The four sessions form a with-and-without comparison: in two of them the context-preserving restore is enabled, and in two it is disabled.
-We report a behavioural measure computed identically across all four sessions, and then the mechanism's own per-intervention record from the two sessions in which it ran.
+We report two behavioural measures aligned to each intervention, and then the mechanism's own per-intervention record from the two sessions in which it ran.
 
-A regression, a backward saccade against the reading direction, is a standard oculomotor sign of reading disruption.
-We computed the regression rate, the fraction of saccades that are regressions, for each participant under each condition, and the rate is derived in the same way from the gaze stream regardless of whether preservation was enabled.
-For one participant the regression rate was 33.9\% without preservation and 22.2\% with it, while for the other it was effectively unchanged (22.3\% without, 22.5\% with).
-\Cref{fig:eval-regression} shows the four values.
-We state the direction of these numbers without drawing an inference from them, as two participants do not support one.
+A regression, a backward saccade against the reading direction, is a standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
+Because context preservation acts only in the moments after a reflow, we aligned the measures to each intervention rather than averaging over the session: for every applied intervention we measured the reading-resume time, the time to the first forward saccade after it, and the regression rate in the five seconds after it against a matched five-second baseline before it.
+The reading-resume time was shorter with preservation than without, with a median of \SI{376}{\milli\second} against \SI{613}{\milli\second} and a mean of \SI{617}{\milli\second} against \SI{865}{\milli\second} (\cref{fig:eval-rrt}).
+The regression rate diverged in the same direction: without preservation it rose after an intervention, from 35\% in the baseline window to 41\% after, whereas with preservation it did not rise, moving from 28\% to 22\% (\cref{fig:eval-postreg}).
+This pattern held across three-, five-, and ten-second windows.
+We state the direction of these numbers without drawing an inference from them, as two participants (nine interventions with preservation, eleven without) do not support one.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.72\linewidth]{Chapters/07_Evaluation/eval-regression-rate.pdf}
-\caption{Regression rate per participant under each condition. One participant shows a lower rate with preservation enabled, while the other shows no difference.}
-\label{fig:eval-regression}
+\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-rrt.pdf}
+\caption{Reading-resume time, the interval from each intervention to the reader's next forward saccade, under each condition. Each point is one intervention and the horizontal bar marks the median.}
+\label{fig:eval-rrt}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-post-regression.pdf}
+\caption{Regression rate in the five seconds before and after each intervention, by condition. Without preservation the rate rises after the intervention, whereas with preservation it does not.}
+\label{fig:eval-postreg}
 \end{figure}
 
 Within the two sessions in which preservation ran, the reader recorded an outcome for each intervention, namely the displacement the reflow induced (the shift of the reader's position before any compensation) and the residual after the restore, together with a graded status.
@@ -235,7 +243,7 @@ The behavioural results rest on two participants reading a single content item u
 The latency result is the transport round trip, and the decision-pipeline and provider round-trip latencies were not exercised, so the latency budget is demonstrated for transport but not for an automated decision path.
 
 Two construct threats bear on the context-preservation result.
-The regression rate is a proxy for reading disruption rather than a direct measure of comprehension or recovery, and we treat it as such \cite{rayner1998eyemovements}.
+The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}.
 The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
 
 The conclusion threat is the sample size.
@@ -247,6 +255,6 @@ With two participants we report no inferential statistics and draw no statistica
 The evidence in this chapter addresses the four research questions as follows.
 For modularity (RQ1) the dependency boundary is build-enforced and checked by an executable test, an in-process module is added in one registration, and three external providers connect with no change to the core, one of them wrapping a third party's model.
 For the sensing pipeline (RQ2) the eye tracker streamed at its rated \SI{90}{\hertz} with validity above 93\%, and the client transport latency stayed within the \SI{100}{\milli\second} budget for every sample, while the automated decision-path latencies remained instrumented but unexercised.
-For context preservation (RQ3) the mechanism ran and recorded an audited outcome for every intervention, the regression rate moved in the expected direction for one of two participants, and the restore over-repositioned on small reflows.
+For context preservation (RQ3) the mechanism ran and recorded an audited outcome for every intervention, the reading-resume time and the post-intervention regression rate were both lower with preservation than without, and the restore over-repositioned on small reflows.
 For researcher control (RQ4) the sessions were operated through a single gated console, and the complete results of this chapter were reconstructed from the exported records alone.
 \Cref{ch:discussion} interprets these results, compares them with the problem statement and prior work, and develops the limitations they expose.

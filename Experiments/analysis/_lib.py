@@ -256,7 +256,7 @@ def load_file(item: _Discovered) -> dict[str, pd.DataFrame]:
         "occurredAtUnixMs": e.get("occurredAtUnixMs"),
         **{k: _g(e, "saccade", k) for k in
            ("fromTokenIndex", "toTokenIndex", "lineDelta", "blockDelta",
-            "durationMs", "direction", "isRegression")},
+            "startedAtUnixMs", "endedAtUnixMs", "durationMs", "direction", "isRegression")},
     } for e in sac]
 
     # ---- interventions ----
@@ -364,3 +364,74 @@ def read_cache(cache_dir: Path = CACHE_DIR) -> LoadedData:
     return LoadedData(**{
         f.name: pd.read_pickle(cache_dir / f"{f.name}.pkl") for f in fields(LoadedData)
     })
+
+
+# --------------------------------------------------------------------------- #
+# Post-intervention windowed measures (RQ3 behaviour, aligned to interventions)
+# --------------------------------------------------------------------------- #
+FORWARD_SACCADE_DIRECTIONS = {"forward", "line-change-forward"}
+
+
+def compute_post_intervention(
+    data: LoadedData,
+    window_s: float = 5.0,
+    rrt_max_s: float = 30.0,
+) -> pd.DataFrame:
+    """One row per applied intervention, with measures taken *after* it.
+
+    Aligns the gaze stream to each intervention's ``appliedAtUnixMs`` rather than
+    averaging over the whole session, so the measures isolate the post-intervention
+    recovery that context preservation is meant to affect:
+
+    - ``rrtMs``: reading-resume time, the elapsed time to the first forward saccade
+      after the intervention (the reader's next forward reading movement).
+    - ``postRegressionRate``: regressions per saccade in the ``window_s`` after it.
+    - ``preRegressionRate``: the same in the matched window *before* it (a baseline),
+      and ``regressionRateDelta`` = post minus pre.
+
+    Windows are capped at the neighbouring interventions so they never bleed across
+    interventions. Saccade times use the saccade's own start (falling back to the
+    recorded event time).
+    """
+    iv = data.interventions
+    sac = data.saccades
+    if iv is None or sac is None or iv.empty or sac.empty:
+        return pd.DataFrame()
+
+    sac = sac.copy()
+    sac["t"] = sac["startedAtUnixMs"].fillna(sac["occurredAtUnixMs"])
+    sac = sac.dropna(subset=["t"])
+
+    win_ms = window_s * 1000.0
+    rrt_max_ms = rrt_max_s * 1000.0
+    rows = []
+    for _, r in iv.sort_values(["sessionKey", "appliedAtUnixMs"]).iterrows():
+        key, t = r["sessionKey"], r["appliedAtUnixMs"]
+        if pd.isna(t):
+            continue
+        applied = iv.loc[iv["sessionKey"] == key, "appliedAtUnixMs"]
+        nxt = applied[applied > t].min()
+        prv = applied[applied < t].max()
+        nxt = nxt if pd.notna(nxt) else float("inf")
+        prv = prv if pd.notna(prv) else float("-inf")
+        s = sac[sac["sessionKey"] == key]
+
+        post = s[(s["t"] > t) & (s["t"] <= min(t + win_ms, nxt))]
+        pre = s[(s["t"] > max(t - win_ms, prv)) & (s["t"] <= t)]
+        fwd = s[(s["t"] > t) & (s["t"] <= min(t + rrt_max_ms, nxt))
+                & s["direction"].isin(FORWARD_SACCADE_DIRECTIONS)]
+
+        rows.append({
+            "sessionKey": key, "participant": r["participant"], "condition": r["condition"],
+            "appliedAtUnixMs": t, "moduleId": r.get("moduleId"),
+            "rrtMs": (fwd["t"].min() - t) if not fwd.empty else None,
+            "postSaccades": len(post),
+            "postRegressions": int(post["isRegression"].sum()) if not post.empty else 0,
+            "postRegressionRate": post["isRegression"].mean() if not post.empty else None,
+            "preRegressionRate": pre["isRegression"].mean() if not pre.empty else None,
+        })
+
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        df["regressionRateDelta"] = df["postRegressionRate"] - df["preRegressionRate"]
+    return df

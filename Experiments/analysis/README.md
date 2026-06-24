@@ -14,7 +14,7 @@ numbers on this sample (N=2 participants) are **descriptive, not inferential**.
 | `00_load.ipynb` | Discovers `../data/**`, builds the tidy tables, caches them, prints the session manifest. |
 | `01_sensing_quality.ipynb` | RQ2 sensing: achieved Hz, inter-sample interval, gaze validity, calibration. |
 | `02_latency.ipynb` | RQ2/NFR2: client RTT vs the 100 ms budget. (Decision-pipeline latency / provider RTT auto-appear when decision-mode runs are added.) |
-| `03_context_preservation.ipynb` | RQ3: mechanism (within *with* runs) + behaviour (regression rate, with vs without). |
+| `03_context_preservation.ipynb` | RQ3: behaviour aligned to each intervention (reading-resume time + pre/post regression rate, with vs without) and the mechanism's per-intervention record. |
 | `04_modularity_degradation.ipynb` | RQ1/NFR4: lifecycle trace incl. provider disconnect (graceful degradation). |
 | `outputs/cache/` | Pickled tidy tables produced by `00`. |
 | `outputs/figures/` | Vector **PDF** figures (thesis-ready). |
