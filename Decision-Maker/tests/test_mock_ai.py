@@ -22,8 +22,8 @@ def build_config() -> DecisionMakerConfig:
         heartbeat_interval_seconds=5,
         reconnect_delay_seconds=3,
         fixation_threshold_ms=1200,
-        min_proposal_interval_ms=20_000,
-        force_after_session_runtime_ms=20_000,
+        min_proposal_interval_ms=5_000,
+        force_after_session_runtime_ms=5_000,
         font_size_step_px=4,
         max_font_size_px=24,
     )
@@ -35,7 +35,7 @@ def build_context(
     is_inside_reading_area: bool = False,
     current_token_duration_ms: int = 0,
     started_at_unix_ms: int = 1_000,
-    updated_at_unix_ms: int = 21_500,
+    updated_at_unix_ms: int = 6_500,
     current_font_size: int = 18,
 ) -> dict[str, object]:
     return {
@@ -81,7 +81,7 @@ class MockDecisionEngineTests(unittest.TestCase):
         engine = MockDecisionEngine(build_config())
 
         replies = engine.handle_inbound_envelope(
-            build_context(updated_at_unix_ms=19_000)
+            build_context(updated_at_unix_ms=4_000)
         )
 
         self.assertEqual([], replies)

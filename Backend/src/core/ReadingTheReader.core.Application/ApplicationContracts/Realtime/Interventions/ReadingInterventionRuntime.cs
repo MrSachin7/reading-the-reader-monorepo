@@ -6,7 +6,7 @@ namespace ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interv
 public sealed class ReadingInterventionRuntime : IReadingInterventionRuntime
 {
     public const long LayoutChangeCooldownMs = 1500;
-    public const int MaxFontSizeStepPx = 2;
+    public const int MaxFontSizeStepPx = 4;
     public const int MaxLineWidthStepPx = 40;
     public const double MaxLineHeightStep = 0.12;
     public const double MaxLetterSpacingStep = 0.02;

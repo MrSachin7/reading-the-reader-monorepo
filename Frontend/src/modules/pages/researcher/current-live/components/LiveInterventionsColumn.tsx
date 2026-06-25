@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import type {
+  DecisionProposalSnapshot,
   PendingInterventionSnapshot,
   ReadingInterventionCommitBoundary,
   ReadingInterventionPolicySnapshot,
@@ -33,9 +34,11 @@ import { groupInterventionModules } from "@/modules/pages/researcher/current-liv
 import {
   formatBoundaryCue,
   formatBoundaryLabel,
+  formatExecutionModeLabel,
   formatParameterHint,
   formatPendingBoundaryCue,
   getOptionLabel,
+  summarizeProposalChanges,
 } from "@/modules/pages/researcher/current-live/lib/intervention-helpers"
 import type { ActiveLiveExperimentSession } from "@/modules/pages/researcher/current-live/types"
 
@@ -46,6 +49,7 @@ type LiveInterventionsColumnProps = {
   presentation: ReadingPresentationSettings
   interventionPolicy: ReadingInterventionPolicySnapshot
   pendingIntervention: PendingInterventionSnapshot | null
+  activeProposal: DecisionProposalSnapshot | null
   onCommitIntervention: (
     next: {
       moduleId: string
@@ -60,6 +64,8 @@ type LiveInterventionsColumnProps = {
     layoutFallbackBoundary?: ReadingInterventionCommitBoundary
     layoutFallbackAfterMs?: number
   }) => void | Promise<void>
+  onApproveDecisionProposal: (proposalId: string) => void | Promise<void>
+  onRejectDecisionProposal: (proposalId: string) => void | Promise<void>
   onApplyPendingInterventionNow: () => void | Promise<void>
 }
 
@@ -70,8 +76,11 @@ export function LiveInterventionsColumn({
   presentation,
   interventionPolicy,
   pendingIntervention,
+  activeProposal,
   onCommitIntervention,
   onInterventionPolicyChange,
+  onApproveDecisionProposal,
+  onRejectDecisionProposal,
   onApplyPendingInterventionNow,
 }: LiveInterventionsColumnProps) {
   const [moduleDrafts, setModuleDrafts] = useState<Record<string, InterventionParameterValues>>({})
@@ -101,6 +110,9 @@ export function LiveInterventionsColumn({
   const pendingBoundaryCue = queuedPendingIntervention
     ? formatPendingBoundaryCue(queuedPendingIntervention.requestedBoundary)
     : null
+  const proposalChanges = activeProposal
+    ? summarizeProposalChanges(activeProposal, presentation, appearance, interventionModules)
+    : []
 
   function getCurrentParameterValue(
     module: InterventionModuleDescriptor,
@@ -626,6 +638,61 @@ export function LiveInterventionsColumn({
         <CardContent className="flex min-h-0 flex-1 flex-col pt-6">
           <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-5 pr-4">
+              {activeProposal ? (
+                <>
+                  <section className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold">Decision suggestion</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {activeProposal.providerId} in {formatExecutionModeLabel(activeProposal.executionMode).toLowerCase()} mode
+                        </p>
+                      </div>
+                      <Badge variant="outline">Awaiting review</Badge>
+                    </div>
+                    <div className="rounded-xl border border-accent/35 bg-accent/10 p-3">
+                      <p className="text-sm font-medium text-accent-foreground">
+                        {proposalChanges[0] ?? activeProposal.rationale}
+                      </p>
+                      {proposalChanges.length > 1 ? (
+                        <div className="mt-2 space-y-1">
+                          {proposalChanges.slice(1).map((change) => (
+                            <p key={change} className="text-xs text-accent-foreground/80">
+                              {change}
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {activeProposal.signal.summary}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {activeProposal.rationale}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => void onApproveDecisionProposal(activeProposal.proposalId)}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => void onRejectDecisionProposal(activeProposal.proposalId)}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div className="h-px bg-border/70" />
+                </>
+              ) : null}
+
               <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold">Typography timing</h3>

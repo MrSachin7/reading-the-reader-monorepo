@@ -9,10 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import {
   applyInterventionCommand,
   approveDecisionProposal,
-  pauseDecisionAutomation,
   rejectDecisionProposal,
-  resumeDecisionAutomation,
-  setDecisionExecutionMode,
   subscribeToGaze,
 } from "@/lib/gaze-socket"
 import {
@@ -388,6 +385,14 @@ function ResearcherCurrentLiveBody({
     await applyPendingInterventionNow().unwrap()
   }, [applyPendingInterventionNow])
 
+  const handleApproveDecisionProposal = useCallback(async (proposalId: string) => {
+    approveDecisionProposal(proposalId)
+  }, [])
+
+  const handleRejectDecisionProposal = useCallback(async (proposalId: string) => {
+    rejectDecisionProposal(proposalId)
+  }, [])
+
   const handleAdvanceExperimentText = useCallback(async () => {
     setExperimentSequenceError(null)
 
@@ -488,8 +493,11 @@ function ResearcherCurrentLiveBody({
           presentation={presentation}
           interventionPolicy={readingSession.interventionPolicy}
           pendingIntervention={readingSession.pendingIntervention}
+          activeProposal={session.decisionState.activeProposal}
           onCommitIntervention={commitIntervention}
           onInterventionPolicyChange={handleInterventionPolicyChange}
+          onApproveDecisionProposal={handleApproveDecisionProposal}
+          onRejectDecisionProposal={handleRejectDecisionProposal}
           onApplyPendingInterventionNow={handleApplyPendingInterventionNow}
         />
       </div>

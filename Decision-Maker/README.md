@@ -18,7 +18,7 @@ It connects to the backend provider websocket at `/ws/module-provider`, consumes
   - `providerInterventionEvent`
   - `providerDecisionModeChanged`
 - applies a simple mock rule:
-  - if the session has been running for at least 20 seconds
+  - if the session has been running for at least 5 seconds
   - and the current font size can still increase
   - and the mock provider has not suggested the same change too recently
   - then it sends either:
@@ -56,9 +56,9 @@ Important values:
 - `DECISION_MAKER_PROVIDER_ID`
   - default: `mock-python`
 - `DECISION_MAKER_FORCE_AFTER_SESSION_RUNTIME_MS`
-  - default: `20000`
+  - default: `5000`
 - `DECISION_MAKER_MIN_PROPOSAL_INTERVAL_MS`
-  - default: `20000`
+  - default: `5000`
 - `DECISION_MAKER_FONT_SIZE_STEP_PX`
   - default: `4`
 

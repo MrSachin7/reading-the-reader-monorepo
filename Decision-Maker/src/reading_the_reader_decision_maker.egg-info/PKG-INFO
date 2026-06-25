@@ -14,8 +14,8 @@ It connects to the backend provider websocket at `/ws/module-provider`, consumes
 
 ## What It Does
 
-- registers itself with the backend using `providerHello`
-- sends regular `providerHeartbeat` messages
+- registers itself with the backend using `moduleProviderHello`
+- sends regular `moduleProviderHeartbeat` messages
 - listens for:
   - `providerSessionSnapshot`
   - `providerDecisionContext`
@@ -26,15 +26,16 @@ It connects to the backend provider websocket at `/ws/module-provider`, consumes
   - `providerInterventionEvent`
   - `providerDecisionModeChanged`
 - applies a simple mock rule:
-  - if the reader is inside the reading area
-  - and `currentTokenDurationMs >= 1200`
+  - if the session has been running for at least 5 seconds
   - and the current font size can still increase
   - and the mock provider has not suggested the same change too recently
   - then it sends either:
-    - `providerSubmitProposal` in advisory mode
-    - `providerRequestAutonomousApply` in autonomous mode
+    - `submitProposal` in advisory mode
+    - `requestAutonomousApply` in autonomous mode
+  - before the 20-second mark, it can still fall back to the older dwell-based trigger
+    using `currentTokenDurationMs >= 1200` while the reader is inside the reading area
 
-The mock intervention is a small font-size increase.
+The mock intervention is a `+4px` font-size increase.
 
 ## Setup
 
@@ -62,6 +63,12 @@ Important values:
   - must match the backend module-provider secret from `ModuleProviderOptions` / the `ModuleProvider` config section
 - `DECISION_MAKER_PROVIDER_ID`
   - default: `mock-python`
+- `DECISION_MAKER_FORCE_AFTER_SESSION_RUNTIME_MS`
+  - default: `5000`
+- `DECISION_MAKER_MIN_PROPOSAL_INTERVAL_MS`
+  - default: `5000`
+- `DECISION_MAKER_FONT_SIZE_STEP_PX`
+  - default: `4`
 
 ## Running
 

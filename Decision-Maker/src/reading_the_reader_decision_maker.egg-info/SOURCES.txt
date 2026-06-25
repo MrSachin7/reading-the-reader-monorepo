@@ -11,3 +11,4 @@ src/reading_the_reader_decision_maker.egg-info/dependency_links.txt
 src/reading_the_reader_decision_maker.egg-info/entry_points.txt
 src/reading_the_reader_decision_maker.egg-info/requires.txt
 src/reading_the_reader_decision_maker.egg-info/top_level.txt
+tests/test_mock_ai.py

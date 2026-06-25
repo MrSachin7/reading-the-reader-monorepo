@@ -198,7 +198,7 @@ class MockDecisionEngine:
             )
             rationale = (
                 "Mock decision-maker forced a font-size increase because the "
-                "experiment has been running for at least 20 seconds."
+                "experiment has been running for at least 5 seconds."
             )
         else:
             signal_summary = (
