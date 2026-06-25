@@ -7,7 +7,8 @@ The reading sessions were run with a Tobii eye tracker (model \texttt{IS4\_Large
 The platform runs as a single-machine deployment: the backend and both browser surfaces, the participant reader and the researcher console, executed on one host, so the traffic between each client and the backend travels over the local loopback rather than a network, which is the intended single-operator setting and the context in which the latency of \cref{sec:eval-performance} should be read.
 Four participants each read an expository Markdown article under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
 \Cref{tab:eval-sessions} summarises them.
-All eight sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during these sessions, a point we return to in \cref{sec:eval-performance}.
+All eight sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during them.
+We additionally recorded one session under an advisory decision strategy, used only to exercise the decision-path instrumentation of \cref{sec:eval-performance} and kept separate from the with-and-without comparison, so the eight sessions in \cref{tab:eval-sessions} remain a clean manual-mode dataset.
 The physical two-screen arrangement is shown in \cref{fig:eval-rig}.
 
 \begin{figure}[htbp]

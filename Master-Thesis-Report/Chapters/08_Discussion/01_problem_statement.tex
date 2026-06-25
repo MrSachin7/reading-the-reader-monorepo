@@ -21,10 +21,11 @@ One caveat, which we develop in \cref{sec:disc-limitations}, is that we built th
 The second research question asked whether a real Tobii stream can be turned into oculomotor events fast enough for live adaptation, in a way that is inspectable and reproducible.
 For the sensing and transport stages, the answer is yes.
 The tracker streamed at its rated rate with high gaze validity, every recorded sample stayed within the latency budget set in \cref{sec:non-functional-requirements}, and the stages of the pipeline can be inspected and replayed from the exported record (\cref{sec:eval-performance}).
-The honest gap is the automated decision path.
-Its latency is instrumented, both inside the backend and out to an external provider, but it was never exercised, because all eight recorded sessions were run in manual mode.
-The budget is therefore shown for transport, not yet for an automated decision.
-We see this as a limit of the dataset, not of the architecture: the path and its instrumentation exist but were not used, and the run that would close this gap is described in \cref{sec:disc-future-work}.
+A narrower gap remains on the automated decision path.
+Its latency is instrumented both inside the backend and out to an external provider, and the eight behavioural sessions, run in manual mode, exercised neither leg.
+A dedicated advisory-mode validation run did exercise both, with a reference provider proposing changes that the console gated, and both the in-process pipeline and the out-of-process round trip stayed within budget (\cref{sec:eval-performance}).
+The budget is therefore now shown for the automated decision path as well, though on a single short run with a rule-based provider on one host rather than across a campaign with a real decision model.
+We see the remaining gap as one of dataset scale and model realism, not of architecture, and describe the campaign that would close it in \cref{sec:disc-future-work}.
 
 \paragraph{RQ3 (Context-preserving intervention): the architecture is met, and the restore strategy is a measured finding.}
 The third research question asked how a typographic micro-intervention can change the text while keeping the reader's place, the recovery concern raised in the literature \cite{jensen2025context}.

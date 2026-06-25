@@ -7,8 +7,9 @@ The most immediate is to fix the context-preserving restore on small reflows.
 A minor change, such as a single font-size step, moves the reader only slightly, but the semantic-restart strategy re-establishes the sentence near the top of the reading area and so moves them too far; a restore that simply keeps the captured offset would suit these small changes better.
 More generally, replacing the hand-tuned line-bias constant with a Kalman filter would give the gaze mapping a proper estimate of its own uncertainty in place of a fixed discount, handling the same vertical jitter on a sounder basis \cite{kalman1960filtering}.
 
-A second direction is to run the platform in automated mode.
-All the instrumentation for the in-process decision latency and the out-of-process provider round trip is in place but was never used, so a campaign with an active decision strategy and an external provider would close the one gap in the latency story and put the automated decision path itself under measurement (\cref{sec:eval-performance}).
+A second direction is to run the platform in automated mode at scale.
+A single advisory-mode validation run has shown that the in-process decision latency and the out-of-process provider round trip can be measured end to end and stay within budget (\cref{sec:eval-performance}), but it used a rule-based reference provider on one host and gated every proposal through the researcher.
+A campaign with a real decision model, an autonomous execution mode, and many sessions would turn that one-run check into a measured result and put the automated decision path under sustained measurement over a realistic deployment.
 
 A third direction is the controlled efficacy study that the thesis deliberately left out.
 Now that the platform produces reproducible, replayable records, a properly powered human-subjects study could test whether specific interventions improve reading, rather than only measuring their immediate disruption; this would turn the platform from an instrument that can run such a study into the source of its result.

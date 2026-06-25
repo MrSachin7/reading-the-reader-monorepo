@@ -15,7 +15,8 @@ We chose the technology stack, a React and Next.js frontend with a .NET backend,
 We stored session records in the file system rather than in a database (\cref{sec:design-data}), which suits a single-operator experiment and keeps every record easy to inspect and replay, but which we would not expect to support a concurrent, multi-session deployment without revisiting.
 
 Two process lessons concern how the work was built and judged.
-The clearest study-design lesson is that, by running every recorded session in manual mode, we never exercised the automated decision path, and we would plan a future data-collection campaign to capture that path's latency rather than leave it instrumented but unmeasured.
+The clearest study-design lesson is that we instrumented the automated decision path before we had a study that used it: the eight behavioural sessions all ran in manual mode, and only a later, dedicated run exercised the path at all, so its latency rests on one short validation run rather than on the main dataset.
+We would fold an active decision strategy into the data-collection plan from the start, rather than leave the path validated only after the fact.
 We also carry two honesty points from the evaluation.
 The frontend has no automated test framework, so its flows were checked by manual walkthrough rather than by tests (\cref{sec:eval-functional}).
 And, as a two-person team that used generative-AI coding assistance (disclosed in \cref{ch:methodology}) and both built and judged the system, we relied on the executable checks and the external integration to reduce the bias that comes from evaluating one's own work.

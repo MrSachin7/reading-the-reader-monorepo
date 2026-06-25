@@ -9,7 +9,7 @@ We mitigate this by leaning on the automated tests and the build-enforced bounda
 
 The external threats are the most limiting.
 The behavioural results rest on four participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
-The latency result is the transport round trip, and the decision-pipeline and provider round-trip latencies were not exercised, so the latency budget is demonstrated for transport but not for an automated decision path.
+The principal latency result is the transport round trip; the decision-pipeline and provider round-trip latencies were exercised only in a single advisory-mode validation run with a reference provider on one host, so although both stayed within budget there, that evidence is a single-run check rather than a campaign, and neither leg has been measured over a real network or against a production decision model.
 
 Two construct threats bear on the context-preservation result.
 The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is computed by the platform's own dwell-based detector rather than against an external reference, so we read only its change from the matched pre-intervention baseline, not its absolute level.

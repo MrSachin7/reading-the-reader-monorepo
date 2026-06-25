@@ -59,7 +59,7 @@ FR24 Facial-state sensing (optional)    & Optional webcam path present (I) & Imp
 \multicolumn{3}{l}{\textit{Non-functional requirements}} \\
 \midrule
 NFR1 Modularity            & Dependency graph and an executable boundary test (T, I) & Met \\
-NFR2 Low latency           & Transport within budget; decision path instrumented (M) & Met (transport) \\
+NFR2 Low latency           & Transport and decision-path latencies within budget (M) & Met \\
 NFR3 Usability             & Guided setup and unified-console walkthrough (W) & Met \\
 NFR4 Reliability           & Provider disconnect logged; session continued (D) & Met \\
 NFR5 Reproducibility       & Sessions reconstructed from the record alone (D) & Met \\
@@ -69,4 +69,4 @@ NFR8 Hardware independence  & Full operation under mouse simulation (D, I) & Met
 \end{longtable}
 \endgroup
 
-The verdict for NFR2 is qualified because the latency we measured in these sessions is the client transport latency, reported in \cref{sec:eval-performance}; the decision-pipeline and out-of-process decision latencies are recorded by the same telemetry channel but were not exercised here, for the reason given in that section.
+The verdict for NFR2 rests mainly on the client transport latency reported in \cref{sec:eval-performance}; the decision-pipeline and out-of-process decision latencies were exercised in a dedicated advisory-mode validation run, where both also stayed within budget, and we read that evidence as a single short run with a reference provider rather than as a result drawn from the eight behavioural sessions.
