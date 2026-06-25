@@ -5,6 +5,7 @@ using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Interventi
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Messaging;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Modules;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Reading;
+using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Replay;
 using ReadingTheReader.core.Application.ApplicationContracts.Realtime.Session;
 using ReadingTheReader.core.Domain;
 using Xunit;
@@ -310,6 +311,45 @@ public sealed class DecisionProposalLifecycleTests
         Assert.Contains(
             harness.ExternalProviderGateway.GazeSamples,
             gaze => gaze.DeviceTimeStamp == 123);
+    }
+
+    [Fact]
+    public async Task ExternalDecisionEvaluation_RecordsPipelineDecisionTelemetry_OnDispatch()
+    {
+        var harness = RealtimeTestDoubles.CreateHarness();
+        await RealtimeTestDoubles.TestRuntimeSetup.ConfigureReadySessionAsync(harness);
+        await harness.SessionManager.StartSessionAsync();
+        RegisterProvider(harness);
+
+        await harness.SessionManager.UpdateDecisionConfigurationAsync(
+            new DecisionConfigurationSnapshot(
+                "External advisory",
+                DecisionProviderIds.External,
+                DecisionExecutionModes.Advisory),
+            automationPaused: false);
+        await harness.SessionManager.SubscribeGazeDataAsync("researcher-1");
+
+        harness.EyeTrackerAdapter.EmitGazeSample(new GazeData
+        {
+            DeviceTimeStamp = 123,
+            SystemTimeStamp = 456,
+            LeftEyeX = 0.25f,
+            LeftEyeY = 0.35f,
+            LeftEyeValidity = "Valid",
+            RightEyeX = 0.26f,
+            RightEyeY = 0.36f,
+            RightEyeValidity = "Valid"
+        });
+
+        await harness.SessionManager.EvaluateDecisionStrategiesAsync();
+
+        await harness.SessionManager.StopSessionAsync();
+
+        var telemetry = harness.ReplayExportStore.LatestTelemetryExport;
+        Assert.NotNull(telemetry);
+        Assert.Contains(
+            telemetry!.Samples,
+            sample => sample.Role == ExperimentTelemetryRoles.PipelineDecision && sample.RttMs is >= 0);
     }
 
     private static void RegisterProvider(RealtimeTestDoubles.RuntimeHarness harness)

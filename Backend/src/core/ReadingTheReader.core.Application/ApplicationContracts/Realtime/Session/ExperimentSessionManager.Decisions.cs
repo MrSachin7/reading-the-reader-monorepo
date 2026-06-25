@@ -259,11 +259,23 @@ public sealed partial class ExperimentSessionManager
             }
 
             var currentSnapshot = GetCurrentSnapshot();
+            var isExternalProvider = string.Equals(
+                _decisionConfiguration.ProviderId,
+                DecisionProviderIds.External,
+                StringComparison.Ordinal);
             var proposal = await _decisionStrategyCoordinator.EvaluateAsync(
                 currentSnapshot,
                 _decisionConfiguration,
                 _decisionState,
                 ct);
+
+            if (isExternalProvider)
+            {
+                // External strategies dispatch asynchronously through the provider gateway,
+                // so record the backend-side latency at the point the decision request has
+                // been published rather than waiting for a provider proposal to arrive.
+                RecordInProcessDecisionPipelineLatency(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            }
 
             if (proposal is null)
             {
