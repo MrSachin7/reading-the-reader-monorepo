@@ -1,5 +1,19 @@
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-% At most one page. No new content. Mirror the problem statement and
-% summarise the contributions and their validated impact.
+This thesis asked how a researcher-operated adaptive reading platform can be architected so that sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable, while supporting real Tobii-backed reading sessions and applying context-preserving micro-interventions that do not disrupt the participant's reading flow.
+The motivation was concrete: prior Reading the Reader prototypes proved that gaze-driven adaptive reading works, but each was a monolithic fork that made the next study expensive to run, and no existing recorder or experiment builder combined real-time typographic intervention with pluggable, researcher-supervised decision logic.
+
+In answer, we designed, built, and evaluated a two-screen adaptive reading platform.
+A participant screen presents reflowable text that adapts to gaze, and a researcher console mirrors the participant's live gaze and gives the researcher control of the running session.
+The adaptive loop is divided into four modules (sensing, analysis, decision, and intervention) behind stable contracts; interventions are applied manually or proposed by a pluggable decision provider in an advisory or autonomous mode; and every gaze sample, decision, and intervention is recorded into one authoritative session that can be exported, replayed, and re-imported.
+
+The evaluation answered the four research questions with evidence rather than assertion.
+Modularity (RQ1) holds where it is hardest to fake: the core's dependency rule is enforced by the build and a test, and three external providers connected without touching it.
+The sensing pipeline (RQ2) ran at the tracker's rated \SI{90}{\hertz} with validity above 92\% and transport latency within the \SI{100}{\milli\second} budget for every sample.
+Context preservation (RQ3) lowered both the reading-resume time and the post-intervention regression rate while recording an audited residual for every change.
+Researcher control (RQ4) was sufficient to operate every session through one gated console and to reconstruct all reported results from the exported records alone.
+Two findings we state without softening: the automated decision path was exercised within budget in a single validation run rather than at campaign scale, and the context-preserving restore moves the reader too far on small reflows.
+
+The lasting contribution is the design knowledge the platform embodies, distilled into four principles that outlive this implementation: enforce a module boundary as a build-time invariant, validate an integration contract from outside rather than only by its authors, measure the cost of each quality attribute the architecture claims instead of asserting it, and separate a change's decision from its commit so a disruptive update lands at a natural break.
+With reproducible, replayable records now in hand, the platform turns the controlled efficacy study and the campaign-scale AI-driven decision-making it deliberately left out of scope from rewrites of core code into configuration choices for the work that follows.
