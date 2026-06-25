@@ -23,8 +23,10 @@ jobs:
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
           # font-liberation supplies the metric-compatible Arial substitute
-          # (Liberation Sans); minted needs the Pygments/latexminted backend.
-          extra_system_packages: font-liberation py3-pip py3-pygments
+          # (Liberation Sans); minted needs the Pygments/latexminted backend;
+          # inkscape is required by the svg package to convert architecture_overview.svg
+          # (\includesvg) to PDF at build time (otherwise: "Inkscape version not detected").
+          extra_system_packages: font-liberation py3-pip py3-pygments inkscape
           pre_compile: |
             # Do NOT alias Arial -> Liberation Sans in fontconfig. Settings.tex
             # guards the body font with \IfFontExistsTF{Arial}{...}{Liberation Sans};
