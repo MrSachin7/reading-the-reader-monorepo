@@ -15,7 +15,7 @@ A system that can interpret this stream and translate it into small, targeted ty
 This is the core premise of adaptive reading technology.
 
 This promise, however, carries an inherent risk.
-Fig.~\ref{fig:typo-intervention} shows the kind of typographic adaptation such a system applies, increasing size, spacing, and contrast to make a line easier to read.
+Fig.~\ref{fig:typo-intervention} shows the kind of typographic adaptation such a system applies, increasing font size, line height, and letter spacing to make a line easier to read.
 An adaptation like this can support a struggling reader, but the same change applied at the wrong moment, or too abruptly, can cost the reader their place and force them to start the line again.
 The central design challenge of adaptive reading is therefore not simply deciding what to change, but changing it in a way that supports the reader without disrupting the very reading flow the system is trying to protect.
 This tension between adaptation and continuity runs through every layer of the platform this thesis develops.
@@ -33,13 +33,13 @@ This tension between adaptation and continuity runs through every layer of the p
 % width held constant, the larger adapted type necessarily wraps onto MORE lines
 % than the default type, rather than fewer.
 \node[block, draw=black!15, fill=gray!5, text width=4.6cm,
-      font=\normalsize, text=black!72] (before)
-  {Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.};
+      font=\normalsize, text=black!80] (before)
+  {Reading should feel effortless, yet text that is small, tightly tracked, or densely lined can slow a reader down and increase fatigue.};
 \node[lbl, above=2.5mm of before] {Default typography};
 
 \node[block, draw=black!35, fill=blue!5, text width=4.6cm,
-      right=2.6cm of before, font=\large, text=black!92] (after)
-  {{\linespread{1.45}\selectfont Reading should feel effortless, yet text that is small, tightly spaced, or low in contrast can slow a reader down and increase fatigue.}};
+      right=2.6cm of before, font=\large, text=black!80] (after)
+  {{\linespread{1.6}\addfontfeature{LetterSpace=4.0}\selectfont Reading should feel effortless, yet text that is small, tightly tracked, or densely lined can slow a reader down and increase fatigue.}};
 \node[lbl, above=2.5mm of after] {Adapted typography};
 
 \draw[flow] (before.east) -- (after.west)
@@ -47,7 +47,7 @@ This tension between adaptation and continuity runs through every layer of the p
   {adaptive\\intervention};
 
 \end{tikzpicture}
-\caption{An adaptive reading intervention: increased font size, line spacing, and contrast for improved readability, balancing reading support against reading flow.}
+\caption{An adaptive reading intervention: increased font size, line height, and letter spacing for improved readability, balancing reading support against reading flow.}
 \label{fig:typo-intervention}
 \end{figure}
 
