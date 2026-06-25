@@ -1,265 +1,30 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
 
+% CHAPTER ROLE (do not let this blur into Ch5 or Ch6):
+%   Ch5 owns WHY the structure is shaped this way (argued architecture).
+%   Ch6 owns HOW the architecture becomes running code (realization + evidence).
+%   Ch7 owns HOW WELL it works (measurements against RQ1--RQ4), without interpreting.
+% Each section lives in its own file:
+%   01_setup        -> \cref{sec:eval-setup}
+%   02_functional   -> \cref{sec:eval-functional}
+%   03_modularity   -> \cref{sec:eval-modularity}
+%   04_performance  -> \cref{sec:eval-performance}
+%   05_context      -> \cref{sec:eval-context}
+%   06_control      -> \cref{sec:eval-control}
+%   07_threats      -> \cref{sec:eval-threats}
+%   08_summary      -> \cref{sec:eval-summary}
+
 This chapter reports what we measured.
 It follows the evaluation strategy of \cref{sec:evaluation-strategy}, which maps each research question to a method of assessment (\cref{tab:rq-evaluation}), and it presents the evidence without interpreting it.
 The comparison with prior work, the reading of the results against the problem statement, and the limitations they imply are deferred to \cref{ch:discussion}.
 We state results as measurements, distributions, and demonstrations; we do not argue from them here.
 
-\section{Evaluation Setup}
-\label{sec:eval-setup}
-
-The evidence in this chapter comes from three sources: the automated test suite together with a static inspection of the implemented system, a set of recorded reading sessions on real hardware, and the session records those sessions export.
-
-The reading sessions were run with a Tobii eye tracker (model \texttt{IS4\_Large\_Peripheral}) on a 2560$\times$1440 display, calibrated before each session with a nine-point screen-based procedure gated on a passing validation.
-The platform runs as a single-machine deployment: the backend and both browser surfaces, the participant reader and the researcher console, executed on one host, so the traffic between each client and the backend travels over the local loopback rather than a network, which is the intended single-operator setting and the context in which the latency of \cref{sec:eval-performance} should be read.
-Four participants each read an expository Markdown article under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
-\Cref{tab:eval-sessions} summarises them.
-All eight sessions used the eye tracker as the sensing source and applied typographic interventions manually through the researcher console; no automated decision strategy was active during these sessions, a point we return to in \cref{sec:eval-performance}.
-
-\begin{table}[htbp]
-\centering
-\caption{The eight recorded reading sessions that supply the runtime evidence in this chapter. Each participant read under both conditions, and the durations and counts are taken from the exported session records.}
-\label{tab:eval-sessions}
-\small
-\begin{tabular}{llrrrr}
-\toprule
-Participant & Condition & Duration (s) & Gaze samples & Fixations & Interventions \\
-\midrule
-P1 & With preservation    & 186 & 16664 & 656  & 5 \\
-P2 & With preservation    & 252 & 22688 & 1525 & 7 \\
-P3 & With preservation    & 171 & 15305 & 866  & 3 \\
-P4 & With preservation    & 224 & 20136 & 943  & 4 \\
-P1 & Without preservation & 475 & 42683 & 1914 & 9 \\
-P2 & Without preservation & 123 & 11063 & 719  & 4 \\
-P3 & Without preservation & 386 & 34624 & 1994 & 11 \\
-P4 & Without preservation & 141 & 12697 & 694  & 2 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Every session is exported as a schema-versioned record together with a separate telemetry record, and the analysis that produces the figures and tables below reads only those exported files.
-The analysis pipeline is scripted and re-runnable, so each figure traces to a recorded session rather than to a live observation.
-We make no inferential claim from these sessions: with four participants the behavioural numbers in \cref{sec:eval-context} are descriptive, consistent with the scope set out in \cref{sec:final-problem-statement}, which places a controlled human-subjects effect study outside this thesis.
-
-\section{Functional Verification and Requirements Coverage}
-\label{sec:eval-functional}
-
-We verified the functional and non-functional requirements of \cref{ch:requirements} by four means: automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, measurement of the exported data, and inspection of the implemented modules.
-\Cref{tab:req-coverage} records the method and verdict for each requirement group.
-The backend test suite, which covers session lifecycle, decision-proposal handling, replay recovery, and the export serialisers, passes in full (100 of 100 tests), and that suite also contains the architecture-boundary test discussed in \cref{sec:eval-modularity}.
-The frontend has no automated test framework, so the participant- and researcher-facing flows were verified by manual walkthrough rather than by automated tests; we record this openly in the table and revisit it in \cref{sec:eval-threats}.
-
-In \cref{tab:req-coverage} the method codes are T (automated test), W (manual walkthrough), M (measurement of the exported data), I (code inspection), and D (demonstration).
-A verdict of ``Met'' means the requirement was verified by one of those means in this work, whereas ``Implemented'' means it is present in the system by inspection but was not exercised by the recorded sessions or the test suite.
-
-\begingroup
-\small
-\begin{longtable}{p{0.30\linewidth} p{0.42\linewidth} p{0.18\linewidth}}
-\caption{Requirements coverage: the method by which each requirement group was verified and the resulting verdict.}
-\label{tab:req-coverage} \\
-\toprule
-\textbf{Requirement group} & \textbf{Method} & \textbf{Verdict} \\
-\midrule
-\endfirsthead
-\multicolumn{3}{c}{\tablename~\thetable{} --- continued} \\
-\toprule
-\textbf{Requirement group} & \textbf{Method} & \textbf{Verdict} \\
-\midrule
-\endhead
-\midrule
-\multicolumn{3}{r}{\footnotesize Continued on next page} \\
-\endfoot
-\bottomrule
-\endlastfoot
-
-\multicolumn{3}{l}{\textit{Functional requirements}} \\
-\midrule
-FR1 System execution and setup          & Walkthrough of guided setup and readiness gating (W) & Met \\
-FR2 Eye-tracker detection and licensing & Real Tobii sessions detected, licensed, streamed (W, D) & Met \\
-FR3 Calibration integration             & Calibration metrics recorded and gated on (M, W) & Met \\
-FR4 Gaze acquisition and mapping        & Sustained stream and token-level mapping in the record (M) & Met \\
-FR5 Reading content and presentation    & Markdown rendering and typographic controls exercised (W) & Met \\
-FR6 Researcher interface (second screen) & Live mirror and researcher console operated (W) & Met \\
-FR7 Intervention runtime (pluggable)    & Module-contract test and registry inspection (T, I) & Met \\
-FR8 Decision-strategy abstraction       & Decision-proposal lifecycle tests and strategy registry (T, I) & Met \\
-FR9 Context preservation                & Per-intervention outcomes measured and logged (M, D) & Met \\
-FR10 Real-time performance monitoring   & Gaze-validity rate in the telemetry record (M) & Met \\
-FR11 Experimental control (modes)       & Manual mode exercised; modes present by inspection (W, I) & Met \\
-FR12 Logging and export                 & Sessions reconstructed from the export alone (D, I) & Met \\
-FR13 Comprehension quiz                 & Quiz pipeline present; not exercised here (I) & Implemented \\
-FR14 Reading-material library           & Library and CRUD present (I) & Implemented \\
-FR15 Experiment setup templates         & Template definition present (I) & Implemented \\
-FR16 Multi-item session sequencing      & Sequencing and transition events present (I) & Implemented \\
-FR17 Sensing-mode configuration         & Tobii and mouse sources both operable (D, I) & Met \\
-FR18 Eye-movement analysis layer        & Built-in detector measured; external analyser connects (M, D) & Met \\
-FR19 External module-provider framework & Three providers connect; rejection paths smoke-tested (D, T) & Met \\
-FR20 Decision-proposal approval workflow & Proposal-gating lifecycle tests (T, I) & Met \\
-FR21 Session replay playback            & Replay reconstructs a session from its record (D, I) & Met \\
-FR22 Session-state recovery             & File-backed recovery covered by tests (T) & Met \\
-FR23 Per-context reader-shell settings  & Independent per-view settings present (I) & Implemented \\
-FR24 Facial-state sensing (optional)    & Optional webcam path present (I) & Implemented \\
-\midrule
-\multicolumn{3}{l}{\textit{Non-functional requirements}} \\
-\midrule
-NFR1 Modularity            & Dependency graph and an executable boundary test (T, I) & Met \\
-NFR2 Low latency           & Transport within budget; decision path instrumented (M) & Met (transport) \\
-NFR3 Usability             & Guided setup and unified-console walkthrough (W) & Met \\
-NFR4 Reliability           & Provider disconnect logged; session continued (D) & Met \\
-NFR5 Reproducibility       & Sessions reconstructed from the record alone (D) & Met \\
-NFR6 Extensibility         & Additive module and external-provider integration (I, D) & Met \\
-NFR7 Recoverability        & Checkpoint and restore covered by tests (T) & Met \\
-NFR8 Hardware independence  & Full operation under mouse simulation (D, I) & Met \\
-\end{longtable}
-\endgroup
-
-The verdict for NFR2 is qualified because the latency we measured in these sessions is the client transport latency, reported in \cref{sec:eval-performance}; the decision-pipeline and out-of-process decision latencies are recorded by the same telemetry channel but were not exercised here, for the reason given in that section.
-
-\section{Modularity and Extensibility}
-\label{sec:eval-modularity}
-
-The first research question asks whether sensing, analysis, decision, and intervention can be separated into modules with stable contracts, such that a new module connects without modifying the core.
-We assess this at three levels: the static dependency structure, the locality of a change that adds a module, and the connection of external providers built against the contract.
-
-At the assembly level the dependency direction is enforced by the build.
-The core application project references only the domain project, and the infrastructure and host projects reference the core, so no reference points outward from the core toward infrastructure or transport.
-A reference that violated this direction would be a compile error rather than a convention to be remembered.
-We encode the rule as an executable test that inspects the referenced assemblies at runtime and asserts that the domain depends on no other project assembly and that the application core depends on no infrastructure, transport, or host assembly.
-The test passes as part of the suite, which turns the modularity rule from an assertion in prose into a checked invariant.
-
-The locality of a change measures how much of the system must be touched to extend it.
-Adding an in-process intervention module requires one registration entry, because the runtime resolves modules from a registry by identifier and never names a concrete module, so no existing module and no part of the reading runtime is edited.
-The out-of-process path is the more demanding test, and we exercise it with three external providers that run as separate processes and speak the documented module-provider protocol: a reference decision provider, a reference eye-movement analyser, and a connector that wraps a collaborator's reading-difficulty model as a fixation-analysis provider.
-The connector is the strongest evidence available to us, because it integrates a model we did not write and did not design the contract around: its addition to the repository changed no file under the backend, and the collaborator's code is used unmodified.
-The malformed and unauthorised connection paths of the protocol are exercised by a handshake smoke test.
-
-We report these as facts about the implemented system, and we read them against the modularity claim and prior work in \cref{ch:discussion}.
-
-\section{Runtime Performance}
-\label{sec:eval-performance}
-
-The second research question concerns the sensing pipeline: whether a real Tobii stream is converted into oculomotor events within a latency budget that preserves live adaptation, in a manner that is inspectable and reproducible.
-We report the sensing throughput and validity first, then the transport latency against the budget fixed in \cref{sec:non-functional-requirements}.
-
-Across the eight sessions the eye tracker delivered a steady stream at its rated rate.
-The achieved sampling rate, computed from the device timestamps, lay between \SI{89.4}{\hertz} and \SI{90.1}{\hertz}, and the gaze-validity rate ranged from 92.5\% to 98.0\%.
-\Cref{fig:eval-sensing} shows the achieved rate and validity per session, and \cref{fig:eval-intersample} shows the inter-sample interval, which clusters tightly at the nominal period of \SI{11.1}{\milli\second}.
-The calibration that gated each session, the sub-flow shown in \cref{fig:impl-calibration}, passed with an average accuracy between \ang{0.30} and \ang{0.69} and an average precision between \ang{0.08} and \ang{0.33}.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\linewidth]{Chapters/07_Evaluation/eval-sensing-rate-validity.pdf}
-\caption{Achieved sampling rate and gaze validity for each of the eight sessions. The achieved rate sits at the tracker's nominal \SI{90}{\hertz} and validity stays above 92\% throughout.}
-\label{fig:eval-sensing}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.78\linewidth]{Chapters/07_Evaluation/eval-inter-sample-interval.pdf}
-\caption{Distribution of the interval between consecutive gaze samples, pooled across sessions and measured from the device clock. The mass concentrates at the nominal \SI{11.1}{\milli\second} period of a \SI{90}{\hertz} stream.}
-\label{fig:eval-intersample}
-\end{figure}
-
-The low-latency requirement (NFR2) fixes a budget of \SI{100}{\milli\second}, the threshold at which an interface response ceases to be perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and well within the duration of a single reading fixation \cite{rayner1998eyemovements}.
-The telemetry record carries the round-trip time between each client and the backend.
-For the participant client the median round trip was \SI{1}{\milli\second} and the 95th percentile \SI{3}{\milli\second}, and for the researcher client the median was \SI{1}{\milli\second} and the 95th percentile \SI{8}{\milli\second}.
-No sample in either stream exceeded the \SI{100}{\milli\second} budget.
-\Cref{fig:eval-rtt} shows the two distributions against the budget.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.78\linewidth]{Chapters/07_Evaluation/eval-client-rtt.pdf}
-\caption{Cumulative distribution of client round-trip time for the participant and researcher clients, against the \SI{100}{\milli\second} budget. Every sample falls within budget.}
-\label{fig:eval-rtt}
-\end{figure}
-
-The round trip reported above is the transport latency between a client and the backend over the local loopback of the single-machine deployment (\cref{sec:eval-setup}).
-The platform also records the in-process decision-pipeline latency, from the freshest gaze sample to the dispatch of an automated decision, and the out-of-process round-trip latency to an external decision provider, each on a single backend clock.
-Both are recorded only when an automated decision strategy is active.
-The eight sessions were operated in manual mode, in which the researcher applies interventions directly, so neither latency was exercised and the telemetry contains no decision-latency samples.
-The instrumentation is therefore present and available but unexercised in this dataset, and we treat the question it would answer as future work in \cref{ch:discussion}.
-
-\section{Context Preservation}
-\label{sec:eval-context}
-
-The third research question asks how a typographic micro-intervention can change the text while preserving the reader's context.
-The eight sessions form a with-and-without comparison: in four of them the context-preserving restore is enabled, and in four it is disabled.
-We report two behavioural measures aligned to each intervention, and then the mechanism's own per-intervention record from the four sessions in which it ran.
-
-A regression, a backward saccade against the reading direction, is a standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
-Because context preservation acts only in the moments after a reflow, we aligned the measures to each intervention rather than averaging over the session: for every applied intervention we measured the reading-resume time, the time to the first forward saccade after it, and the regression rate in the five seconds after it against a matched five-second baseline before it.
-The reading-resume time was shorter with preservation than without, with a median of \SI{482}{\milli\second} against \SI{650}{\milli\second} and a mean of \SI{670}{\milli\second} against \SI{923}{\milli\second} (\cref{fig:eval-rrt}).
-The regression rate showed the same separation: in the five seconds after an intervention it was 23\% with preservation against 33\% without, having fallen from a 29\% baseline with preservation while staying near its 32\% baseline without (\cref{fig:eval-postreg}).
-This pattern held across three-, five-, and ten-second windows, and the resume-time direction held for three of the four participants.
-We state the direction of these numbers without drawing an inference from them, as four participants (nineteen interventions with preservation, twenty-six without) do not support one.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-rrt.pdf}
-\caption{Reading-resume time, the interval from each intervention to the reader's next forward saccade, under each condition. Each point is one intervention and the horizontal bar marks the median.}
-\label{fig:eval-rrt}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-post-regression.pdf}
-\caption{Regression rate in the five seconds before and after each intervention, by condition. Without preservation the rate rises after the intervention, whereas with preservation it does not.}
-\label{fig:eval-postreg}
-\end{figure}
-
-Within the four sessions in which preservation ran, the reader recorded an outcome for each intervention, namely the displacement the reflow induced (the shift of the reader's position before any compensation) and the residual after the restore, together with a graded status.
-Most of the nineteen interventions were layout-changing (a font-size, line-width, or line-height change), which trigger the semantic-restart strategy, and one was an appearance-only change.
-Three interventions were graded preserved and sixteen degraded.
-For the degraded interventions the median residual was 389\,px, while the median induced displacement was only 38\,px.
-\Cref{fig:eval-overreposition} plots the residual against the induced displacement for each intervention, and the points lie above the line of equality, that is, the restore moved the reader's position further than the reflow itself had.
-This is the measured behaviour of the semantic-restart strategy on small layout reflows, and we examine why it occurs, and what it implies for the restore strategy, in \cref{ch:discussion}.
-Each outcome, including its graded status, is written into the session record, so the cost of every intervention to the reader's continuity is auditable after the fact.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.68\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition.pdf}
-\caption{Restore residual against the displacement the reflow induced, with one point per intervention in the four preservation-enabled sessions. Points above the dashed line of equality indicate that the restore repositioned the reader further than the reflow had moved them.}
-\label{fig:eval-overreposition}
-\end{figure}
-
-\section{Researcher Control and Experimentability}
-\label{sec:eval-control}
-
-The fourth research question concerns the control and the auditable record the researcher needs to operate experiments.
-The recorded sessions were operated entirely through the researcher console of \cref{fig:impl-screens-console}: the session could not start until the setup prerequisites and calibration had passed, gated through the stepper of \cref{fig:impl-setup}, the interventions in \cref{tab:eval-sessions} were applied from the console during the run, and the participant's view was mirrored to the researcher throughout.
-We verified these flows by walkthrough, as recorded in \cref{tab:req-coverage}.
-
-The auditable record is demonstrated by this chapter itself.
-Every figure and table here was produced from the exported session records alone, without reference to any live state, which shows that a session can be reconstructed and analysed from its record (NFR5).
-The export carries the session parameters, the calibration metrics, the presentation configuration, the gaze stream, the derived events, and the intervention and context-preservation outcomes, which is what allowed the sensing, latency, and context-preservation results above to be computed after the fact.
-Session replay reconstructs a recorded session in the reading interface from its exported record alone, shown in \cref{fig:impl-replay}, which is the same reproducibility property that this chapter exercises throughout (FR21).
-
-\section{Threats to Validity}
-\label{sec:eval-threats}
-
-We note the threats to the validity of the results above, separated by type.
-
-The principal internal threat is that we evaluate a system we both specified and built.
-As a two-person team we authored the requirements, implemented the platform, and wrote the reference providers, so a verdict of ``Met'' against our own requirements carries a risk of confirmation bias.
-We mitigate this by leaning on the automated tests and the build-enforced boundary test, which encode pass-or-fail criteria independently of judgement, by publishing the codebase and the analysis pipeline for inspection, and by integrating a third party's model through the same provider contract; we note, however, that the reference providers were built by the same team and so evidence the sufficiency of the contract rather than constituting its independent validation.
-
-The external threats are the most limiting.
-The behavioural results rest on four participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
-The latency result is the transport round trip, and the decision-pipeline and provider round-trip latencies were not exercised, so the latency budget is demonstrated for transport but not for an automated decision path.
-
-Two construct threats bear on the context-preservation result.
-The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is computed by the platform's own dwell-based detector rather than against an external reference, so we read only its change from the matched pre-intervention baseline, not its absolute level.
-The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
-
-The conclusion threat is the sample size.
-With four participants we report no inferential statistics and draw no statistical conclusion; the numbers indicate direction and magnitude on this sample and nothing more.
-
-\section{Summary}
-\label{sec:eval-summary}
-
-The evidence in this chapter addresses the four research questions as follows.
-For modularity (RQ1) the dependency boundary is build-enforced and checked by an executable test, an in-process module is added in one registration, and three external providers connect with no change to the core, one of them wrapping a third party's model.
-For the sensing pipeline (RQ2) the eye tracker streamed at its rated \SI{90}{\hertz} with validity above 92\%, and the client transport latency stayed within the \SI{100}{\milli\second} budget for every sample, while the automated decision-path latencies remained instrumented but unexercised.
-For context preservation (RQ3) the mechanism ran and recorded an audited outcome for every intervention, the reading-resume time and the post-intervention regression rate were both lower with preservation than without, and the restore over-repositioned on small reflows.
-For researcher control (RQ4) the sessions were operated through a single gated console, and the complete results of this chapter were reconstructed from the exported records alone.
-\Cref{ch:discussion} interprets these results, compares them with the problem statement and prior work, and develops the limitations they expose.
+\input{Chapters/07_Evaluation/01_setup}
+\input{Chapters/07_Evaluation/02_functional}
+\input{Chapters/07_Evaluation/03_modularity}
+\input{Chapters/07_Evaluation/04_performance}
+\input{Chapters/07_Evaluation/05_context}
+\input{Chapters/07_Evaluation/06_control}
+\input{Chapters/07_Evaluation/07_threats}
+\input{Chapters/07_Evaluation/08_summary}

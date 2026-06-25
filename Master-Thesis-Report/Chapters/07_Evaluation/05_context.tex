@@ -1,0 +1,42 @@
+\section{Context Preservation}
+\label{sec:eval-context}
+
+The third research question asks how a typographic micro-intervention can change the text while preserving the reader's context.
+The eight sessions form a with-and-without comparison: in four of them the context-preserving restore is enabled, and in four it is disabled.
+We report two behavioural measures aligned to each intervention, and then the mechanism's own per-intervention record from the four sessions in which it ran.
+
+A regression, a backward saccade against the reading direction, is a standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
+Because context preservation acts only in the moments after a reflow, we aligned the measures to each intervention rather than averaging over the session: for every applied intervention we measured the reading-resume time, the time to the first forward saccade after it, and the regression rate in the five seconds after it against a matched five-second baseline before it.
+The reading-resume time was shorter with preservation than without, with a median of \SI{482}{\milli\second} against \SI{650}{\milli\second} and a mean of \SI{670}{\milli\second} against \SI{923}{\milli\second} (\cref{fig:eval-rrt}).
+The regression rate showed the same separation: in the five seconds after an intervention it was 23\% with preservation against 33\% without, having fallen from a 29\% baseline with preservation while staying near its 32\% baseline without (\cref{fig:eval-postreg}).
+This pattern held across three-, five-, and ten-second windows, and the resume-time direction held for three of the four participants.
+We state the direction of these numbers without drawing an inference from them, as four participants (nineteen interventions with preservation, twenty-six without) do not support one.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-rrt.pdf}
+\caption{Reading-resume time, the interval from each intervention to the reader's next forward saccade, under each condition. Each point is one intervention and the horizontal bar marks the median.}
+\label{fig:eval-rrt}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{Chapters/07_Evaluation/eval-post-regression.pdf}
+\caption{Regression rate in the five seconds before and after each intervention, by condition. Without preservation the rate rises after the intervention, whereas with preservation it does not.}
+\label{fig:eval-postreg}
+\end{figure}
+
+Within the four sessions in which preservation ran, the reader recorded an outcome for each intervention, namely the displacement the reflow induced (the shift of the reader's position before any compensation) and the residual after the restore, together with a graded status.
+Most of the nineteen interventions were layout-changing (a font-size, line-width, or line-height change), which trigger the semantic-restart strategy, and one was an appearance-only change.
+Three interventions were graded preserved and sixteen degraded.
+For the degraded interventions the median residual was 389\,px, while the median induced displacement was only 38\,px.
+\Cref{fig:eval-overreposition} plots the residual against the induced displacement for each intervention, and the points lie above the line of equality, that is, the restore moved the reader's position further than the reflow itself had.
+This is the measured behaviour of the semantic-restart strategy on small layout reflows, and we examine why it occurs, and what it implies for the restore strategy, in \cref{ch:discussion}.
+Each outcome, including its graded status, is written into the session record, so the cost of every intervention to the reader's continuity is auditable after the fact.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.68\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition.pdf}
+\caption{Restore residual against the displacement the reflow induced, with one point per intervention in the four preservation-enabled sessions. Points above the dashed line of equality indicate that the restore repositioned the reader further than the reflow had moved them.}
+\label{fig:eval-overreposition}
+\end{figure}

@@ -1,0 +1,72 @@
+\section{Functional Verification and Requirements Coverage}
+\label{sec:eval-functional}
+
+We verified the functional and non-functional requirements of \cref{ch:requirements} by four means: automated tests, manual end-to-end walkthroughs of the researcher and participant workflows, measurement of the exported data, and inspection of the implemented modules.
+\Cref{tab:req-coverage} records the method and verdict for each requirement group.
+The backend test suite, which covers session lifecycle, decision-proposal handling, replay recovery, and the export serialisers, passes in full (100 of 100 tests), and that suite also contains the architecture-boundary test discussed in \cref{sec:eval-modularity}.
+The frontend has no automated test framework, so the participant- and researcher-facing flows were verified by manual walkthrough rather than by automated tests; we record this openly in the table and revisit it in \cref{sec:eval-threats}.
+
+In \cref{tab:req-coverage} the method codes are T (automated test), W (manual walkthrough), M (measurement of the exported data), I (code inspection), and D (demonstration).
+A verdict of ``Met'' means the requirement was verified by one of those means in this work, whereas ``Implemented'' means it is present in the system by inspection but was not exercised by the recorded sessions or the test suite.
+
+\begingroup
+\small
+\begin{longtable}{p{0.30\linewidth} p{0.42\linewidth} p{0.18\linewidth}}
+\caption{Requirements coverage: the method by which each requirement group was verified and the resulting verdict.}
+\label{tab:req-coverage} \\
+\toprule
+\textbf{Requirement group} & \textbf{Method} & \textbf{Verdict} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\tablename~\thetable{} --- continued} \\
+\toprule
+\textbf{Requirement group} & \textbf{Method} & \textbf{Verdict} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\footnotesize Continued on next page} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{l}{\textit{Functional requirements}} \\
+\midrule
+FR1 System execution and setup          & Walkthrough of guided setup and readiness gating (W) & Met \\
+FR2 Eye-tracker detection and licensing & Real Tobii sessions detected, licensed, streamed (W, D) & Met \\
+FR3 Calibration integration             & Calibration metrics recorded and gated on (M, W) & Met \\
+FR4 Gaze acquisition and mapping        & Sustained stream and token-level mapping in the record (M) & Met \\
+FR5 Reading content and presentation    & Markdown rendering and typographic controls exercised (W) & Met \\
+FR6 Researcher interface (second screen) & Live mirror and researcher console operated (W) & Met \\
+FR7 Intervention runtime (pluggable)    & Module-contract test and registry inspection (T, I) & Met \\
+FR8 Decision-strategy abstraction       & Decision-proposal lifecycle tests and strategy registry (T, I) & Met \\
+FR9 Context preservation                & Per-intervention outcomes measured and logged (M, D) & Met \\
+FR10 Real-time performance monitoring   & Gaze-validity rate in the telemetry record (M) & Met \\
+FR11 Experimental control (modes)       & Manual mode exercised; modes present by inspection (W, I) & Met \\
+FR12 Logging and export                 & Sessions reconstructed from the export alone (D, I) & Met \\
+FR13 Comprehension quiz                 & Quiz pipeline present; not exercised here (I) & Implemented \\
+FR14 Reading-material library           & Library and CRUD present (I) & Implemented \\
+FR15 Experiment setup templates         & Template definition present (I) & Implemented \\
+FR16 Multi-item session sequencing      & Sequencing and transition events present (I) & Implemented \\
+FR17 Sensing-mode configuration         & Tobii and mouse sources both operable (D, I) & Met \\
+FR18 Eye-movement analysis layer        & Built-in detector measured; external analyser connects (M, D) & Met \\
+FR19 External module-provider framework & Three providers connect; rejection paths smoke-tested (D, T) & Met \\
+FR20 Decision-proposal approval workflow & Proposal-gating lifecycle tests (T, I) & Met \\
+FR21 Session replay playback            & Replay reconstructs a session from its record (D, I) & Met \\
+FR22 Session-state recovery             & File-backed recovery covered by tests (T) & Met \\
+FR23 Per-context reader-shell settings  & Independent per-view settings present (I) & Implemented \\
+FR24 Facial-state sensing (optional)    & Optional webcam path present (I) & Implemented \\
+\midrule
+\multicolumn{3}{l}{\textit{Non-functional requirements}} \\
+\midrule
+NFR1 Modularity            & Dependency graph and an executable boundary test (T, I) & Met \\
+NFR2 Low latency           & Transport within budget; decision path instrumented (M) & Met (transport) \\
+NFR3 Usability             & Guided setup and unified-console walkthrough (W) & Met \\
+NFR4 Reliability           & Provider disconnect logged; session continued (D) & Met \\
+NFR5 Reproducibility       & Sessions reconstructed from the record alone (D) & Met \\
+NFR6 Extensibility         & Additive module and external-provider integration (I, D) & Met \\
+NFR7 Recoverability        & Checkpoint and restore covered by tests (T) & Met \\
+NFR8 Hardware independence  & Full operation under mouse simulation (D, I) & Met \\
+\end{longtable}
+\endgroup
+
+The verdict for NFR2 is qualified because the latency we measured in these sessions is the client transport latency, reported in \cref{sec:eval-performance}; the decision-pipeline and out-of-process decision latencies are recorded by the same telemetry channel but were not exercised here, for the reason given in that section.

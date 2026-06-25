@@ -1,0 +1,19 @@
+\section{Modularity and Extensibility}
+\label{sec:eval-modularity}
+
+The first research question asks whether sensing, analysis, decision, and intervention can be separated into modules with stable contracts, such that a new module connects without modifying the core.
+We assess this at three levels: the static dependency structure, the locality of a change that adds a module, and the connection of external providers built against the contract.
+
+At the assembly level the dependency direction is enforced by the build.
+The core application project references only the domain project, and the infrastructure and host projects reference the core, so no reference points outward from the core toward infrastructure or transport.
+A reference that violated this direction would be a compile error rather than a convention to be remembered.
+We encode the rule as an executable test that inspects the referenced assemblies at runtime and asserts that the domain depends on no other project assembly and that the application core depends on no infrastructure, transport, or host assembly.
+The test passes as part of the suite, which turns the modularity rule from an assertion in prose into a checked invariant.
+
+The locality of a change measures how much of the system must be touched to extend it.
+Adding an in-process intervention module requires one registration entry, because the runtime resolves modules from a registry by identifier and never names a concrete module, so no existing module and no part of the reading runtime is edited.
+The out-of-process path is the more demanding test, and we exercise it with three external providers that run as separate processes and speak the documented module-provider protocol: a reference decision provider, a reference eye-movement analyser, and a connector that wraps a collaborator's reading-difficulty model as a fixation-analysis provider.
+The connector is the strongest evidence available to us, because it integrates a model we did not write and did not design the contract around: its addition to the repository changed no file under the backend, and the collaborator's code is used unmodified.
+The malformed and unauthorised connection paths of the protocol are exercised by a handshake smoke test.
+
+We report these as facts about the implemented system, and we read them against the modularity claim and prior work in \cref{ch:discussion}.

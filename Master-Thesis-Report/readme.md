@@ -22,6 +22,10 @@ Commands (run from the monorepo root):
 - `scripts/overleaf-sync.sh status` — show whether local / Overleaf are in
   sync and who is ahead.
 
+On **Windows**, use the PowerShell port with the same subcommands:
+`./scripts/overleaf-sync.ps1 push|pull|status`. On first run Git Credential
+Manager prompts for the Overleaf token (username `git`, password = token).
+
 How it works: Overleaf forbids force-push and the thesis is a subfolder of
 this monorepo, so plain `git subtree` cannot be seeded. The script instead
 syncs at the tree level — each push commits the subfolder's tree directly
