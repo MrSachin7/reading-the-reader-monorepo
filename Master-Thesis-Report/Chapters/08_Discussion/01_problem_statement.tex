@@ -1,0 +1,53 @@
+\section{Revisiting the Problem Statement}
+\label{sec:disc-problem-statement}
+
+The problem statement asked how to build a researcher-operated adaptive reading platform in which sensing, eye-movement analysis, decision strategy, and intervention execution can each be replaced independently of the others, while the platform still runs real Tobii reading sessions and applies context-preserving micro-interventions without disturbing the participant's reading (\cref{sec:final-problem-statement}).
+We answer this one research question at a time.
+For each question we judge how far the goal was reached and state the caveat that limits it.
+We give the verdicts here and leave the wider design knowledge behind them to \cref{sec:disc-design-reflections}.
+Throughout, we point to the evidence in \cref{ch:evaluation} instead of repeating its figures.
+
+\paragraph{RQ1 (Modularity): met strongly.}
+The first research question asked whether sensing, analysis, decision, and intervention can be separated behind stable contracts, so that a new module can be added without changing the core reading runtime.
+The evidence says yes, and \cref{sec:eval-modularity} shows it at three levels: the build enforces the direction of dependencies, adding a module changes only one place, and external providers connect through the documented contract.
+The strongest case is the connector that wraps a collaborator's reading-difficulty model.
+It integrates a model we did not write, against a contract we did not design around it, and adding it changed no file in the backend.
+This is the closest evidence we have that the contract works for someone other than its authors.
+The build-enforced boundary is what sets this result apart from the earlier project prototypes, which were extended by copying the previous frontend instead of building on a shared contract (\cref{subsec:related-rtr-prior-work}).
+Here, a reference that breaks the boundary fails to compile, so modularity is a rule the build checks rather than a habit the authors must keep.
+One caveat, which we develop in \cref{sec:disc-limitations}, is that we built the reference providers ourselves, so they show that the contract is sufficient but not that it is independently validated; the external model is the only evidence that goes beyond our own work.
+
+\paragraph{RQ2 (Sensing pipeline): met for sensing and transport.}
+The second research question asked whether a real Tobii stream can be turned into oculomotor events fast enough for live adaptation, in a way that is inspectable and reproducible.
+For the sensing and transport stages, the answer is yes.
+The tracker streamed at its rated rate with high gaze validity, every recorded sample stayed within the latency budget set in \cref{sec:non-functional-requirements}, and the stages of the pipeline can be inspected and replayed from the exported record (\cref{sec:eval-performance}).
+The honest gap is the automated decision path.
+Its latency is instrumented, both inside the backend and out to an external provider, but it was never exercised, because all eight recorded sessions were run in manual mode.
+The budget is therefore shown for transport, not yet for an automated decision.
+We see this as a limit of the dataset, not of the architecture: the path and its instrumentation exist but were not used, and the run that would close this gap is described in \cref{sec:disc-future-work}.
+
+\paragraph{RQ3 (Context-preserving intervention): the architecture is met, and the restore strategy is a measured finding.}
+The third research question asked how a typographic micro-intervention can change the text while keeping the reader's place, the recovery concern raised in the literature \cite{jensen2025context}.
+The evidence has two parts that must be kept separate.
+The first part is the architecture.
+Its claim was that the cost of an intervention to the reader's continuity should be measured and recorded, not assumed, and this claim is met.
+Every intervention wrote a graded outcome and its residual error into the session record, and on this small, descriptive sample the two behavioural proxies, reading-resume time and post-intervention regression, both moved in the expected direction, lower with preservation than without (\cref{sec:eval-context}).
+The second part is the specific strategy, and here the same record shows a weakness: on small reflows the semantic-restart strategy moved the reader too far, further than the reflow itself had moved them.
+We read these two findings together as support for the design choice, not as a problem with it.
+The architecture was built to make this cost visible, and it reported an unfavourable result about one strategy instead of hiding it, which is exactly what the measurable-disruption idea of \cref{sec:contributions} promised.
+Why the over-repositioning happens, and how a future restore strategy could avoid it, is covered in \cref{sec:disc-lessons} and \cref{sec:disc-future-work}.
+
+\paragraph{RQ4 (Researcher control and experimentability): met.}
+The fourth research question asked whether the platform gives the researcher the control and the auditable record, including session replay, needed to run experiments and to compare interventions and decision strategies.
+The recorded sessions were run from start to finish through a single console that is gated on setup and calibration.
+The whole of \cref{ch:evaluation} was then rebuilt from the exported records alone, with no access to any live state, which shows the auditable record in practice rather than only claiming it (\cref{sec:eval-control}).
+Session replay rebuilds a recorded session in the reading interface from its exported record alone (FR21), and this is the reproducibility that the project's planned comparison workflow depends on.
+This is the gap the earlier prototypes left open.
+Each of them was a self-contained build and could not support systematic comparison, whereas the auditable, replayable record makes comparing interventions and strategies a feature of the platform rather than separate work for every study (\cref{subsec:gap-experimentability}).
+
+Together, the four answers close the loop back to the three gaps that motivated the thesis and to the contribution claimed at the start.
+The experimentability gap (\cref{subsec:gap-experimentability}) is closed by the gated console and the auditable, replayable record (RQ4).
+The sensing-coupling gap (\cref{subsec:gap-sensing}) is closed by the sensing adapter that lets the eye tracker and the mouse source be swapped for each other (RQ1 and RQ2).
+The external-decision integration gap (\cref{subsec:gap-integration}) is closed by the provider contract, which lets external and AI-driven deciders connect as a built-in property of the architecture rather than as code added to this repository (RQ1).
+On this basis we judge the main contribution of \cref{sec:contributions} supported: one system brings together real-time, context-preserving typographic intervention, pluggable decision logic, researcher-in-the-loop control, and reproducible session capture, a combination that the landscape of \cref{sec:market-landscape} leaves empty.
+The honest qualifier is that the decision logic is pluggable and was used through manual operation and reference providers, but its automated path was not run end to end on real hardware in this work, which the limitations and future work discuss.

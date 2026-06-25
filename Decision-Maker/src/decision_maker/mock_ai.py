@@ -142,23 +142,33 @@ class MockDecisionEngine:
         attention_summary = self._read_object(context, "attentionSummary")
         presentation = self._read_object(context, "presentation")
         recent_interventions = context.get("recentInterventions") or []
+        session_started_at_unix_ms = self._read_optional_int(context, "startedAtUnixMs")
 
         if not is_session_active or automation_paused:
             return []
 
-        if not bool(focus.get("isInsideReadingArea", False)):
-            return []
-
         current_token_duration_ms = self._read_optional_int(attention_summary, "currentTokenDurationMs")
-        if current_token_duration_ms is None or current_token_duration_ms < self._config.fixation_threshold_ms:
-            return []
+        observed_at_unix_ms = self._read_optional_int(attention_summary, "updatedAtUnixMs") or now_unix_ms()
+        elapsed_session_runtime_ms = self._calculate_elapsed_session_runtime_ms(
+            session_started_at_unix_ms,
+            observed_at_unix_ms,
+        )
+        should_force_font_size_increase = (
+            elapsed_session_runtime_ms is not None
+            and elapsed_session_runtime_ms >= self._config.force_after_session_runtime_ms
+        )
+
+        if not should_force_font_size_increase:
+            if not bool(focus.get("isInsideReadingArea", False)):
+                return []
+
+            if current_token_duration_ms is None or current_token_duration_ms < self._config.fixation_threshold_ms:
+                return []
 
         current_font_size = self._read_optional_int(presentation, "fontSizePx") or 18
         target_font_size = min(current_font_size + self._config.font_size_step_px, self._config.max_font_size_px)
         if target_font_size <= current_font_size:
             return []
-
-        observed_at_unix_ms = self._read_optional_int(attention_summary, "updatedAtUnixMs") or now_unix_ms()
 
         latest_intervention = recent_interventions[0] if recent_interventions else None
         if isinstance(latest_intervention, dict):
@@ -180,14 +190,25 @@ class MockDecisionEngine:
             return []
 
         gaze_sample_count = len(self._memory.recent_gaze_samples)
-        signal_summary = (
-            f"token dwell time reached {current_token_duration_ms} ms "
-            f"while observing {gaze_sample_count} recent gaze samples"
-        )
-        rationale = (
-            "Mock decision-maker detected sustained attention on the current token "
-            "and proposes a small font-size increase."
-        )
+        if should_force_font_size_increase:
+            runtime_seconds = elapsed_session_runtime_ms // 1000 if elapsed_session_runtime_ms is not None else 0
+            signal_summary = (
+                f"session runtime reached {runtime_seconds} s "
+                f"while observing {gaze_sample_count} recent gaze samples"
+            )
+            rationale = (
+                "Mock decision-maker forced a font-size increase because the "
+                "experiment has been running for at least 20 seconds."
+            )
+        else:
+            signal_summary = (
+                f"token dwell time reached {current_token_duration_ms} ms "
+                f"while observing {gaze_sample_count} recent gaze samples"
+            )
+            rationale = (
+                "Mock decision-maker detected sustained attention on the current token "
+                "and proposes a small font-size increase."
+            )
         correlation_id = inbound_correlation_id or str(uuid.uuid4())
 
         proposed_intervention = {
@@ -359,6 +380,15 @@ class MockDecisionEngine:
             "sentAtUnixMs": now_unix_ms(),
             "payload": payload,
         }
+
+    @staticmethod
+    def _calculate_elapsed_session_runtime_ms(
+        session_started_at_unix_ms: int | None,
+        observed_at_unix_ms: int,
+    ) -> int | None:
+        if session_started_at_unix_ms is None or session_started_at_unix_ms <= 0:
+            return None
+        return max(0, observed_at_unix_ms - session_started_at_unix_ms)
 
     def _log_decision(
         self,

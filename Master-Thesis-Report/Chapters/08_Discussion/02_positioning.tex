@@ -1,0 +1,40 @@
+\section{Positioning Against Related Work}
+\label{sec:disc-related-work}
+
+\Cref{ch:key-concepts-related-work} surveyed the academic and commercial landscape to find the gap this thesis addresses.
+Now that the platform is built and measured, we return to that landscape and show where the result sits.
+We use the same four threads as the survey: the prior project line, the general-purpose experiment software, the eye-movement analysis literature, and the work on intervention design.
+For each one we state plainly what we did, what the prior work did, and why the two differ.
+
+The clearest comparison is with the earlier projects in Reading the Reader, because this thesis inherits their problem rather than a new one.
+Each of those projects delivered a capable adaptive reader, but each was extended by copying the previous frontend and changing it, so a new study built on a fork of the last project rather than on a shared contract \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
+Our result keeps the same capability but changes the structure underneath.
+Sensing, analysis, decision, and intervention now sit behind build-enforced module boundaries (\cref{sec:eval-modularity}), so the next intervention or decision provider extends the platform in place instead of forking it.
+This is the move from a line of one-off prototypes to a platform that builds up over time, which is the precondition the gap analysis named for the systematic comparison the project needs (\cref{subsec:gap-experimentability}).
+
+A researcher who builds a reading study today is more likely to use a general-purpose experiment platform than a prior thesis prototype, so these tools are the harder comparison.
+Tobii Pro Lab, PsychoPy, and Psychtoolbox are mature and widely used, and they are very good at designing experiments, presenting stimuli, and capturing gaze data.
+But they were not built to adapt the text in response to the reader's gaze, and none of them offers a pluggable decision boundary \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.
+Our platform differs on exactly these two points: it closes the loop from gaze to a typographic change in real time, and it lets an external decision provider connect behind a stable contract.
+This is the upper-right region that the capability comparison and the market quadrant of \cref{ch:key-concepts-related-work} leave empty (\cref{tab:capability-matrix}, \cref{fig:market-quadrant}).
+We do not overstate the contrast.
+Those platforms are general tools, proven by years of use across many kinds of study, whereas ours is a focused tool for one family of gaze-driven reading experiments, so we present it as filling the gap they leave open rather than as a replacement for them.
+
+The eye-tracking literature this thesis builds on treats the reduction of raw gaze to oculomotor events as the first step.
+That step uses an explicit identification algorithm of the kind catalogued by Salvucci and Goldberg, read together with the reading-process findings that Rayner consolidated \cite{salvucci2000identifying, rayner1998eyemovements}.
+A common theme in that work is that any later result, such as predicting reading performance or telling reading from non-reading, is only trustworthy if this extraction step is fixed and documented, so the result can be compared or replayed \cite{guan2022predictive, landsmann2019classification}.
+Our contribution here is architectural rather than algorithmic.
+We make the extraction an explicit, replaceable analysis strategy whose events are logged and can be replayed from the session record (\cref{sec:eval-control}, \cref{sec:impl-sensing}), so the step the literature treats as a methodological precondition becomes an inspectable, swappable part of the running system.
+We do not claim a better detector: the built-in strategy is a dwell-based, area-of-interest method suited to word-level reading, and we present it as one interchangeable implementation behind the analysis contract, not as an advance in fixation detection (\cref{sec:impl-sensing}).
+
+The last thread is the work on intervention design in and around the project, which asks which typographic changes help or hinder reading and how a reader recovers from them.
+Pereira and Andrei compared four intervention forms and reported that they differ a great deal in disruption and acceptance, and Jensen et al. studied how preserving context across a change affects recovery, and found that intervention design measurably shapes the reading experience \cite{pereira2024typography, jensen2025context}.
+The typographic parameters these interventions change are themselves grounded in controlled readability studies \cite{rello2016makeitbig, beymer2008eyetracking}.
+Our work comes at the same concern from the other side.
+Instead of measuring the effect of one intervention, we make an intervention's disruption something the platform measures and records for every change, applying it at a controlled boundary and writing a graded recovery outcome into the session record (\cref{sec:eval-context}, \cref{sec:contributions}).
+This complements that line of work rather than competing with it, because the efficacy findings it produces are exactly the kind of result our platform is built to generate in a systematic and reproducible way, which the prior prototypes could not support.
+
+Across the four threads a single pattern appears.
+Prior work delivered real capability or real findings, but each one within a fixed structure: a forked prototype, a general-purpose tool that does not adapt the text, an analysis step redone for each study, or a single intervention measured on its own.
+What this thesis adds is not another capability of that kind, but the modular structure that makes such capabilities interchangeable and such findings reproducible.
+It is that structure, seen as design knowledge rather than as one particular system, that the next section examines.

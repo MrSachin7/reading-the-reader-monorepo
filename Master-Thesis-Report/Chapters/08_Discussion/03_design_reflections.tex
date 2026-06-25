@@ -1,0 +1,40 @@
+\section{Design Reflections}
+\label{sec:disc-design-reflections}
+
+The previous sections judged what the platform achieved and how it compares with related systems.
+This section steps back from the system itself to the design knowledge behind it.
+The contribution this thesis defends is not the particular reading platform, but the structures and decisions that make it modular and make its behaviour measurable, described so that they carry over to other systems (\cref{sec:research-approach}).
+We set out that knowledge as four design principles, each named, grounded in the system as built, and written as a lesson that applies beyond this implementation.
+
+\paragraph{P1: boundaries as build-time invariants.}
+The first principle is that a modular boundary is only as strong as the mechanism that enforces it, and the strongest mechanism available is the compiler.
+In this platform, the rule that the core depends on no infrastructure is not a guideline that reviewers must remember; it is a property of the build.
+The project-reference graph points inward only, a reference that broke the rule would fail to compile, and a boundary test in the test suite checks the same rule (\cref{sec:eval-modularity}, \cref{sec:impl-modularity}).
+The contrast with the earlier prototypes is telling: those projects kept their structure by convention, extending the previous frontend by copying it, and that convention did not survive each new study (\cref{subsec:related-rtr-prior-work}).
+The lesson that carries over is that any layered system can turn its most important dependency rule from a convention into a rule the build checks, so the boundary cannot erode quietly as the system grows or its authors change.
+
+\paragraph{P2: a contract's authors can show sufficiency, but only an outsider shows independence.}
+The second principle is about what it means to validate an integration contract, and it depends on who implements it.
+When the same team writes both the contract and the modules that satisfy it, a working integration shows that the contract is sufficient to express those modules, but it cannot show that the contract is free of assumptions that only its authors share.
+Our evidence keeps these two levels apart: the two reference providers we built show sufficiency, while the connector that wraps a collaborator's reading-difficulty model, added with no change to the backend and no change to their code, is the one piece of evidence that goes beyond our own assumptions (\cref{sec:eval-modularity}).
+We are open that this independence rests on a single outside implementation, so it is suggestive rather than conclusive, a limit we return to in \cref{sec:disc-limitations}.
+The lesson that carries over is to design the contract so that an outsider's implementation is small and local, and then to treat a working third-party integration, rather than an author-built reference, as the real validation of the boundary.
+
+\paragraph{P3: make the cost of a quality attribute measurable, not asserted.}
+The third principle is that a system should measure the very property it claims to provide, so it can report its failures as easily as its successes.
+Context preservation is the clearest case.
+Instead of assuming that an intervention preserves the reader's place, the reader measures and records a graded residual for every change, and it was this measurement that revealed the over-repositioning of the semantic-restart strategy rather than letting it go unnoticed (\cref{sec:eval-context}).
+The same principle applies to the latency of the module boundary, because out-of-process replaceability is not free: an external provider adds a network round trip that an in-process module does not.
+The platform records that latency on a single backend clock, so the cost of the boundary can be seen rather than assumed, with the client transport leg measured within budget and the provider leg instrumented but not yet exercised (\cref{sec:eval-performance}).
+The lesson that carries over is to measure the cost of each quality attribute the architecture trades on, both the disruption a change causes and the latency a boundary adds, so design tradeoffs are settled with data and the system can show its own weak points.
+
+\paragraph{P4: separate a change's decision from its commit.}
+The fourth principle is that separating what to change from when the change takes effect lets a disruptive update be timed to a natural break in a continuous activity.
+A typographic intervention is decided the moment the researcher or a decision strategy calls for it, but a layout-affecting change does not take effect then.
+It waits for a chosen commit boundary, and the reader captures an anchor before the reflow and restores it afterwards, so the change never lands in the middle of a line the participant is reading (\cref{sec:design-loop}, \cref{sec:impl-context}).
+This separation is what the over-repositioning finding refines rather than overturns: committing at a boundary and re-anchoring across it is sound, and only the arithmetic of the restore on small reflows needs improving in future work (\cref{sec:disc-future-work}).
+The lesson that carries over is that any interface which changes state during a continuous user task, whether reading, editing, or navigating, can protect the user's continuity by holding the change until a boundary and re-anchoring their focus across it, rather than applying it the instant it is decided.
+
+Put together, these four principles are the design-knowledge contribution that the platform exists to demonstrate: enforce the boundary in the build, validate the contract from outside, measure the cost of what you claim, and separate a change's commit from its decision.
+We state them without reference to eye tracking or typography on purpose, because their value is that they apply beyond this platform and inform the next modular, measurable, researcher-operated adaptive system.
+The same honesty that lets the platform report its own costs requires us to state clearly what it does not yet do, which is the subject of the next section.

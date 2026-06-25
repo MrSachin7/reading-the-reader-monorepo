@@ -1,0 +1,17 @@
+\section{Limitations}
+\label{sec:disc-limitations}
+
+The threats to the validity of the measurements were set out in \cref{sec:eval-threats}.
+The limitations here are of a different kind: they bound the scope of the platform and the reach of the claims we make for it, not the soundness of any single result.
+We state them plainly, because the contribution is clearer when its boundaries are explicit.
+
+Several limits follow from the scope we fixed at the start.
+The platform accepts reading material in Markdown only, so it handles reflowable text rather than arbitrary documents, and excluding formats such as PDF is a deliberate constraint rather than an oversight (\cref{sec:constraints}).
+The recorded sessions were read by a small convenience sample, drawn from the authors and their acquaintances, not by the struggling or clinical readers that adaptive reading ultimately aims to serve, so nothing here speaks to those groups.
+The thesis also makes no efficacy claim: we do not claim that any intervention improves reading speed, comprehension, or comfort, only that the platform can apply interventions and measure their immediate cost.
+The controlled effect study is left to future work by design (\cref{sec:final-problem-statement}).
+
+Three further limitations concern the claims most likely to be misread.
+First, the platform's support for AI-driven decision-making is architectural, not built: it provides the contract and the external-provider path through which such a model would act, but no automated decision model was implemented or run end to end on real hardware here, so the AI claim is about structure, not about a working decision-maker.
+Second, the integration contract is so far validated mostly by its own authors; the one external model connected through it is encouraging, but a single outside implementation is not enough to call the contract independently proven (\cref{sec:disc-design-reflections}).
+Third, the context-preserving restore, as delivered, does not yet preserve context well for small layout reflows, where it moves the reader too far; this is a limit of the mechanism as built, and we treat its fix as future work (\cref{sec:eval-context}).

@@ -1,19 +1,36 @@
 \chapter{Discussion}
 \label{ch:discussion}
 
-\section{Achievements vs.\ Problem Statement}
-% Map each sub-question from the final problem statement to evidence
-% from the evaluation.
+% CHAPTER ROLE (do not let this blur into Ch7 Evaluation):
+%   Ch7 owns the EVIDENCE (neutral measurements, no interpretation).
+%   Ch8 owns the INTERPRETATION: results vs the problem statement, comparison with
+%   related work, the "what we achieved" narrative, the design knowledge, and the
+%   scope-level limitations.
+%   Hard rules: no re-reporting of Ch7 numbers (interpret only); no new results,
+%   metrics, or features; no citations outside bibliography.bib. 80/20 weighting:
+%   achievement first (sec 1-3), limits and future work kept tight (sec 4-6).
+%
+% Each section lives in its own file:
+%   01_problem_statement  -> \cref{sec:disc-problem-statement}
+%   02_positioning        -> \cref{sec:disc-related-work}
+%   03_design_reflections -> \cref{sec:disc-design-reflections}
+%   04_limitations        -> \cref{sec:disc-limitations}
+%   05_lessons_learned    -> \cref{sec:disc-lessons}
+%   06_future_work        -> \cref{sec:disc-future-work}
+%   07_summary            -> \cref{sec:disc-summary}
 
-\section{Comparison with Related Work}
-% Position outcomes against the academic and commercial systems from
-% Chapter~\ref{ch:background} (or Chapter~2).
+\Cref{ch:evaluation} reported what the platform measured, but it did not interpret those measurements.
+This chapter provides that interpretation.
+We read the results against the problem statement of \cref{sec:final-problem-statement}, compare them with the prior work of \cref{ch:key-concepts-related-work}, and set out the limitations they imply.
+The chapter adds no new results.
+Taken together, the evidence gives a clear verdict.
+The two architectural goals, modularity and researcher control, are met with strong evidence.
+The two runtime goals, the sensing pipeline and the context-preserving intervention, are met for the paths that the recorded sessions used, and each one reveals a single honest finding that we carry into the future work.
 
-\section{Limitations}
-% Be honest. Scope limits, methodological limits, generalisability.
-
-\section{Lessons Learned}
-% Engineering and process insights worth carrying forward.
-
-\section{Future Work}
-% Concrete, well-scoped follow-up directions.
+\input{Chapters/08_Discussion/01_problem_statement}
+\input{Chapters/08_Discussion/02_positioning}
+\input{Chapters/08_Discussion/03_design_reflections}
+\input{Chapters/08_Discussion/04_limitations}
+\input{Chapters/08_Discussion/05_lessons_learned}
+\input{Chapters/08_Discussion/06_future_work}
+\input{Chapters/08_Discussion/07_summary}

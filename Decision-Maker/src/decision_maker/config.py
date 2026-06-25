@@ -25,6 +25,7 @@ class DecisionMakerConfig:
     reconnect_delay_seconds: int
     fixation_threshold_ms: int
     min_proposal_interval_ms: int
+    force_after_session_runtime_ms: int
     font_size_step_px: int
     max_font_size_px: int
 
@@ -38,7 +39,8 @@ class DecisionMakerConfig:
             heartbeat_interval_seconds=max(1, _read_int("DECISION_MAKER_HEARTBEAT_INTERVAL_SECONDS", 5)),
             reconnect_delay_seconds=max(1, _read_int("DECISION_MAKER_RECONNECT_DELAY_SECONDS", 3)),
             fixation_threshold_ms=max(1, _read_int("DECISION_MAKER_FIXATION_THRESHOLD_MS", 1200)),
-            min_proposal_interval_ms=max(1, _read_int("DECISION_MAKER_MIN_PROPOSAL_INTERVAL_MS", 45_000)),
-            font_size_step_px=max(1, _read_int("DECISION_MAKER_FONT_SIZE_STEP_PX", 2)),
+            min_proposal_interval_ms=max(1, _read_int("DECISION_MAKER_MIN_PROPOSAL_INTERVAL_MS", 20_000)),
+            force_after_session_runtime_ms=max(1, _read_int("DECISION_MAKER_FORCE_AFTER_SESSION_RUNTIME_MS", 20_000)),
+            font_size_step_px=max(1, _read_int("DECISION_MAKER_FONT_SIZE_STEP_PX", 4)),
             max_font_size_px=max(1, _read_int("DECISION_MAKER_MAX_FONT_SIZE_PX", 24)),
         )

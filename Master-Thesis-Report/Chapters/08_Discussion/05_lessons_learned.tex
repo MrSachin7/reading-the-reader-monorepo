@@ -1,0 +1,21 @@
+\section{Lessons Learned}
+\label{sec:disc-lessons}
+
+Building the platform taught us things that no requirement captured, and we record the most important here, the technical and the procedural together.
+
+The most useful technical lesson concerns the heuristic that stabilises gaze-to-word mapping, which \cref{sec:requirements-evolution} flagged for a critical second look.
+Raw gaze jitters up and down by about the height of a line, so a sample taken in the middle of a line can fall on the line above or below.
+Our mapping holds the reading on its current line by subtracting a fixed amount from that line's score, a standing bias that resists single-sample drift (\cref{lst:impl-tokenmap}, \cref{sec:impl-sensing}).
+This works, but it is worth naming for what it is.
+It is a hand-tuned constant that borrows the idea of a Kalman filter, that a prior estimate of position should soften the effect of each noisy new measurement, but carries none of its machinery, because it keeps no estimate of its own uncertainty and performs no predict-and-update step \cite{kalman1960filtering}.
+The honest description is that our line bias is a lightweight stand-in for what a Kalman filter would do in a principled way, replacing a single tuned number with an explicit model of how far to trust the gaze position from one sample to the next, and we return to this in \cref{sec:disc-future-work}.
+
+Several engineering choices were made for speed of delivery, and we flag them as deliberate tradeoffs.
+We chose the technology stack, a React and Next.js frontend with a .NET backend, because the team already knew these technologies rather than for any architectural reason; this helped us move quickly under a fixed deadline but is not central to the contribution, since the modular boundaries matter far more than the frameworks inside them.
+We stored session records in the file system rather than in a database (\cref{sec:design-data}), which suits a single-operator experiment and keeps every record easy to inspect and replay, but which we would not expect to support a concurrent, multi-session deployment without revisiting.
+
+Two process lessons concern how the work was built and judged.
+The clearest study-design lesson is that, by running every recorded session in manual mode, we never exercised the automated decision path, and we would plan a future data-collection campaign to capture that path's latency rather than leave it instrumented but unmeasured.
+We also carry two honesty points from the evaluation.
+The frontend has no automated test framework, so its flows were checked by manual walkthrough rather than by tests (\cref{sec:eval-functional}).
+And, as a two-person team that used generative-AI coding assistance (disclosed in \cref{ch:methodology}) and both built and judged the system, we relied on the executable checks and the external integration to reduce the bias that comes from evaluating one's own work.
