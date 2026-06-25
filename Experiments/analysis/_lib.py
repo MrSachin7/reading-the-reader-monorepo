@@ -21,7 +21,7 @@ Condition is taken from the folder name, participant from the file stem.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 
 import pandas as pd
@@ -130,6 +130,12 @@ def discover(data_dir: Path = DATA_DIR) -> list[_Discovered]:
             participant=participant,
             condition=condition,
         ))
+    # Anonymise: replace participant names with stable P1..Pn labels (sorted),
+    # so no real name reaches the tidy tables, figures, or the thesis. The
+    # telemetry paths above are already resolved against the real file names,
+    # so the data still loads; only the reported label changes.
+    aliases = {name: f"P{i}" for i, name in enumerate(sorted({d.participant for d in found}), start=1)}
+    found = [replace(d, participant=aliases[d.participant]) for d in found]
     return found
 
 
@@ -211,7 +217,7 @@ def load_file(item: _Discovered) -> dict[str, pd.DataFrame]:
         "calibrationQuality": _g(exp, "calibration", "quality"),
         "calibrationAccuracyDeg": _g(exp, "calibration", "averageAccuracyDegrees"),
         "calibrationPrecisionDeg": _g(exp, "calibration", "averagePrecisionDegrees"),
-        "participantName": _g(exp, "participant", "name"),
+        "participantName": item.participant,
         "participantAge": _g(exp, "participant", "age"),
         "participantSex": _g(exp, "participant", "sex"),
         "documentTitle": content.get("title"),
