@@ -10,20 +10,20 @@ The research contribution of this thesis is not the running code itself but the 
 This framing follows the Design Science Research paradigm, in which a designed artifact and the knowledge it embodies are themselves the contribution, provided they are rigorously motivated and evaluated \cite{hevner2004designscience}.
 The methodology that operationalises this stance is developed in \cref{ch:methodology}.
 
-To reach this goal, the project pursues four objectives.
+To reach this goal, the project pursues four objectives:
 
 \begin{itemize}
 
-  \item \textbf{Modular architecture.}
+  \item \textbf{Modular architecture:}
     To design an architecture that separates sensing, eye-movement analysis, decision strategy, and intervention execution into independently replaceable modules behind stable contracts, so that any one of them can be extended or substituted without modifying the core reading runtime.
 
-  \item \textbf{Real-time sensing pipeline.}
+  \item \textbf{Real-time sensing pipeline:}
     To implement an end-to-end sensing pipeline that drives the platform from a physical eye tracker, a Tobii device, and, behind the same sensing contract, from a simulated input source, converting the raw gaze stream into reading-behaviour signals online within a latency budget compatible with live adaptation.
 
-  \item \textbf{Researcher console for live experiments.}
+  \item \textbf{Researcher console for live experiments:}
     To build a researcher console that mirrors the participant's gaze in real time and lets the researcher operate a controlled reading session, apply or steer interventions while it runs, and export the complete session for replay and analysis.
 
-  \item \textbf{Pluggable decision boundary.}
+  \item \textbf{Pluggable decision boundary:}
     To define a decision boundary at which an AI-driven or alternative decision strategy can be connected to the running platform, operating either in an advisory mode in which the researcher approves or overrides each proposal or in an autonomous mode in which it is applied directly, without modifying the core.
 
 \end{itemize}
