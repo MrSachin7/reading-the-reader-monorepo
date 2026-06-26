@@ -32,6 +32,6 @@
 \draw[rounded corners=2pt, draw=black!25] (-6.6,-4.95) rectangle (4.3,-3.85);
 \end{tikzpicture}%
 }
-\caption{The cross-session improvement loop. Within the thesis (solid) each reading session seals one authoritative, schema-versioned record (\cref{fig:design-record}) that is exported in a portable format; across a study these records accumulate into a corpus. The architecture additionally affords (dashed, out of scope under C3) fine-tuning an external decision provider offline on that corpus and attaching it through the same decision seam, so that an improved provider can drive interventions in later sessions without any change to the core. The platform contributes the reproducible record and the seam that make this loop possible; the learning algorithm itself is external.}
+\caption[The cross-session improvement loop.]{The cross-session improvement loop. Within the thesis (solid) each reading session seals one authoritative, schema-versioned record (\cref{fig:design-record}) that is exported in a portable format; across a study these records accumulate into a corpus. The architecture additionally affords (dashed, out of scope under C3) fine-tuning an external decision provider offline on that corpus and attaching it through the same decision seam, so that an improved provider can drive interventions in later sessions without any change to the core. The platform contributes the reproducible record and the seam that make this loop possible; the learning algorithm itself is external.}
 \label{fig:design-cross-session}
 \end{figure}

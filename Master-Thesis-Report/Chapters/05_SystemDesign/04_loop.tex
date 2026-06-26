@@ -16,7 +16,7 @@ Applying it produces an adapted view and an intervention event, which the core r
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{Chapters/05_SystemDesign/adaptive-loop.pdf}
-\caption{One iteration of the real-time adaptive loop across the two front-end surfaces. High-frequency gaze is mirrored on the dedicated real-time channel to both the participant's reading surface and the researcher's console; the reading surface returns a content-anchored observation; the core projects oculomotor events (fixations, saccades, and regressions) and renders them on the console as a fixation heat map and a saccade overlay, so that the researcher can read the participant's behaviour. The core then evaluates a decision (using the built-in strategy or an external provider) and, in advisory mode, awaits researcher approval before validating and committing the intervention at a controlled boundary; the adapted text is returned to the reading surface and mirrored to the console. The self-calls on the backend core denote the analysis, decision, intervention, and persistence steps performed within it, and the checkpoint is written on a best-effort basis.}
+\caption[One iteration of the real-time adaptive loop.]{One iteration of the real-time adaptive loop across the two front-end surfaces: gaze is mirrored over the dedicated real-time channel, the core projects oculomotor events and (in advisory mode) awaits researcher approval before committing the intervention at a controlled boundary, and the adapted text returns to both surfaces. The backend self-calls denote the analysis, decision, intervention, and persistence steps performed within the core, and the checkpoint is written best-effort.}
 \label{fig:design-loop}
 \end{figure}
 
@@ -49,7 +49,7 @@ A pending proposal is approved or rejected by the researcher under advisory oper
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{Chapters/05_SystemDesign/decision-lifecycle.pdf}
-\caption{Lifecycle of a decision proposal. A proposal raised by the active decision provider (built-in or external) enters a pending state and resolves into exactly one terminal outcome. The execution mode fixes who resolves it: in advisory mode the researcher approves or rejects the proposal, whereas in autonomous mode the platform applies it directly. Approval and autonomous application both commit the intervention at a controlled boundary and differ only in who resolved the proposal, while a proposal that is rejected or superseded by a newer one is discarded without altering the text.}
+\caption[Lifecycle of a decision proposal.]{Lifecycle of a decision proposal. A proposal from the active decision provider (built-in or external) enters a pending state and resolves into exactly one terminal outcome; in advisory mode the researcher approves or rejects it, while in autonomous mode the platform applies it directly.}
 \label{fig:design-decision-lifecycle}
 \end{figure}
 

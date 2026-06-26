@@ -69,7 +69,7 @@ This is realised through two complementary mechanisms that meet the core through
 \draw[realise] (asto.north) -- (psto.south);
 \end{tikzpicture}%
 }
-\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) is an \texttt{Application}-layer class that realises its segregated runtime facades and depends only on the three port interfaces in the middle row (sensing, broadcast, and persistence). Each concrete adapter in the bottom row lives in an infrastructure project and realises the port above it. The dashed rule marks the \texttt{Application}/infrastructure boundary: every realisation (hollow triangle) and dependency (filled arrow) edge crosses it inward towards the core, so the modularity of \cref{sec:design-style} is visible at the level of individual classes. Members are abbreviated; the replay, recovery, and module-provider ports follow the same pattern and are omitted for clarity.}
+\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) depends only on the three port interfaces (middle), each realised by a concrete adapter in an infrastructure project (bottom); every realisation (hollow triangle) and dependency (filled arrow) crosses the dashed \texttt{Application}/infrastructure boundary inward towards the core. Members are abbreviated and the remaining ports omitted for clarity.}
 \label{fig:impl-session-manager}
 \end{figure}
 
@@ -135,7 +135,7 @@ public sealed record ModuleProviderWelcomePayload(
 \IfFileExists{Chapters/06_Implementation/provider-handshake.pdf}%
   {\includegraphics[width=0.92\linewidth]{Chapters/06_Implementation/provider-handshake.pdf}}%
   {\fbox{\parbox[c][4cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/provider-handshake.mmd} to \texttt{provider-handshake.pdf} with \texttt{mmdc}.}}}%
-\caption{Lifecycle of an external module provider. The provider connects and declares its modules and capabilities (\texttt{Hello}); the system accepts or rejects them (\texttt{Welcome}/error); while active, context flows out as \texttt{Inbound} envelopes and decisions return as \texttt{Outbound} envelopes, applied through the same validation and logging path as a built-in module; a missed heartbeat or disconnect degrades the strategy to its built-in fallback and is logged.}
+\caption[Lifecycle of an external module provider.]{Lifecycle of an external module provider. The provider connects and declares its modules and capabilities (\texttt{Hello}); the system accepts or rejects them (\texttt{Welcome}/error); while active, context flows out as \texttt{Inbound} envelopes and decisions return as \texttt{Outbound} envelopes, applied through the same validation and logging path as a built-in module; a missed heartbeat or disconnect degrades the strategy to its built-in fallback and is logged.}
 \label{fig:impl-provider-seq}
 \end{figure}
 
@@ -171,7 +171,7 @@ The two halves meet at one stable contract, a token-indexed reading observation,
 \node[tag] at (13.2,-1.15) {backend / both screens};
 \end{tikzpicture}%
 }
-\caption{The sensing pipeline. Acquisition and temporal analysis run on the backend; the spatial mapping from gaze point to word token runs on the front-end, where the rendered layout lives. The two halves meet at one stable contract, the token-indexed reading observation, which is also the interface a downstream decision strategy or the export consumes.}
+\caption[The sensing pipeline.]{The sensing pipeline. Acquisition and temporal analysis run on the backend, while the spatial mapping from gaze point to word token runs on the front-end where the rendered layout lives; the two halves meet at one stable contract, the token-indexed reading observation.}
 \label{fig:impl-pipeline}
 \end{figure}
 
@@ -309,7 +309,7 @@ function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex:
 \node[lbl, text=black!60, anchor=west] at (10.55,1.35) {publish (FR4.4)};
 \end{tikzpicture}%
 }
-\caption[Two-stage gaze-to-word mapping in the reader.]{How a gaze point is mapped to a word (\cref{lst:impl-tokenmap}). \emph{Stage~1} fixes the line: each line is a vertical band, and the sample is charged for the distance outside the band (weight $14$) plus a small pull to the band centre (weight $0.45$); a fixed $-24$ discount on the line already being read acts as hysteresis, so the drifted sample shown here (near-equal gaps $d_\uparrow \approx d_\downarrow$ to the line above and below) is held on the current line rather than flickering to its neighbour under vertical jitter. \emph{Stage~2} then takes the nearest word on that line by horizontal distance to its box (weight $1.35$, with a $0.12$ centre tie-break), and the result is published as the token-indexed observation that the analysis layer and the export consume.}
+\caption[Two-stage gaze-to-word mapping in the reader.]{How a gaze point is mapped to a word (\cref{lst:impl-tokenmap}). \emph{Stage~1} fixes the line: each line is a vertical band, and a fixed discount on the line already being read acts as hysteresis, so the drifted sample shown (near-equal gaps $d_\uparrow \approx d_\downarrow$) is held on the current line rather than flickering under vertical jitter. \emph{Stage~2} then takes the nearest word on that line, and the result is published as the token-indexed observation; the scoring weights are given in \cref{lst:impl-tokenmap}.}
 \label{fig:impl-gazemap}
 \end{figure}
 
@@ -484,7 +484,7 @@ The branching that turns a raw residual error into a graded outcome is summarise
 \IfFileExists{Chapters/06_Implementation/context-preservation.pdf}%
   {\includegraphics[width=0.95\linewidth]{Chapters/06_Implementation/context-preservation.pdf}}%
   {\fbox{\parbox[c][5cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/context-preservation.mmd} to \texttt{context-preservation.pdf} with \texttt{mmdc}.}}}%
-\caption{The capture-and-restore lifecycle of a context-preserving intervention. Before any change the reader captures an anchor for the current reading position every \SI{120}{\milli\second} and keeps the newest one; when an intervention commits, the reader chooses a restore mode, re-finds the anchor in the reflowed document, scrolls it back to its captured on-screen offset, grades the residual error, and reports the outcome, which the backend appends to the session record (FR9.3).}
+\caption[Capture-and-restore lifecycle of an intervention.]{The capture-and-restore lifecycle of a context-preserving intervention. The reader continuously captures an anchor for the current reading position and, when an intervention commits, re-finds it in the reflowed document, restores it, and grades the residual outcome into the session record (FR9.3).}
 \label{fig:impl-context-seq}
 \end{figure}
 
@@ -612,7 +612,7 @@ if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
 \node[note, text width=2.8cm] at (10.8,-4.5) {anchor missing, no fresh fallback};
 \end{tikzpicture}%
 }
-\caption{How the residual error becomes a graded outcome. After re-alignment the reader classifies the result from the restore mode, the anchor source it resolved to, and the residual \texttt{anchorErrorPx}: a semantic restart is preserved within 72 pixels, whereas an offset preserve is preserved only within 48 pixels at a precise sentence anchor and is treated as degraded beyond 120 pixels or at a coarse block anchor. Three outcomes short-circuit the measurement entirely: an appearance-only change at a frozen boundary is preserved with no reflow, and a missing anchor is reported failed, or degraded with a scroll-only restore when a stale anchor still exists.}
+\caption[How a restore's residual error becomes a graded outcome.]{How a restore's residual error becomes a graded outcome (preserved, degraded, or failed). The branch taken depends on the restore mode and the anchor resolved; the pixel thresholds and the three short-circuit cases are described in the text.}
 \label{fig:impl-context-decision}
 \end{figure}
 
@@ -725,7 +725,7 @@ private void ResolveExperimentOrderForStart()
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ExperimentTemplate.png}
-\caption{The experiment template editor. A template is a named, ordered sequence of reading items, each bound to a library material and optionally given its own typographic configuration; the template is persisted and reused across sessions, and its order is replayed (fixed) or counterbalanced (random) when a session starts.}
+\caption[The experiment template editor.]{The experiment template editor. A template is a named, ordered sequence of reading items, each bound to a library material and optionally given its own typographic configuration; the template is persisted and reused across sessions, and its order is replayed (fixed) or counterbalanced (random) when a session starts.}
 \label{fig:impl-template}
 \end{figure}
 

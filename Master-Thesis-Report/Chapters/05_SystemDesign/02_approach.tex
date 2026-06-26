@@ -15,7 +15,7 @@ This outermost view fixes the system boundary, and with it the division of respo
 \begin{figure}[htbp]
 \centering
 \includesvg[width=\linewidth,inkscapeopt={--export-text-to-path}]{Chapters/05_SystemDesign/architecture_overview}
-\caption{Overview of the Reading the Reader platform as a researcher--participant adaptive loop. The participant reads on one screen while a Tobii eye tracker at the foot of that screen senses gaze; the backend turns the gaze stream into oculomotor events, adapts the participant's text, and mirrors the gaze and derived analysis to the researcher's console, where the session is steered and proposed interventions are approved or rejected. An external decision provider may attach through a well-defined API, to which the platform sends gaze and context and from which it receives intervention commands (out of scope, C3); every session is written to a reproducible record.}
+\caption[Overview of the Reading the Reader platform.]{Overview of the Reading the Reader platform as a researcher--participant adaptive loop. The participant reads on one screen while a Tobii eye tracker senses gaze; the backend adapts the text and mirrors the gaze and derived analysis to the researcher's console, and an external decision provider may attach through a well-defined API (out of scope, C3).}
 \label{fig:design-context}
 \end{figure}
 

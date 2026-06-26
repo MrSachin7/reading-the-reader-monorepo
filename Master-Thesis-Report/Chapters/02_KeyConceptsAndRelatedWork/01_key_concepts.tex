@@ -11,7 +11,7 @@ Fig.~\ref{fig:reading-concept} reproduces the concept as published by the progra
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\linewidth]{Chapters/02_KeyConceptsAndRelatedWork/reading_concept.png}
-\caption{The Reading the Reader concept as published by the project. A tracker of eyes, pupils, and posture feeds feature extraction and a classifier, trained offline on a database of readers, which emits an intervention signal that the reading application renders as a typographic adaptation for the reader, closing the loop. Figure reproduced from the project description \cite{dtucompute2025rtr}.}
+\caption[The Reading the Reader concept, as published by the project.]{The Reading the Reader concept as published by the project. A tracker of eyes, pupils, and posture feeds feature extraction and a classifier, trained offline on a database of readers, which emits an intervention signal that the reading application renders as a typographic adaptation for the reader, closing the loop. Figure reproduced from the project description \cite{dtucompute2025rtr}.}
 \label{fig:reading-concept}
 \end{figure}
 
@@ -119,7 +119,7 @@ Treating each stage as an independently replaceable module behind a stable contr
 
 \end{tikzpicture}%
 }
-\caption{Our modular interpretation of the adaptive reading loop. The reader views text on a screen while an eye tracker beneath it captures gaze and pupil signals, which enter a pipeline of four independently replaceable modules (sensing, analysis, decision, and intervention); the intervention module returns adapted text to the screen, closing the loop. Each module is one of several interchangeable implementations behind a stable contract (grey). The decision seam additionally admits an external or AI provider (red, defined as a contract and out of scope in this thesis) and the researcher (teal), who monitors the live loop and can intervene manually.}
+\caption[Our modular interpretation of the adaptive reading loop.]{Our modular interpretation of the adaptive reading loop. Gaze and pupil signals enter a pipeline of four independently replaceable modules (sensing, analysis, decision, intervention) whose output adapts the text and closes the loop. Each module is one of several interchangeable implementations behind a stable contract (grey); the decision seam additionally admits an external or AI provider (red, out of scope) and the researcher (teal), who can intervene manually.}
 \label{fig:adaptive-loop}
 \end{figure}
 
@@ -263,7 +263,7 @@ Fig.~\ref{fig:oculomotor} illustrates these events two ways for a single line of
 
 \end{tikzpicture}%
 }
-\caption{Two complementary views of a representative reading scan path over a single line of text. (a) The spatial scan path: each circle is a fixation positioned over the word it lands on, with circle area indicating dwell duration and fill colour indicating reading order; grey arrows are forward saccades and the red arrow is a regression to an earlier word. (b) The same gaze plotted as position along the line against time: fixations become horizontal plateaus whose width is their dwell duration, saccades become steep vertical steps, and the regression becomes a backward (downward) step. Fixations keep the same reading-order colour in both panels, so the two views correspond.}
+\caption[Oculomotor events in reading: scan path and time view.]{Two complementary views of a representative reading scan path over one line. (a) The spatial scan path: each circle is a fixation over the word it lands on, its area showing dwell duration and its fill colour the reading order; grey arrows are forward saccades and the red arrow a regression. (b) The same gaze plotted as position along the line against time, where fixations are plateaus (width is dwell duration), saccades are vertical steps, and the regression a backward step. Fixations share their reading-order colour across both panels.}
 \label{fig:oculomotor}
 \end{figure}
 

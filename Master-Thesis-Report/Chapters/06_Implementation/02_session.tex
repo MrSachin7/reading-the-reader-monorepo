@@ -27,7 +27,7 @@ The researcher prepares and steers the session from the console, monitoring a li
   \caption{Participant reader (second screen).}
   \label{fig:impl-screens-reader}
 \end{subfigure}
-\caption{The two operated surfaces of the one front-end. The researcher prepares and steers the session from the console~(a), which mirrors the participant's reader, draws the live eye-movement analysis over the text (fixations, saccades, and regressions, toggled by the legend at the top), and reports the live end-to-end latency; the participant sees only the reader~(b), whose text the adaptive loop adjusts in place. Both render the same backend-owned snapshot, so they never diverge.}
+\caption[The two operated surfaces of the one front-end.]{The two operated surfaces of the one front-end. The researcher steers the session from the console~(a), which mirrors the participant's reader with the live eye-movement analysis drawn over it; the participant sees only the reader~(b), whose text the adaptive loop adjusts in place. Both render the same backend-owned snapshot.}
 \label{fig:impl-screens}
 \end{figure}
 
@@ -39,7 +39,7 @@ Two channels connect the front-end to the backend, and the distinction between t
 \IfFileExists{Chapters/06_Implementation/experiment-flow.pdf}%
   {\includegraphics[width=\linewidth]{Chapters/06_Implementation/experiment-flow.pdf}}%
   {\fbox{\parbox[c][4.2cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/experiment-flow.mmd} to \texttt{experiment-flow.pdf} with \texttt{mmdc} (as for the Ch.~5 Mermaid figures).}}}%
-\caption{End-to-end flow of one experiment session across the two channels. The researcher's commands travel over REST (solid) and the realtime stream over the WebSocket (dashed); both converge on the single \texttt{ExperimentSessionManager}, which answers with one authoritative snapshot broadcast to both the console and the reader. Sensing, broadcast, and persistence are reached only through ports.}
+\caption[End-to-end flow of one session across the two channels.]{End-to-end flow of one experiment session across the two channels: the researcher's commands travel over REST (solid) and the realtime stream over the WebSocket (dashed), both converging on the single \texttt{ExperimentSessionManager}, which answers with one authoritative snapshot to both surfaces.}
 \label{fig:impl-flow}
 \end{figure}
 
@@ -155,7 +155,7 @@ With the two channels in hand, the remainder of this section walks the flow of \
 \node[lbl] at (0,-2.15) {reset};
 \end{tikzpicture}%
 }
-\caption{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
+\caption[Lifecycle of an experiment session.]{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
 \label{fig:impl-session-states}
 \end{figure}
 
@@ -197,7 +197,7 @@ The eye-tracker step in the figure shows the detail of this preparation: a real 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Stepper.png}
-\caption{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
+\caption[The setup stepper in the configuring phase.]{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
 \label{fig:impl-setup}
 \end{figure}
 
@@ -208,7 +208,7 @@ Only a calibration whose validation passes satisfies the gate, and the accuracy 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
-\caption{The calibration sub-flow. The participant fixates a sequence of on-screen targets (a configurable number of points) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
+\caption[The calibration sub-flow.]{The calibration sub-flow. The participant fixates a sequence of on-screen targets (a configurable number of points) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
 \label{fig:impl-calibration}
 \end{figure}
 
@@ -425,7 +425,7 @@ Replay is therefore the operational proof of \cref{sec:design-data}, that a sess
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Replay.png}
-\caption{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
+\caption[Replay of a sealed session.]{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
 \label{fig:impl-replay}
 \end{figure}
 

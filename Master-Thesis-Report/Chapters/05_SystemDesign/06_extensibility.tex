@@ -53,7 +53,7 @@ Because the seam is keyed by module identity and falls back to the built-in when
 \draw[arrow]  (bi.east) -- (pr.south) node[elbl, pos=0.5, below] {proposal};
 \end{tikzpicture}%
 }
-\caption{The external-provider seam and its fallback. When the core reaches a seam it asks the gateway whether an external provider is active for that module; if one is, it publishes the context across the provider channel and ingests the proposal the out-of-process provider returns, and if not the concern is served by its in-process built-in implementation. Either way a single proposal re-enters the loop, so an external provider is a plug-in that the platform runs with or without.}
+\caption[The external-provider seam and its fallback.]{The external-provider seam and its fallback. When the core reaches a seam it asks the gateway whether an external provider is active; if so it publishes the context and ingests the provider's proposal, otherwise the concern is served by its in-process built-in implementation. Either way a single proposal re-enters the loop.}
 \label{fig:design-seam}
 \end{figure}
 
@@ -96,7 +96,7 @@ This lifecycle is the researcher's view of the architecture in operation, and it
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\linewidth]{Chapters/05_SystemDesign/session-lifecycle.pdf}
-\caption{The experiment-session lifecycle as driven from the researcher console. A session is configured until the readiness gate passes (a saved participant, a selected and licensed eye tracker, a validated calibration, and chosen reading material, with the eye-tracker and calibration steps skipped for simulated sources); the researcher then starts the run, during which the real-time adaptive loop executes and the session record is written incrementally. A disturbance leaves the session recoverable from the last checkpoint, and on finishing the record is sealed and exported before the platform is reset for the next participant.}
+\caption[The experiment-session lifecycle.]{The experiment-session lifecycle as driven from the researcher console. A session is configured behind a readiness gate (participant, licensed eye tracker, validated calibration, and reading material, with the eye-tracker and calibration steps skipped for simulated sources), then runs the adaptive loop while writing the record incrementally, and on finishing the record is sealed and exported before the platform is reset.}
 \label{fig:design-session-lifecycle}
 \end{figure}
 

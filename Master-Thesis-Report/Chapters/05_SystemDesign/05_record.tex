@@ -58,7 +58,7 @@ Every one of these entries is stamped with a monotonic sequence number and a tim
 \node[font=\scriptsize\itshape, text=black!55] at (8.05,-2.45) {session time};
 \end{tikzpicture}%
 }
-\caption{The lifecycle of the session record. During a session the adaptive loop writes the record incrementally through periodic checkpoints; at session end the same artifact is sealed as the authoritative, schema-versioned record; afterwards it is reconstructed by schema-validated replay and exported in a raw or processed profile as JSON or CSV. The record written live during the session and the record later replayed or exported are one and the same artifact.}
+\caption[The lifecycle of the session record.]{The lifecycle of the session record. The adaptive loop writes the record incrementally through periodic checkpoints; at session end the same artifact is sealed as the authoritative, schema-versioned record, then reconstructed by schema-validated replay and exported in a raw or processed profile as JSON or CSV.}
 \label{fig:design-record}
 \end{figure}
 

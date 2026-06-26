@@ -12,14 +12,14 @@ The calibration that gated each session, the sub-flow shown in \cref{fig:impl-ca
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\linewidth]{Chapters/07_Evaluation/eval-sensing-rate-validity.pdf}
-\caption{Achieved sampling rate and gaze validity for each of the eight sessions. The achieved rate sits at the tracker's nominal \SI{90}{\hertz} and validity stays above 92\% throughout.}
+\caption[Achieved sampling rate and gaze validity per session.]{Achieved sampling rate and gaze validity for each of the eight sessions. The achieved rate sits at the tracker's nominal \SI{90}{\hertz} and validity stays above 92\% throughout.}
 \label{fig:eval-sensing}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.78\linewidth]{Chapters/07_Evaluation/eval-inter-sample-interval.pdf}
-\caption{Distribution of the interval between consecutive gaze samples, pooled across sessions and measured from the device clock. The mass concentrates at the nominal \SI{11.1}{\milli\second} period of a \SI{90}{\hertz} stream.}
+\caption[Distribution of the inter-sample interval.]{Distribution of the interval between consecutive gaze samples, pooled across sessions and measured from the device clock. The mass concentrates at the nominal \SI{11.1}{\milli\second} period of a \SI{90}{\hertz} stream.}
 \label{fig:eval-intersample}
 \end{figure}
 
@@ -32,7 +32,7 @@ No sample in either stream exceeded the \SI{100}{\milli\second} budget.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.78\linewidth]{Chapters/07_Evaluation/eval-client-rtt.pdf}
-\caption{Cumulative distribution of client round-trip time for the participant and researcher clients, against the \SI{100}{\milli\second} budget. Every sample falls within budget.}
+\caption[Client round-trip time against the budget.]{Cumulative distribution of client round-trip time for the participant and researcher clients, against the \SI{100}{\milli\second} budget. Every sample falls within budget.}
 \label{fig:eval-rtt}
 \end{figure}
 

@@ -64,7 +64,7 @@ Intervention is the sink: it validates a proposal and then commits a context-pre
 \node[note, align=left, anchor=west] at (-6.7,-3.4) {Grey arrows: dependency direction\\(inward, to the core that owns the ports).\\Navy arrows: the adaptive-cycle order.};
 \end{tikzpicture}%
 }
-\caption{The four-module decomposition. Each concern (sensing, analysis, decision, intervention) is a port owned by the application core, while concrete implementations sit outside the core and depend inward upon the ports (solid arrows), so that the core depends on none of them. The numbers and the curved navy arrows between the ports trace the data-flow order of one adaptive cycle, from sensing (1) through analysis (2) and decision (3) to intervention (4) and back to sensing. Each port resolves its implementation through a registry, so that adding an implementation is an additive change.}
+\caption[The four-module decomposition.]{The four-module decomposition. Each concern (sensing, analysis, decision, intervention) is a port owned by the application core; concrete implementations sit outside it and depend inward on the ports (grey arrows), while the numbered navy arrows trace the order of one adaptive cycle, from sensing (1) to intervention (4).}
 \label{fig:design-modules}
 \end{figure}
 
