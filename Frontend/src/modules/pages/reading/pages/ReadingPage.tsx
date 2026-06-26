@@ -99,6 +99,7 @@ export function ReadingPage() {
   )
   const [advanceError, setAdvanceError] = useState<string | null>(null)
   const [isAdvancingExperimentText, setIsAdvancingExperimentText] = useState(false)
+  const [viewportMetrics, setViewportMetrics] = useState<ReaderViewportMetrics | null>(null)
 
   useEffect(() => {
     if (!liveSession?.isActive) {
@@ -130,6 +131,7 @@ export function ReadingPage() {
   }, [liveSession?.isActive])
 
   const handleViewportMetricsChange = useCallback((metrics: ReaderViewportMetrics) => {
+    setViewportMetrics(metrics)
     updateParticipantViewport({
       ...metrics,
       screen: getParticipantScreenSnapshot(),
@@ -423,6 +425,16 @@ export function ReadingPage() {
     activeQuizState && currentItem && currentItem.id === activeQuizState.materialItemId
       ? currentItem.comprehensionQuiz ?? []
       : []
+  const isOnLastPageOfExperiment = isLastItem && (() => {
+    if (activeQuizState !== null) {
+      return (
+        activeQuizQuestions.length > 0 &&
+        activeQuizState.activeQuestionIndex >= activeQuizQuestions.length - 1
+      )
+    }
+    if (currentItemHasPendingQuiz) return false
+    return viewportMetrics !== null && viewportMetrics.activePageIndex >= viewportMetrics.pageCount - 1
+  })()
   const showThankYou =
     isLastItem &&
     currentItem?.quizStatus === "completed" &&
@@ -440,6 +452,7 @@ export function ReadingPage() {
           session={liveSession}
           source="participant-view"
           className="pointer-events-auto rounded-2xl border bg-card/95 p-3 shadow-lg backdrop-blur"
+          hideFinish={!isOnLastPageOfExperiment}
         />
       </div>
       <ReaderShell

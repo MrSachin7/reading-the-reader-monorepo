@@ -38,6 +38,7 @@ type ExperimentCompletionActionsProps = {
   source: string
   className?: string
   layout?: "default" | "stacked"
+  hideFinish?: boolean
 }
 
 export function ExperimentCompletionActions({
@@ -45,6 +46,7 @@ export function ExperimentCompletionActions({
   source,
   className,
   layout = "default",
+  hideFinish = false,
 }: ExperimentCompletionActionsProps) {
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -61,7 +63,7 @@ export function ExperimentCompletionActions({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
 
-  const canFinish = Boolean(session?.isActive)
+  const canFinish = Boolean(session?.isActive) && !hideFinish
   const canDownload = Boolean(!session?.isActive && session?.sessionId && session?.stoppedAtUnixMs)
 
   useEffect(() => {
