@@ -14,6 +14,6 @@ Every gaze sample, decision, and intervention is captured in a single record tha
 We evaluate the platform against criteria drawn from four research questions, using eight real Tobii-backed reading sessions and a dedicated decision-path run.
 The module boundary is enforced by the build and an executable test, an in-process module is added in a single registration, and three external providers (one wrapping a collaborator's reading-difficulty model) connect without any change to the core.
 The eye tracker streamed at its rated \SI{90}{\hertz} with validity above 92\%, and client transport latency stayed within the \SI{100}{\milli\second} budget for every sample.
-Context preservation lowered both the reading-resume time and the post-intervention regression rate, and every reported result was reconstructed from the exported records alone.
+With context preservation enabled, both the reading-resume time and the post-intervention regression rate were lower, and every reported result was reconstructed from the exported records alone.
 Two shortfalls are stated openly: the automated decision path was validated within budget in a single run rather than at campaign scale, and the restore over-repositions the reader on small reflows.
 The platform thus shows that the adaptive reading loop can be cleanly separated under real-time constraints, distils four reusable design principles, and provides the infrastructure on which future intervention and AI-driven decision studies can build.

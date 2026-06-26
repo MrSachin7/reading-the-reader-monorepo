@@ -13,9 +13,10 @@ The external threats are the most limiting.
 The behavioural results rest on four participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
 The principal latency result is the transport round trip; the decision-pipeline and provider round-trip latencies were exercised only in a single advisory-mode validation run with a reference provider on one host, so although both stayed within budget there, that evidence is a single-run check rather than a campaign, and neither leg has been measured over a real network or against a production decision model.
 
-Two construct threats bear on the context-preservation result.
+Three construct threats bear on the context-preservation result.
 The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is produced by the analysis engine active in these sessions, the external provider of \cref{sec:eval-modularity}, and is not calibrated against published reading norms, so we read only its change from the matched pre-intervention baseline, not its absolute level.
 The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
+The third threat is a confound in the with-and-without contrast itself: the enabled condition bundles the positional restore with the highlight cue that flashes the restored sentence (\cref{sec:eval-context}), so the lower resume time and regression rate cannot be attributed to the restore geometry alone, the more so as prior work in the project found highlighting to be the component that drove the significant recovery improvement \cite{jensen2025context}; isolating the two would require a third condition with the restore enabled but the highlight suppressed, which these sessions did not include.
 
 The conclusion threat is the sample size.
 With four participants we report no inferential statistics and draw no statistical conclusion; the numbers indicate direction and magnitude on this sample and nothing more.

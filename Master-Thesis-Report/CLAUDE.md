@@ -92,8 +92,8 @@ Plagiarism in Denmark is treated as exam cheating and can result in
   incomplete, or a gap when reviewing, auditing, or building any other
   part of the thesis. Only act on them when explicitly asked to write
   the Abstract or Conclusion.
-- Target length: **~60 pages main content**, range 40–70, hard
-  ceiling 100 (excluding front matter, bibliography, appendices).
+- There is no page limit for this thesis; do not flag the report as
+  too long or trim content solely to hit a page count.
 - The Final Problem Statement (with measurable sub-questions) lives
   at the _end_ of Chapter 2, not in Chapter 1.
 

@@ -55,6 +55,8 @@ Master-Thesis-Report/*.bbl
 Master-Thesis-Report/*.bbl-SAVE-ERROR
 Master-Thesis-Report/*.blg
 Master-Thesis-Report/*.bcf
+Master-Thesis-Report/*.bcf-SAVE-ERROR
+Master-Thesis-Report/*-SAVE-ERROR
 Master-Thesis-Report/*.run.xml
 Master-Thesis-Report/*.fdb_latexmk
 Master-Thesis-Report/*.synctex.gz

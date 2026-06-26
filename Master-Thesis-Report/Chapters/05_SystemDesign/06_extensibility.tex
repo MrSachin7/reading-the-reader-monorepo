@@ -58,6 +58,7 @@ Because the seam is keyed by module identity and falls back to the built-in when
 \end{figure}
 
 The decision concern is the seam most likely to be supplied externally, so it is worth making concrete what crosses it.
+An external decision provider is, in these terms, a module provider specialised to the decision port: the same out-of-process module-provider framework serves the analysis port in exactly the same way, so the two are one mechanism applied to two concerns rather than two separate integration paths.
 What the platform sends out is context: the authoritative session snapshot together with the stream of analysed signals it derives, namely the reading focus, the attention summary, and the oculomotor events of \cref{sec:design-loop}.
 What it expects back is a decision, expressed as a proposal that pairs an observed signal and a short, human-readable rationale with a concrete intervention, that is, the identity of an intervention module and the parameters to apply.
 The seam therefore commits the platform to a vocabulary, signals in and a proposal out, but not to any particular way of arriving at the proposal.
