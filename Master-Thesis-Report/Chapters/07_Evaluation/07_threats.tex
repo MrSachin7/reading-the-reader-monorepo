@@ -5,14 +5,16 @@ We note the threats to the validity of the results above, separated by type.
 
 The principal internal threat is that we evaluate a system we both specified and built.
 As a two-person team we authored the requirements, implemented the platform, and wrote the reference providers, so a verdict of ``Met'' against our own requirements carries a risk of confirmation bias.
-We mitigate this by leaning on the automated tests and the build-enforced boundary test, which encode pass-or-fail criteria independently of judgement, by publishing the codebase and the analysis pipeline for inspection, and by integrating a third party's model through the same provider contract; we note, however, that the reference providers were built by the same team and so evidence the sufficiency of the contract rather than constituting its independent validation.
+We mitigate this by leaning on the automated tests and the build-enforced boundary test, which encode pass-or-fail criteria independently of judgement, and by publishing the codebase and the analysis pipeline for inspection.
+The strongest mitigation is external: the eye-movement analysis throughout these sessions was served not by our own code but by the pipeline of an independent team integrated over the provider contract (\cref{sec:eval-modularity}).
+Our \emph{reference} decision and analysis providers were written by the same team and so evidence only the sufficiency of the contract, whereas an outside team building a working provider against it, and that provider then producing the very events we analyse, is closer to an independent validation of the seam than our own implementations could be.
 
 The external threats are the most limiting.
 The behavioural results rest on four participants reading a single content item under manual intervention, so they do not generalise and are reported as descriptive only.
 The principal latency result is the transport round trip; the decision-pipeline and provider round-trip latencies were exercised only in a single advisory-mode validation run with a reference provider on one host, so although both stayed within budget there, that evidence is a single-run check rather than a campaign, and neither leg has been measured over a real network or against a production decision model.
 
 Two construct threats bear on the context-preservation result.
-The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is computed by the platform's own dwell-based detector rather than against an external reference, so we read only its change from the matched pre-intervention baseline, not its absolute level.
+The reading-resume time and the regression rate are proxies for reading disruption rather than direct measures of comprehension or recovery, and we treat them as such \cite{rayner1998eyemovements}; the regression rate in particular is produced by the analysis engine active in these sessions, the external provider of \cref{sec:eval-modularity}, and is not calibrated against published reading norms, so we read only its change from the matched pre-intervention baseline, not its absolute level.
 The residual measure reported by the restore is, for the semantic-restart strategy, the distance of the committed sentence from its target rather than the pixel-exact preservation of the reader's prior position, so the graded status must be read with that definition in mind.
 
 The conclusion threat is the sample size.

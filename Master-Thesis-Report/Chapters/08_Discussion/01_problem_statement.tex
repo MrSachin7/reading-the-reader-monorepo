@@ -10,12 +10,13 @@ Throughout, we point to the evidence in \cref{ch:evaluation} instead of repeatin
 \paragraph{RQ1 (Modularity): met strongly.}
 The first research question asked whether sensing, analysis, decision, and intervention can be separated behind stable contracts, so that a new module can be added without changing the core reading runtime.
 The evidence says yes, and \cref{sec:eval-modularity} shows it at three levels: the build enforces the direction of dependencies, adding a module changes only one place, and external providers connect through the documented contract.
-The strongest case is the connector that wraps a collaborator's reading-difficulty model.
-It integrates a model we did not write, against a contract we did not design around it, and adding it changed no file in the backend.
-This is the closest evidence we have that the contract works for someone other than its authors.
+The strongest case is the analysis pipeline of a concurrent, independent master's thesis at DTU, connected to our analysis port through the documented contract (\cref{sec:eval-modularity}).
+It integrates a real research system we did not write, against a contract we did not design around it, and adding it changed no file in the backend.
+More than connect, this external provider was the live analysis source for the whole evaluation: the oculomotor events we report were produced by an outside team's algorithm rather than by ours.
+This is the closest evidence we have that the contract works for someone other than its authors, and that it works well enough for an independent team to run their own study through it.
 The build-enforced boundary is what sets this result apart from the earlier project prototypes, which were extended by copying the previous frontend instead of building on a shared contract (\cref{subsec:related-rtr-prior-work}).
 Here, a reference that breaks the boundary fails to compile, so modularity is a rule the build checks rather than a habit the authors must keep.
-One caveat, which we develop in \cref{sec:disc-limitations}, is that we built the reference providers ourselves, so they show that the contract is sufficient but not that it is independently validated; the external model is the only evidence that goes beyond our own work.
+The caveat that remains, developed in \cref{sec:disc-limitations}, is narrower than it first appears: our \emph{reference} decision and analysis providers were built by us and so show only that the contract is sufficient, but the independent thesis integration, being the analysis source of the evaluation rather than a one-off connection test, is the evidence that the seam holds beyond our own work.
 
 \paragraph{RQ2 (Sensing pipeline): met for sensing and transport.}
 The second research question asked whether a real Tobii stream can be turned into oculomotor events fast enough for live adaptation, in a way that is inspectable and reproducible.
