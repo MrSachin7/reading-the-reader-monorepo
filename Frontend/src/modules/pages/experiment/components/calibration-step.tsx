@@ -207,9 +207,19 @@ export function CalibrationStep({
         )}
 
         {setup.isReady ? (
-          <div className="rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary">
+          <div
+            className={
+              hasValidationPassed
+                ? "rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary"
+                : "rounded-[1.5rem] border border-destructive/35 bg-destructive/10 text-destructive"
+            }
+          >
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              {hasValidationPassed ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              ) : (
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold">Calibration applied</p>
@@ -235,7 +245,9 @@ export function CalibrationStep({
 
             {isReadOnly ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
+                <div
+                  className={`rounded-xl border bg-background/70 px-4 py-3 text-foreground ${hasValidationPassed ? "border-primary/35" : "border-destructive/35"}`}
+                >
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Average accuracy
                   </p>
@@ -243,7 +255,9 @@ export function CalibrationStep({
                     {formatCalibrationMetric(overallAccuracyDegrees)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
+                <div
+                  className={`rounded-xl border bg-background/70 px-4 py-3 text-foreground ${hasValidationPassed ? "border-primary/35" : "border-destructive/35"}`}
+                >
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Average precision
                   </p>
@@ -251,7 +265,9 @@ export function CalibrationStep({
                     {formatCalibrationMetric(overallPrecisionDegrees)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
+                <div
+                  className={`rounded-xl border bg-background/70 px-4 py-3 text-foreground ${hasValidationPassed ? "border-primary/35" : "border-destructive/35"}`}
+                >
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">Completed</p>
                   <p className="mt-1 text-base font-semibold">
                     {validationCompletedAtUnixMs
@@ -259,11 +275,13 @@ export function CalibrationStep({
                       : "Not available"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-primary/35 bg-background/70 px-4 py-3 text-foreground">
+                <div
+                  className={`rounded-xl border bg-background/70 px-4 py-3 text-foreground ${hasValidationPassed ? "border-primary/35" : "border-destructive/35"}`}
+                >
                   <p className="text-[11px] uppercase tracking-[0.14em] opacity-70">
                     Validation quality
                   </p>
-                  <p className="mt-1 text-base font-semibold">
+                  <p className={`mt-1 text-base font-semibold ${!hasValidationPassed ? "text-destructive" : ""}`}>
                     {formatCalibrationQualityLabel(overallQuality)}
                   </p>
                 </div>
@@ -273,7 +291,13 @@ export function CalibrationStep({
         ) : null}
 
         {isReadOnly && validationResult?.points?.length ? (
-          <div className="rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary">
+          <div
+            className={
+              hasValidationPassed
+                ? "rounded-[1.5rem] border border-primary/35 bg-primary/10 text-primary"
+                : "rounded-[1.5rem] border border-destructive/35 bg-destructive/10 text-destructive"
+            }
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-base font-semibold">Point-by-point review</p>
@@ -287,36 +311,50 @@ export function CalibrationStep({
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {validationResult.points.map((point) => (
-                <div
-                  key={point.pointId}
-                  className="rounded-xl border border-primary/35 bg-background/80 px-4 py-3 text-foreground"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold">{point.label}</p>
-                    <Badge variant="outline" className="bg-primary/15 text-primary">
-                      {formatCalibrationQualityLabel(point.quality)}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-xs opacity-75">
-                    ({point.x.toFixed(2)}, {point.y.toFixed(2)}) · {point.sampleCount} samples
-                  </p>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.12em] opacity-70">Accuracy</p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {formatCalibrationMetric(point.averageAccuracyDegrees)}
-                      </p>
+              {validationResult.points.map((point) => {
+                const pointBadgeClass =
+                  point.quality === "good"
+                    ? "bg-emerald-500/15 text-emerald-700"
+                    : point.quality === "fair"
+                      ? "bg-amber-500/15 text-amber-700"
+                      : "bg-destructive/15 text-destructive"
+                const pointBorderClass =
+                  point.quality === "good"
+                    ? "border-primary/35"
+                    : point.quality === "fair"
+                      ? "border-amber-400/35"
+                      : "border-destructive/35"
+                return (
+                  <div
+                    key={point.pointId}
+                    className={`rounded-xl border bg-background/80 px-4 py-3 text-foreground ${pointBorderClass}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold">{point.label}</p>
+                      <Badge variant="outline" className={pointBadgeClass}>
+                        {formatCalibrationQualityLabel(point.quality)}
+                      </Badge>
                     </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.12em] opacity-70">Precision</p>
-                      <p className="mt-1 text-sm font-semibold">
-                        {formatCalibrationMetric(point.averagePrecisionDegrees)}
-                      </p>
+                    <p className="mt-1 text-xs opacity-75">
+                      ({point.x.toFixed(2)}, {point.y.toFixed(2)}) · {point.sampleCount} samples
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.12em] opacity-70">Accuracy</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {formatCalibrationMetric(point.averageAccuracyDegrees)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.12em] opacity-70">Precision</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {formatCalibrationMetric(point.averagePrecisionDegrees)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">

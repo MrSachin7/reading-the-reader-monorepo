@@ -1091,23 +1091,23 @@ export function ReaderShell({
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="default"
           className="rounded-full border-border/40 bg-background/20 backdrop-blur-[1px]"
           disabled={!canGoPreviousPage}
           onClick={() => moveByPages(-1)}
         >
-          <ChevronLeft className="size-4" />
+          <ChevronLeft className="size-5" />
           <span className="sr-only">Previous page</span>
         </Button>
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="default"
           className="rounded-full border-border/40 bg-background/20 backdrop-blur-[1px]"
           disabled={!canGoNextPage}
           onClick={() => moveByPages(1)}
         >
-          <ChevronRight className="size-4" />
+          <ChevronRight className="size-5" />
           <span className="sr-only">Next page</span>
         </Button>
       </div>
