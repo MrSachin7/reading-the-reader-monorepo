@@ -16,24 +16,27 @@
 
 \section{Statement of Authorship and Responsibility}
 
-We, the authors of this thesis, take full and sole responsibility for
-the content of this report. All decisions regarding scope, claims,
-results, and interpretations are ours. Generative artificial
-intelligence (GAI) tools listed below were used as assistive
-instruments only; they are not co-authors of this work.
+We, the authors of this thesis, take full and sole responsibility for the content of this report.
+All decisions regarding scope, claims, results, and interpretations are ours.
+The generative artificial intelligence (GAI) tools listed below were used in a limited, supporting role; they are not co-authors of this work.
+In line with DTU guidance, this appendix records which tools we used, and where and how their output entered our process, so that the reader has a clear and bounded understanding of that contribution.
 
 \section{Tools Used}
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \centering
 \small
-\begin{tabular}{@{}p{3.5cm}p{2.5cm}p{8cm}@{}}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}p{3.4cm}p{3.6cm}p{7.0cm}@{}}
 \toprule
-Tool & Version / Date & Purpose \\
+\textbf{Tool} & \textbf{Version / Period} & \textbf{Purpose} \\
 \midrule
-% Example row -- replace with actual usage before submission.
-% Claude Code (Anthropic) & Opus 4.7, 2026 & Scaffolding LaTeX chapters; copy-editing; bibliography formatting. \\
-\\
+ChatGPT (OpenAI) & GPT-5.5 (latest available during Feb--June 2026) & Feedback on our own draft prose; discussion of ideas and design trade-offs. \\
+\addlinespace
+Codex (OpenAI) & GPT-5.5 (latest available during Feb--June 2026) & Coding assistance for the software artifact. \\
+\addlinespace
+Claude (Anthropic) & Opus 4.8 and Sonnet 4.6 (latest available during Feb--June 2026) & Sounding board for design trade-offs; coding assistance; LaTeX scaffolding. \\
 \bottomrule
 \end{tabular}
 \caption{Generative AI tools used during the preparation of this thesis.}
@@ -41,57 +44,52 @@ Tool & Version / Date & Purpose \\
 \end{table}
 
 \section{Where and How GAI Was Used}
+\label{sec:ai-how-used}
 
-% Fill one subsection per category of use. Be specific about which
-% chapters / sections were affected. Vague disclosures ("used AI for
-% writing") are not sufficient.
+\subsection{Idea Validation and Trade-off Discussion}
+\label{sec:ai-tradeoff}
+
+Our principal use of GAI was as a sounding board to stress-test reasoning we had already formed, rather than to originate it.
+A typical interaction was to ask a tool to argue against a design choice we were considering, so that we could check whether we had overlooked a counter-argument.
+This applied in particular to the recurring tension between architectural uniformity and responsiveness that is consolidated in the design decision register (\cref{sec:design-decisions}).
+No design decision was adopted on the basis of a tool's output; every decision, and the argument defending it, was formed, verified, and written by us.
 
 \subsection{Writing Assistance}
-% E.g. grammar/style polishing, rephrasing for clarity. Identify the
-% chapters or sections where this occurred. State that all factual
-% claims and citations were verified by the author.
+
+We used GAI to obtain feedback on prose we had already written and to suggest alternative phrasings for clarity and concision, across the main content chapters of this report.
+We did not use it to generate sections from scratch; the prose is our own, and AI assistance was limited to feedback and rephrasing of text we had already drafted.
+All factual claims, citations, and numbers in any AI-assisted passage were verified by us against their original sources, and the final wording is our own.
 
 \subsection{Code Assistance}
-% E.g. LaTeX scaffolding, build configuration, helper scripts in the
-% reading-the-reader monorepo. State which files / commits.
 
-\subsection{Literature Search and Synthesis}
-% Only if applicable. If GAI was used to suggest search terms, state
-% that no AI-generated citations were inserted without independent
-% verification of the source.
-
-\subsection{Figures, Tables, or Data}
-% Only if applicable. If a figure or table was generated or
-% restructured with AI, cite the tool in the figure/table caption
-% as well as here.
+The accompanying software artifact (the \texttt{reading-the-reader} monorepo) was developed with GAI coding assistance, used for scaffolding, refactoring suggestions, and debugging across the React and TypeScript frontend and the C\# and .NET backend.
+We also used it for LaTeX scaffolding and build configuration of this report.
+All generated code was reviewed, tested, and integrated by us, and we take responsibility for its correctness.
 
 \section{What GAI Was Not Used For}
 
-% A non-exhaustive list of things the author did themselves, to make
-% the boundary explicit. Example items below; revise to match reality.
+To make the boundary explicit, the following were done entirely by us, without GAI:
 
 \begin{itemize}
-    \item Formulation of the problem statement and research questions.
-    \item Selection and reading of all cited sources.
-    \item Design decisions for the system architecture.
-    \item Evaluation methodology and interpretation of results.
-    \item Conclusions and discussion of limitations.
+    \item Formulating the problem statement and the research questions.
+    \item Selecting, reading, and interpreting the cited literature (no source was cited on the basis of an AI-generated summary alone).
+    \item Making the system's design and architecture decisions, and constructing the arguments that defend them (GAI served only as a sounding board to surface trade-offs, as described in \cref{sec:ai-tradeoff}).
+    \item Designing the evaluation, conducting it, and interpreting the results.
+    \item Drawing the conclusions and identifying the limitations and threats to validity.
 \end{itemize}
 
 \section{Prompt and Output Retention}
 
-Representative prompts and outputs are retained by the authors and
-can be made available to the supervisor or examiners upon request,
-in accordance with DTU guidance on documenting GAI use.
+Representative prompts and outputs are retained by the authors and can be made available to the supervisor or examiners upon request, in accordance with DTU guidance on documenting GAI use.
 
 \section{Citations of GAI Output}
 
-Where text, code, or figures derived from GAI output appear in the
-body of the thesis, they are cited inline using the format below.
+No GAI output is reproduced verbatim in the body of this thesis.
+Should any direct quotation of GAI output appear, it is cited inline using the format below, naming the provider, the tool and version, and the access date.
 
 \begin{quote}
 \small
-Anthropic. \textit{Claude} (Opus 4.7) [Large Language Model].
+Anthropic. \textit{Claude} (Opus 4.8) [Large Language Model].
 \url{https://claude.ai}. Accessed YYYY-MM-DD.
 \end{quote}
 
