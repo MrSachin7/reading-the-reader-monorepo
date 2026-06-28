@@ -69,7 +69,7 @@ This is realised through two complementary mechanisms that meet the core through
 \draw[realise] (asto.north) -- (psto.south);
 \end{tikzpicture}%
 }
-\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. The \texttt{ExperimentSessionManager} (top) depends only on the three port interfaces (middle), each realised by a concrete adapter in an infrastructure project (bottom); every realisation (hollow triangle) and dependency (filled arrow) crosses the dashed \texttt{Application}/infrastructure boundary inward towards the core. Members are abbreviated and the remaining ports omitted for clarity.}
+\caption[Ports-and-adapters realisation around the session manager.]{Class view of the experiment session as ports and adapters. Hollow-triangle arrows are realisations; filled arrows are dependencies; all cross the dashed boundary inward towards the core. Members and remaining ports abbreviated.}
 \label{fig:impl-session-manager}
 \end{figure}
 
@@ -95,7 +95,7 @@ public interface IReadingInterventionModuleRegistry
     bool TryResolve(string? moduleId, out IReadingInterventionModule? module);
 }
 \end{minted}
-\caption{In-process module contract (from \texttt{Interventions/}). A module declares its parameters, validates a request, and executes it; adding a new module requires only implementing this interface and registering it, with no changes to the runtime.}
+\caption{In-process module contract (from \texttt{Interventions/}): descriptor, validation, and execution; the registry resolves modules by identifier without naming concrete types.}
 \label{lst:impl-module-contract}
 \end{listing}
 
@@ -126,7 +126,7 @@ public sealed record ModuleProviderWelcomePayload(
     long RegisteredAtUnixMs, int HeartbeatTimeoutMilliseconds,
     IReadOnlyList<string> AcceptedModules);
 \end{minted}
-\caption{External module-provider contract (abbreviated from \texttt{ModuleProviderProtocol.cs}). A provider sends \texttt{Hello} with its modules; the system replies \texttt{Welcome} with accepted modules and a heartbeat timeout. Commands and context travel as \texttt{Inbound}/\texttt{Outbound} envelopes; a missed heartbeat drops the provider (FR19.4).}
+\caption{External module-provider contract (abbreviated from \texttt{ModuleProviderProtocol.cs}). \texttt{Hello}/\texttt{Welcome} handshake; context and decisions travel as \texttt{Inbound}/\texttt{Outbound} envelopes; missed heartbeat drops the provider (FR19.4).}
 \label{lst:impl-provider-protocol}
 \end{listing}
 
@@ -135,7 +135,7 @@ public sealed record ModuleProviderWelcomePayload(
 \IfFileExists{Chapters/06_Implementation/provider-handshake.pdf}%
   {\includegraphics[width=0.92\linewidth]{Chapters/06_Implementation/provider-handshake.pdf}}%
   {\fbox{\parbox[c][4cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/provider-handshake.mmd} to \texttt{provider-handshake.pdf} with \texttt{mmdc}.}}}%
-\caption[Lifecycle of an external module provider.]{Lifecycle of an external module provider. The provider connects and declares its modules and capabilities (\texttt{Hello}); the system accepts or rejects them (\texttt{Welcome}/error); while active, context flows out as \texttt{Inbound} envelopes and decisions return as \texttt{Outbound} envelopes, applied through the same validation and logging path as a built-in module; a missed heartbeat or disconnect degrades the strategy to its built-in fallback and is logged.}
+\caption[Lifecycle of an external module provider.]{Lifecycle of an external module provider: \texttt{Hello}/\texttt{Welcome} handshake, \texttt{Inbound}/\texttt{Outbound} context exchange while active, and graceful fallback to the built-in strategy on heartbeat failure or disconnect.}
 \label{fig:impl-provider-seq}
 \end{figure}
 
@@ -171,7 +171,7 @@ The two halves meet at one stable contract, a token-indexed reading observation,
 \node[tag] at (13.2,-1.15) {backend / both screens};
 \end{tikzpicture}%
 }
-\caption[The sensing pipeline.]{The sensing pipeline. Acquisition and temporal analysis run on the backend, while the spatial mapping from gaze point to word token runs on the front-end where the rendered layout lives; the two halves meet at one stable contract, the token-indexed reading observation.}
+\caption[The sensing pipeline.]{The sensing pipeline: acquisition and temporal analysis on the backend; spatial gaze-to-word mapping on the front-end; the two halves meet at the token-indexed reading observation.}
 \label{fig:impl-pipeline}
 \end{figure}
 
@@ -190,7 +190,7 @@ public void UpdateGazeSample(GazeData gazeData)
     RecordGazeSample(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), gazeData);
 }
 \end{minted}
-\caption{Lock-free gaze ingest (from \texttt{ExperimentSessionManager.Gaze.cs}). An \texttt{Interlocked} counter and \texttt{Volatile} publish bypass the lifecycle gate, so high-frequency samples are never blocked by slower control-plane operations.}
+\caption{Lock-free gaze ingest (from \texttt{ExperimentSessionManager.Gaze.cs}): atomic counter and \texttt{Volatile} publish on the data plane, bypassing the lifecycle gate.}
 \label{lst:impl-hotpath}
 \end{listing}
 
@@ -246,7 +246,7 @@ function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex:
   return bestIndex;                       // -> token id + token/line/block index in the observation
 }
 \end{minted}
-\caption{Gaze-to-content mapping (abbreviated from \texttt{useGazeTokenHighlight.ts}). A two-stage score picks the nearest word: \texttt{pickBestLine} selects the line by weighted vertical distance, and \texttt{pickWordIndex} selects the nearest word on that line. The layout index is rebuilt from the DOM on every mutation, resize, and scroll.}
+\caption{Gaze-to-content mapping (abbreviated from \texttt{useGazeTokenHighlight.ts}). \texttt{pickBestLine} scores lines by weighted vertical distance; \texttt{pickWordIndex} picks the nearest word on the chosen line. Layout index rebuilt from the live DOM on every mutation, resize, and scroll.}
 \label{lst:impl-tokenmap}
 \end{listing}
 
@@ -309,7 +309,7 @@ function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex:
 \node[lbl, text=black!60, anchor=west] at (10.55,1.35) {publish (FR4.4)};
 \end{tikzpicture}%
 }
-\caption[Two-stage gaze-to-word mapping in the reader.]{How a gaze point is mapped to a word (\cref{lst:impl-tokenmap}). \emph{Stage~1} fixes the line: each line is a vertical band, and a fixed discount on the line already being read acts as hysteresis, so the drifted sample shown (near-equal gaps $d_\uparrow \approx d_\downarrow$) is held on the current line rather than flickering under vertical jitter. \emph{Stage~2} then takes the nearest word on that line, and the result is published as the token-indexed observation; the scoring weights are given in \cref{lst:impl-tokenmap}.}
+\caption[Two-stage gaze-to-word mapping in the reader.]{Two-stage gaze-to-word mapping (\cref{lst:impl-tokenmap}). Stage~1 fixes the line using weighted vertical bands with a hysteresis discount on the line already being read; the drifted sample (near-equal $d_\uparrow \approx d_\downarrow$) stays on the current line. Stage~2 picks the nearest word on that line.}
 \label{fig:impl-gazemap}
 \end{figure}
 
@@ -412,7 +412,7 @@ private static double? CalculateAngleDegrees(Vector3 from, Vector3 to)
 private static Vector3 CreateVector(Point3D from, Point3D to) =>
     new(to.X - from.X, to.Y - from.Y, to.Z - from.Z);
 \end{minted}
-\caption{Calibration accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angle to the target ray; precision is the RMS angle between consecutive sample pairs. Both are averaged per eye and reported as degree values, keeping the core free of eye-tracker geometry.}
+\caption{Calibration accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}): accuracy as angular offset to the target ray, precision as RMS of consecutive sample angles; computed in the adapter to keep eye-tracker geometry off the core.}
 \label{lst:impl-validation}
 \end{listing}
 
@@ -443,7 +443,7 @@ const handlePointerMove = (event: PointerEvent) => {
   });
 };
 \end{minted}
-\caption{Browser as a gaze source (abbreviated from \texttt{ReadingPage.tsx}). In \texttt{mouse} sensing mode, pointer events are normalised into the same \texttt{GazeData} shape as the eye tracker and streamed over the WebSocket.}
+\caption{Browser as a gaze source (abbreviated from \texttt{ReadingPage.tsx}): pointer events normalised into the same \texttt{GazeData} shape as the Tobii adapter and streamed over the WebSocket.}
 \label{lst:impl-mousegaze}
 \end{listing}
 
@@ -460,7 +460,7 @@ public async ValueTask SubmitMouseGazeSampleAsync(
         ShouldPublishToExternalProvider(), ShouldPublishToExternalAnalysisProvider(), gazeData);
 }
 \end{minted}
-\caption{Mouse samples joining the hardware path (abbreviated from \texttt{ExperimentSessionManager.Gaze.cs}). After two guards, a mouse sample is passed to the same \texttt{UpdateGazeSample} (\cref{lst:impl-hotpath}) as the Tobii adapter, making the downstream pipeline source-agnostic.}
+\caption{Mouse samples joining the hardware path (abbreviated from \texttt{ExperimentSessionManager.Gaze.cs}): two guards, then the same \texttt{UpdateGazeSample} (\cref{lst:impl-hotpath}) as the Tobii source.}
 \label{lst:impl-mouseingest}
 \end{listing}
 
@@ -484,7 +484,7 @@ The branching that turns a raw residual error into a graded outcome is summarise
 \IfFileExists{Chapters/06_Implementation/context-preservation.pdf}%
   {\includegraphics[width=0.95\linewidth]{Chapters/06_Implementation/context-preservation.pdf}}%
   {\fbox{\parbox[c][5cm][c]{0.9\linewidth}{\centering\itshape Figure pending: render \texttt{Chapters/06\_Implementation/context-preservation.mmd} to \texttt{context-preservation.pdf} with \texttt{mmdc}.}}}%
-\caption[Capture-and-restore lifecycle of an intervention.]{The capture-and-restore lifecycle of a context-preserving intervention. The reader continuously captures an anchor for the current reading position and, when an intervention commits, re-finds it in the reflowed document, restores it, and grades the residual outcome into the session record (FR9.3).}
+\caption[Capture-and-restore lifecycle of an intervention.]{Capture-and-restore lifecycle of a context-preserving intervention: continuous anchor capture before commit, re-location and scroll-restore after, graded outcome written to the session record (FR9.3).}
 \label{fig:impl-context-seq}
 \end{figure}
 
@@ -525,7 +525,7 @@ function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnap
   };
 }
 \end{minted}
-\caption{Capturing the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor prefers the gazed-at word, degrading to a visible word then a paragraph, and records the element's identifier and viewport offset for re-location after a reflow.}
+\caption{Capturing the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}): gazed-at word, then first visible word, then enclosing paragraph; records element identifier and viewport offset.}
 \label{lst:impl-anchor-capture}
 \end{listing}
 
@@ -555,7 +555,7 @@ if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
   return;
 }
 \end{minted}
-\caption{Selecting a restore mode (abbreviated from \texttt{usePreserveReadingContext.ts}). The intervention's layout-effect declaration selects semantic restart or offset preserve; an appearance-only change at a frozen boundary skips restore, and a missing anchor is reported as a failure.}
+\caption{Selecting a restore mode (abbreviated from \texttt{usePreserveReadingContext.ts}): layout-affecting change → semantic restart; appearance-only → offset preserve; short-circuit exits for frozen boundaries and missing anchors.}
 \label{lst:impl-restore-mode}
 \end{listing}
 
@@ -647,7 +647,7 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
   return null;                  // caller reports "failed", or scroll-only "degraded" if a stale anchor exists
 }
 \end{minted}
-\caption{Re-locating the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}). The offset-preserve path degrades from sentence to token to enclosing block; the semantic-restart path calls \texttt{locateSemanticRestartAnchor}. A null result yields the failed or degraded outcome in \cref{fig:impl-context-decision}.}
+\caption{Re-locating the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}): offset-preserve degrades sentence → token → block; semantic-restart resolves via \texttt{locateSemanticRestartAnchor}; null yields the failed or degraded outcome (\cref{fig:impl-context-decision}).}
 \label{lst:impl-anchor-locate}
 \end{listing}
 
@@ -682,7 +682,7 @@ const status =
     : "preserved";
 onContextPreservationChange?.({ status, anchorErrorPx, anchorSource: located.anchorSource, /* ... */ });
 \end{minted}
-\caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor is re-located (degrading from sentence to token to paragraph), scrolled to its captured offset, and the residual error is measured and reported to the session log.}
+\caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}): scroll to the captured offset, measure residual \texttt{anchorErrorPx}, and report the graded outcome to the session log.}
 \label{lst:impl-anchor-restore}
 \end{listing}
 
@@ -718,14 +718,14 @@ private void ResolveExperimentOrderForStart()
     // ...seed ordered[0] as the current reading content; the rest advance in order...
 }
 \end{minted}
-\caption{Running-order resolution at session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). Items run in their authored order or, in \texttt{random} mode, are shuffled and re-indexed for counterbalancing; either way the rest of the run is a simple ordered walk.}
+\caption{Running-order resolution at session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}): fixed order or random shuffle with re-indexing; either way a simple ordered walk.}
 \label{lst:impl-order}
 \end{listing}
 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/ExperimentTemplate.png}
-\caption[The experiment template editor.]{The experiment template editor. A template is a named, ordered sequence of reading items, each bound to a library material and optionally given its own typographic configuration; the template is persisted and reused across sessions, and its order is replayed (fixed) or counterbalanced (random) when a session starts.}
+\caption[The experiment template editor.]{The experiment template editor: a named, ordered sequence of reading items, each with an optional typographic configuration, persisted and reused across sessions.}
 \label{fig:impl-template}
 \end{figure}
 
@@ -760,7 +760,7 @@ public string Serialize(ExperimentReplayExport exportDocument, string format)
     return JsonSerializer.Serialize(exportDocument, _jsonOptions);
 }
 \end{minted}
-\caption{Dual-format export (abbreviated from \texttt{ExperimentReplayExportSerializer.cs}). CSV rows support spreadsheet analysis; one row also embeds the full export as base64-encoded JSON, keeping the file fully replayable.}
+\caption{Dual-format export (abbreviated from \texttt{ExperimentReplayExportSerializer.cs}): per-event CSV rows plus one base64-encoded JSON row, keeping the file fully replayable.}
 \label{lst:impl-export}
 \end{listing}
 
@@ -776,7 +776,7 @@ export function parseExperimentReplayExport(input: string | unknown): Experiment
   return parsed as ExperimentReplayExport;
 }
 \end{minted}
-\caption{Version-gated import (abbreviated from \texttt{experiment-replay.ts}). The front-end validates the export's structure, schema, and version before reconstruction, allowing the format to evolve without mis-rendering unknown recordings.}
+\caption{Version-gated import (abbreviated from \texttt{experiment-replay.ts}): structure, schema, and version validated before reconstruction; unsupported versions are rejected rather than mis-rendered.}
 \label{lst:impl-import}
 \end{listing}
 \FloatBarrier

@@ -479,19 +479,12 @@ The diagram remains at the analysis level: every node denotes an activity, every
 \end{tikzpicture}%
 }
 \caption[Swimlane activity diagram for a complete session.]{%
-Swimlane activity diagram for a complete experimental session, partitioned by
-actor into Researcher, System, and Participant lanes.
-Rounded boxes are activities and diamonds are decisions; the solid horizontal
-bars denote the fork and join that bound the concurrent activities of the live
-reading phase.
-Each activity sits in the lane of the actor that performs it: the researcher
-prepares and operates the session, the participant performs the calibration and
-reads, and the system validates, senses, and adapts.
-The intervention activity straddles the researcher and system lanes because an
-intervention may be applied autonomously by the system or proposed by the system
-and approved by the researcher.
-The diagram stays at the analysis level, describing what happens, under what
-conditions, and by whom, rather than how the system is structured internally.%
+Swimlane activity diagram for a complete experimental session, partitioned into
+Researcher, System, and Participant lanes.
+Rounded boxes are activities; diamonds are decisions; horizontal bars bound the
+concurrent live-reading phase.
+The intervention activity straddles Researcher and System because it may be
+applied autonomously or proposed by the system and approved by the researcher.%
 }
 \label{fig:activity-session}
 \end{figure}

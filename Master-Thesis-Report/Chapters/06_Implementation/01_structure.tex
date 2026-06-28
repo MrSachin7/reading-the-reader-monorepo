@@ -27,7 +27,7 @@ Their folder layout is shown in \cref{fig:impl-tree} and their dependency struct
 .3 \texttt{redux/}, \texttt{lib/} \DTcomment{state, API, gaze socket}.
 .3 \texttt{components/}, \texttt{hooks/} \DTcomment{shared UI}.
 }
-\caption[Curated layout of the monorepo.]{Curated layout of the monorepo (selected folders only). The backend groups projects into \texttt{core} (the \texttt{Domain} entities and the \texttt{Application} with its ports), \texttt{infrastructure} (the adapters), and the \texttt{WebApi} composition root; the four concern modules of \cref{sec:design-modules} appear as folders beneath the application contracts. The front-end separates routing (\texttt{app/}) from feature UI, shared state and transport, and shared components.}
+\caption[Curated layout of the monorepo.]{Curated layout of the monorepo (selected folders only). \texttt{core} holds domain entities and application ports; \texttt{infrastructure} holds the adapters; \texttt{WebApi} is the composition root. The front-end separates routing (\texttt{app/}) from feature UI, shared state, and shared components.}
 \label{fig:impl-tree}
 \end{figure}
 
@@ -79,7 +79,7 @@ Their folder layout is shown in \cref{fig:impl-tree} and their dependency struct
 \node[note, anchor=north west] at (-6.1,-1.2) {Arrow $A \rightarrow B$: project (or layer) $A$ references / depends on $B$. In the backend every reference points inward, towards the \textbf{Domain} core.};
 \end{tikzpicture}%
 }
-\caption[Code structure of the two monorepo roots.]{Code structure of the two monorepo roots. In the backend solution every project reference points inward (\texttt{WebApi}, the composition root, depends on \texttt{Application} and all infrastructure; each infrastructure adapter and \texttt{Application} depend inward towards \texttt{Domain}), which is the dependency rule of \cref{sec:design-style} enforced by the build rather than merely intended. The front-end is a single Next.js application whose source separates thin routing (\texttt{app/}) from feature UI (\texttt{modules/pages}), shared state and transport (\texttt{redux}, \texttt{lib}), and shared components.}
+\caption[Code structure of the two monorepo roots.]{Code structure of the two monorepo roots. Every backend project reference points inward towards \texttt{Domain}, enforcing the dependency rule of \cref{sec:design-style} at the build level. The front-end separates routing (\texttt{app/}) from feature UI, state, and shared components.}
 \label{fig:impl-structure}
 \end{figure}
 

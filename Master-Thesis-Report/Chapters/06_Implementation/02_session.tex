@@ -27,7 +27,7 @@ The researcher prepares and steers the session from the console, monitoring a li
   \caption{Participant reader (second screen).}
   \label{fig:impl-screens-reader}
 \end{subfigure}
-\caption[The two operated surfaces of the one front-end.]{The two operated surfaces of the one front-end. The researcher steers the session from the console~(a), which mirrors the participant's reader with the live eye-movement analysis drawn over it; the participant sees only the reader~(b), whose text the adaptive loop adjusts in place. Both render the same backend-owned snapshot.}
+\caption[The two operated surfaces of the one front-end.]{The two operated surfaces of the one front-end: researcher console~(a) and participant reader~(b).}
 \label{fig:impl-screens}
 \end{figure}
 
@@ -64,7 +64,7 @@ export const experimentSessionApi = baseApi.injectEndpoints({
   }),
 })
 \end{minted}
-\caption{Researcher commands as RTK Query mutations (abbreviated from \texttt{redux/api/experiment-session-api.ts}). Each command posts to a FastEndpoints route and invalidates the \texttt{Experiment} cache tag to keep the front-end in sync.}
+\caption{Researcher commands as RTK Query mutations (abbreviated from \texttt{redux/api/experiment-session-api.ts}).}
 \label{lst:impl-rest-command}
 \end{listing}
 
@@ -87,7 +87,7 @@ function connect() {
   socket.addEventListener("close", scheduleReconnect); // reconnect after 1s
 }
 \end{minted}
-\caption{Shared WebSocket client (abbreviated from \texttt{lib/gaze-socket.ts}). A single connection serves the whole front-end, requests the current snapshot on open, routes inbound frames through one handler, and reconnects automatically on close.}
+\caption{Shared WebSocket client (abbreviated from \texttt{lib/gaze-socket.ts}).}
 \label{lst:impl-ws-client}
 \end{listing}
 
@@ -109,7 +109,7 @@ app.Map("/ws", async (HttpContext context, WebSocketConnectionManager connection
     }
 });
 \end{minted}
-\caption{Server WebSocket endpoint (abbreviated from \texttt{WebApi/Websockets/WebSocketConfiguration.cs}). The transport layer accepts the socket, deserialises each text frame as a typed envelope, and forwards it to the session manager; no session logic lives here.}
+\caption{Server WebSocket endpoint (abbreviated from \texttt{WebApi/Websockets/WebSocketConfiguration.cs}). No session logic lives in the transport layer.}
 \label{lst:impl-ws-server}
 \end{listing}
 
@@ -128,7 +128,7 @@ type ServerEnvelope =
   // ...one further variant per backend message type...
   | { type: "error"; sentAtUnixMs: number; payload: { message: string } };
 \end{minted}
-\caption{Front-end inbound message union (abbreviated from \texttt{lib/gaze-socket.ts}). Each variant mirrors one backend message type; lifecycle messages carry the authoritative \texttt{ExperimentSessionSnapshot} so both screens render from the same payload.}
+\caption{Front-end inbound message union (abbreviated from \texttt{lib/gaze-socket.ts}). Hand-mirrored from the backend message catalogue; lifecycle variants carry \texttt{ExperimentSessionSnapshot}.}
 \label{lst:impl-envelope}
 \end{listing}
 
@@ -155,7 +155,7 @@ With the two channels in hand, the remainder of this section walks the flow of \
 \node[lbl] at (0,-2.15) {reset};
 \end{tikzpicture}%
 }
-\caption[Lifecycle of an experiment session.]{Lifecycle of an experiment session. The session is configured behind four readiness gates, runs item by item once all gates are satisfied, and is sealed and exported on completion; a reset returns an inactive session to the configuring phase. Every transition passes through the single \texttt{ExperimentSessionManager}, which checkpoints the state and broadcasts the authoritative snapshot.}
+\caption[Lifecycle of an experiment session.]{Lifecycle of an experiment session: three phases (Configuring, Running, Completed), with transitions gated on readiness and a reset path back to Configuring.}
 \label{fig:impl-session-states}
 \end{figure}
 
@@ -186,7 +186,7 @@ public async ValueTask SetCurrentParticipantAsync(
     }
 }
 \end{minted}
-\caption{Template for every state-changing command (from \texttt{ExperimentSessionManager.Lifecycle.cs}). The lifecycle gate serialises access; a new immutable session record is published via \texttt{Volatile.Write} and checkpointed before the gate is released.}
+\caption{Template for every state-changing command (from \texttt{ExperimentSessionManager.Lifecycle.cs}).}
 \label{lst:impl-state-change}
 \end{listing}
 
@@ -197,7 +197,7 @@ The eye-tracker step in the figure shows the detail of this preparation: a real 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Stepper.png}
-\caption[The setup stepper in the configuring phase.]{The setup stepper in the configuring phase. The session is prepared through role-sequenced steps (researcher preparation before participant setup); each step is locked until its prerequisites are met, and the current step states the reason it still blocks the session start. Shown here is the eye-tracker step, with a real Tobii device selected and its licence guarded against accidental overwrite.}
+\caption[The setup stepper in the configuring phase.]{The setup stepper in the configuring phase. Each step is locked until its prerequisites are met and states the blocking reason. Shown: the eye-tracker step with a real Tobii device and licence.}
 \label{fig:impl-setup}
 \end{figure}
 
@@ -208,7 +208,7 @@ Only a calibration whose validation passes satisfies the gate, and the accuracy 
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.78\linewidth]{Chapters/06_Implementation/screenshots/Calibration.png}
-\caption[The calibration sub-flow.]{The calibration sub-flow. The participant fixates a sequence of on-screen targets (a configurable number of points) while the device collects samples; the resulting calibration is then validated for accuracy and precision, and only a passing validation satisfies the calibration gate.}
+\caption[The calibration sub-flow.]{The calibration sub-flow: target fixation, sample collection, and validation; only a passing validation satisfies the calibration gate.}
 \label{fig:impl-calibration}
 \end{figure}
 
@@ -244,7 +244,7 @@ public async Task<bool> StartSessionAsync(CancellationToken ct = default)
     finally { _lifecycleGate.Release(); }
 }
 \end{minted}
-\caption{Session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). \texttt{EnsureSetupIsReadyForStart} re-checks the four readiness gates and throws with the blocking reason if any is unmet; on success the session is published and the snapshot broadcast.}
+\caption{Session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). Re-checks all readiness gates at the moment of commit before publishing and broadcasting the snapshot.}
 \label{lst:impl-start}
 \end{listing}
 
@@ -271,7 +271,7 @@ public sealed class WebSocketRealtimeMessenger : IClientBroadcasterAdapter
     }
 }
 \end{minted}
-\caption{Client broadcaster (abbreviated from \texttt{ReadingTheReader.RealtimeMessenger}). Realises \texttt{IClientBroadcasterAdapter}: serialises one envelope and fans it out to every open WebSocket, keeping the session manager free of transport concerns.}
+\caption{Client broadcaster (abbreviated from \texttt{ReadingTheReader.RealtimeMessenger}). Realises \texttt{IClientBroadcasterAdapter}: one serialised envelope fanned out to every open socket.}
 \label{lst:impl-broadcaster}
 \end{listing}
 
@@ -310,7 +310,7 @@ public class TobiiEyeTrackerAdapter : IEyeTrackerAdapter
 }
 #endif   // a mock tracker is compiled in this class's place off-Windows
 \end{minted}
-\caption{Tobii sensing adapter (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Realises \texttt{IEyeTrackerAdapter}: subscribes to the Tobii SDK, translates each raw sample to domain \texttt{GazeData}, and raises \texttt{GazeDataReceived}; a \texttt{\#if WINDOWS} guard excludes the SDK from non-Windows builds.}
+\caption{Tobii sensing adapter (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Realises \texttt{IEyeTrackerAdapter}; the \texttt{\#if WINDOWS} guard keeps the SDK out of non-Windows builds, where a mock fills its place.}
 \label{lst:impl-tobii}
 \end{listing}
 
@@ -339,7 +339,7 @@ export function useLiveExperimentSession() {
   return session;
 }
 \end{minted}
-\caption{Live-session hook shared by both screens (abbreviated from \texttt{lib/use-live-experiment-session.ts}). Coalesces high-frequency snapshot updates to one render per animation frame (\(\approx\)\SI{60}{\hertz}); \texttt{latest} ensures the newest snapshot is never dropped.}
+\caption{Live-session hook shared by both screens (abbreviated from \texttt{lib/use-live-experiment-session.ts}). Coalesces snapshot bursts to one React commit per animation frame (\(\approx\)\SI{60}{\hertz}).}
 \label{lst:impl-live-hook}
 \end{listing}
 
@@ -362,7 +362,7 @@ const handleEnrichedFocusSample = (sample: GazeData, focus: GazeFocusState) =>
 return <ReaderShell markdown={markdown} presentation={presentation}
                     onEnrichedFocusSample={handleEnrichedFocusSample} />;
 \end{minted}
-\caption{Participant reader (abbreviated from \texttt{ReadingPage.tsx}). Consumes the live snapshot, registers the participant view, renders text from the presentation field, and streams enriched gaze samples back over the WebSocket.}
+\caption{Participant reader (abbreviated from \texttt{ReadingPage.tsx}): registers the view, renders text from the snapshot presentation, and streams enriched gaze samples over the WebSocket.}
 \label{lst:impl-reader}
 \end{listing}
 
@@ -383,7 +383,7 @@ const applyManualIntervention = (next: InterventionChoice, reason: string) =>
     moduleId: next.moduleId, parameters: next.parameters,
   });
 \end{minted}
-\caption{Researcher console (abbreviated from \texttt{researcher/current-live/index.tsx}). Consumes the live snapshot, drives the gaze mirror and overlays, sends configuration changes as REST mutations, and pushes manual interventions over the WebSocket.}
+\caption{Researcher console (abbreviated from \texttt{researcher/current-live/index.tsx}): drives the gaze mirror and overlays from the live snapshot, issues policy changes as REST mutations, and pushes manual interventions over the WebSocket.}
 \label{lst:impl-console}
 \end{listing}
 
@@ -414,7 +414,7 @@ public sealed class FinishExperimentEndpoint
     }
 }
 \end{minted}
-\caption{A REST endpoint (abbreviated from \texttt{FinishExperimentEndpoint.cs}). Every route depends on a core port, translates the HTTP request into an application command, and returns the resulting snapshot; no session logic lives in the transport layer.}
+\caption{A REST endpoint (abbreviated from \texttt{FinishExperimentEndpoint.cs}). Depends on a core port, maps the request to an application command, and returns the snapshot; no logic in the transport layer.}
 \label{lst:impl-endpoint}
 \end{listing}
 
@@ -425,7 +425,7 @@ Replay is therefore the operational proof of \cref{sec:design-data}, that a sess
 \begin{figure}[htbp]
 \centering
 \screenshotfig[0.95\linewidth]{Chapters/06_Implementation/screenshots/Replay.png}
-\caption[Replay of a sealed session.]{Replay of a sealed session. The recording is reconstructed as a timed playback (left), with the gaze token heat map drawn over the reconstructed text and a filterable timeline of lifecycle, quiz, and intervention events (right). That a session replays from its record alone is the operational evidence of the reproducibility argued in \cref{sec:design-data}.}
+\caption[Replay of a sealed session.]{Replay of a sealed session: timed playback with the gaze token heat map over the reconstructed text~(left) and a filterable event timeline~(right).}
 \label{fig:impl-replay}
 \end{figure}
 
@@ -454,7 +454,7 @@ public sealed partial class ExperimentSessionManager :
     //   .Interventions  .Quiz  .ReadingSession  .Replay  ...
 }
 \end{minted}
-\caption{Session orchestrator (abbreviated from \texttt{ExperimentSessionManager.cs}). A single \texttt{sealed partial} class realises four runtime interfaces and is split across one file per concern; all facets share one \texttt{\_session} field and one \texttt{\_lifecycleGate}.}
+\caption{Session orchestrator (abbreviated from \texttt{ExperimentSessionManager.cs}). \texttt{sealed partial}: four interfaces, one concern per file, one shared \texttt{\_session} field and \texttt{\_lifecycleGate}.}
 \label{lst:impl-manager-class}
 \end{listing}
 
