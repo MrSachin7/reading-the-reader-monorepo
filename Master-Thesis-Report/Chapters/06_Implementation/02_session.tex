@@ -366,7 +366,8 @@ return <ReaderShell markdown={markdown} presentation={presentation}
 \label{lst:impl-reader}
 \end{listing}
 
-The researcher observes and steers the same session through the live control surface (\cref{fig:impl-screens-console}), the second screen of \cref{sec:design-style}: it mirrors the participant's text with the live eye-movement analysis drawn over it (the fixations, saccades, and regressions toggled by the legend at the top), reports the live end-to-end latency, and offers the manual interventions and typography controls through which the researcher adapts the presentation.
+The researcher observes and steers the same session through the live control surface (\cref{fig:impl-screens-console}), the second screen of \cref{sec:design-style}: it mirrors the participant's text with the live eye-movement analysis drawn over it (the fixations, saccades, and regressions toggled by the legend at the top), reports the live end-to-end latency, and offers the interventions and typography controls through which the researcher adapts the presentation.
+The console supports all three execution modes introduced in \cref{sec:design-loop}: the researcher may apply interventions directly in manual mode, review and approve or reject each proposal from an automated provider in advisory mode, or permit a provider to apply its proposals immediately in autonomous mode; the active mode is a session-level policy the researcher sets before and during the run.
 The overlay is computed from the same gaze stream and carried on the same snapshot the screens already render, so the researcher sees where the participant is reading, and where they are regressing, without any additional channel.
 Its behaviour makes the commit discipline of driver~D7 visible in the interface, since appearance changes are applied immediately whereas typography changes wait for the selected boundary, which is the two-phase, context-preserving commit of \cref{sec:design-loop} exposed as an operator control.
 In code the console is the consuming counterpart of the reader (\cref{lst:impl-console}): it reads the same snapshot through the same hook, renders the mirror and the overlays from it, issues policy changes as REST mutations, and pushes a manual intervention straight over the WebSocket.
@@ -388,7 +389,8 @@ const applyManualIntervention = (next: InterventionChoice, reason: string) =>
 \end{listing}
 
 The session then proceeds item by item.
-For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz submitted over REST, and both the reading events and the answers are written into the session record alongside every gaze sample, intervention, and lifecycle event.
+For each material the participant reads while the loop adapts the text, and afterwards answers a short comprehension quiz submitted over REST.
+The quiz serves as a comprehension check: its questions probe recall of the just-read material, and its answers are written into the session record alongside every gaze sample, intervention, and lifecycle event, so that a later analysis can relate the interventions applied during the reading phase to the participant's comprehension outcome and verify that adaptation did not come at a cost to understanding.
 
 \subsection*{Finishing: sealing and replaying the record}
 

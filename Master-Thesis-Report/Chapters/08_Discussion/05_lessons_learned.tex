@@ -4,7 +4,7 @@
 Building the platform taught us things that no requirement captured, and we record the most important here, the technical and the procedural together.
 
 The most useful technical lesson concerns the heuristic that stabilises gaze-to-word mapping, which \cref{sec:requirements-evolution} flagged for a critical second look.
-Raw gaze jitters up and down by about the height of a line, so a sample taken in the middle of a line can fall on the line above or below.
+In practice, raw gaze jitters up and down by about the height of a line, so a sample taken in the middle of a line can fall on the line above or below.
 Our mapping holds the reading on its current line by subtracting a fixed amount from that line's score, a standing bias that resists single-sample drift (\cref{lst:impl-tokenmap}, \cref{sec:impl-sensing}).
 This works, but it is worth naming for what it is.
 It is a hand-tuned constant that borrows the idea of a Kalman filter, that a prior estimate of position should soften the effect of each noisy new measurement, but carries none of its machinery, because it keeps no estimate of its own uncertainty and performs no predict-and-update step \cite{kalman1960filtering}.
