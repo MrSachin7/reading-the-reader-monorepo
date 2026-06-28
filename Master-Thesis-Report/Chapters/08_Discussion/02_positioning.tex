@@ -6,19 +6,12 @@ Now that the platform is built and measured, we return to that landscape and sho
 We use the same four threads as the survey: the prior project line, the general-purpose experiment software, the eye-movement analysis literature, and the work on intervention design.
 For each one we state plainly what we did, what the prior work did, and why the two differ.
 
-The clearest comparison is with the earlier projects in Reading the Reader, because this thesis inherits their problem rather than a new one.
-Each of those projects delivered a capable adaptive reader, but each was extended by copying the previous frontend and changing it, so a new study built on a fork of the last project rather than on a shared contract \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
-Our result keeps the same capability but changes the structure underneath.
-Sensing, analysis, decision, and intervention now sit behind build-enforced module boundaries (\cref{sec:eval-modularity}), so the next intervention or decision provider extends the platform in place instead of forking it.
-This is the move from a line of one-off prototypes to a platform that builds up over time, which is the precondition the gap analysis named for the systematic comparison the project needs (\cref{subsec:gap-experimentability}).
+The clearest comparison is with the earlier projects in Reading the Reader (\cref{subsec:related-rtr-prior-work}), each of which delivered a capable adaptive reader but was extended by copying the previous frontend rather than building against a shared contract \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
+Our result keeps the same capability but changes the structure: sensing, analysis, decision, and intervention now sit behind build-enforced module boundaries (\cref{sec:eval-modularity}), so the next intervention or decision provider extends the platform in place instead of forking it, which is the move from one-off prototypes to a platform that builds up over time (\cref{subsec:gap-experimentability}).
 
 A researcher who builds a reading study today is more likely to use a general-purpose experiment platform than a prior thesis prototype, so these tools are the harder comparison.
-Tobii Pro Lab, PsychoPy, and Psychtoolbox are mature and widely used, and they are very good at designing experiments, presenting stimuli, and capturing gaze data.
-But they were not built to adapt the text in response to the reader's gaze, and none of them offers a pluggable decision boundary \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.
-Our platform differs on exactly these two points: it closes the loop from gaze to a typographic change in real time, and it lets an external decision provider connect behind a stable contract.
-This is the upper-right region that the capability comparison and the market quadrant of \cref{ch:key-concepts-related-work} leave empty (\cref{tab:capability-matrix}, \cref{fig:market-quadrant}).
-We do not overstate the contrast.
-Those platforms are general tools, proven by years of use across many kinds of study, whereas ours is a focused tool for one family of gaze-driven reading experiments, so we present it as filling the gap they leave open rather than as a replacement for them.
+The landscape survey of \cref{sec:market-landscape} showed that Tobii Pro Lab, PsychoPy, and Psychtoolbox excel at experiment design, stimulus delivery, and gaze capture, but none closes the loop from gaze to a real-time typographic change or offers a pluggable decision boundary (\cref{tab:capability-matrix}, \cref{fig:market-quadrant}).
+Our platform occupies exactly that unoccupied region, and we do not overstate the contrast: those tools are general-purpose and proven across many study types, whereas ours is a focused instrument for one family of gaze-driven reading experiments, filling the gap they leave open rather than replacing them.
 
 The eye-tracking literature this thesis builds on treats the reduction of raw gaze to oculomotor events as the first step.
 That step uses an explicit identification algorithm of the kind catalogued by Salvucci and Goldberg, read together with the reading-process findings that Rayner consolidated \cite{salvucci2000identifying, rayner1998eyemovements}.
