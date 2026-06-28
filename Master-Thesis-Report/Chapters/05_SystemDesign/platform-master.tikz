@@ -98,6 +98,6 @@
 \draw[ext]  (3.6,-4.05) -- (4.2,-4.05);     \node[anchor=west,font=\scriptsize] at (4.3,-4.05){external API seam (out of scope, C3)};
 \end{tikzpicture}%
 }
-\caption{The Reading the Reader platform as a researcher--participant adaptive loop. The participant reads on one screen while a Tobii eye tracker at the foot of that screen senses their gaze; the backend turns gaze into oculomotor events, adapts the text, and mirrors the gaze and analysis to the researcher's screen, where the session is steered (manual, advisory, or autonomous). An external decision provider may propose interventions through a defined API, and every session is written to a reproducible record.}
+\caption{The RTR platform as a researcher--participant adaptive loop: gaze is sensed by a Tobii eye tracker, turned into oculomotor events, and mirrored to the researcher's console; the session is steered manually, in advisory mode, or autonomously; every session is written to a reproducible record.}
 \label{fig:design-platform-master}
 \end{figure}

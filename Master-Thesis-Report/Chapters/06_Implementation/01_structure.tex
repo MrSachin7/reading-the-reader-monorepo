@@ -103,7 +103,7 @@ builder.Services.InstallApplicationModule(
 builder.Services.InstallModuleProviderFramework(moduleProviderOptions);
 builder.Services.InstallRealtimePersistenceModule(builder.Configuration);
 \end{minted}
-\caption{The composition root in \texttt{WebApi/Program.cs} (abbreviated). Each \texttt{Install\dots Module} extension method is defined in the module it installs and is the only place that binds a core port to a concrete adapter, so the application core can be compiled and reasoned about without ever naming an infrastructure type.}
+\caption{Composition root in \texttt{WebApi/Program.cs} (abbreviated). Each \texttt{Install\dots Module} method is defined in the module it installs and is the only place that binds a core port to a concrete adapter.}
 \label{lst:impl-composition}
 \end{listing}
 

@@ -95,7 +95,7 @@ public interface IReadingInterventionModuleRegistry
     bool TryResolve(string? moduleId, out IReadingInterventionModule? module);
 }
 \end{minted}
-\caption{The in-process module contract (from \texttt{Interventions/}). A module declares its parameters, validates a request, and executes it; the runtime only ever resolves a module from the registry by identifier, so adding one means implementing this interface and registering it, with no change to the runtime or any existing module.}
+\caption{In-process module contract (from \texttt{Interventions/}). A module declares its parameters, validates a request, and executes it; adding a new module requires only implementing this interface and registering it, with no changes to the runtime.}
 \label{lst:impl-module-contract}
 \end{listing}
 
@@ -126,7 +126,7 @@ public sealed record ModuleProviderWelcomePayload(
     long RegisteredAtUnixMs, int HeartbeatTimeoutMilliseconds,
     IReadOnlyList<string> AcceptedModules);
 \end{minted}
-\caption{The external module-provider contract (abbreviated from \texttt{ModuleProviderProtocol.cs}). A provider declares the modules and capabilities it can serve in its \texttt{Hello}; the system answers \texttt{Welcome} with the accepted modules and a heartbeat timeout. Per-module context and commands then travel as \texttt{Inbound} and \texttt{Outbound} envelopes, and a missed heartbeat drops the provider. This record set is the contract a third party implements (FR19.4).}
+\caption{External module-provider contract (abbreviated from \texttt{ModuleProviderProtocol.cs}). A provider sends \texttt{Hello} with its modules; the system replies \texttt{Welcome} with accepted modules and a heartbeat timeout. Commands and context travel as \texttt{Inbound}/\texttt{Outbound} envelopes; a missed heartbeat drops the provider (FR19.4).}
 \label{lst:impl-provider-protocol}
 \end{listing}
 
@@ -190,7 +190,7 @@ public void UpdateGazeSample(GazeData gazeData)
     RecordGazeSample(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), gazeData);
 }
 \end{minted}
-\caption{The lock-free ingest on the gaze data plane (from \texttt{ExperimentSessionManager.Gaze.cs}). It uses an \texttt{Interlocked} counter and a \texttt{Volatile} publish rather than the lifecycle gate, so high-frequency gaze samples are never blocked behind the slower control-plane operations.}
+\caption{Lock-free gaze ingest (from \texttt{ExperimentSessionManager.Gaze.cs}). An \texttt{Interlocked} counter and \texttt{Volatile} publish bypass the lifecycle gate, so high-frequency samples are never blocked by slower control-plane operations.}
 \label{lst:impl-hotpath}
 \end{listing}
 
@@ -246,7 +246,7 @@ function pickWordIndex(layouts: WordLayout[], x: number, y: number, activeIndex:
   return bestIndex;                       // -> token id + token/line/block index in the observation
 }
 \end{minted}
-\caption{Gaze-to-content mapping in the reader (abbreviated from \texttt{useGazeTokenHighlight.ts}). The nearest word is chosen by a two-stage score: \texttt{pickBestLine} fixes the line, weighting vertical distance to the line band heavily and discounting the line already being read so jitter does not jump lines, and \texttt{pickWordIndex} then takes the nearest word on that line. \texttt{layouts} is rebuilt from the rendered DOM on every mutation, resize, and scroll, which is what keeps the mapping valid across presentation changes.}
+\caption{Gaze-to-content mapping (abbreviated from \texttt{useGazeTokenHighlight.ts}). A two-stage score picks the nearest word: \texttt{pickBestLine} selects the line by weighted vertical distance, and \texttt{pickWordIndex} selects the nearest word on that line. The layout index is rebuilt from the DOM on every mutation, resize, and scroll.}
 \label{lst:impl-tokenmap}
 \end{listing}
 
@@ -341,7 +341,7 @@ private static SaccadeSnapshot? BuildSaccade(FixationSnapshot? from, FixationSna
     return new SaccadeSnapshot(from.TokenId, to.TokenId, /* indices, timing, */ lineDelta, direction);
 }
 \end{minted}
-\caption{Saccade and regression classification (abbreviated from \texttt{BuiltInEyeMovementAnalysisStrategy.cs}). A saccade is built between two confirmed fixations; a backward move within or across lines is a regression, and the running regression count is incremented from this classification.}
+\caption{Saccade and regression classification (abbreviated from \texttt{BuiltIn\-EyeMovement\-AnalysisStrategy.cs}). A saccade spans two confirmed fixations; a backward move within or across lines is classified as a regression and increments the running count.}
 \label{lst:impl-saccade}
 \end{listing}
 
@@ -412,7 +412,7 @@ private static double? CalculateAngleDegrees(Vector3 from, Vector3 to)
 private static Vector3 CreateVector(Point3D from, Point3D to) =>
     new(to.X - from.X, to.Y - from.Y, to.Z - from.Z);
 \end{minted}
-\caption{Validation accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angle between the ray to the target and the ray to the measured gaze point; precision is the root-mean-square of the angle between every consecutive pair of gaze samples. Both reduce to one dot-product angle helper that returns null for degenerate rays, and both are averaged per eye before grading, so the core depends only on the resulting degree values and never on the eye-tracker geometry.}
+\caption{Calibration accuracy and precision (abbreviated from \texttt{TobiiEyeTracker\-Adapter.cs}). Accuracy is the angle to the target ray; precision is the RMS angle between consecutive sample pairs. Both are averaged per eye and reported as degree values, keeping the core free of eye-tracker geometry.}
 \label{lst:impl-validation}
 \end{listing}
 
@@ -443,7 +443,7 @@ const handlePointerMove = (event: PointerEvent) => {
   });
 };
 \end{minted}
-\caption{The browser as a gaze source (abbreviated from \texttt{ReadingPage.tsx}). When the sensing mode is \texttt{mouse}, pointer movements are normalised into the same \texttt{GazeData} shape the eye tracker produces and streamed over the WebSocket.}
+\caption{Browser as a gaze source (abbreviated from \texttt{ReadingPage.tsx}). In \texttt{mouse} sensing mode, pointer events are normalised into the same \texttt{GazeData} shape as the eye tracker and streamed over the WebSocket.}
 \label{lst:impl-mousegaze}
 \end{listing}
 
@@ -460,7 +460,7 @@ public async ValueTask SubmitMouseGazeSampleAsync(
         ShouldPublishToExternalProvider(), ShouldPublishToExternalAnalysisProvider(), gazeData);
 }
 \end{minted}
-\caption{Mouse samples join the hardware path (abbreviated from \texttt{ExperimentSessionManager.Gaze.cs}). After two guards, a mouse sample is handed to the same \texttt{UpdateGazeSample} (\cref{lst:impl-hotpath}) the Tobii adapter feeds, so the entire downstream pipeline is source-agnostic.}
+\caption{Mouse samples joining the hardware path (abbreviated from \texttt{ExperimentSessionManager.Gaze.cs}). After two guards, a mouse sample is passed to the same \texttt{UpdateGazeSample} (\cref{lst:impl-hotpath}) as the Tobii adapter, making the downstream pipeline source-agnostic.}
 \label{lst:impl-mouseingest}
 \end{listing}
 
@@ -525,7 +525,7 @@ function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnap
   };
 }
 \end{minted}
-\caption{Capturing the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor prefers the gazed-at word and degrades to a visible word and then a paragraph, storing the element's identifiers and its offset from the top of the viewport so the same position can be re-found after a reflow.}
+\caption{Capturing the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor prefers the gazed-at word, degrading to a visible word then a paragraph, and records the element's identifier and viewport offset for re-location after a reflow.}
 \label{lst:impl-anchor-capture}
 \end{listing}
 
@@ -555,7 +555,7 @@ if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
   return;
 }
 \end{minted}
-\caption{Selecting a restore mode and the two early exits (abbreviated from \texttt{usePreserveReadingContext.ts}). The intervention's declared layout effect picks semantic restart versus offset preserve; an appearance-only change at a frozen boundary needs no restore, and an offset preserve without a fresh anchor is reported as a failure rather than guessed.}
+\caption{Selecting a restore mode (abbreviated from \texttt{usePreserveReadingContext.ts}). The intervention's layout-effect declaration selects semantic restart or offset preserve; an appearance-only change at a frozen boundary skips restore, and a missing anchor is reported as a failure.}
 \label{lst:impl-restore-mode}
 \end{listing}
 
@@ -647,7 +647,7 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
   return null;                  // caller reports "failed", or scroll-only "degraded" if a stale anchor exists
 }
 \end{minted}
-\caption{Re-finding the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}). The offset-preserve path degrades from the precise sentence wrapper to the token to the enclosing block, recording which source it resolved to; the semantic-restart path uses the companion \texttt{locateSemanticRestartAnchor} to resume from the committed segment. A null result drives the failed or scroll-only degraded outcomes of \cref{fig:impl-context-decision}.}
+\caption{Re-locating the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}). The offset-preserve path degrades from sentence to token to enclosing block; the semantic-restart path calls \texttt{locateSemanticRestartAnchor}. A null result yields the failed or degraded outcome in \cref{fig:impl-context-decision}.}
 \label{lst:impl-anchor-locate}
 \end{listing}
 
@@ -682,7 +682,7 @@ const status =
     : "preserved";
 onContextPreservationChange?.({ status, anchorErrorPx, anchorSource: located.anchorSource, /* ... */ });
 \end{minted}
-\caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The reader re-finds the anchor (degrading from sentence to token to paragraph), scrolls it back to its captured offset, measures the residual error, and reports the outcome, which the backend records in the session log.}
+\caption{Restoring the reading anchor (abbreviated from \texttt{usePreserveReadingContext.ts}). The anchor is re-located (degrading from sentence to token to paragraph), scrolled to its captured offset, and the residual error is measured and reported to the session log.}
 \label{lst:impl-anchor-restore}
 \end{listing}
 
@@ -718,7 +718,7 @@ private void ResolveExperimentOrderForStart()
     // ...seed ordered[0] as the current reading content; the rest advance in order...
 }
 \end{minted}
-\caption{Resolving the running order at session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). A template runs in its authored order, or, in \texttt{random} mode, is shuffled and re-indexed for counterbalancing; either way the items are renumbered so the rest of the run is a simple ordered walk.}
+\caption{Running-order resolution at session start (abbreviated from \texttt{ExperimentSessionManager.Lifecycle.cs}). Items run in their authored order or, in \texttt{random} mode, are shuffled and re-indexed for counterbalancing; either way the rest of the run is a simple ordered walk.}
 \label{lst:impl-order}
 \end{listing}
 
@@ -760,7 +760,7 @@ public string Serialize(ExperimentReplayExport exportDocument, string format)
     return JsonSerializer.Serialize(exportDocument, _jsonOptions);
 }
 \end{minted}
-\caption{Dual-format export (abbreviated from \texttt{ExperimentReplayExportSerializer.cs}). CsvHelper writes per-event rows for spreadsheet analysis, but one row embeds the whole export as base64-encoded JSON, so the CSV remains fully replayable and both formats deserialise back to the same document.}
+\caption{Dual-format export (abbreviated from \texttt{ExperimentReplayExportSerializer.cs}). CSV rows support spreadsheet analysis; one row also embeds the full export as base64-encoded JSON, keeping the file fully replayable.}
 \label{lst:impl-export}
 \end{listing}
 
@@ -776,7 +776,7 @@ export function parseExperimentReplayExport(input: string | unknown): Experiment
   return parsed as ExperimentReplayExport;
 }
 \end{minted}
-\caption{Version-gated import (abbreviated from \texttt{experiment-replay.ts}). Before reconstruction, the front-end checks the export's structure and its manifest schema and version against the set it can interpret, so the format can evolve without an older or unknown recording being mis-rendered.}
+\caption{Version-gated import (abbreviated from \texttt{experiment-replay.ts}). The front-end validates the export's structure, schema, and version before reconstruction, allowing the format to evolve without mis-rendering unknown recordings.}
 \label{lst:impl-import}
 \end{listing}
 \FloatBarrier

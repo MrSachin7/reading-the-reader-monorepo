@@ -75,6 +75,6 @@
 \draw[rounded corners=2pt, draw=black!25] (-10.1,-5.15) rectangle (1.4,-4.05);
 \end{tikzpicture}%
 }
-\caption{The two coupled surfaces of the platform, shown schematically (not as screenshots). The participant's reading surface presents only the text, whereas the researcher's console mirrors that same text and augments it with the live gaze, a fixation heat map, and a saccade overlay derived by the core, alongside the controls that steer the session (the choice between advisory and autonomous operation and the approval of individual interventions). The two surfaces are joined by the real-time loop through the backend core, and an external decision provider may attach through the out-of-scope seam (C3). This separation, a clean reading surface for the participant and an analytic, controllable console for the researcher, is the platform's central user-facing structure.}
+\caption{The two coupled platform surfaces (schematic). The participant's reading surface shows only text; the researcher's console mirrors it with live gaze, a fixation heat map, and saccade overlays, plus session-steering controls. Both surfaces are joined through the backend real-time loop; an external decision provider may attach via the out-of-scope seam (C3).}
 \label{fig:design-twoscreen}
 \end{figure}
