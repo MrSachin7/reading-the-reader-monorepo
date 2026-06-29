@@ -6,7 +6,10 @@ This section reviews representative products across three groups that bear on th
 The survey is not exhaustive; it samples widely used products in each group to characterise prevailing capabilities and delivery models rather than to rank vendors.
 Tab.~\ref{tab:market-landscape} summarises the comparison, after which the implications for this thesis are discussed.
 
-\begin{longtable}{p{3cm}p{3cm}p{2.5cm}p{4cm}p{2.5cm}}
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{p{2.6cm}p{2.6cm}p{2.2cm}p{3.7cm}p{2.2cm}}
 \caption[Representative tools and products in the landscape.]{Representative tools and products in the adaptive reading and eye-tracking landscape, grouped by category and compared on delivery model, capabilities, and a pricing signal.}
 \label{tab:market-landscape}\\
 \toprule
@@ -31,6 +34,7 @@ Adaptive interface & Microsoft Immersive Reader & Built-in feature & Line Focus;
 E-reading customisation & Amazon Kindle settings & Device feature & Font size and appearance adjustments \cite{amazon2025kindle} & Included with device \cite{amazon2025kindle} \\
 \bottomrule
 \end{longtable}
+\endgroup
 
 Three observations follow from Tab.~\ref{tab:market-landscape}.
 First, the research-grade eye trackers and experiment software offer the sampling rates and gaze precision this thesis requires, but they are delivered as closed hardware and analysis suites priced by quotation or at several thousand euros \cite{tobii2025fusion, srresearch2025eyelink, gazepoint2025gp3, pupillabs2025neon, tobii2025prolab}, and they are oriented toward recording and post-hoc analysis rather than real-time, gaze-driven adaptation of the text being read.
@@ -47,7 +51,8 @@ Tab.~\ref{tab:capability-matrix} compares the most established of these platform
 \small
 \caption[Capability comparison with established experiment software.]{Capability comparison of established experiment-building software with the platform developed in this thesis, across the capabilities a gaze-driven reading experiment requires. Entries (Yes / Partial / No) reflect the authors' assessment of each platform's documented capabilities \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}
 \label{tab:capability-matrix}
-\begin{tabular}{p{5.2cm}cccc}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{4.5cm}cccc}
 \toprule
 Capability & Tobii Pro Lab & PsychoPy & Psychtoolbox & Reading the Reader \\
 \midrule

@@ -7,7 +7,7 @@
 \usetikzlibrary{shapes.multipart, arrows.meta}
 
 \Cref{sec:impl-session} followed one session end to end through the running code.
-This section steps back out and opens the realizations that the walkthrough named only in passing, organised by the four concerns the architecture separates (\cref{sec:design-modules}) and the research questions they answer.
+This section steps back out and opens the realisations that the walkthrough named only in passing, organised by the four concerns the architecture separates (\cref{sec:design-modules}) and the research questions they answer.
 Each highlight is deliberately selective, a mechanism with a short listing and a figure where it earns one, rather than the file-by-file detail of the walkthrough.
 
 \FloatBarrier
@@ -531,7 +531,7 @@ function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnap
 
 \paragraph{Choosing a restore strategy at commit.}
 When an intervention commits, its declared effect selects one of two restore modes (\cref{lst:impl-restore-mode}, \cref{fig:impl-context-decision}).
-A layout-affecting change (one that lists any affected presentation property) triggers a \emph{semantic restart}: because the whole document reflows, the safest reference point is not the old pixel offset but the sentence or paragraph the change committed against, which the reader re-establishes near the top of the reading area.
+A layout-affecting change (one that lists any affected presentation property) triggers a \emph{semantic restart}: because the whole document reflows, the reader first re-establishes its captured reading position at the on-screen offset it held before the change, and only if that anchor can no longer be found does it fall back to the sentence or paragraph the change committed against, realigned to that same offset.
 An appearance-only change (colour or theme) instead uses an \emph{offset preserve}, which holds the captured anchor at its exact previous offset because nothing about the layout has moved.
 Two early exits avoid needless work: an appearance-only change committed at a frozen sentence or paragraph boundary moves nothing on screen, so it is reported preserved without any restore, and an offset preserve whose anchor is missing or stale cannot be compensated and is reported failed.
 
@@ -619,7 +619,7 @@ if (restoreMode === "offset-preserve" && !hasFreshAnchor) {
 \paragraph{Locating the anchor after the reflow.}
 Once the mode is fixed, the reader must find the anchor again in a DOM the reflow may have rebuilt (\cref{lst:impl-anchor-locate}, FR9.2).
 For an offset preserve, \texttt{locateAnchor} degrades through the same three levels the capture used, in order of decreasing precision: it tries the recorded sentence, then the token, then the block, returning the first that still exists together with the source it resolved to.
-For a semantic restart, \idtt{locateSemanticRestartAnchor} instead resolves the sentence or block the intervention committed against, so the reader resumes from the start of that segment.
+For a semantic restart, the reader applies that same \texttt{locateAnchor} degradation first, so the reflow is undone by returning the captured reading position to its prior offset; only when that anchor has been rebuilt away does it fall back to \idtt{locateSemanticRestartAnchor}, which resolves the sentence or block the intervention committed against and realigns it to the same offset.
 If nothing can be located, the reader does not guess: it reports failed, or, when a stale anchor still exists, restores the previous scroll position only and reports the weaker degraded outcome with an anchor source of \texttt{scroll-only}.
 Recording the resolved source matters because it feeds directly into how strictly the next step grades the result.
 
@@ -662,8 +662,9 @@ This asymmetry encodes a deliberate judgement on our part: a coarse anchor or a 
 // After the change, re-find the anchor (mode-dependent) and scroll it back to the same
 // on-screen offset; if it cannot be found, restore scroll only and report it (FR9.2).
 const located = restoreMode === "semantic-restart"
-  ? locateSemanticRestartAnchor(content, latestIntervention)   // the sentence/paragraph the change committed against
-  : locateAnchor(content, anchor);                             // the captured anchor: token -> sentence -> block
+  ? locateAnchor(content, anchor)                              // hold the captured reading position at its prior offset...
+    ?? locateSemanticRestartAnchor(content, latestIntervention, anchor.anchorViewportOffsetPx)  // ...else the committed segment, same offset
+  : locateAnchor(content, anchor);                             // the captured anchor: sentence -> token -> block
 if (!located) { commitFailure("Anchor was unavailable or stale."); return; }   // status "failed"
 
 const view = getContainerRect(container);

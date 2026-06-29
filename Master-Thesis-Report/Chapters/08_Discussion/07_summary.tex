@@ -3,7 +3,7 @@
 
 This chapter interpreted the evidence of \cref{ch:evaluation} against the problem statement and the prior work.
 We judged the two architectural goals, modularity and researcher control, met with strong evidence, and the two runtime goals met for the paths the recorded sessions used.
-Each runtime goal carries one finding we have named openly: the automated decision path is instrumented and was exercised within budget in a single validation run but not yet at campaign scale, and the context-preserving restore moves the reader too far on small reflows.
+Each runtime goal carries one finding we have named openly: the automated decision path is instrumented and was exercised within budget in a single validation run but not yet at campaign scale, and the context-preserving restore moved the reader too far on small reflows, a finding we acted on by revising the restore to hold the captured offset, leaving a behavioural re-evaluation as the open step.
 We compared these results with the prior project prototypes, the general-purpose experiment tools, and the eye-tracking and intervention-design literature, and reduced the contribution to four design principles that carry over to other systems.
 The limitations, lessons, and future work then set the limits of the claims and pointed the way forward without claiming too much.
 \Cref{ch:conclusion} draws the thesis together and states what it has contributed.

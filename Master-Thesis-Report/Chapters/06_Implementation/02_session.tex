@@ -395,7 +395,7 @@ The quiz serves as a comprehension check: its questions probe recall of the just
 \subsection*{Finishing: sealing and replaying the record}
 
 Finishing the session ends it and seals its record.
-The researcher's \texttt{finishExperimentSession} command (\cref{lst:impl-rest-command}) lands on its FastEndpoints handler (\cref{lst:impl-endpoint}), which forwards it to the runtime authority and returns the sealed snapshot, the thin-handler shape every REST route in the system follows.
+The researcher's \idtt{finishExperimentSession} command (\cref{lst:impl-rest-command}) lands on its FastEndpoints handler (\cref{lst:impl-endpoint}), which forwards it to the runtime authority and returns the sealed snapshot, the thin-handler shape every REST route in the system follows.
 
 \begin{listing}[htbp]
 \begin{minted}{csharp}

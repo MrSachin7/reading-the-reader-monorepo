@@ -213,7 +213,8 @@ function isLayoutAffectingIntervention(intervention: InterventionEventSnapshot |
 
 function locateSemanticRestartAnchor(
   content: HTMLElement,
-  intervention: InterventionEventSnapshot | null | undefined
+  intervention: InterventionEventSnapshot | null | undefined,
+  targetOffsetPx: number
 ): LocatedAnchor {
   if (!intervention) {
     return null
@@ -226,7 +227,7 @@ function locateSemanticRestartAnchor(
         anchorSource: "sentence-anchor",
         anchorElements: sentenceElements,
         primaryElement: sentenceElements[0]!,
-        anchorViewportOffsetPx: 0,
+        anchorViewportOffsetPx: targetOffsetPx,
         reason: null,
       }
     }
@@ -241,7 +242,7 @@ function locateSemanticRestartAnchor(
         anchorSource: "block-anchor",
         anchorElements: [block],
         primaryElement: block,
-        anchorViewportOffsetPx: 0,
+        anchorViewportOffsetPx: targetOffsetPx,
         reason: intervention.committedActiveSentenceId
           ? "Sentence anchor unavailable; restarted from paragraph anchor instead."
           : null,
@@ -458,9 +459,17 @@ export function usePreserveReadingContext({
         return
       }
 
+      // For a layout reflow we first try to hold the reader's captured reading
+      // position at the on-screen offset it had before the change, so the
+      // relevant text shifts as little as possible (spatial preservation). Only
+      // when no fresh captured anchor can be re-located do we fall back to
+      // restarting the committed segment, and that fallback is itself aligned to
+      // the captured offset rather than to the top of the reading area.
+      const semanticTargetOffsetPx = anchor && hasFreshAnchor ? anchor.anchorViewportOffsetPx : 0
       const located =
         restoreMode === "semantic-restart"
-          ? locateSemanticRestartAnchor(content, latestIntervention)
+          ? (anchor && hasFreshAnchor ? locateAnchor(content, anchor) : null) ??
+            locateSemanticRestartAnchor(content, latestIntervention, semanticTargetOffsetPx)
           : anchor
             ? locateAnchor(content, anchor)
             : null

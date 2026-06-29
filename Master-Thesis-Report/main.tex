@@ -6,6 +6,14 @@
 
 \begin{document}
 
+% Absorb the occasional line that would otherwise overflow the margin by a few
+% points (last-resort interword stretch) and let long DOIs/URLs in the
+% bibliography break at their punctuation rather than running into the margin.
+\setlength{\emergencystretch}{3em}
+\setcounter{biburlnumpenalty}{7000}
+\setcounter{biburlucpenalty}{7000}
+\setcounter{biburllcpenalty}{7000}
+
 \pagenumbering{roman}
 \input{Frontmatter/Frontpage.tex}
 \pagecolor{white}

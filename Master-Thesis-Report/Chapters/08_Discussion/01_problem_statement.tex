@@ -39,7 +39,7 @@ That the reader nonetheless resumed faster despite this larger displacement is b
 This reading reconciles the two measures rather than opposing them: the highlight restores the reader's place perceptually even where the positional arithmetic overshoots, which sharpens rather than softens the case for improving the restore geometry, and it is the confound recorded in \cref{sec:eval-threats}.
 We read these findings together as support for the design choice, not as a problem with it.
 The architecture was built to make this cost visible, and it reported an unfavourable result about one strategy instead of hiding it, which is exactly what the measurable-disruption idea of \cref{sec:contributions} promised.
-Why the over-repositioning happens, and how a future restore strategy could avoid it, is covered in \cref{sec:disc-lessons} and \cref{sec:disc-future-work}.
+Why the over-repositioning happens is covered in \cref{sec:disc-lessons}; acting on it, we revised the restore so that a layout reflow holds the captured reading position at its prior on-screen offset, and a controlled re-run of the deterministic sweep confirms this removes the over-repositioning, though re-evaluating the revised restore with readers remains future work (\cref{sec:eval-context}, \cref{sec:disc-future-work}).
 
 \paragraph{RQ4 (Researcher control and experimentability): met.}
 The fourth research question asked whether the platform gives the researcher the control and the auditable record, including session replay, needed to run experiments and to compare interventions and decision strategies.

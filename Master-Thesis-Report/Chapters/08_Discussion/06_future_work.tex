@@ -3,8 +3,9 @@
 
 Each direction below answers a limitation named above rather than opening a new front, so the future work follows on from what the thesis has established.
 
-The most immediate is to fix the context-preserving restore on small reflows.
-A minor change, such as a single font-size step, moves the reader only slightly, but the semantic-restart strategy re-establishes the sentence near the top of the reading area and so moves them too far; a restore that simply keeps the captured offset would suit these small changes better.
+The most immediate is to re-evaluate the revised context-preserving restore with readers.
+The original semantic-restart strategy re-established the sentence near the top of the reading area and so, on a minor change such as a single font-size step, moved the reader too far; we have since changed it to keep the captured offset, and the deterministic sweep confirms this removes the over-repositioning (\cref{sec:eval-context}).
+What remains is to confirm that the geometric improvement translates into a behavioural one, by repeating the with-and-without reading sessions on the revised restore.
 More generally, replacing the hand-tuned line-bias constant with a Kalman filter would give the gaze mapping a proper estimate of its own uncertainty in place of a fixed discount, handling the same vertical jitter on a sounder basis \cite{kalman1960filtering}.
 
 A second direction is to run the platform in automated mode at scale.
