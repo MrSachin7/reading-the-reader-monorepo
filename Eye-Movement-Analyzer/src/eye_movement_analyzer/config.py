@@ -34,12 +34,12 @@ class EyeMovementAnalyzerConfig:
     @classmethod
     def from_env(cls) -> "EyeMovementAnalyzerConfig":
         return cls(
-            ws_url=os.getenv("EYE_MOVEMENT_ANALYZER_WS_URL", "ws://localhost:5190/ws/analysis-provider"),
+            ws_url=os.getenv("EYE_MOVEMENT_ANALYZER_WS_URL", "ws://localhost:5190/ws/module-provider"),
             provider_id=os.getenv("EYE_MOVEMENT_ANALYZER_PROVIDER_ID", "mock-python-analysis"),
             display_name=os.getenv("EYE_MOVEMENT_ANALYZER_DISPLAY_NAME", "Mock Python Eye Movement Analyzer"),
             shared_secret=os.getenv(
                 "EYE_MOVEMENT_ANALYZER_SHARED_SECRET",
-                "change-me-local-analysis-provider-secret",
+                "change-me-local-module-provider-secret",
             ),
             heartbeat_interval_seconds=max(1, _read_int("EYE_MOVEMENT_ANALYZER_HEARTBEAT_INTERVAL_SECONDS", 5)),
             reconnect_delay_seconds=max(1, _read_int("EYE_MOVEMENT_ANALYZER_RECONNECT_DELAY_SECONDS", 3)),

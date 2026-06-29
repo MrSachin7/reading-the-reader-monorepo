@@ -10,7 +10,23 @@ from typing import Any
 
 from .config import EyeMovementAnalyzerConfig
 
-PROTOCOL_VERSION = "analysis-provider.v1"
+# Generic module-provider framework protocol (outer envelope).
+MODULE_PROVIDER_PROTOCOL_VERSION = "module-provider.v1"
+# The fixation-analysis module this provider implements.
+FIXATION_ANALYSIS_MODULE_ID = "fixation-analysis"
+FIXATION_ANALYSIS_PROTOCOL_VERSION = "fixation-analysis.v1"
+
+# Inner fixation-analysis message types the backend sends to this provider.
+INBOUND_SESSION_SNAPSHOT = "sessionSnapshot"
+INBOUND_GAZE_SAMPLE = "gazeSample"
+INBOUND_READING_OBSERVATION = "readingObservation"
+INBOUND_VIEWPORT_CHANGED = "viewportChanged"
+INBOUND_STATE_CHANGED = "stateChanged"
+
+# Inner fixation-analysis message types this provider sends to the backend.
+OUTBOUND_SUBMIT_ANALYSIS = "submitAnalysis"
+OUTBOUND_PROVIDER_ERROR = "providerError"
+
 STALE_NONE = "none"
 STALE_NO_POINT = "no-point"
 STALE_POINT_STALE = "point-stale"
@@ -99,33 +115,59 @@ class MockEyeMovementAnalyzer:
         self._memory = SessionMemory()
 
     def handle_inbound_envelope(self, envelope: dict[str, Any]) -> list[dict[str, Any]]:
-        message_type = self._read_text(envelope, "type")
-        payload = self._read_object(envelope, "payload")
+        # Backend forwards module traffic inside a generic module-provider envelope:
+        # { type: "moduleProviderOutbound", sessionId, payload: { moduleId, messageType, payloadJson } }
+        # where payloadJson is the serialized inner fixation-analysis payload (a string).
+        if self._read_text(envelope, "type") != "moduleProviderOutbound":
+            return []
+
+        module_envelope = self._read_object(envelope, "payload")
+        module_id = self._read_optional_text(module_envelope, "moduleId")
+        if module_id != FIXATION_ANALYSIS_MODULE_ID:
+            return []
+
+        inner_type = self._read_optional_text(module_envelope, "messageType")
+        payload = self._decode_module_payload(module_envelope)
         session_id = self._read_optional_text(envelope, "sessionId")
 
         if session_id:
             self._memory.session_id = session_id
 
-        if message_type == "analysisProviderSessionSnapshot":
+        if inner_type == INBOUND_SESSION_SNAPSHOT:
             self._handle_session_snapshot(payload)
             return []
 
-        if message_type == "analysisProviderGazeSample":
+        if inner_type == INBOUND_GAZE_SAMPLE:
             self._memory.recent_gaze_samples.append(payload)
             return []
 
-        if message_type == "analysisProviderViewportChanged":
+        if inner_type == INBOUND_VIEWPORT_CHANGED:
             self._memory.latest_viewport = payload
             return []
 
-        if message_type == "analysisProviderStateChanged":
+        if inner_type == INBOUND_STATE_CHANGED:
             self._memory.latest_analysis_state = payload
             return []
 
-        if message_type == "analysisProviderReadingObservation":
+        if inner_type == INBOUND_READING_OBSERVATION:
             return self._handle_reading_observation(payload, session_id)
 
         return []
+
+    @staticmethod
+    def _decode_module_payload(module_envelope: dict[str, Any]) -> dict[str, Any]:
+        # Outbound module payloads arrive as a serialized JSON string (`payloadJson`).
+        raw = module_envelope.get("payloadJson")
+        if isinstance(raw, str) and raw.strip():
+            try:
+                decoded = json.loads(raw)
+            except json.JSONDecodeError:
+                return {}
+            return decoded if isinstance(decoded, dict) else {}
+
+        # Tolerate an inline object form as well.
+        value = module_envelope.get("payload")
+        return value if isinstance(value, dict) else {}
 
     def _handle_session_snapshot(self, payload: dict[str, Any]) -> None:
         previous_session_id = self._memory.session_id
@@ -166,22 +208,23 @@ class MockEyeMovementAnalyzer:
         completed_fixation, completed_saccade = self._process_observation(observation)
         analysis_state = self._build_analysis_state(observation["observedAtUnixMs"])
         correlation_id = str(uuid.uuid4())
-        envelope = self._build_envelope(
-            "analysisProviderSubmitAnalysis",
-            {
-                "providerId": self._config.provider_id,
-                "sessionId": session_id,
-                "correlationId": correlation_id,
-                "observedAtUnixMs": observation["observedAtUnixMs"],
-                "currentFixation": self._fixation_to_payload(self._memory.current_fixation),
-                "completedFixation": self._fixation_to_payload(completed_fixation),
-                "completedSaccade": self._saccade_to_payload(completed_saccade),
-                "analysisState": analysis_state,
-            },
+        submit_payload = {
+            "providerId": self._config.provider_id,
+            "sessionId": session_id,
+            "correlationId": correlation_id,
+            "observedAtUnixMs": observation["observedAtUnixMs"],
+            "currentFixation": self._fixation_to_payload(self._memory.current_fixation),
+            "completedFixation": self._fixation_to_payload(completed_fixation),
+            "completedSaccade": self._saccade_to_payload(completed_saccade),
+            "analysisState": analysis_state,
+        }
+        self._log_analysis(submit_payload, completed_fixation, completed_saccade)
+        envelope = self._build_module_inbound_envelope(
+            OUTBOUND_SUBMIT_ANALYSIS,
+            submit_payload,
             session_id=session_id,
             correlation_id=correlation_id,
         )
-        self._log_analysis(envelope, completed_fixation, completed_saccade)
         return [envelope]
 
     def _process_observation(self, observation: dict[str, Any]) -> tuple[FixationState | None, SaccadeState | None]:
@@ -383,36 +426,62 @@ class MockEyeMovementAnalyzer:
 
     def build_hello_envelope(self) -> dict[str, Any]:
         return self._build_envelope(
-            "analysisProviderHello",
+            "moduleProviderHello",
             {
                 "providerId": self._config.provider_id,
                 "displayName": self._config.display_name,
-                "protocolVersion": PROTOCOL_VERSION,
+                "protocolVersion": MODULE_PROVIDER_PROTOCOL_VERSION,
                 "authToken": self._config.shared_secret,
+                "modules": [
+                    {
+                        "moduleId": FIXATION_ANALYSIS_MODULE_ID,
+                        "protocolVersion": FIXATION_ANALYSIS_PROTOCOL_VERSION,
+                        "capabilities": None,
+                    }
+                ],
             },
         )
 
     def build_heartbeat_envelope(self) -> dict[str, Any]:
         return self._build_envelope(
-            "analysisProviderHeartbeat",
+            "moduleProviderHeartbeat",
             {
                 "providerId": self._config.provider_id,
-                "protocolVersion": PROTOCOL_VERSION,
+                "protocolVersion": MODULE_PROVIDER_PROTOCOL_VERSION,
                 "sentAtUnixMs": now_unix_ms(),
             },
             session_id=self._memory.session_id,
         )
 
     def build_error_envelope(self, code: str, message: str, detail: str | None = None) -> dict[str, Any]:
-        return self._build_envelope(
-            "analysisProviderError",
+        # Module-level errors travel as an inbound fixation-analysis providerError message.
+        return self._build_module_inbound_envelope(
+            OUTBOUND_PROVIDER_ERROR,
             {
-                "providerId": self._config.provider_id,
                 "code": code,
                 "message": message,
                 "detail": detail,
             },
             session_id=self._memory.session_id,
+        )
+
+    def _build_module_inbound_envelope(
+        self,
+        message_type: str,
+        module_payload: dict[str, Any],
+        *,
+        session_id: str | None = None,
+        correlation_id: str | None = None,
+    ) -> dict[str, Any]:
+        return self._build_envelope(
+            "moduleProviderInbound",
+            {
+                "moduleId": FIXATION_ANALYSIS_MODULE_ID,
+                "messageType": message_type,
+                "payload": module_payload,
+            },
+            session_id=session_id,
+            correlation_id=correlation_id,
         )
 
     def _build_envelope(
@@ -425,7 +494,7 @@ class MockEyeMovementAnalyzer:
     ) -> dict[str, Any]:
         return {
             "type": message_type,
-            "protocolVersion": PROTOCOL_VERSION,
+            "protocolVersion": MODULE_PROVIDER_PROTOCOL_VERSION,
             "providerId": self._config.provider_id,
             "sessionId": session_id,
             "correlationId": correlation_id,
@@ -500,17 +569,17 @@ class MockEyeMovementAnalyzer:
 
     def _log_analysis(
         self,
-        envelope: dict[str, Any],
+        submit_payload: dict[str, Any],
         completed_fixation: FixationState | None,
         completed_saccade: SaccadeState | None,
     ) -> None:
-        payload = envelope["payload"]
+        analysis_state = submit_payload["analysisState"]
         log_payload = {
             "providerId": self._config.provider_id,
-            "sessionId": payload["sessionId"],
-            "observedAtUnixMs": payload["observedAtUnixMs"],
-            "currentTokenId": payload["analysisState"].get("currentTokenId"),
-            "currentTokenDurationMs": payload["analysisState"].get("currentTokenDurationMs"),
+            "sessionId": submit_payload["sessionId"],
+            "observedAtUnixMs": submit_payload["observedAtUnixMs"],
+            "currentTokenId": analysis_state.get("currentTokenId"),
+            "currentTokenDurationMs": analysis_state.get("currentTokenDurationMs"),
             "completedFixation": self._fixation_to_payload(completed_fixation),
             "completedSaccade": self._saccade_to_payload(completed_saccade),
         }
