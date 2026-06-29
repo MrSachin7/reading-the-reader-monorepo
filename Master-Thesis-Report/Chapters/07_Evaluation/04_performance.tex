@@ -4,8 +4,10 @@
 The second research question concerns the sensing pipeline: whether a real Tobii stream is converted into oculomotor events within a latency budget that preserves live adaptation, in a manner that is inspectable and reproducible.
 We report the sensing throughput and validity first, then the transport latency against the budget fixed in \cref{sec:non-functional-requirements}.
 
-Across the eight sessions the eye tracker delivered a steady stream at its rated rate.
-The achieved sampling rate, computed from the device timestamps, lay between \SI{89.4}{\hertz} and \SI{90.1}{\hertz}, and the gaze-validity rate ranged from 92.5\% to 98.0\%.
+Across the eight sessions the eye tracker delivered a steady stream close to its rated rate.
+The achieved sampling rate, computed from the device timestamps, held at a mean of \SI{89.9}{\hertz} with a standard deviation of \SI{0.2}{\hertz} across the eight sessions, and every session stayed within \SI{0.6}{\hertz} of the tracker's nominal \SI{90}{\hertz}, a deviation small enough to read as a stable real-time stream rather than one drifting from its rated rate.
+The gaze-validity rate, defined here as the fraction of samples in which at least one eye was reported valid by the tracker, ranged from 92.5\% to 98.0\% with a mean of 95.6\%.
+Because gaze validity depends on the reading task and the conditions as much as on the individual reader, we note that these rates were measured during the reading sessions themselves (\cref{sec:eval-setup}): under continuous, self-paced reading of an expository Markdown article on the screen-mounted Tobii, with each session gated by a passing nine-point calibration validation, rather than under a constrained or chin-rested fixation task, so they should be read as the validity obtained during naturalistic reading.
 \Cref{fig:eval-sensing} shows the achieved rate and validity per session, and \cref{fig:eval-intersample} shows the inter-sample interval, which clusters tightly at the nominal period of \SI{11.1}{\milli\second}.
 The calibration that gated each session, the sub-flow shown in \cref{fig:impl-calibration}, passed with an average accuracy between \ang{0.30} and \ang{0.69} and an average precision between \ang{0.08} and \ang{0.33}.
 

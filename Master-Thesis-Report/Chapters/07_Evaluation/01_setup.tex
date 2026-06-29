@@ -5,10 +5,10 @@ The evidence in this chapter comes from three sources: the automated test suite 
 
 The reading sessions were run with a Tobii eye tracker (model \texttt{IS4\_Large\_Peripheral}) on a 2560$\times$1440 display, calibrated before each session with a nine-point screen-based procedure gated on a passing validation.
 The platform runs as a single-machine deployment: the backend and both browser surfaces, the participant reader and the researcher console, executed on one host, so the traffic between each client and the backend travels over the local loopback rather than a network, which is the intended single-operator setting and the context in which the latency of \cref{sec:eval-performance} should be read.
-Four participants each read an expository Markdown article under two conditions, namely with and without the context-preserving restore enabled, giving eight sessions.
+Four participants each read an expository Markdown article under two conditions (with and without the context-preserving restore enabled), giving eight sessions (4 participants $\times$ 2 conditions $=$ 8).
 \Cref{tab:eval-sessions} summarises them.
 All eight sessions used the eye tracker as the sensing source, had their eye-movement analysis served by the external provider of \cref{sec:eval-modularity}, and applied typographic interventions manually through the researcher console; no automated decision strategy was active during them.
-We additionally recorded one session under an advisory decision strategy, used only to exercise the decision-path instrumentation of \cref{sec:eval-performance} and kept separate from the with-and-without comparison, so the eight sessions in \cref{tab:eval-sessions} remain a clean manual-mode dataset.
+Separately from these eight, we recorded one further session under an advisory decision strategy, used only to exercise the decision-path instrumentation of \cref{sec:eval-performance} and kept out of the with-and-without comparison, so the eight sessions in \cref{tab:eval-sessions} remain a clean manual-mode dataset.
 The physical two-screen arrangement is shown in \cref{fig:eval-rig}.
 
 \begin{figure}[htbp]
