@@ -469,7 +469,7 @@ public async ValueTask SubmitMouseGazeSampleAsync(
 \label{sec:impl-context}
 
 RQ3 asks how a typographic micro-intervention can change the text while preserving the reader's context, the recovery concern raised in the literature \cite{jensen2025context}.
-A change such as a larger font or a narrower measure reflows the entire document, so the line a participant was reading moves to a new position on screen, and without compensation the reader is left hunting for their place in the middle of an experiment.
+A change such as a larger font or a narrower measure reflows the entire document, so the line, that a participant was reading, moves to a new position on screen, and without compensation, the reader is left hunting for their place in the middle of an experiment.
 \Cref{sec:impl-session} surfaced one half of our answer as an operator control: appearance changes (colour, theme) commit immediately, but a layout-changing intervention (font family, size, line width, line height, or letter spacing) waits for a chosen commit boundary so the reflow lands at a natural reading break rather than mid-line.
 This section opens the other half, namely what happens to the reader's position when the reflow does land, which we realise in the participant reader as a continuous \emph{capture-and-restore} around every change (FR9).
 
