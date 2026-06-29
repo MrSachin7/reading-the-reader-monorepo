@@ -37,7 +37,7 @@ class EyeMovementAnalyzerClient:
             await asyncio.sleep(self._config.reconnect_delay_seconds)
 
     async def _run_single_connection(self) -> None:
-        LOGGER.info("Connecting to analysis-provider websocket at %s", self._config.ws_url)
+        LOGGER.info("Connecting to module-provider websocket at %s", self._config.ws_url)
         async with websockets.connect(self._config.ws_url) as websocket:
             await self._send_json(websocket, self._analyzer.build_hello_envelope())
             heartbeat_task = asyncio.create_task(self._heartbeat_loop(websocket))
@@ -58,13 +58,16 @@ class EyeMovementAnalyzerClient:
 
     async def _handle_inbound_message(self, websocket: Any, envelope: dict[str, Any]) -> None:
         message_type = envelope.get("type")
-        if message_type == "analysisProviderWelcome":
+        if message_type == "moduleProviderWelcome":
             self._registered = True
-            LOGGER.info("Analysis provider registration accepted by backend.")
+            LOGGER.info(
+                "Module provider registration accepted by backend. Accepted modules: %s",
+                (envelope.get("payload") or {}).get("acceptedModules"),
+            )
             return
 
-        if message_type == "analysisProviderError":
-            LOGGER.warning("Backend analysis provider error: %s", envelope.get("payload"))
+        if message_type == "moduleProviderError":
+            LOGGER.warning("Backend module provider error: %s", envelope.get("payload"))
             return
 
         try:

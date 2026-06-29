@@ -2,21 +2,20 @@
 
 This service is a mock external eye movement analysis provider for the Reading The Reader thesis platform.
 
-It connects to the backend analysis-provider websocket at `/ws/analysis-provider`, consumes browser-authored reading gaze observations, and submits mock fixation and saccade analysis back to the backend. It does not implement physiological eye movement classification. Instead, it imitates an external analysis engine while preserving the public integration boundary for future teams.
+It connects to the backend module-provider websocket at `/ws/module-provider` and registers as the `fixation-analysis` module. It consumes browser-authored reading gaze observations and submits mock fixation and saccade analysis back to the backend. It does not implement physiological eye movement classification. Instead, it imitates an external analysis engine while preserving the public integration boundary for future teams.
 
 ## What It Does
 
-- registers itself with the backend using `analysisProviderHello`
-- sends regular `analysisProviderHeartbeat` messages
-- listens for:
-  - `analysisProviderSessionSnapshot`
-  - `analysisProviderReadingObservation`
-  - `analysisProviderGazeSample`
-  - `analysisProviderViewportChanged`
-  - `analysisProviderStateChanged`
-  - `analysisProviderError`
-- derives token-level reading fixations and saccades from `analysisProviderReadingObservation`
-- submits authoritative analysis with `analysisProviderSubmitAnalysis`
+- registers with the backend using `moduleProviderHello`, declaring the `fixation-analysis` module (protocol `fixation-analysis.v1`) on the framework protocol `module-provider.v1`
+- waits for `moduleProviderWelcome`, then sends regular `moduleProviderHeartbeat` messages
+- receives `moduleProviderOutbound` envelopes carrying the inner fixation-analysis message types:
+  - `sessionSnapshot`
+  - `readingObservation`
+  - `gazeSample`
+  - `viewportChanged`
+  - `stateChanged`
+- derives token-level reading fixations and saccades from `readingObservation`
+- submits authoritative analysis in a `moduleProviderInbound` envelope with inner message type `submitAnalysis`
 
 ## Setup
 
@@ -36,9 +35,9 @@ Copy `.env.example` into your preferred local environment setup or export the va
 Important values:
 
 - `EYE_MOVEMENT_ANALYZER_WS_URL`
-  - default: `ws://localhost:5190/ws/analysis-provider`
+  - default: `ws://localhost:5190/ws/module-provider`
 - `EYE_MOVEMENT_ANALYZER_SHARED_SECRET`
-  - must match backend `ExternalAnalysisProvider.SharedSecret`
+  - must match backend `ModuleProvider:SharedSecret`; when that section is absent from `appsettings.json` the backend uses its default `change-me-local-module-provider-secret`
 - `EYE_MOVEMENT_ANALYZER_PROVIDER_ID`
   - default: `mock-python-analysis`
 
