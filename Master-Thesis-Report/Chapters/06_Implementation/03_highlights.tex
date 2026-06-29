@@ -533,6 +533,7 @@ function measureAnchor(container: HTMLElement, content: HTMLElement): AnchorSnap
 When an intervention commits, its declared effect selects one of two restore modes (\cref{lst:impl-restore-mode}, \cref{fig:impl-context-decision}).
 A layout-affecting change (one that lists any affected presentation property) triggers a \emph{semantic restart}: because the whole document reflows, the reader first re-establishes its captured reading position at the on-screen offset it held before the change, and only if that anchor can no longer be found does it fall back to the sentence or paragraph the change committed against, realigned to that same offset.
 An appearance-only change (colour or theme) instead uses an \emph{offset preserve}, which holds the captured anchor at its exact previous offset because nothing about the layout has moved.
+Both modes therefore aim to hold the reader's position at the offset it held before the change; the layout mode differs only in carrying the committed segment as a fallback reference for the rare case where the captured anchor is rebuilt away, and in being graded against a wider tolerance because a full reflow is harder to undo exactly (\cref{fig:impl-context-decision}).
 Two early exits avoid needless work: an appearance-only change committed at a frozen sentence or paragraph boundary moves nothing on screen, so it is reported preserved without any restore, and an offset preserve whose anchor is missing or stale cannot be compensated and is reported failed.
 
 \begin{listing}[htbp]
@@ -647,7 +648,7 @@ function locateAnchor(content: HTMLElement, anchor: AnchorSnapshot): LocatedAnch
   return null;                  // caller reports "failed", or scroll-only "degraded" if a stale anchor exists
 }
 \end{minted}
-\caption{Re-locating the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}): offset-preserve degrades sentence → token → block; semantic-restart resolves via \texttt{locateSemanticRestartAnchor}; null yields the failed or degraded outcome (\cref{fig:impl-context-decision}).}
+\caption{Re-locating the anchor after the reflow (abbreviated from \texttt{usePreserveReadingContext.ts}): offset-preserve degrades sentence → token → block; semantic-restart re-locates that captured anchor first and falls back to \texttt{locateSemanticRestartAnchor} only if it is gone; null yields the failed or degraded outcome (\cref{fig:impl-context-decision}).}
 \label{lst:impl-anchor-locate}
 \end{listing}
 
