@@ -43,47 +43,49 @@ Each outcome, including its graded status, is written into the session record, s
 \end{figure}
 
 The per-intervention record above is observational: each outcome comes from whichever interventions the four participants happened to receive, so it covers neither every intervention type nor a controlled range of magnitudes.
-To characterise the displacement a reflow induces independently of which interventions a session happened to apply, we drove the same restore mechanism over a deterministic sweep.
-A measurement harness mounts the participant reader (\cref{sec:impl-context}) outside a live session, renders the reading document at the baseline typography, and fires each built-in layout intervention from every page of the paginated document, reading back the values the restore hook emits.
-Because the harness exercises the same \idtt{usePreserveReadingContext} path as a live session, the induced displacement and the residual it reports are the mechanism's own rather than a reimplementation, and the harness and its analysis are committed with the source so the figures are reproducible.
-The eleven layout interventions crossed with six reading positions yield 66 trials.
+To measure how far an intervention actually moves the reader's position, and whether preservation reduces that movement, we drove the restore mechanism over a deterministic sweep with preservation first off and then on.
+A measurement harness mounts the participant reader (\cref{sec:impl-context}) outside a live session, renders the document at the baseline typography, and fires each built-in layout intervention from every page of the paginated document in both conditions, recording the on-screen displacement of the word the reader was on (the change in that word's offset from the top of the reading area across the intervention).
+Because the harness exercises the same \idtt{usePreserveReadingContext} path as a live session, the displacement it reports is the mechanism's own rather than a reimplementation, and the harness and its analysis are committed with the source so the figures are reproducible.
+The eleven layout interventions crossed with six reading positions yield 66 trials per condition.
 
-\Cref{tab:eval-displacement} reports, for each intervention, the displacement the reflow induced at the reader's position before any compensation, in pixels and in baseline reading lines (one line is \SI{32.4}{px} at the baseline typography).
-The median induced displacement was \SI{32.4}{px}, exactly one reading line, and the distribution was strongly intervention-dependent: a six-point font enlargement moved the reading position by a median of 2.73 lines, whereas a line-height increase of 0.3 moved it by 0.08 of a line.
-Pooled across interventions the displacement reached \SI{91}{px} at the 95th percentile (about 2.8 lines) and \SI{153}{px} at most (about 4.7 lines).
-This central value is of the same order as the \SI{38}{px} median induced displacement measured from the live sessions above, so the controlled sweep and the observational record agree on the scale of the disruption the mechanism must absorb.
+\Cref{tab:eval-displacement} reports the word's displacement under three conditions, the median over the six reading positions: without preservation, with the original restore, and with the revised restore.
+Without preservation the reflow moved the reader's word by a median of \SI{34}{px}, about one line and of the same order as the \SI{38}{px} seen in the live sessions, though the effect was heavy-tailed: a six-point font enlargement moved it by \SI{142}{px} (over four lines), and a line-width reduction, which also repaginates the document, by \SI{188}{px}.
+This is the disruption the restore must absorb.
 
-Run against the original restore strategy, the sweep reproduces the over-repositioning of \cref{fig:eval-overreposition} under controlled conditions.
-The reader's position remained on screen in every trial, but the residual after the restore was a median of \SI{138}{px} and only 16 of the 66 outcomes were graded preserved, the restore having moved the position further than the reflow itself had.
-We therefore revised the restore so that a layout reflow returns the reader's captured reading position to the on-screen offset it held before the change, rather than re-establishing the committed segment at the top of the reading area (\cref{sec:impl-context}).
-Re-running the identical sweep against the revised strategy, the induced displacement of \cref{tab:eval-displacement} is unchanged (the reflow is the same), but the residual after the restore falls to a median of \SI{31}{px}, one reading line, and 61 of the 66 outcomes are graded preserved.
-A direct comparison of the relevant word's final position with preservation off and on confirms the change: with the revised restore the word is moved further than the bare reflow in only 4 of 63 trials, against 46 of 62 before, so preservation now holds the reader's position rather than over-shooting it.
-The residual that remains is bounded by the sentence granularity at which the anchor is realigned, and line-width changes, which repaginate the document, lie outside what a within-page restore can compensate; we return to both in \cref{ch:discussion}.
+With the original restore strategy, which re-established the committed sentence at the top of the reading area, preservation made the displacement markedly worse rather than better.
+The word's median displacement rose to \SI{104}{px}, three times the no-preservation figure, and the restore moved the word further than the bare reflow in 45 of the 66 trials, the over-repositioning of \cref{fig:eval-overreposition} reproduced under controlled conditions.
+The effect was starkest for the smallest changes: a two-point font step that moves the word only \SI{24}{px} on its own was thrown \SI{168}{px}, and a letter-spacing change that moves it not at all was thrown \SI{115}{px}, because every change snapped the committed sentence to the top regardless of how far the reader actually sat from it.
+This is why we revised the restore.
+
+The revised restore returns the captured reading position to the on-screen offset it held before the change (\cref{sec:impl-context}).
+It removes the over-repositioning, moving the word further than the reflow in only 4 of the 66 trials, and brings the median displacement back to \SI{32}{px}, at or below the no-preservation baseline.
+The improvement is concentrated where the reflow is large: the six-point enlargement reads \SI{142}{px} without preservation, \SI{225}{px} with the original restore, and \SI{43}{px} with the revised one, whereas interventions that already move the word by about a line or less return to roughly their no-preservation value, a font reduction is left marginally worse, and line-width changes repaginate and lie outside what a within-page restore can compensate.
+The mechanism's own graded residual, measured against the sentence the restore realigns rather than against the word, is correspondingly more favourable (a median of \SI{31}{px} with 61 of 66 outcomes graded preserved, against \SI{138}{px} and 16 of 66 for the original strategy); we read the stricter word-level displacement of \cref{tab:eval-displacement} as the primary measure and return to both in \cref{ch:discussion}.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption[Induced displacement per intervention from the deterministic sweep.]{Displacement the reflow induced at the reader's position before any compensation, per intervention, from the 66-trial deterministic sweep. The two pixel columns give the median and 95th percentile of the displacement; the lines column expresses the median in baseline reading lines (one line is \SI{32.4}{px}). The final column counts the trials in which the reader's committed position remained on screen after the restore.}
+\caption[Reading-position displacement under three restore conditions.]{Median on-screen displacement of the word the reader was on, under three conditions: without preservation, with the original (top-of-area) semantic-restart, and with the revised (offset-preserve) restore, per intervention, from the 66-trial deterministic sweep run against each restore version. Displacement is the change in that word's offset from the top of the reading area, in pixels (one reading line is \SI{32.4}{px}). Lower is better. The original restore inflates displacement, because it snaps the committed sentence to the top of the reading area; the revised restore returns it to at or below the no-preservation baseline, except for line-width changes, which repaginate and are not compensated.}
 \label{tab:eval-displacement}
-\begin{tabular}{l r r r r r}
+\begin{tabular}{l r r r r}
 \toprule
- & & \multicolumn{2}{c}{\textbf{Displacement (px)}} & \textbf{Median} & \textbf{Position} \\
-\cmidrule(lr){3-4}
-\textbf{Intervention} & \textbf{n} & \textbf{Median} & \textbf{p95} & \textbf{(lines)} & \textbf{on screen} \\
+ & & \textbf{Without} & \multicolumn{2}{c}{\textbf{With preservation}} \\
+\cmidrule(lr){4-5}
+\textbf{Intervention} & \textbf{n} & \textbf{preservation} & \textbf{Original} & \textbf{Revised} \\
 \midrule
-Font size $+2$\,px (18\,$\to$\,20)      & 6 & 13.3 & 49.7  & 0.41 & 6/6 \\
-Font size $+6$\,px (18\,$\to$\,24)      & 6 & 88.4 & 145.1 & 2.73 & 6/6 \\
-Font size $-2$\,px (18\,$\to$\,16)      & 6 & 79.2 & 81.9  & 2.44 & 6/6 \\
-Line height $+0.3$ (1.8\,$\to$\,2.1)    & 6 & 2.7  & 35.3  & 0.08 & 6/6 \\
-Line height $-0.3$ (1.8\,$\to$\,1.5)    & 6 & 61.3 & 87.0  & 1.89 & 6/6 \\
-Line width $-120$\,px (680\,$\to$\,560) & 6 & 16.2 & 32.4  & 0.50 & 6/6 \\
-Line width $+80$\,px (680\,$\to$\,760)  & 6 & 64.8 & 64.8  & 2.00 & 6/6 \\
-Letter spacing $+0.06$\,em              & 6 & 32.4 & 32.4  & 1.00 & 6/6 \\
-Letter spacing $+0.12$\,em              & 6 & 32.4 & 56.7  & 1.00 & 6/6 \\
-Font family $\to$ Inter                 & 6 & 31.4 & 55.7  & 0.97 & 6/6 \\
-Font family $\to$ Space Grotesk         & 6 & 32.4 & 56.7  & 1.00 & 6/6 \\
+Font size $+2$\,px (18\,$\to$\,20)      & 6 & 24.5  & 168.3 & 24.5  \\
+Font size $+6$\,px (18\,$\to$\,24)      & 6 & 142.4 & 225.2 & 43.0  \\
+Font size $-2$\,px (18\,$\to$\,16)      & 6 & 38.0  & 82.7  & 54.0  \\
+Line height $+0.3$ (1.8\,$\to$\,2.1)    & 6 & 35.4  & 124.7 & 35.4  \\
+Line height $-0.3$ (1.8\,$\to$\,1.5)    & 6 & 34.5  & 53.7  & 31.7  \\
+Line width $-120$\,px (680\,$\to$\,560) & 6 & 188.2 & 156.2 & 188.2 \\
+Line width $+80$\,px (680\,$\to$\,760)  & 6 & 161.9 & 148.6 & 148.6 \\
+Letter spacing $+0.06$\,em              & 6 & 0.0   & 115.0 & 0.0   \\
+Letter spacing $+0.12$\,em              & 6 & 32.4  & 154.8 & 16.3  \\
+Font family $\to$ Inter                 & 6 & 1.0   & 31.3  & 1.0   \\
+Font family $\to$ Space Grotesk         & 6 & 0.0   & 49.5  & 0.0   \\
 \midrule
-\textbf{Overall}                        & 66 & 32.4 & 91.0 & 1.00 & 66/66 \\
+\textbf{Overall}                        & 66 & 34.3 & 104.4 & 32.4 \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -29,7 +29,26 @@ hook driven through the real `ReaderShell`, not a reimplementation.
   reading position to its prior on-screen offset, so ON <= OFF).
 - `analyze.mjs` — aggregates the raw trials into per-intervention statistics and
   writes `results/summary.{json,md}` plus `results/table-body.tex`.
+- `analyze-onoff.mjs` — aggregates `onoff-raw.json` into a without/with
+  displacement table (`onoff-summary.{json,md}`, `onoff-table-body.tex`).
+- `analyze-three.mjs` — builds the three-condition table used in the Evaluation
+  chapter (without preservation / original restore / revised restore) from
+  `onoff-original-raw.json` and `onoff-revised-raw.json`. To regenerate those two
+  inputs, run `sweep-onoff.mjs` against each restore version: the original is
+  git `fb367fc` of `usePreserveReadingContext.ts`, the revised is `HEAD`
+  (`git checkout <rev> -- <hook>`, restart `next dev`, run the sweep, copy
+  `onoff-raw.json` to the matching `onoff-{original,revised}-raw.json`).
 - `diag.mjs` — single-trial diagnostic used to confirm the restore geometry.
+
+Note on what the numbers support: the revised restore **removes the
+over-repositioning** (ON moves the word further than OFF in 4/63 trials, vs
+46/62 before) and reduces displacement where the reflow is large (font +6px:
+142->43 px median), but does **not** uniformly reduce displacement: where the
+reflow already moves the word by about a line or less it is left ~unchanged, a
+font reduction is marginally worse, and line-width changes repaginate and are
+not compensated. The hook's own `anchorErrorPx`/grade is sentence-anchored and
+reads more favourably than the word-level displacement; the word-level numbers
+are the stricter measure reported in the thesis.
 
 ## Run
 

@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "generatedAtUtc": "2026-06-29T12:07:59.345Z",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "baselineLinePx": 32.4,
+    "pageCount": 6,
+    "trialCount": 66,
+    "note": "displacement = |final on-screen offset of the relevant reading word - its offset before the intervention|"
+  },
+  "overall": {
+    "n": 66,
+    "offMedian": 34.3,
+    "offP95": 238.8,
+    "onMedian": 32.4,
+    "onP95": 249.7,
+    "onWorseThanOff": 4
+  },
+  "perIntervention": [
+    {
+      "label": "Font size +2px (18->20)",
+      "n": 6,
+      "offMedian": 24.5,
+      "offP95": 86.6,
+      "onMedian": 24.5,
+      "onP95": 55.6,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Font size +6px (18->24)",
+      "n": 6,
+      "offMedian": 142.4,
+      "offP95": 196.3,
+      "onMedian": 43,
+      "onP95": 109.8,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Font size -2px (18->16)",
+      "n": 6,
+      "offMedian": 38,
+      "offP95": 68.3,
+      "onMedian": 54,
+      "onP95": 79.2,
+      "onWorseThanOff": 4
+    },
+    {
+      "label": "Line height +0.3 (1.8->2.1)",
+      "n": 6,
+      "offMedian": 35.4,
+      "offP95": 40.8,
+      "onMedian": 35.4,
+      "onP95": 40.1,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Line height -0.3 (1.8->1.5)",
+      "n": 6,
+      "offMedian": 34.5,
+      "offP95": 39.7,
+      "onMedian": 31.7,
+      "onP95": 38.4,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Line width -120px (680->560)",
+      "n": 6,
+      "offMedian": 188.1,
+      "offP95": 464.4,
+      "onMedian": 188.1,
+      "onP95": 345.4,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Line width +80px (680->760)",
+      "n": 6,
+      "offMedian": 161.9,
+      "offP95": 316.6,
+      "onMedian": 148.6,
+      "onP95": 317.6,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Letter spacing +0.06em",
+      "n": 6,
+      "offMedian": 0,
+      "offP95": 56.7,
+      "onMedian": 0,
+      "onP95": 32.7,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Letter spacing +0.12em",
+      "n": 6,
+      "offMedian": 32.4,
+      "offP95": 81,
+      "onMedian": 16.3,
+      "onP95": 32.4,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Font family -> Inter",
+      "n": 6,
+      "offMedian": 1,
+      "offP95": 25.3,
+      "onMedian": 1,
+      "onP95": 24.5,
+      "onWorseThanOff": 0
+    },
+    {
+      "label": "Font family -> Space Grotesk",
+      "n": 6,
+      "offMedian": 0,
+      "offP95": 48.6,
+      "onMedian": 0,
+      "onP95": 24.6,
+      "onWorseThanOff": 0
+    }
+  ]
+}

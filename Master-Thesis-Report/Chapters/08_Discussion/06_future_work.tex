@@ -6,6 +6,7 @@ Each direction below answers a limitation named above rather than opening a new 
 The most immediate is to re-evaluate the revised context-preserving restore with readers.
 The original semantic-restart strategy re-established the sentence near the top of the reading area and so, on a minor change such as a single font-size step, moved the reader too far; we have since changed it to keep the captured offset, and the deterministic sweep confirms this removes the over-repositioning (\cref{sec:eval-context}).
 What remains is to confirm that the geometric improvement translates into a behavioural one, by repeating the with-and-without reading sessions on the revised restore.
+That study should also separate the two components the earlier sessions bundled, by crossing the revised restore with and without the highlight cue: because the resume-time gain appeared even while the original geometry was over-repositioning, the evidence so far points to the highlight, rather than the positional restore, as the larger contributor to recovery, and only an unbundled comparison can settle which of the two matters more.
 More generally, replacing the hand-tuned line-bias constant with a Kalman filter would give the gaze mapping a proper estimate of its own uncertainty in place of a fixed discount, handling the same vertical jitter on a sounder basis \cite{kalman1960filtering}.
 
 A second direction is to run the platform in automated mode at scale.

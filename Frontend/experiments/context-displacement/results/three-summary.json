@@ -1,0 +1,89 @@
+{
+  "overall": {
+    "n": 66,
+    "without": 34.3,
+    "withOriginal": 104.4,
+    "withRevised": 32.4,
+    "overRepositionOriginal": 45,
+    "overRepositionRevised": 4
+  },
+  "perIntervention": [
+    {
+      "label": "Font size +2px (18->20)",
+      "n": 6,
+      "without": 24.5,
+      "withOriginal": 168.3,
+      "withRevised": 24.5
+    },
+    {
+      "label": "Font size +6px (18->24)",
+      "n": 6,
+      "without": 142.4,
+      "withOriginal": 225.2,
+      "withRevised": 43
+    },
+    {
+      "label": "Font size -2px (18->16)",
+      "n": 6,
+      "without": 38,
+      "withOriginal": 82.7,
+      "withRevised": 54
+    },
+    {
+      "label": "Line height +0.3 (1.8->2.1)",
+      "n": 6,
+      "without": 35.4,
+      "withOriginal": 124.7,
+      "withRevised": 35.4
+    },
+    {
+      "label": "Line height -0.3 (1.8->1.5)",
+      "n": 6,
+      "without": 34.5,
+      "withOriginal": 53.7,
+      "withRevised": 31.7
+    },
+    {
+      "label": "Line width -120px (680->560)",
+      "n": 6,
+      "without": 188.2,
+      "withOriginal": 156.2,
+      "withRevised": 188.2
+    },
+    {
+      "label": "Line width +80px (680->760)",
+      "n": 6,
+      "without": 161.9,
+      "withOriginal": 148.6,
+      "withRevised": 148.6
+    },
+    {
+      "label": "Letter spacing +0.06em",
+      "n": 6,
+      "without": 0,
+      "withOriginal": 115,
+      "withRevised": 0
+    },
+    {
+      "label": "Letter spacing +0.12em",
+      "n": 6,
+      "without": 32.4,
+      "withOriginal": 154.8,
+      "withRevised": 16.3
+    },
+    {
+      "label": "Font family -> Inter",
+      "n": 6,
+      "without": 1,
+      "withOriginal": 31.3,
+      "withRevised": 1
+    },
+    {
+      "label": "Font family -> Space Grotesk",
+      "n": 6,
+      "without": 0,
+      "withOriginal": 49.5,
+      "withRevised": 0
+    }
+  ]
+}
