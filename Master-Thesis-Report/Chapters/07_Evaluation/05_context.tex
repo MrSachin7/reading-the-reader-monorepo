@@ -63,6 +63,15 @@ It removes the over-repositioning, moving the word further than the reflow in on
 The improvement is concentrated where the reflow is large: the six-point enlargement reads \SI{142}{px} without preservation, \SI{225}{px} with the original restore, and \SI{43}{px} with the revised one, whereas interventions that already move the word by about a line or less return to roughly their no-preservation value, a font reduction is left marginally worse, and line-width changes repaginate and lie outside what a within-page restore can compensate.
 The mechanism's own graded residual, measured against the sentence the restore realigns rather than against the word, is correspondingly more favourable (a median of \SI{31}{px} with 61 of 66 outcomes graded preserved, against \SI{138}{px} and 16 of 66 for the original strategy); we read the stricter word-level displacement of \cref{tab:eval-displacement} as the primary measure and return to both in \cref{ch:discussion}.
 
+\Cref{fig:eval-overreposition-fixed} places both restore versions on the axes of \cref{fig:eval-overreposition}: the original residual sits above the line of equality across the sweep, while the revised residual returns onto or below it, with the few remaining overshoots confined to small displacements near the origin.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.68\linewidth]{Chapters/07_Evaluation/eval-restore-overreposition-fixed.pdf}
+\caption[Restore residual against induced displacement, original versus revised restore.]{Restore residual against the induced displacement for both restore versions, from the \mbox{66-trial} deterministic sweep (\cref{tab:eval-displacement}); each point is one intervention--position trial for which the reading word stayed on screen in both conditions. The original restore (circles) lies above the line of equality for most trials (45 over-repositions), whereas the revised restore (triangles) returns onto or below it (4). This reproduces the over-repositioning of \cref{fig:eval-overreposition} under controlled conditions and shows the revision removing it.}
+\label{fig:eval-overreposition-fixed}
+\end{figure}
+
 \begin{table}[htbp]
 \centering
 \small
