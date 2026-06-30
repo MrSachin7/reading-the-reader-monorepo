@@ -64,7 +64,23 @@
 \printbibliography[heading=bibintoc,title={Bibliography}]
 \cleardoublepage 
 \appendix
+% The appendices form a self-contained section with their own page numbering,
+% restarting at 1 so the first appendix (Declaration of Use of Generative AI)
+% is page 1 and the User Guide continues that count.
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+% Divider title page introducing the group of appendices. \part* is used (not
+% \part) so it carries no "Part I" number and does not reset the A, B, ...
+% appendix-chapter lettering. \part* already adds its own TOC entry here, so no
+% manual \addcontentsline is needed (that would duplicate it).
+\part*{Appendices}
+\setcounter{page}{1} % so the first appendix chapter itself reads as page 1
 \input{Backmatter/Appendix.tex}
+\cleardoublepage
+\input{Backmatter/InstallationGuide.tex}
+\cleardoublepage
+\input{Backmatter/UserGuide.tex}
 \cleartoleftpage
 \input{Backmatter/Backpage.tex}
 
