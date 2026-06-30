@@ -1,7 +1,7 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-Reading underpins education, work, and daily life, yet for many readers (from those with age-related vision loss to readers with dyslexia) a text can demand more than the visual or cognitive system can comfortably supply.
+Reading underpins education, work, and daily life, yet for a wide range of readers---from individuals with age-related vision loss to those with dyslexia---a text can demand more than the visual or cognitive system can comfortably supply.
 Because digital text can be reshaped as it is read and eye tracking reveals how a reader is coping, gaze-driven typographic adaptation can support a struggling reader without interrupting their flow.
 Prior prototypes in the Reading the Reader programme demonstrated that such real-time adaptation is achievable, but each was a tightly coupled fork in which sensing, decision logic, and the reading interface shared a single codebase, so every new study meant editing core code.
 No existing tool unites real-time gaze sensing, context-preserving typographic intervention, researcher-facing experiment control, and pluggable decision logic in one platform.
@@ -13,7 +13,7 @@ Its principal contributions are a modular adaptive-reading loop whose four stage
 We evaluate the platform on real Tobii hardware against criteria drawn from four research questions, using eight reading sessions and a dedicated decision-path run.
 The module boundary is enforced by the build and an executable test, an in-process module is added in a single registration, and three external providers (one wrapping a collaborator's reading-difficulty model) connect without any change to the core.
 The eye tracker streamed at its rated \SI{90}{\hertz} with validity above 92\%, and client transport latency stayed within the \SI{100}{\milli\second} budget for every sample.
-With context preservation enabled, both the reading-resume time and the post-intervention regression rate were lower, and every reported result was reconstructed from the exported records alone.
-Two limitations are stated openly: the automated decision path was validated within budget in a single run rather than at campaign scale, and the original restore over-repositioned the reader on small reflows, a flaw we have since revised to hold the captured offset and confirmed geometrically, though not yet re-tested with readers.
+With context preservation enabled, both the reading-resume time and the post-intervention regression rate were directionally lower, and every reported result was reconstructed from the exported records alone.
+Two limitations remain: the automated decision path was validated within budget in a single run rather than at campaign scale, and the original restore over-repositioned the reader on small reflows, a flaw we have since revised to hold the captured offset and confirmed geometrically, though not yet re-tested with readers.
 These point directly to the next steps, namely to re-evaluate the revised restore with readers and to run the autonomous decision path at campaign scale with a real decision model.
 The platform thus shows that the adaptive reading loop can be cleanly separated under real-time constraints, distils four reusable design principles, and provides the infrastructure on which future intervention and AI-driven decision studies can build.
