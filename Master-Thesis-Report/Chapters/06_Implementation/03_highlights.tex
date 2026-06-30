@@ -534,6 +534,8 @@ When an intervention commits, its declared effect selects one of two restore mod
 A layout-affecting change (one that lists any affected presentation property) triggers a \emph{semantic restart}: because the whole document reflows, the reader first re-establishes its captured reading position at the on-screen offset it held before the change, and only if that anchor can no longer be found does it fall back to the sentence or paragraph the change committed against, realigned to that same offset.
 An appearance-only change (colour or theme) instead uses an \emph{offset preserve}, which holds the captured anchor at its exact previous offset because nothing about the layout has moved.
 Both modes therefore aim to hold the reader's position at the offset it held before the change; the layout mode differs only in carrying the committed segment as a fallback reference for the rare case where the captured anchor is rebuilt away, and in being graded against a wider tolerance because a full reflow is harder to undo exactly (\cref{fig:impl-context-decision}).
+The layout restore described here, holding the captured offset, is a revision of an earlier semantic restart that instead re-established the committed sentence near the top of the reading area.
+\Cref{sec:eval-context} reports that the earlier strategy over-repositioned the reader on small reflows and confirms geometrically that holding the captured offset removes that over-repositioning.
 Two early exits avoid needless work: an appearance-only change committed at a frozen sentence or paragraph boundary moves nothing on screen, so it is reported preserved without any restore, and an offset preserve whose anchor is missing or stale cannot be compensated and is reported failed.
 
 \begin{listing}[htbp]
