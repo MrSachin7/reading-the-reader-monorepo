@@ -6,13 +6,13 @@ Reading is central to everyday life. However, it can also present new significan
 Digital text can help: it can be reshaped as it is read, and an eye tracker can show when a reader is struggling, so the text can adapt in real time without breaking the reader's flow. This is what the reading the reader (RtR) project is exploring to achieve.
 Earlier prototypes in the RtR project showed that achieving the aforementioned goals is definitely possible, but each of them mixed sensing, decision-making, and the reading screen into one tangled codebase, so every new study meant rewriting core code, and none gave researchers a controlled and reproducible approach to run such studies.
 
-This thesis presents and evaluates a modular, researcher-operated framework for adaptive reading.
+This thesis presents and evaluates a modular, researcher-operated platform for adaptive reading.
 Participants read on one screen, where the text adapts to their gaze, while the researcher monitors live gaze data on a second screen and can trigger or approve changes during the session.
-Within the framework, four components---sensing, analysis, decision, and intervention---are implemented as separate, interchangable modules. In this desing, new interventions or decision-making, including an AI-based ones, can be integrated without modifying the rest of the framework.
-When the text is adapted, the framework maintains the reader's position and records all gaze samples, decisions, and interventions, ensuring that experimentalsessions can be replayed, analyzed, and reproduced.
+Within the platform, four components (sensing, analysis, decision, and intervention) are implemented as separate, interchangeable modules. In this design, new interventions or decision-making, including AI-based ones, can be integrated without modifying the rest of the platform.
+When the text is adapted, the platform maintains the reader's position and records all gaze samples, decisions, and interventions, ensuring that experimental sessions can be replayed, analysed, and reproduced.
 
 We evaluated the platform on a real Tobii eye tracker over eight reading sessions.
-New modules and three outside decision providers connected without changing the core; gaze streamed at the rated \SI{90}{\hertz} with validity above \SI{92}{\percent}; and the system met its \SI{100}{\milli\second} latency budget on every sample.
+New modules and three outside decision providers connected without changing the core; gaze streamed at the rated \SI{90}{\hertz} with validity above \SI{92}{\percent}; and the platform met its \SI{100}{\milli\second} latency budget on every sample.
 With place-keeping on, readers tended to return to their place faster after a change.
 Two limitations remain: the automatic decision path was tested in a single run, not yet at full scale, and a revised place-keeping method has so far been checked only by geometry, not with readers, so its benefit to reading is unconfirmed.
-Even so, the framework shows that the adaptive reading loop can be cleanly separated under real-time conditions, and it gives future studies of reading interventions and AI-driven adaptation a solid base to build on.
+Even so, the platform shows that the adaptive reading loop can be cleanly separated under real-time conditions, and it gives future studies of reading interventions and AI-driven adaptation a solid base to build on.

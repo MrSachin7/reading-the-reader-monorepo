@@ -4,7 +4,7 @@
 
 \Cref{sec:design-style,sec:design-modules} described the architecture as concerns, ports, and a rule that dependencies point inward.
 This chapter goes inside that description to show how it is realised in code, beginning here with where the code lives before \cref{sec:impl-session} follows a session through it.
-The system is a monorepo with two independent roots, a .NET backend solution under \texttt{Backend/} and a Next.js front-end under \texttt{Frontend/}, with no shared workspace manifest binding them, so that each is built and versioned on its own.
+The platform is a monorepo with two independent roots, a .NET backend solution under \texttt{Backend/} and a Next.js front-end under \texttt{Frontend/}, with no shared workspace manifest binding them, so that each is built and versioned on its own.
 Their folder layout is shown in \cref{fig:impl-tree} and their dependency structure in \cref{fig:impl-structure}.
 
 \begin{figure}[htbp]

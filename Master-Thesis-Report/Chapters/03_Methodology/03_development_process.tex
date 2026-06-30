@@ -1,7 +1,7 @@
 \section{Development Process}
 \label{sec:development-process}
 
-The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality (from sensing to decision to intervention to researcher interface) rather than building one layer at a time.
+The platform was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality (from sensing to decision to intervention to researcher interface) rather than building one layer at a time.
 This approach was chosen over a design-first waterfall process for two reasons.
 First, the integration between the Tobii hardware layer, the realtime transport, and the frontend intervention rendering could not be fully specified upfront: latency, timing, and synchronisation constraints only become visible under end-to-end execution.
 Second, a vertical-slice structure ensures that integration assumptions are tested and corrected at each increment rather than deferred to a final integration phase, reducing the risk of late-stage architectural surprises.
