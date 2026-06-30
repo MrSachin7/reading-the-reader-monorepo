@@ -1,19 +1,18 @@
+\phantomsection
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-Reading underpins education, work, and daily life, yet for a wide range of readers---from individuals with age-related vision loss to those with dyslexia---a text can demand more than the visual or cognitive system can comfortably supply.
-Because digital text can be reshaped as it is read and eye tracking reveals how a reader is coping, gaze-driven typographic adaptation can support a struggling reader without interrupting their flow.
-Prior prototypes in the Reading the Reader programme demonstrated that such real-time adaptation is achievable, but each was a tightly coupled fork in which sensing, decision logic, and the reading interface shared a single codebase, so every new study meant editing core code.
-No existing tool unites real-time gaze sensing, context-preserving typographic intervention, researcher-facing experiment control, and pluggable decision logic in one platform.
+Reading is central to everyday life, yet for many people (for example those with age-related vision loss or dyslexia) a text can demand more than they can comfortably take in.
+Digital text can help: it can be reshaped as it is read, and an eye tracker can show when a reader is struggling, so the text can adapt in real time without breaking the reader's flow.
+Earlier prototypes in the Reading the Reader programme showed this is possible, but each mixed sensing, decision-making, and the reading screen into one tangled codebase, so every new study meant rewriting core code, and none gave researchers a controlled, reproducible way to run such studies.
 
-This thesis designs, implements, and evaluates a modular, researcher-operated adaptive reading platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable modules behind stable contracts.
-Following the Design Science Research paradigm, the platform couples a participant screen, whose text adapts to gaze, with a researcher console that mirrors the participant's live gaze and lets the researcher apply or steer interventions as a session runs.
-Its principal contributions are a modular adaptive-reading loop whose four stages (sensing, analysis, decision, and intervention) are replaceable behind stable contracts; a dual-screen, researcher-in-the-loop workflow; a pluggable decision boundary at which a built-in rule-based strategy or an external provider operates in an advisory mode (the researcher approves or overrides each proposal) or an autonomous mode (it is applied directly); a context-preserving intervention mechanism that adapts the text without costing the reader their place; and a single reproducible session record of every gaze sample, decision, and intervention that can be exported, replayed, and re-imported.
+This thesis builds and evaluates a modular, researcher-operated platform for adaptive reading.
+The participant reads on one screen, where the text adapts to their gaze, while the researcher watches the live gaze on a second screen and can trigger or approve changes as the session runs.
+Inside, four parts (sensing, analysis, decision, and intervention) are separate, swappable modules, so a new intervention or decision-maker, including an AI one, can be added without changing the rest.
+When the text changes, the platform keeps the reader's place, and it records every gaze sample, decision, and change so a session can be replayed and reproduced.
 
-We evaluate the platform on real Tobii hardware against criteria drawn from four research questions, using eight reading sessions and a dedicated decision-path run.
-The module boundary is enforced by the build and an executable test, an in-process module is added in a single registration, and three external providers (one wrapping a collaborator's reading-difficulty model) connect without any change to the core.
-The eye tracker streamed at its rated \SI{90}{\hertz} with validity above \SI{92}{\percent}, and client transport latency stayed within the \SI{100}{\milli\second} budget for every sample.
-With context preservation enabled, both the reading-resume time and the post-intervention regression rate were directionally lower, and every reported result was reconstructed from the exported records alone.
-Two findings temper the results: the automated decision path was validated within budget in a single run rather than at campaign scale, and the original restore over-repositioned the reader on small reflows, a flaw we have since revised to hold the captured offset; that revision is so far confirmed only geometrically, on a deterministic sweep, and has not yet been re-tested with readers, so its behavioural benefit remains unverified.
-These point directly to the next steps, namely to re-evaluate the revised restore with readers and to run the autonomous decision path at campaign scale with a real decision model.
-The platform thus shows that the adaptive reading loop can be cleanly separated under real-time constraints, distils four reusable design principles, and provides the infrastructure on which future intervention and AI-driven decision studies can build.
+We tested the platform on a real Tobii eye tracker over eight reading sessions.
+New modules and three outside decision providers connected without changing the core; gaze streamed at the rated \SI{90}{\hertz} with validity above \SI{92}{\percent}; and the system met its \SI{100}{\milli\second} latency budget on every sample.
+With place-keeping on, readers tended to return to their place faster after a change.
+Two limitations remain: the automatic decision path was tested in a single run, not yet at full scale, and a revised place-keeping method has so far been checked only by geometry, not with readers, so its benefit to reading is unconfirmed.
+Even so, the platform shows that the adaptive reading loop can be cleanly separated under real-time conditions, and it gives future studies of reading interventions and AI-driven adaptation a solid base to build on.

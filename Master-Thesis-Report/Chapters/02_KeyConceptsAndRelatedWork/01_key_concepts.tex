@@ -15,6 +15,11 @@ Fig.~\ref{fig:reading-concept} reproduces the concept as published by the progra
 \label{fig:reading-concept}
 \end{figure}
 
+The classifier at the centre of this concept is easy to draw but hard to earn.
+A model that infers a reader's state and selects an intervention is not a given: it must be built, which requires a body of recorded reading sessions to learn from, and it must be trusted, which requires plugging it into the live loop and measuring whether its decisions actually help.
+The concept supplies neither prerequisite, and neither was available in the prior prototypes.
+This sets the direction of the thesis: rather than supply another classifier, we build the platform the classifier presupposes, one designed to produce reproducible session data of the quality such a model would be trained on, and to expose a boundary at which an external or AI-driven decider can be connected, run, and evaluated under researcher control.
+
 This thesis adopts that vision but reframes it for engineering.
 Fig.~\ref{fig:adaptive-loop} redraws the same loop as a flow diagram of four sequential stages, sensing, analysis, decision, and intervention, whose output changes what the reader sees and so feeds the next cycle of sensing.
 Treating each stage as an independently replaceable module behind a stable contract is the central architectural commitment of this thesis, and it is the property examined in the chapters that follow.

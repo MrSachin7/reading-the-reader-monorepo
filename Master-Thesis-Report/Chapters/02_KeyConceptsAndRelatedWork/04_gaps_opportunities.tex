@@ -27,3 +27,5 @@ Without a defined integration boundary, every new decision strategy would requir
 
 The opportunity is to define a decision-strategy contract that the core application depends on, so that built-in rules and external or AI-based providers are interchangeable behind the same interface.
 This makes AI support an architectural property of the platform rather than a feature implemented end-to-end in this thesis, and it lets future contributors supply decision providers without touching the sensing, analysis, or intervention layers.
+Crucially, such a provider cannot be built or trusted in a vacuum: it needs reproducible data to learn from and a live boundary at which its decisions can be applied and measured.
+Defining that boundary, and recording the data that crosses it, is therefore not a step towards the AI but the groundwork the AI depends on.

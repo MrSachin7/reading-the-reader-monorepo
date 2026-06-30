@@ -12,6 +12,10 @@ In parallel, Palinec developed a reactive adaptive frontend intended to consume 
 
 These projects share a common limitation that motivates the present work.
 Each delivered a largely self-contained prototype, and the work evolved incrementally, with each project extending the previous frontend rather than building against a stable platform contract; Pereira and Andrei, for example, based their prototype on the earlier Refsgaard and Farooq code \cite{refsgaard2024rtr, pereira2024typography}.
+Just as consequential as their internal coupling is what these prototypes did not provide: a researcher-facing console.
+None offered a way to monitor a participant's reading as it happened, to apply or vary an intervention under controlled conditions, or to capture a session as a reproducible record.
+They could therefore demonstrate that gaze-driven adaptation works, but not support the controlled, repeatable study through which a researcher learns which interventions help.
+Supplying that capability, rather than demonstrating adaptation once more, is the need the present work addresses.
 This thesis responds by separating sensing, analysis, decision strategy, and intervention execution into independently replaceable modules, so that future intervention designs and decision providers can be integrated without rewriting the reading runtime or the researcher workflow.
 
 \subsection{Eye-Tracking in Reading Research}
