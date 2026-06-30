@@ -31,7 +31,7 @@ Treating each stage as an independently replaceable module behind a stable contr
 \resizebox{0.98\linewidth}{!}{%
 \begin{tikzpicture}[
   mod/.style={draw=navyblue, thick, rounded corners=3pt, align=center,
-              minimum width=2cm, minimum height=1cm, font=\small\bfseries,
+              minimum width=2.3cm, minimum height=1cm, font=\small\bfseries,
               fill=navyblue!8, text=navyblue},
   chip/.style={draw=black!45, rounded corners=2pt, align=center,
                minimum width=2cm, minimum height=0.5cm, font=\scriptsize,
@@ -49,11 +49,11 @@ Treating each stage as an independently replaceable module behind a stable contr
   tline/.style={draw=black!40, line width=1.3pt}
 ]
 
-% --- the four-module pipeline ---
-\node[mod] (sense)   at (3.6,0)  {Sensing};
-\node[mod] (analyse) at (6.2,0)  {Analysis};
-\node[mod] (decide)  at (8.8,0)  {Decision};
-\node[mod] (act)     at (11.4,0) {Intervention};
+% --- the four-module pipeline (long arrows leave room for each label on the line) ---
+\node[mod] (sense)   at (5.0,0)   {Sensing};
+\node[mod] (analyse) at (9.2,0)   {Analysis};
+\node[mod] (decide)  at (13.4,0)  {Decision};
+\node[mod] (act)     at (17.6,0)  {Intervention};
 
 % --- reader (participant) ---
 \draw[rl] (0.0,0.32) circle (0.13);
@@ -73,54 +73,45 @@ Treating each stage as an independently replaceable module behind a stable contr
 % reader is tracked while looking at the screen
 \draw[track] (0.14,0.28) -- (1.2,-0.06);
 
-% gaze leaves the eye tracker and enters the pipeline
-\draw[flow] (2.1,0.12) -- (sense.west);
-
-% --- forward data flow ---
-\draw[flow] (sense.east)   -- (analyse.west);
-\draw[flow] (analyse.east) -- (decide.west);
-\draw[flow] (decide.east)  -- (act.west);
-
-% --- flow labels, lifted into a band above the boxes for clarity ---
-\node[io] at (2.55,0.92) {gaze, pupil};
-\node[io] at (4.9,0.92)  {samples};
-\node[io] at (7.5,0.92)  {reading state};
-\node[io] at (10.1,0.92) {proposal};
+% --- forward data flow; the long arrows leave room for each label on the line ---
+\draw[flow] (2.1,0.12)     -- node[io,above]{gaze, pupil}   (sense.west);
+\draw[flow] (sense.east)   -- node[io,above]{samples}       (analyse.west);
+\draw[flow] (analyse.east) -- node[io,above]{reading state} (decide.west);
+\draw[flow] (decide.east)  -- node[io,above]{proposal}      (act.west);
 
 % --- intervention returns adapted text to the screen, closing the loop ---
-\draw[flow] (act.north) -- (11.4,1.6) -- (1.65,1.6) -- (1.65,0.78);
-\node[io] at (6.5,1.78) {adapted text};
+\draw[flow] (act.north) -- (17.6,1.6) -- (1.65,1.6) -- (1.65,0.78);
+\node[io] at (9.6,1.8) {adapted text};
 
-% --- researcher ---
-\draw[tl] (13.2,0.32) circle (0.13);
-\draw[tl] (12.98,-0.2) to[out=72,in=180] (13.2,0.06) to[out=0,in=108] (13.42,-0.2);
-\node[font=\scriptsize\bfseries, text=rtrteal!60!black] at (13.2,-0.48) {Researcher};
-\draw[mfeed] (12.4,0.12) -- (13.0,0.12);
-\node[io] at (12.7,0.92) {monitor};
+% --- researcher monitors the live loop ---
+\draw[tl] (20.3,0.32) circle (0.13);
+\draw[tl] (20.08,-0.2) to[out=72,in=180] (20.3,0.06) to[out=0,in=108] (20.52,-0.2);
+\node[font=\scriptsize\bfseries, text=rtrteal!60!black] at (20.3,-0.48) {Researcher};
+\draw[mfeed] (act.east) -- node[io,above]{monitor} (20.1,0.0);
 
 % --- interchangeable implementations under each module ---
-\draw[leader] (sense.south)   -- (3.6,-0.95);
-\draw[leader] (analyse.south) -- (6.2,-0.95);
-\draw[leader] (decide.south)  -- (8.8,-0.95);
-\draw[leader] (act.south)     -- (11.4,-0.95);
+\draw[leader] (sense.south)   -- (5.0,-0.95);
+\draw[leader] (analyse.south) -- (9.2,-0.95);
+\draw[leader] (decide.south)  -- (13.4,-0.95);
+\draw[leader] (act.south)     -- (17.6,-0.95);
 
-\node[chip] at (3.6,-1.2)  {Tobii};
-\node[chip] at (3.6,-1.82) {Simulated};
-\node[chip] at (6.2,-1.2)  {Built-in};
-\node[chip] at (6.2,-1.82) {External};
-\node[chip] at (8.8,-1.2)  {Rule-based};
-\node[extchip] at (8.8,-1.82) {External / AI};
-\node[reschip] at (8.8,-2.44) {Researcher};
-\node[chip] at (11.4,-1.2)  {Built-in};
-\node[chip] at (11.4,-1.82) {Custom};
+\node[chip] at (5.0,-1.2)  {Tobii};
+\node[chip] at (5.0,-1.82) {Simulated};
+\node[chip] at (9.2,-1.2)  {Built-in};
+\node[chip] at (9.2,-1.82) {External};
+\node[chip] at (13.4,-1.2)  {Rule-based};
+\node[extchip] at (13.4,-1.82) {External / AI};
+\node[reschip] at (13.4,-2.44) {Researcher};
+\node[chip] at (17.6,-1.2)  {Built-in};
+\node[chip] at (17.6,-1.82) {Custom};
 
 % --- legend ---
-\draw[fill=grey!55,draw=black!45,rounded corners=1pt] (3.4,-3.05) rectangle (3.62,-2.88);
-\node[anchor=west,font=\scriptsize] at (3.7,-2.965) {interchangeable implementations behind a stable contract};
-\draw[fill=dtured!12,draw=dtured,rounded corners=1pt] (3.4,-3.42) rectangle (3.62,-3.25);
-\node[anchor=west,font=\scriptsize] at (3.7,-3.335) {external decision provider (contract; out of scope)};
-\draw[fill=rtrteal!15,draw=rtrteal,rounded corners=1pt] (3.4,-3.79) rectangle (3.62,-3.62);
-\node[anchor=west,font=\scriptsize] at (3.7,-3.705) {researcher: monitors the live loop and can intervene manually};
+\draw[fill=grey!55,draw=black!45,rounded corners=1pt] (6.0,-3.05) rectangle (6.22,-2.88);
+\node[anchor=west,font=\scriptsize] at (6.3,-2.965) {interchangeable implementations behind a stable contract};
+\draw[fill=dtured!12,draw=dtured,rounded corners=1pt] (6.0,-3.42) rectangle (6.22,-3.25);
+\node[anchor=west,font=\scriptsize] at (6.3,-3.335) {external decision provider (contract; out of scope)};
+\draw[fill=rtrteal!15,draw=rtrteal,rounded corners=1pt] (6.0,-3.79) rectangle (6.22,-3.62);
+\node[anchor=west,font=\scriptsize] at (6.3,-3.705) {researcher: monitors the live loop and can intervene manually};
 
 \end{tikzpicture}%
 }
