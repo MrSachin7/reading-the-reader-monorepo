@@ -34,9 +34,9 @@ In line with DTU guidance, this appendix records which tools we used, and where 
 \midrule
 ChatGPT (OpenAI) & GPT-5.5 (latest available during Feb--June 2026) & Feedback on our own draft prose; discussion of ideas and design trade-offs. \\
 \addlinespace
-Codex (OpenAI) & GPT-5.5 (latest available during Feb--June 2026) & Coding assistance for the software artifact. \\
+Codex (OpenAI) & GPT-5.5 (latest available during Feb--June 2026) & Coding and design assistance for the software artifact. \\
 \addlinespace
-Claude (Anthropic) & Opus 4.8 and Sonnet 4.6 (latest available during Feb--June 2026) & Sounding board for design trade-offs; coding assistance; LaTeX scaffolding. \\
+Claude (Anthropic) & Opus 4.8 and Sonnet 4.6 (latest available during Feb--June 2026) & Coding and design assistance; sounding board for design trade-offs; paraphrasing of our draft prose; LaTeX scaffolding. \\
 \bottomrule
 \end{tabular}
 \caption{Generative AI tools used during the preparation of this thesis.}
@@ -57,12 +57,13 @@ No design decision was adopted on the basis of a tool's output; every decision, 
 \subsection{Writing Assistance}
 
 We used GAI to obtain feedback on prose we had already written and to suggest alternative phrasings for clarity and concision, across the main content chapters of this report.
+In particular, we used Claude to paraphrase passages we had already drafted; the report and the meaning behind it remain entirely our own.
 We did not use it to generate sections from scratch; the prose is our own, and AI assistance was limited to feedback and rephrasing of text we had already drafted.
 All factual claims, citations, and numbers in any AI-assisted passage were verified by us against their original sources, and the final wording is our own.
 
 \subsection{Code Assistance}
 
-The accompanying software artifact (the \texttt{reading-the-reader} monorepo) was developed with GAI coding assistance, used for scaffolding, refactoring suggestions, and debugging across the React and TypeScript frontend and the C\# and .NET backend.
+The accompanying software artifact (the \texttt{reading-the-reader} monorepo) was developed with coding and design assistance from Codex and Claude, used for scaffolding, refactoring suggestions, design discussion, and debugging across the React and TypeScript frontend and the C\# and .NET backend.
 We also used it for LaTeX scaffolding and build configuration of this report.
 All generated code was reviewed, tested, and integrated by us, and we take responsibility for its correctness.
 
@@ -77,21 +78,6 @@ To make the boundary explicit, the following were done entirely by us, without G
     \item Designing the evaluation, conducting it, and interpreting the results.
     \item Drawing the conclusions and identifying the limitations and threats to validity.
 \end{itemize}
-
-\section{Prompt and Output Retention}
-
-Representative prompts and outputs are retained by the authors and can be made available to the supervisor or examiners upon request, in accordance with DTU guidance on documenting GAI use.
-
-\section{Citations of GAI Output}
-
-No GAI output is reproduced verbatim in the body of this thesis.
-Should any direct quotation of GAI output appear, it is cited inline using the format below, naming the provider, the tool and version, and the access date.
-
-\begin{quote}
-\small
-Anthropic. \textit{Claude} (Opus 4.8) [Large Language Model].
-\url{https://claude.ai}. Accessed YYYY-MM-DD.
-\end{quote}
 
 % =====================================================================
 % Additional appendices below (extended results, full requirements
