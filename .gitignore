@@ -31,6 +31,10 @@ DocsSite/node_modules/
 DocsSite/.next/
 DocsSite/out/
 
+# Defense presentation (reveal.js) dependencies and build output
+presentation/node_modules/
+presentation/dist/
+
 # Python service caches and local environments
 **/.venv/
 **/__pycache__/

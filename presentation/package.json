@@ -6,7 +6,7 @@
   "description": "Reading the Reader, MSc thesis defense presentation (reveal.js)",
   "scripts": {
     "dev": "node ./node_modules/vite/dist/node/cli.js",
-    "dev:preview": "node ./node_modules/vite/dist/node/cli.js --port 4331 --strictPort",
+    "dev:preview": "node ./node_modules/vite/dist/node/cli.js --port 4332 --strictPort",
     "build": "node ./node_modules/vite/dist/node/cli.js build",
     "serve": "node ./node_modules/vite/dist/node/cli.js preview"
   },

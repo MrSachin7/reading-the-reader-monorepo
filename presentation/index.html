@@ -126,39 +126,6 @@
           </aside>
         </section>
 
-        <!-- Old position for research questions, kept commented out after reorder
-        <section id="s5-rqs">
-          <p class="kicker">What we set out to answer</p>
-          <h2 class="wide">Not whether reading can adapt, but how to architect it</h2>
-          <p class="ps-lead">Prior prototypes proved the loop. The open problem is the platform to run the research: where the four concerns are independently replaceable, on real Tobii sessions, adapting text without breaking the reader's flow. It breaks into four questions.</p>
-          <ol class="rq-list">
-            <li class="fragment"><span class="rq-tag">RQ1 - Modularity</span> Can sensing, analysis, decision, and intervention be separated, so a new module, even a new decider, plugs in without touching the core?</li>
-            <li class="fragment"><span class="rq-tag">RQ2 - Sensing</span> Can a real Tobii stream become reading events fast enough to adapt live?</li>
-            <li class="fragment"><span class="rq-tag">RQ3 - Intervention</span> Can the text change mid-read without costing the reader their place?</li>
-            <li class="fragment"><span class="rq-tag">RQ4 - Control</span> Can the researcher steer the session, and reproduce it exactly, afterwards?</li>
-          </ol>
-          <aside class="notes">
-            SPEAK (P2, ~45s) [take over from P1]:
-            "So what exactly did we set out to answer? Prior prototypes proved the loop
-            works. What was missing was the platform to run the research on. The open
-            problem is how to architect that platform, and it breaks into four questions,
-            and these four drive the whole thesis.
-            [click] One, modularity: can we separate sensing, analysis, decision, and
-            intervention, so a new module, even a new decider, plugs in without touching
-            the core?
-            [click] Two, sensing: can a real Tobii stream become reading events fast
-            enough to adapt live?
-            [click] Three, intervention: can the text change mid-read without costing the
-            reader their place?
-            [click] Four, control: can the researcher steer the session and reproduce it
-            exactly, afterwards?
-            Keep these four in mind: the demo answers each one, and the evidence measures
-            them."
-            BRIDGE: "So how do we tackle four questions like these?"
-          </aside>
-        </section>
-        -->
-
         <!-- Slide 6, Our approach: Design Science + where we fit -->
         <section id="s6-approach">
           <p class="kicker">Our approach</p>
@@ -289,10 +256,10 @@
           <h2 class="wide">Not whether reading can adapt, but how to architect it</h2>
           <p class="ps-lead">Now that the loop is visible, the open problem becomes concrete: can this platform keep the four concerns replaceable, work on real Tobii sessions, adapt text without breaking the reader's flow, and stay under researcher control? It breaks into four questions.</p>
           <ol class="rq-list">
-            <li class="fragment"><span class="rq-tag">RQ1 - Modularity</span> Can sensing, analysis, decision, and intervention be separated, so a new module, even a new decider, plugs in without touching the core?</li>
-            <li class="fragment"><span class="rq-tag">RQ2 - Sensing</span> Can a real Tobii stream become reading events fast enough to adapt live?</li>
-            <li class="fragment"><span class="rq-tag">RQ3 - Intervention</span> Can the text change mid-read without costing the reader their place?</li>
-            <li class="fragment"><span class="rq-tag">RQ4 - Control</span> Can the researcher steer the session, and reproduce it exactly, afterwards?</li>
+            <li class="fragment"><span class="rq-tag">RQ1 · Modularity</span> Can sensing, analysis, decision, and intervention be separated, so a new module, even a new decider, plugs in without touching the core?</li>
+            <li class="fragment"><span class="rq-tag">RQ2 · Sensing</span> Can a real Tobii stream become reading events fast enough to adapt live?</li>
+            <li class="fragment"><span class="rq-tag">RQ3 · Context preservation</span> Can the text change mid-read without costing the reader their place?</li>
+            <li class="fragment"><span class="rq-tag">RQ4 · Researcher control</span> Can the researcher steer the session, and reproduce it exactly, afterwards?</li>
           </ol>
           <aside class="notes">
             SPEAK (P2, ~45s) [take over from P1]:
@@ -346,22 +313,22 @@
           <p class="principles-lead">The artifact is half the contribution. These four principles are the other half, the transferable part, and each one answers one research question.</p>
           <ul class="principles">
             <li class="principle">
-              <span class="pr-rq">RQ1 - Modularity</span>
+              <span class="pr-rq">RQ1 · Modularity</span>
               <b>One seam shape, immutable snapshots</b>
               <span>Every module is the same shape: an identity in, a read-only snapshot in, an optional result out. New modules are additive, and none can reach into or mutate the core.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ2 - Sensing</span>
+              <span class="pr-rq">RQ2 · Sensing</span>
               <b>Gaze on its own real-time channel</b>
               <span>High-frequency gaze rides a dedicated channel, kept off the request-and-response control path, so the per-sample loop stays lock-free and inside its latency budget.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ3 · Context-preserving</span>
+              <span class="pr-rq">RQ3 · Context preservation</span>
               <b>Validate, then commit at a boundary</b>
               <span>An intervention is validated, then committed at a controlled boundary carrying a position anchor, so the text can adapt without costing the reader their place.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ4 · Reproducibility</span>
+              <span class="pr-rq">RQ4 · Researcher control</span>
               <b>One authoritative, replayable record</b>
               <span>A single schema-versioned record, reconstructable by replay, so there is no second account to disagree and every session can be reproduced.</span>
             </li>
@@ -464,53 +431,54 @@
         <!-- HINGE 2 <- DEMO ; ACT 3, DOES IT HOLD UP                     -->
         <!-- ============================================================ -->
 
-        <!-- Slide 11, Back from demo: the 4 RQs, answered live -->
+        <!-- Slide 11, Back from demo: the scorecard (answered live AND measured) -->
         <section id="s11-rqs-checked" data-loop-stage="all">
-          <p class="kicker">What you just saw</p>
-          <h2>The four questions, answered live</h2>
-          <p class="principles-lead">Before the numbers, here is what the demo just proved in motion, one answer per question.</p>
+          <p class="kicker">Answered live, and measured</p>
+          <h2>You saw it work. Here are the numbers.</h2>
+          <p class="principles-lead">The demo answered each question in motion. Here is the single number behind each; the full curves are in the report.</p>
           <ul class="principles rq-checked">
             <li class="principle">
               <span class="pr-rq">RQ1 · Modularity</span>
-              <b><span class="tick" aria-hidden="true">✓</span> A module changed without touching the core</b>
-              <span>We swapped a module behind the same seam while the loop stayed intact.</span>
+              <b><span class="score-num">3</span> outside models, <span class="score-num">0</span> core changes</b>
+              <span>Swapped live in the demo, and the boundary is enforced as a build-time test.</span>
             </li>
             <li class="principle">
               <span class="pr-rq">RQ2 · Sensing</span>
-              <b><span class="tick" aria-hidden="true">✓</span> Live gaze reached the console in sync</b>
-              <span>The participant read on one screen while the researcher saw the same reading mirrored live.</span>
+              <b><span class="score-num">90 Hz</span> stream, every sample under 100 ms</b>
+              <span>The live gaze you watched mirror to the console, measured across eight sessions.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ3 · Intervention</span>
-              <b><span class="tick" aria-hidden="true">✓</span> The text adapted and the reader kept their place</b>
-              <span>The intervention fired mid-read, the text reflowed, and the recovery showed up on the console.</span>
+              <span class="pr-rq">RQ3 · Context preservation</span>
+              <b>Resume time <span class="score-num">650 to 482 ms</span></b>
+              <span>When the text reflowed, the reader got back to reading sooner.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ4 · Control and replay</span>
-              <b><span class="tick" aria-hidden="true">✓</span> Control held, and the session stayed replayable</b>
-              <span>A proposal could be approved or overridden, and the whole session reconstructed from one record.</span>
+              <span class="pr-rq">RQ4 · Researcher control</span>
+              <b>Whole chapter rebuilt from <span class="score-num">one record</span></b>
+              <span>You approved a proposal, and every result here came from a replayable file.</span>
             </li>
           </ul>
           <aside class="notes">
-            SPEAK (P2, ~40s):
-            "So let us close the loop before we move on. What you just saw answered the
-            same four questions we posed earlier.
-            Modularity: we swapped a module behind the seam without touching the core.
-            Sensing: the live gaze reached the console and stayed in sync with the reader.
-            Intervention: the text changed without costing the reader their place.
-            And control plus reproducibility: the researcher could override a proposal,
-            and the session could be replayed from one record.
-            So the demo answered the questions once in motion."
-            Bridge OUT (the seam to evaluation): "A demo can be staged, so here is
-            the measured evidence behind it."
+            SPEAK (P2, ~45s), this is a scorecard, do NOT read the report back:
+            "A demo can be staged, so here are the numbers, one per question, and then the
+            two that were actually interesting to find out.
+            Modularity: three outside models plugged into the seam with zero changes to our
+            core, and the boundary is a compile-time test, not a promise.
+            Sensing: the tracker held 90 hertz and every single sample reached the screen
+            inside our 100 millisecond budget.
+            Context preservation: when the text changed, readers got back to reading in 482
+            milliseconds instead of 650.
+            Control: the entire evaluation chapter was rebuilt from one replayable record.
+            The full distributions are in section 7.4. Two of these are worth a closer look."
+            BRIDGE: "The first is the one that goes beyond our own code."
           </aside>
         </section>
 
         <!-- Slide 12, Evidence intro + RQ1 Modularity (the executable boundary test) -->
         <section id="s12-ev-modularity" data-loop-stage="all">
-          <p class="kicker">The evidence · Modularity (RQ1)</p>
-          <h2>Modularity is a test, not a promise</h2>
-          <p class="ev-lead">The ports-and-adapters rule (nothing reaches into the core) is written as an executable test. A violating reference is already a compile error; this guards it against regression.</p>
+          <p class="kicker">Deep dive · Modularity (RQ1)</p>
+          <h2>Proven from outside, enforced by the compiler</h2>
+          <p class="ev-lead">We could just assert the core is decoupled. Instead, we let an outside collaborator's reading-difficulty model connect through the seam, with no change to our code and none to theirs, and we made the boundary a rule the compiler enforces.</p>
           <div class="code-cols">
             <pre class="code"><code>// Core (Domain + Application) must never depend outward on
 // infrastructure, transport, or the web host.  (RQ1 / NFR1)
@@ -556,44 +524,18 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             The payoff in practice: three external providers connected with zero changes to
             the core, one of them wrapping a third party's model, and a new in-process
             module is a single registration."
-            BRIDGE: "That is the structure. Now the loop's timing."
+            BRIDGE: "That is the seam holding. Now the result a reader actually feels."
           </aside>
         </section>
 
-        <!-- Slide 13, RQ2 Sensing (rate/validity + transport latency) -->
-        <section id="s13-ev-sensing" data-loop-stage="sense">
-          <p class="kicker">The evidence · Sensing (RQ2)</p>
-          <h2>Fast enough to adapt live</h2>
-          <p class="ev-lead">Eight sessions on a real Tobii tracker. The stream held its rated rate, and the transport stayed well inside the budget that keeps adaptation feeling instant.</p>
-          <div class="ev-figs">
-            <figure class="ev-fig">
-              <img src="assets/eval-sensing-rate-validity.svg" alt="Per-session bar charts of achieved sampling rate and gaze validity. Every session sits at the nominal 90 Hz, and validity stays above 92 percent throughout." />
-              <figcaption><span class="ev-fig-rq">Rate &amp; validity</span>89.9 Hz mean against a rated 90, with validity above 92% in every session.</figcaption>
-            </figure>
-            <figure class="ev-fig">
-              <img src="assets/eval-client-rtt.svg" alt="Cumulative distribution of client round-trip time for the participant and researcher clients. Both curves reach 1.0 well before the dashed 100 ms budget line." />
-              <figcaption><span class="ev-fig-rq">Transport latency</span>Every sample inside the 100 ms budget (median 1 ms, 95th percentile within 8 ms).</figcaption>
-            </figure>
-          </div>
-          <aside class="notes">
-            SPEAK (P1, ~55s):
-            "Sensing. On the left, the raw stream: across all eight sessions the tracker
-            held a mean of 89.9 hertz against its rated 90, and gaze validity stayed above
-            92 percent throughout, measured during real reading, not a chin-rested fixation
-            task.
-            On the right is the number that matters for adaptation: the round-trip latency
-            from the client, against a 100 millisecond budget, the point past which a
-            response stops feeling instant. Both clients sit far to the left, a median of
-            about one millisecond, and no sample in either stream crossed the budget."
-            BRIDGE: "So the loop is fast. Does the intervention it drives actually help?"
-          </aside>
-        </section>
+        <!-- Sensing evidence moved to backup B7 (charts live there for Q&A; the headline is on the scorecard) -->
+
 
         <!-- Slide 14, RQ3 Intervention (resume time + regressions) -->
         <section id="s14-ev-intervention" data-loop-stage="intervene">
-          <p class="kicker">The evidence · Intervention (RQ3)</p>
-          <h2>Adaptation without losing the place</h2>
-          <p class="ev-lead">Four participants read the same article with and without the context-preserving restore. Measures are aligned to each intervention, not averaged across the session.</p>
+          <p class="kicker">Deep dive · Context preservation (RQ3)</p>
+          <h2>Does changing the text throw the reader off?</h2>
+          <p class="ev-lead">This was the result we most wanted to know. Every reflow risks losing the reader's place, so we measured it: four participants, the same article, with and without the restore, aligned to each intervention.</p>
           <div class="ev-figs">
             <figure class="ev-fig">
               <img src="assets/eval-rrt.svg" alt="Swarm plot of reading-resume time per intervention under the two conditions, with a median bar. The with-preservation median sits lower than without." />
@@ -616,40 +558,12 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             held across three-, five-, and ten-second windows.
             With four participants these are descriptive, not an inferential effect study,
             which we will come back to."
-            BRIDGE: "Last question: can the whole thing be reproduced?"
+            BRIDGE: "That is what the platform can do. Now, honestly, what it cannot."
           </aside>
         </section>
 
-        <!-- Slide 15, RQ4 Reproducibility (the replay screenshot) -->
-        <section id="s15-ev-repro" data-loop-stage="all">
-          <p class="kicker">The evidence · Reproducibility (RQ4)</p>
-          <h2>Every result rebuilt from one record</h2>
-          <div class="shot-cols">
-            <figure class="shot-fig">
-              <img class="shot" src="assets/eval-replay.png" alt="The replay view reconstructing a recorded session: a playback scrubber with speed controls, the reader view with the token heat map, the participant panel, and the full 27-event timeline (session start, connection, quiz, interventions)." />
-            </figure>
-            <div class="shot-side">
-              <p class="shot-lead">A session replayed from its exported record: the event timeline, gaze, and interventions all reconstructed from the file alone.</p>
-              <ul class="code-out-list">
-                <li>one gated console operated every session</li>
-                <li>the entire evaluation chapter was rebuilt from records like this</li>
-                <li>export, re-import, and scrub, no live hardware needed</li>
-              </ul>
-            </div>
-          </div>
-          <p class="fig-credit">Replay view of a recorded reading session (reused from the implementation chapter).</p>
-          <aside class="notes">
-            SPEAK (P2, ~50s):
-            "Reproducibility. Everything you have seen was captured to one authoritative
-            record. This is the replay: we load an exported session and the platform
-            reconstructs it, the reader's view, the gaze heat map, and the full event
-            timeline, twenty-seven events here, from the file alone. You can scrub it,
-            slow it down, with no eye tracker attached.
-            Every session was operated through this one gated console, and the entire set
-            of results in this chapter was reconstructed from records exactly like this."
-            BRIDGE: "That is the evidence. We will also tell you where it is not finished."
-          </aside>
-        </section>
+        <!-- Reproducibility/replay evidence moved to backup B8 (also shown live in demo beat 5) -->
+
 
         <!-- Slide 13, Limitations, stated by us first -->
         <section id="s13-limits" data-loop-stage="all">
@@ -696,33 +610,59 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <!-- Slide 14, Future work (AI seam leads) -->
-        <section id="s14-future" class="stub" data-loop-stage="decide">
-          <p class="kicker">Where it goes next</p>
+        <!-- Slide 14, Future work: what the platform now makes possible (callback to the concept) -->
+        <section id="s14-future" data-loop-stage="decide">
+          <p class="kicker">What this now makes possible</p>
           <h2>A foundation, not an endpoint</h2>
-          <p class="muted">STUB · 3 arrows; AI decision provider over the seam leads.</p>
+          <div class="future-cols">
+            <figure class="future-callback">
+              <img src="assets/reading-concept.png" alt="The Reading the Reader concept loop, with the classifier at its centre, recalled from earlier in the talk." />
+              <figcaption>Remember the classifier? It needed data, and it could be a human or an AI.</figcaption>
+            </figure>
+            <div class="future-copy">
+              <p class="future-lead">We do not build that classifier. We now <em>produce the data it trains on</em> and <em>expose the seam it plugs into</em>. The next team trains it on our records.</p>
+              <p class="future-scenario"><span class="scenario-label">A year from now</span> a psychologist loads a hypothesis, attaches an AI decider to the seam, runs two hundred sessions overnight, and replays any one of them, and none of it touches the core.</p>
+              <p class="future-smaller">Nearer term, the honest next steps from our limitations: re-test the revised restore with real readers, and replace the hand-tuned line bias with a principled Kalman filter.</p>
+            </div>
+          </div>
           <aside class="notes">
-            JOB: show the artifact is a base to build on.
-            1) Run the decision path autonomously at scale over the same provider
-               seam, where external AI decision-makers plug in (architectural, by
-               design).
-            2) A real Kalman filter over the gaze signal.
-            3) The controlled efficacy study the platform now makes possible.
-            Bridge OUT: "So, to close."
+            SPEAK (P2, ~45s), this is a payoff, not a to-do list:
+            "So where does this go? Cast your mind back to that concept diagram and the
+            classifier at its centre, the one that needed a database of readers and could
+            be a human or an AI. We deliberately did not build it. But we now produce the
+            data it trains on, and we expose the exact seam it plugs into. The next team
+            trains the classifier on our records.
+            Picture it a year from now: a psychologist loads a hypothesis, attaches an AI
+            decider to the seam, runs two hundred sessions overnight, and can replay any
+            one of them, and none of that touches our core. That is what the platform
+            unlocks.
+            The nearer-term steps are the honest ones from our limitations: re-test the
+            revised restore with real readers, and swap the hand-tuned line bias for a
+            proper Kalman filter."
+            BRIDGE: "So, to close."
           </aside>
         </section>
 
-        <!-- Slide 15, Close: restate the claim (mirror of slide 6) -->
-        <section id="s15-close" class="stub" data-loop-stage="all">
-          <p class="kicker">In one sentence</p>
+        <!-- Slide 15, Close: the memorable claim (the sentence they repeat in deliberation) -->
+        <section id="s15-close" data-loop-stage="all">
+          <p class="kicker">What we want you to take away</p>
           <p class="big-claim">
-            The adaptive reading loop can be cleanly separated under a real 90 Hz
-            Tobii loop, giving future studies, including AI-driven ones, a solid
-            base. You've seen it hold. That's the contribution.
+            A researcher can watch someone read in real time and reshape the text as
+            it happens, without costing them their place, and every part of that loop
+            is swappable without touching the core.
           </p>
+          <p class="close-line">We did not build the classifier. We built the platform it presupposes, and proved the seams hold under a real 90 Hz Tobii loop. Four questions answered, one honest lesson learned, and a gap no one else had filled.</p>
           <aside class="notes">
-            JOB: the sentence you want them repeating in deliberation. Mirror slide 5,
-            now with the 4 RQs checked and the whole loop shown.
+            SPEAK (P2, ~40s), slow down; this is the sentence they repeat in deliberation:
+            "So, in one sentence. A researcher can watch someone read in real time and
+            reshape the text as it happens, without ever costing them their place, and
+            every part of that loop, the sensing, the analysis, the decision, the
+            intervention, can be swapped without touching the core.
+            We did not build the classifier. We built the platform it presupposes, and we
+            proved the seams hold under a real 90 hertz Tobii loop. Four questions
+            answered, one honest lesson about our own line-stabilisation, and a gap nobody
+            else had filled. Thank you."
+            [then advance to Questions]
           </aside>
         </section>
 
@@ -800,6 +740,49 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             feedback, resulting requirement change (e.g. license-free operation,
             webcam sensing mode).
           </aside>
+        </section>
+
+        <!-- B7, Sensing performance (headline is on the scorecard; full charts kept here for Q&A) -->
+        <section id="b7-sensing" data-loop-stage="sense">
+          <p class="kicker">Backup · B7 · Sensing (RQ2)</p>
+          <h3>Rate, validity, and transport latency</h3>
+          <div class="ev-figs">
+            <figure class="ev-fig">
+              <img src="assets/eval-sensing-rate-validity.svg" alt="Per-session bar charts of achieved sampling rate and gaze validity. Every session sits at the nominal 90 Hz, and validity stays above 92 percent throughout." />
+              <figcaption><span class="ev-fig-rq">Rate &amp; validity</span>89.9 Hz mean against a rated 90, validity above 92% in every session.</figcaption>
+            </figure>
+            <figure class="ev-fig">
+              <img src="assets/eval-client-rtt.svg" alt="Cumulative distribution of client round-trip time for the participant and researcher clients. Both curves reach 1.0 well before the dashed 100 ms budget line." />
+              <figcaption><span class="ev-fig-rq">Transport latency</span>Every sample inside the 100 ms budget (median 1 ms, 95th percentile within 8 ms).</figcaption>
+            </figure>
+          </div>
+          <aside class="notes">
+            Q&amp;A card. Eight sessions: mean 89.9 Hz (SD 0.2), validity 92.5% to 98.0%
+            (mean 95.6%), inter-sample interval clustered at 11.1 ms. Client round trip:
+            participant median 1 ms / 95th 3 ms; researcher median 1 ms / 95th 8 ms; no
+            sample crossed the 100 ms budget.
+          </aside>
+        </section>
+
+        <!-- B8, Reproducibility / replay (also shown live in demo beat 5) -->
+        <section id="b8-repro" data-loop-stage="all">
+          <p class="kicker">Backup · B8 · Researcher control (RQ4)</p>
+          <h3>Every result rebuilt from one record</h3>
+          <div class="shot-cols">
+            <figure class="shot-fig">
+              <img class="shot" src="assets/eval-replay.png" alt="The replay view reconstructing a recorded session: a playback scrubber with speed controls, the reader view with the token heat map, the participant panel, and the full event timeline." />
+            </figure>
+            <div class="shot-side">
+              <p class="shot-lead">A session replayed from its exported record: timeline, gaze, and interventions all reconstructed from the file alone.</p>
+              <ul class="code-out-list">
+                <li>one gated console operated every session</li>
+                <li>the entire evaluation chapter was rebuilt from records like this</li>
+                <li>export, re-import, and scrub, no live hardware needed</li>
+              </ul>
+            </div>
+          </div>
+          <p class="fig-credit">Replay view of a recorded reading session (from the implementation chapter).</p>
+          <aside class="notes">Q&amp;A card. Reproducibility was also shown live in demo beat 5.</aside>
         </section>
 
       </div>
