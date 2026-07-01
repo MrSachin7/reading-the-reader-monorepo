@@ -1,12 +1,12 @@
-name: Docs Site Pages
+name: Presentation Pages
 
 on:
   push:
     branches:
       - main
     paths:
-      - "DocsSite/**"
-      - ".github/workflows/docs-site-pages.yml"
+      - "presentation/**"
+      - ".github/workflows/presentation-pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: docs-site-pages
+  group: presentation-pages
   cancel-in-progress: true
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      - name: Install docs dependencies
         working-directory: DocsSite
         run: bun install --frozen-lockfile
 

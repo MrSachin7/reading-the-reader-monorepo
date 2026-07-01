@@ -12,6 +12,16 @@ bun install
 bun run dev        # http://localhost:4321
 ```
 
+## GitHub Pages
+
+The deck is published with the Presentation Pages workflow. The workflow builds
+this project and copies `dist/` into the Pages artifact at `/presentation/`, so
+the published route is:
+
+```text
+https://<owner>.github.io/reading-the-reader-monorepo/presentation/
+```
+
 ## Present
 
 - **Navigate:** arrow keys / clicker. `Esc` = slide overview.
