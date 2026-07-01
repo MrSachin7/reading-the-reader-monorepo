@@ -7,6 +7,13 @@
       "runtimeArgs": ["dev"],
       "cwd": "Frontend",
       "port": 3000
+    },
+    {
+      "name": "presentation",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev:preview"],
+      "cwd": "presentation",
+      "port": 4331
     }
   ]
 }

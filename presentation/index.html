@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Reading the Reader: MSc Thesis Defense</title>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+
+        <!-- ============================================================ -->
+        <!-- ACT 1, PROBLEM -> REFRAME  (goal: this is research, not an app) -->
+        <!-- ============================================================ -->
+
+        <!-- Slide 1, Title -->
+        <section id="s1-title" class="title-slide" data-logo="off">
+          <img class="title-logo" src="assets/dtu-logo-red.png" alt="Technical University of Denmark (DTU)" />
+          <p class="kicker">Master Thesis Defense · DTU Compute</p>
+          <h1>Reading the Reader</h1>
+          <p class="subtitle">Adaptive Reading Systems: A Modular Software Architecture</p>
+          <p class="byline">Sachin Baral (s243871@dtu.dk) &nbsp;·&nbsp; Satish Gurung (s243872@dtu.dk)</p>
+          <p class="meta">Supervisors: Per Bækgaard (pgba@dtu.dk) · Ashkan Task (ashta@dtu.dk) · Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
+          <p class="meta">DTU Compute · July 2026</p>
+          <aside class="notes">
+            10-second welcome only, do not start explaining yet.
+            Background image: the real two-screen setup (reader + researcher console).
+            Bridge OUT: "Before the system, let's talk about the person it's for."
+          </aside>
+        </section>
+
+        <!-- Slide 2, The human problem -->
+        <section id="s2-problem">
+          <p class="kicker">The problem</p>
+          <h2>Reading is hard for some readers</h2>
+          <p class="lead">
+            For readers with dyslexia or age-related vision loss, text can demand
+            more than they can comfortably process.
+          </p>
+          <p class="lead">
+            Digital text <em>can reshape itself</em> as it is read, and an eye
+            tracker can tell <em>when</em> a reader is struggling, so it could
+            adapt in real time <strong>without breaking the reader's flow</strong>.
+          </p>
+          <aside class="notes">
+            Earn the stakes; keep it human. The key constraint to plant: adaptation
+            must NOT cost the reader their place / flow. One clean visual, no bullets.
+            Bridge OUT: "This isn't a new idea in our group, and that's exactly
+            where the real problem starts."
+          </aside>
+        </section>
+
+        <!-- Slide 3, The broader programme (stakes + who the real user is) -->
+        <section id="s3-programme">
+          <p class="kicker">The programme</p>
+          <h2>A funded, interdisciplinary effort</h2>
+          <div class="two-col">
+            <div class="col-text">
+              <p class="lead"><em>Reading the Reader</em> is a research programme at DTU Compute, funded by the Novo Nordisk Foundation (about DKK 8 million).</p>
+              <p class="lead">Its goal: help readers with age-related central vision loss and dyslexia through personalised, gaze-driven typographic adaptation.</p>
+            </div>
+            <div class="prog-side">
+              <p class="side-label">Brings together</p>
+              <ul class="disciplines">
+                <li>Computer science</li>
+                <li>Typography</li>
+                <li>Psychology</li>
+                <li>Ophthalmology</li>
+              </ul>
+              <p class="side-label">Serves</p>
+              <p class="serves">Central vision loss (AMD) · Dyslexia</p>
+            </div>
+          </div>
+          <p class="fig-credit">Reading the Reader programme, DTU Compute; funded by the Novo Nordisk Foundation.</p>
+          <aside class="notes">
+            SPEAK (P1, ~45s):
+            "Our reader is not alone. She is one of the cases the Reading the Reader
+            programme at DTU Compute is built to help. It is funded by the Novo Nordisk
+            Foundation, around eight million kroner, and it deliberately puts computer
+            scientists in the same room as typographers, psychologists, and
+            ophthalmologists. The target is real: people with age-related central vision
+            loss, and readers with dyslexia. The shared bet is that eye-tracking can
+            reveal how a person reads and drive typography that adapts to them. Which
+            means the real user of what we built is the researcher inside this
+            programme."
+            BRIDGE: "Here is the concept the programme is chasing."
+          </aside>
+        </section>
+
+        <!-- Slide 4, The concept (Fig 2.1) + the research gap -->
+        <section id="s4-concept">
+          <p class="kicker">The concept, and what is missing</p>
+          <h2>Easy to draw, hard to earn</h2>
+          <div class="two-col concept-cols">
+            <div class="concept-fig">
+              <img src="assets/reading-concept.png" alt="The Reading the Reader closed-loop concept: a reader is sensed by an eye tracker, features are extracted, a classifier trained on a database of readers decides, and an intervention adapts the text, closing the loop." />
+              <span class="concept-ring" aria-hidden="true"></span>
+            </div>
+            <div class="concept-points">
+              <p class="point"><b>The classifier is the hard part.</b> It is trained on a database of readers, so someone must first produce that data. And the decider can be a human (a researcher) or an AI.</p>
+              <p class="point"><b>But there is no platform to run the research.</b> Prior prototypes proved the loop, yet were too coupled to swap pieces in and out.</p>
+            </div>
+          </div>
+          <p class="punch">Does wider letter spacing help an AMD reader resume faster? Does a highlight cue cut regressions? Each hypothesis needs different sensing, intervention, and decision logic, and a researcher just wants to plug in a module and gather data.</p>
+          <p class="fig-credit">Concept figure reproduced from the Reading the Reader programme, DTU Compute.</p>
+          <aside class="notes">
+            SPEAK (P1, ~60s):
+            "This is the concept as the programme publishes it. A reader is sensed, the
+            signal becomes features, a classifier decides, and an intervention adapts the
+            text, closing the loop. Two things about that classifier in the middle.
+            First, it is trained on a database of readers, so before you even have a
+            classifier, someone has to produce that data, cleanly and reproducibly.
+            Second, the decider does not have to be an AI; in the loop it can be a human,
+            a researcher, making the call.
+            Now the gap. To learn what actually helps, a researcher runs many hypotheses,
+            and each one needs different sensing, a different intervention, a different
+            decision rule. Does wider letter spacing help an AMD reader resume faster, or
+            does a highlight cue cut regressions? Different logic each time. Prior
+            prototypes in the programme proved the loop works, but they were too coupled
+            to swap those pieces in and out. There was no platform to actually do this
+            research."
+            BRIDGE: "So we reframed the problem."
+          </aside>
+        </section>
+
+        <!-- Slide 5, Our approach: Design Science + the RQs -->
+        <section id="s5-approach">
+          <p class="kicker">Our approach</p>
+          <h2 class="wide">We do not build the classifier. We build the platform it presupposes.</h2>
+          <p class="lead approach-lead">A platform that produces reproducible session data, and exposes a seam where a human or an AI decider plugs in, all under researcher control.</p>
+          <div class="ds-cards">
+            <div class="ds-card"><b>The artifact</b><span>a working, researcher-operated platform</span></div>
+            <div class="ds-plus">+</div>
+            <div class="ds-card"><b>The design knowledge</b><span>principles &amp; trade-offs others can reuse</span></div>
+            <div class="ds-eq">= the contribution</div>
+          </div>
+          <ul class="rq">
+            <li>RQ1 Modularity &nbsp;·&nbsp; RQ2 Real-time sensing &nbsp;·&nbsp; RQ3 Context-preserving intervention &nbsp;·&nbsp; RQ4 Researcher control &amp; reproducibility</li>
+          </ul>
+          <aside class="notes">
+            SPEAK (P2, ~50s), this is the "is this research?" pre-empt:
+            "So our approach is deliberately not to supply yet another classifier. We
+            build the platform the classifier presupposes: it produces reproducible
+            session data, of the kind such a model would be trained on, and it exposes a
+            clean seam where a decider, human or AI, plugs in and runs under the
+            researcher's control.
+            And that meets a fair challenge head on: is this research, or just an app? We
+            treat it as Design Science. The contribution is two things together: the
+            artifact, a working researcher-operated platform, and the design knowledge,
+            the principles and trade-offs that make it replaceable on any stack.
+            These four research questions are how we hold ourselves to that, and you are
+            about to watch the demo answer each one."
+            BRIDGE (hand off to P1): "So let me show you what the platform actually is."
+          </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- ACT 2, THE ARTIFACT (give them the model the demo confirms)   -->
+        <!-- ============================================================ -->
+
+        <!-- Slide 6, Two-screen platform (user-centric hero) -->
+        <section id="s6-hero" class="stub">
+          <p class="kicker">The platform</p>
+          <h2>Two screens, one loop</h2>
+          <p class="muted">STUB · hero: participant reading | researcher console; eye tracker drawn ON the participant↔platform link, not as a box.</p>
+          <aside class="notes">
+            JOB: make the HUMAN loop the centre of gravity (supervisors' "put the
+            user in the centre" note). Participant reads on one screen; researcher
+            mirrors gaze live + holds controls on the second; the eye tracker is the
+            sensing INTERFACE between participant and platform.
+            Bridge OUT: "Behind that experience is one architectural idea."
+          </aside>
+        </section>
+
+        <!-- Slide 7, The adaptive loop = four modules behind seams (full reveal) -->
+        <section id="s7-loop" class="stub" data-loop-stage="all">
+          <p class="kicker">The architecture, at altitude</p>
+          <h2>Four modules behind stable seams</h2>
+          <p class="muted">STUB · full-screen loop: sense → analyse → decide → intervene; external provider seam shown bidirectional (context → / ← proposals). NO code.</p>
+          <aside class="notes">
+            JOB: the mental model the demo will confirm. This is where the loop
+            device is BORN full-screen (afterwards it lives shrunk in the corner).
+            Each stage = a replaceable module behind a contract. Show the external
+            decision-provider seam as bidirectional: context streams out, proposals
+            come back.
+            Bridge OUT: "Three principles keep those seams stable, that's the
+            design knowledge, the transferable part."
+          </aside>
+        </section>
+
+        <!-- Slide 8, Design principles (the "knowledge" half of Design Science) -->
+        <section id="s8-principles" class="stub" data-loop-stage="all">
+          <p class="kicker">The design knowledge</p>
+          <h2>Principles that keep the seams stable</h2>
+          <p class="muted">STUB · 3–4 principles, one line each.</p>
+          <aside class="notes">
+            JOB: this is what makes it a thesis (reusable design claims, not features).
+            Candidates (from the design register): uniform seam shape + immutable
+            snapshots; gaze on a separate real-time channel from the control path;
+            validate-then-commit at a controlled boundary with a position anchor; one
+            authoritative, replayable session record.
+            Bridge OUT (THE PROMISE that sets up the demo): "Everything so far is a
+            claim, independent modules, a preserved reading position, researcher
+            control, reproducible records. Claims are cheap. So let's watch the
+            platform actually do all four, live."
+          </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- HINGE 1 -> DEMO                                                -->
+        <!-- ============================================================ -->
+
+        <!-- Slide 9, "What to watch for" + demo player -->
+        <section id="s9-demo" class="stub" data-loop-stage="all">
+          <p class="kicker">Demo</p>
+          <h2>What to watch for</h2>
+          <p class="muted">STUB · 5 beat icons tagged to RQs; then cut away to the embedded recording. Persistent beat card + corner loop-spine ride over the footage.</p>
+          <aside class="notes">
+            JOB: cash the promise from slide 8, so the demo reads as EVIDENCE not a
+            tour. Show the 5 beats ~15s, then play the recorded (silent) clips and
+            narrate live. Beats:
+            1 Two-screen gaze mirroring (RQ2)
+            2 Context-preserving intervention + resume-time (RQ3)  ← hero moment
+            3 Advisory mode: approve / override (RQ4)
+            4 Live module swap: simulated source / external provider (RQ1)
+            5 Replay a re-imported exported session (RQ4)
+            Beat 5 exit line -> Slide 10: "every number we're about to show you came
+            out of records exactly like this one."
+          </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- HINGE 2 <- DEMO ; ACT 3, DOES IT HOLD UP                     -->
+        <!-- ============================================================ -->
+
+        <!-- Slide 10, Back from demo: the 4 RQs, answered live -->
+        <section id="s10-rqs-checked" class="stub" data-loop-stage="all">
+          <p class="kicker">What you just saw</p>
+          <h2>The four questions, answered live</h2>
+          <p class="muted">STUB · the 4 RQs from slide 5, now each checked, each pinned to its beat.</p>
+          <aside class="notes">
+            JOB: close the loop opened on slide 5; re-anchor after ~9 min off-slides.
+            Bridge OUT (the seam to evaluation): "A demo can be staged, so here is
+            the measured evidence behind it."
+          </aside>
+        </section>
+
+        <!-- Slide 11, The evidence (numbers grouped by loop stage) -->
+        <section id="s11-evidence" class="stub" data-loop-stage="all">
+          <p class="kicker">The evidence</p>
+          <h2>Measured, not asserted</h2>
+          <p class="muted">STUB · numbers grouped by the 4 stages.</p>
+          <aside class="notes">
+            JOB: quantitative proof, still on the same loop diagram.
+            Modularity: build-enforced boundary; in-process module added in one
+            registration; 3 external providers connected with zero core changes (one
+            wrapping a third party's model).
+            Sensing: 90 Hz, &gt;92% validity, &lt;100 ms budget met on every sample.
+            Context preservation: reading-resume time ↓ and post-intervention
+            regressions ↓ with place-keeping on.
+            Control/reproducibility: whole chapter reconstructed from exported
+            records alone.
+            Bridge OUT: "We'll also tell you where it isn't finished, that's the
+            honest read."
+          </aside>
+        </section>
+
+        <!-- Slide 12, Limitations, stated by us first -->
+        <section id="s12-limits" class="stub" data-loop-stage="all">
+          <p class="kicker">Honest boundaries</p>
+          <h2>What we did not prove</h2>
+          <p class="muted">STUB · exactly two shortfalls + the Kalman lesson.</p>
+          <aside class="notes">
+            JOB: the maturity slide, name it before you're asked.
+            1) Automated decision path validated in a single advisory run, not at
+               campaign scale.
+            2) Revised context-preserving restore confirmed geometrically, not yet
+               re-tested with readers, behavioural benefit unconfirmed.
+            Lesson: line-stabilisation is a hand-tuned hysteresis bias, a
+            "poor man's Kalman filter" (shares the intuition, not the machinery).
+            Bridge OUT: "Each of those points forward to a next step."
+          </aside>
+        </section>
+
+        <!-- Slide 13, Future work (AI seam leads) -->
+        <section id="s13-future" class="stub" data-loop-stage="decide">
+          <p class="kicker">Where it goes next</p>
+          <h2>A foundation, not an endpoint</h2>
+          <p class="muted">STUB · 3 arrows; AI decision provider over the seam leads.</p>
+          <aside class="notes">
+            JOB: show the artifact is a base to build on.
+            1) Run the decision path autonomously at scale over the same provider
+               seam, where external AI decision-makers plug in (architectural, by
+               design).
+            2) A real Kalman filter over the gaze signal.
+            3) The controlled efficacy study the platform now makes possible.
+            Bridge OUT: "So, to close."
+          </aside>
+        </section>
+
+        <!-- Slide 14, Close: restate the claim (mirror of slide 5) -->
+        <section id="s14-close" class="stub" data-loop-stage="all">
+          <p class="kicker">In one sentence</p>
+          <p class="big-claim">
+            The adaptive reading loop can be cleanly separated under a real 90 Hz
+            Tobii loop, giving future studies, including AI-driven ones, a solid
+            base. You've seen it hold. That's the contribution.
+          </p>
+          <aside class="notes">
+            JOB: the sentence you want them repeating in deliberation. Mirror slide 5,
+            now with the 4 RQs checked and the whole loop shown.
+          </aside>
+        </section>
+
+        <!-- Slide 15, Thanks + pointer -->
+        <section id="s15-thanks" class="stub">
+          <p class="kicker">Thank you</p>
+          <h2>Questions</h2>
+          <p class="muted">STUB · names, documentation site / repo link, "happy to go deeper." Keep up during Q&A.</p>
+          <aside class="notes">
+            JOB: leave the contact/reference up during Q&A. Have backup slides ready
+            (press to jump). Do not over-talk here.
+          </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- BACKUP / Q&A, jump to on demand, do not present               -->
+        <!-- ============================================================ -->
+
+        <section id="b1-iaoi" class="stub">
+          <p class="kicker">Backup · B1</p>
+          <h3>Fixation detection: I-AOI (dwell-based)</h3>
+          <aside class="notes">
+            THE answer to have cold. Dwell/area-of-interest based (I-AOI in
+            Salvucci–Goldberg), NOT I-DT, NOT I-VT. There is NO velocity threshold.
+            Report the real dwell-time constants. Both presenters must be able to say
+            this instantly.
+          </aside>
+        </section>
+
+        <section id="b2-kalman" class="stub">
+          <p class="kicker">Backup · B2</p>
+          <h3>The line-bias vs. a Kalman filter</h3>
+          <aside class="notes">
+            Deterministic hysteresis/bias on the current line to reject single-sample
+            vertical jitter. Shares a Kalman filter's intuition (use prior position),
+            NOT its probabilistic machinery. A real Kalman filter generalises it, future work. Do not overclaim it "is" a Kalman filter.
+          </aside>
+        </section>
+
+        <section id="b3-reflow" class="stub">
+          <p class="kicker">Backup · B3</p>
+          <h3>AOI survives an intervention's reflow</h3>
+          <aside class="notes">
+            "We already solved that concern": word boxes are re-measured from the live
+            DOM on every mutation / resize / scroll, so the mapping uses fresh
+            coordinates after a reflow.
+          </aside>
+        </section>
+
+        <section id="b4-register" class="stub">
+          <p class="kicker">Backup · B4</p>
+          <h3>Design decision register (DR1–DR9)</h3>
+          <aside class="notes">
+            For any "why did you choose X" question: the trade-offs, each against its
+            driver. DR3/DR7/DR4-fallback trade purity for responsiveness/robustness;
+            DR1/DR2/DR8 hold separation firm, deliberate, visible.
+          </aside>
+        </section>
+
+        <section id="b5-stack" class="stub">
+          <p class="kicker">Backup · B5</p>
+          <h3>Tech stack + Tobii SDK integration</h3>
+          <aside class="notes">
+            SDK bindings (.NET / Python only) → chose .NET; adapter subscribes to the
+            gaze callback, normalises to the GazeData contract; licensing / device
+            detection; Windows-only SDK quarantined behind the sensing port.
+          </aside>
+        </section>
+
+        <section id="b6-requirements" class="stub">
+          <p class="kicker">Backup · B6</p>
+          <h3>Requirements: build → demo → feedback → refine</h3>
+          <aside class="notes">
+            The iteration/refinement table: ~5 stakeholder sessions, what was demoed,
+            feedback, resulting requirement change (e.g. license-free operation,
+            webcam sensing mode).
+          </aside>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Persistent DTU logo (top-left chrome) -->
+    <img id="dtu-logo" src="assets/dtu-logo-red.png" alt="DTU" />
+
+    <!-- Persistent adaptive-loop device -->
+    <div id="loop-spine" aria-hidden="true"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

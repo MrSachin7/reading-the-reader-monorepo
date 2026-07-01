@@ -1,4 +1,16 @@
 <!-- GSD:project-start source:PROJECT.md -->
+## Writing and formatting rules
+
+- **Never use em dashes (the U+2014 character, i.e. the long dash).** This is a hard rule and
+  applies to all output: chat replies, code, comments, documentation, commit
+  messages, and the presentation deck under `presentation/`. Use a comma, a
+  colon, parentheses, or rewrite the sentence instead. Do not reintroduce em
+  dashes anywhere.
+- The one narrow exception is the thesis LaTeX label convention: inside
+  `Master-Thesis-Report/`, `---` may appear only as a heading or label separator
+  as defined in that folder's `CLAUDE.md` (never in prose). Everywhere else, no
+  em dashes.
+
 ## Project
 
 **Reading the Reader Thesis Platform**

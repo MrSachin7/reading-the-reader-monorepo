@@ -1,0 +1,233 @@
+/*
+ * Reading the Reader, defense deck theme (DTU-branded).
+ * Palette is the OFFICIAL DTU design guide (designguide.dtu.dk/colours):
+ *   Corporate Red #990000 (primary), Navy Blue #030F4F (secondary),
+ *   plus DTU greys. White ground per DTU. Everything is CSS-variable driven
+ *   so the look is swappable in one place. Fonts are system stacks only, so
+ *   the deck renders identically offline with no font fetch.
+ */
+
+:root {
+  /* DTU palette */
+  --red:      #990000;   /* DTU Corporate Red, primary accent */
+  --navy:     #030F4F;   /* DTU Navy Blue, secondary accent */
+  --blue:     #2F3EEA;   /* DTU Blue, sparing tertiary */
+  --green:    #1FD082;   /* DTU Bright Green, "yes / achieved" ticks */
+  --dtu-grey: #DADADA;   /* DTU Grey */
+
+  /* Ground + ink */
+  --paper:    #ffffff;
+  --panel:    #f4f3f1;
+  --ink:      #1a1a1a;
+  --ink-soft: #3f3f3f;
+  --muted:    #6e6e6e;
+  --line:     #d7d5d1;
+
+  /* Roles */
+  --accent:   var(--red);
+  --accent-2: var(--navy);
+
+  /* Type, DTU is a sans-serif brand; a serif is reserved for the core claim
+     as a small "reading" touch. */
+  --sans:  "Helvetica Neue", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono:  ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+html, body { background: var(--paper); }
+
+.reveal {
+  font-family: var(--sans);
+  color: var(--ink);
+  font-size: 32px;
+  -webkit-font-smoothing: antialiased;
+}
+.reveal .slides { text-align: left; }
+.reveal .slides section { background: var(--paper); }
+
+/* Headings, DTU sans, tight and confident */
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: var(--sans);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.45em;
+  text-transform: none;
+}
+.reveal h1 { font-size: 2.4em; }
+.reveal h2 { font-size: 1.5em; max-width: 20ch; }
+.reveal h3 { font-size: 1.1em; }
+
+.reveal p { line-height: 1.35; margin: 0 0 0.55em; }
+.reveal strong { color: var(--red); font-weight: 700; }
+.reveal em { color: var(--navy); font-style: normal; font-weight: 600; }
+
+/* Kicker, the small act label above a heading */
+.reveal .kicker {
+  font-family: var(--sans);
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin: 0 0 0.7em;
+}
+
+.reveal .lead { font-size: 0.92em; color: var(--ink-soft); max-width: 30ch; }
+.reveal .muted { color: var(--muted); }
+.reveal .byline { font-size: 0.62em; color: var(--ink-soft); margin-top: 1.1em; font-weight: 600; }
+.reveal .meta { font-size: 0.46em; color: var(--muted); margin-top: 0.25em; }
+.reveal .subtitle { font-size: 0.8em; color: var(--ink-soft); }
+
+/* ---- Title slide ---- */
+.reveal .title-slide .title-logo { height: 118px; width: auto; margin: 0 0 0.7em; display: block; }
+.reveal .title-slide h1 { font-size: 3em; margin-bottom: 0.12em; }
+.reveal .title-slide .kicker { color: var(--red); }
+
+/* ---- The core claim (serif, red rule) ---- */
+.reveal .big-claim {
+  font-family: var(--serif);
+  font-size: 1.15em;
+  line-height: 1.32;
+  color: var(--ink);
+  border-left: 5px solid var(--red);
+  padding-left: 0.65em;
+  max-width: 27ch;
+  margin: 0.2em 0 0.7em;
+}
+
+/* ---- Research-question strip (planted small, checked later) ---- */
+.reveal .rq {
+  list-style: none; margin: 0.4em 0 0; padding: 0.5em 0 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.5em; color: var(--muted); letter-spacing: 0.02em;
+}
+
+/* ---- Problem statement quote (slide 4) ---- */
+.reveal blockquote {
+  font-family: var(--serif);
+  font-size: 1.02em; line-height: 1.35; color: var(--ink);
+  background: var(--panel);
+  border-left: 5px solid var(--navy);
+  padding: 0.7em 0.9em; margin: 0.3em 0 0.7em; max-width: 30ch;
+  box-shadow: none;
+}
+.reveal blockquote em { color: var(--red); }
+
+/* ---- Two-column layout ---- */
+.reveal .two-col { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 1.2em; align-items: center; }
+.reveal .two-col .col-text p:last-child { margin-bottom: 0; }
+
+/* ---- Slide 3: the "coupled codebase" tangle figure ---- */
+.reveal .fig-tangle { text-align: center; }
+.reveal .fig-tangle .tangle-box {
+  display: inline-flex; flex-wrap: wrap; gap: 0; justify-content: center;
+  border: 2px dashed var(--red); border-radius: 14px;
+  padding: 22px 16px; background: #fff;
+}
+.reveal .fig-tangle .chip {
+  font-size: 0.52em; font-weight: 700; color: #fff;
+  padding: 0.5em 0.9em; border-radius: 8px; margin: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.reveal .fig-tangle .chip:nth-child(1) { background: var(--navy); transform: rotate(-4deg); margin-right: -10px; }
+.reveal .fig-tangle .chip:nth-child(2) { background: var(--red);  transform: rotate(3deg);  z-index: 2; }
+.reveal .fig-tangle .chip:nth-child(3) { background: #6b7280;     transform: rotate(-2deg); margin-left: -10px; }
+.reveal .fig-tangle .tangle-label {
+  font-size: 0.42em; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--muted); margin-top: 0.8em; font-weight: 700;
+}
+.reveal .punch { font-size: 0.85em; margin-top: 0.9em; max-width: none; }
+
+/* ---- Slide 4: Design Science cards ---- */
+.reveal .ds-cards { display: flex; align-items: stretch; gap: 0.7em; margin-top: 0.3em; }
+.reveal .ds-card {
+  flex: 1; background: var(--panel); border-top: 4px solid var(--navy);
+  border-radius: 6px; padding: 0.7em 0.8em;
+}
+.reveal .ds-card b { display: block; font-size: 0.62em; color: var(--ink); margin-bottom: 0.25em; }
+.reveal .ds-card span { font-size: 0.5em; color: var(--ink-soft); line-height: 1.25; display: block; }
+.reveal .ds-plus { align-self: center; font-size: 1.1em; color: var(--muted); font-weight: 700; }
+.reveal .ds-eq {
+  align-self: center; font-size: 0.62em; font-weight: 700; color: var(--red);
+  text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+}
+
+/* ---- Slide 5: capability / gap list ---- */
+.reveal .gap-title { font-size: 0.62em; font-weight: 700; color: var(--ink); margin-bottom: 0.4em; }
+.reveal .caps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.35em 1.2em; }
+.reveal .caps li { font-size: 0.56em; color: var(--ink-soft); padding-left: 1.4em; position: relative; line-height: 1.25; }
+.reveal .caps li::before {
+  content: "✓"; position: absolute; left: 0; top: 0;
+  color: var(--green); font-weight: 700;
+}
+
+/* ---- Slide 3: the programme ---- */
+.reveal .prog-side { border-left: 3px solid var(--line); padding-left: 1em; }
+.reveal .side-label { font-size: 0.42em; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); font-weight: 700; margin: 0 0 0.3em; }
+.reveal .disciplines { list-style: none; margin: 0 0 0.9em; padding: 0; }
+.reveal .disciplines li { font-size: 0.58em; color: var(--ink); padding-left: 1em; position: relative; line-height: 1.45; }
+.reveal .disciplines li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; background: var(--navy); border-radius: 50%; }
+.reveal .serves { font-size: 0.56em; color: var(--ink-soft); }
+
+/* ---- Small source-attribution line under a figure ---- */
+.reveal .fig-credit { font-size: 0.38em; color: var(--muted); margin-top: 0.6em; }
+
+/* ---- Slide 4: concept figure + call-out ring + points ---- */
+.reveal .concept-cols { grid-template-columns: 1.25fr 1fr; align-items: center; }
+.reveal .concept-fig { position: relative; }
+.reveal .concept-fig img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+/* ---- Slide 3: the goal call-out (hierarchically prominent) ---- */
+.reveal .goal { font-size: 1.05em; line-height: 1.3; color: var(--ink); max-width: 30ch; margin-top: 0.55em; }
+.reveal .goal .goal-label { display: inline-block; font-size: 0.46em; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: var(--red); padding: 0.25em 0.6em; border-radius: 4px; vertical-align: middle; margin-right: 0.55em; }
+
+/* ---- Slide 4: hypothesis build (click-revealed fragments) ---- */
+.reveal .hypo-build { margin-top: 0.2em; }
+.reveal .hypo { font-family: var(--serif); font-size: 0.82em; color: var(--navy); margin: 0 0 0.35em; max-width: none; }
+.reveal .hypo-build .punch { margin-top: 0.5em; }
+.reveal .concept-points .point { font-size: 0.56em; color: var(--ink-soft); line-height: 1.32; margin: 0 0 0.7em; }
+.reveal .concept-points .point b { color: var(--ink); }
+
+/* ---- Slide 5: approach ---- */
+.reveal h2.wide { max-width: 30ch; }
+.reveal .approach-lead { font-size: 0.72em; max-width: 42ch; margin-bottom: 0.7em; }
+
+/* ---- Persistent DTU logo (top-left chrome) ---- */
+#dtu-logo {
+  position: fixed; top: 20px; left: 26px;
+  height: 46px; width: auto; z-index: 40;
+  opacity: 1; transition: opacity 220ms ease; pointer-events: none;
+}
+
+/* ---- reveal chrome tuned to DTU ---- */
+.reveal .progress { color: var(--red); height: 3px; }
+.reveal .controls { color: var(--red); }
+.reveal .slide-number { background: transparent; color: var(--muted); font-family: var(--mono); }
+
+/* ---- Stub badge (marks slides not yet built) ---- */
+.reveal .stub { position: relative; }
+.reveal .stub::after {
+  content: "stub"; position: absolute; top: 0; right: 0;
+  font-family: var(--mono); font-size: 0.32em; letter-spacing: 0.1em;
+  color: #fff; background: var(--muted);
+  padding: 0.2em 0.6em; border-radius: 0 0 0 6px; text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ */
+/* Loop-spine, the persistent adaptive-loop device (top-right corner)  */
+/* ------------------------------------------------------------------ */
+#loop-spine {
+  position: fixed; top: 20px; right: 26px;
+  width: 118px; z-index: 40; opacity: 0;
+  transition: opacity 260ms ease; pointer-events: none; font-family: var(--sans);
+}
+#loop-spine.visible { opacity: 1; }
+#loop-spine svg { display: block; width: 100%; height: auto; }
+#loop-spine .ring { fill: none; stroke: var(--line); stroke-width: 2.5; }
+#loop-spine .node { fill: var(--panel); stroke: var(--line); stroke-width: 2; transition: all 200ms ease; }
+#loop-spine .node.active { fill: var(--navy); stroke: var(--navy); }
+#loop-spine .caption {
+  text-align: center; font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700; color: var(--navy); margin-top: 6px;
+}
