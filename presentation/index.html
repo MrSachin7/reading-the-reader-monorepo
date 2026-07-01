@@ -16,12 +16,12 @@
         <!-- Slide 1, Title -->
         <section id="s1-title" class="title-slide" data-logo="off">
           <img class="title-logo" src="assets/dtu-logo-red.png" alt="Technical University of Denmark (DTU)" />
-          <p class="kicker">Master Thesis Defense Â· DTU Compute</p>
+          <p class="kicker">Master Thesis Defense · DTU Compute</p>
           <h1>Reading the Reader</h1>
           <p class="subtitle">Adaptive Reading Systems: A Modular Software Architecture</p>
-          <p class="byline">Sachin Baral (s243871@dtu.dk) &nbsp;Â·&nbsp; Satish Gurung (s243872@dtu.dk)</p>
-          <p class="meta">Supervisors: Per BÃ¦kgaard (pgba@dtu.dk) Â· Ashkan Task (ashta@dtu.dk) Â· Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
-          <p class="meta">DTU Compute Â· July 2026</p>
+          <p class="byline">Sachin Baral (s243871@dtu.dk) &nbsp;·&nbsp; Satish Gurung (s243872@dtu.dk)</p>
+          <p class="meta">Supervisors: Per Bækgaard (pgba@dtu.dk) · Ashkan Task (ashta@dtu.dk) · Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
+          <p class="meta">DTU Compute · July 2026</p>
           <aside class="notes">
             10-second welcome only, do not start explaining yet.
             Background image: the real two-screen setup (reader + researcher console).
@@ -68,7 +68,7 @@
                 <li>Ophthalmology</li>
               </ul>
               <p class="side-label">Serves</p>
-              <p class="serves">Central vision loss (AMD) Â· Dyslexia</p>
+              <p class="serves">Central vision loss (AMD) · Dyslexia</p>
             </div>
           </div>
           <p class="fig-credit">Reading the Reader programme, DTU Compute; funded by the Novo Nordisk Foundation.</p>
@@ -356,12 +356,12 @@
               <span>High-frequency gaze rides a dedicated channel, kept off the request-and-response control path, so the per-sample loop stays lock-free and inside its latency budget.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ3 Â· Context-preserving</span>
+              <span class="pr-rq">RQ3 · Context-preserving</span>
               <b>Validate, then commit at a boundary</b>
               <span>An intervention is validated, then committed at a controlled boundary carrying a position anchor, so the text can adapt without costing the reader their place.</span>
             </li>
             <li class="principle">
-              <span class="pr-rq">RQ4 Â· Reproducibility</span>
+              <span class="pr-rq">RQ4 · Reproducibility</span>
               <b>One authoritative, replayable record</b>
               <span>A single schema-versioned record, reconstructable by replay, so there is no second account to disagree and every session can be reproduced.</span>
             </li>
@@ -468,42 +468,29 @@
         <section id="s11-rqs-checked" data-loop-stage="all">
           <p class="kicker">What you just saw</p>
           <h2>The four questions, answered live</h2>
-          <p class="rq-verdicts-lead">Before we move to the numbers, here is what the demo just proved in motion.</p>
-          <div class="rq-verdicts">
-            <div class="rq-verdict">
-              <div class="rq-verdict-top">
-                <span class="rq-verdict-tag">RQ1 - Modularity</span>
-                <span class="rq-verdict-beat">Beat 4</span>
-              </div>
-              <p class="rq-verdict-title">A module changed without touching the core</p>
-              <p class="rq-verdict-copy">We swapped the sensing source or decision provider behind the same seam while the loop stayed intact.</p>
-            </div>
-            <div class="rq-verdict">
-              <div class="rq-verdict-top">
-                <span class="rq-verdict-tag">RQ2 - Sensing</span>
-                <span class="rq-verdict-beat">Beat 1</span>
-              </div>
-              <p class="rq-verdict-title">Live gaze reached the console in sync</p>
-              <p class="rq-verdict-copy">The participant read on one screen while the researcher saw the same reading mirrored live.</p>
-            </div>
-            <div class="rq-verdict hero">
-              <div class="rq-verdict-top">
-                <span class="rq-verdict-tag">RQ3 - Intervention</span>
-                <span class="rq-verdict-beat">Beat 2</span>
-              </div>
-              <p class="rq-verdict-title">The text adapted and the reader kept their place</p>
-              <p class="rq-verdict-copy">The intervention fired mid-read, the text reflowed, and the recovery showed up on the console.</p>
-            </div>
-            <div class="rq-verdict">
-              <div class="rq-verdict-top">
-                <span class="rq-verdict-tag">RQ4 - Control and replay</span>
-                <span class="rq-verdict-beat">Beat 3 + 5</span>
-              </div>
-              <p class="rq-verdict-title">The researcher stayed in control, and the session stayed replayable</p>
-              <p class="rq-verdict-copy">A proposal could be approved or overridden, and the whole session could be reconstructed from one record.</p>
-            </div>
-          </div>
-          <p class="muted">STUB Â· the 4 RQs from slide 5, now each checked, each pinned to its beat.</p>
+          <p class="principles-lead">Before the numbers, here is what the demo just proved in motion, one answer per question.</p>
+          <ul class="principles rq-checked">
+            <li class="principle">
+              <span class="pr-rq">RQ1 · Modularity</span>
+              <b><span class="tick" aria-hidden="true">✓</span> A module changed without touching the core</b>
+              <span>We swapped a module behind the same seam while the loop stayed intact.</span>
+            </li>
+            <li class="principle">
+              <span class="pr-rq">RQ2 · Sensing</span>
+              <b><span class="tick" aria-hidden="true">✓</span> Live gaze reached the console in sync</b>
+              <span>The participant read on one screen while the researcher saw the same reading mirrored live.</span>
+            </li>
+            <li class="principle">
+              <span class="pr-rq">RQ3 · Intervention</span>
+              <b><span class="tick" aria-hidden="true">✓</span> The text adapted and the reader kept their place</b>
+              <span>The intervention fired mid-read, the text reflowed, and the recovery showed up on the console.</span>
+            </li>
+            <li class="principle">
+              <span class="pr-rq">RQ4 · Control and replay</span>
+              <b><span class="tick" aria-hidden="true">✓</span> Control held, and the session stayed replayable</b>
+              <span>A proposal could be approved or overridden, and the whole session reconstructed from one record.</span>
+            </li>
+          </ul>
           <aside class="notes">
             SPEAK (P2, ~40s):
             "So let us close the loop before we move on. What you just saw answered the
@@ -519,39 +506,192 @@
           </aside>
         </section>
 
-        <!-- Slide 12, The evidence (numbers grouped by loop stage) -->
-        <section id="s12-evidence" class="stub" data-loop-stage="all">
-          <p class="kicker">The evidence</p>
-          <h2>Measured, not asserted</h2>
-          <p class="muted">STUB Â· numbers grouped by the 4 stages.</p>
+        <!-- Slide 12, Evidence intro + RQ1 Modularity (the executable boundary test) -->
+        <section id="s12-ev-modularity" data-loop-stage="all">
+          <p class="kicker">The evidence · Modularity (RQ1)</p>
+          <h2>Modularity is a test, not a promise</h2>
+          <p class="ev-lead">The ports-and-adapters rule (nothing reaches into the core) is written as an executable test. A violating reference is already a compile error; this guards it against regression.</p>
+          <div class="code-cols">
+            <pre class="code"><code>// Core (Domain + Application) must never depend outward on
+// infrastructure, transport, or the web host.  (RQ1 / NFR1)
+
+[Fact]
+public void Domain_depends_on_no_other_project_assembly()
+{
+    var refs = typeof(InterventionEventSnapshot).Assembly
+        .GetReferencedAssemblies()
+        .Where(r =&gt; r.Name!.StartsWith("ReadingTheReader"));
+
+    Assert.Empty(refs);
+}
+
+[Fact]
+public void Application_core_depends_on_no_infrastructure_assembly()
+{
+    var outward = typeof(ExperimentSessionManager).Assembly
+        .GetReferencedAssemblies()
+        .Where(r =&gt; OutwardMarkers.Any(m =&gt; r.Name!.Contains(m)));
+
+    Assert.Empty(outward);
+}</code></pre>
+            <div class="code-out">
+              <p class="code-out-verdict"><span class="tick" aria-hidden="true">✓</span> Passing, and build-enforced</p>
+              <ul class="code-out-list">
+                <li><b>3</b> external providers connected, zero core changes (one wraps a third party's model)</li>
+                <li><b>1</b> registration to add an in-process module</li>
+                <li>the boundary is verifiable, not merely asserted in prose</li>
+              </ul>
+            </div>
+          </div>
+          <p class="fig-credit">Source: <code>ArchitectureBoundaryTests.cs</code> (condensed for the slide).</p>
           <aside class="notes">
-            JOB: quantitative proof, still on the same loop diagram.
-            Modularity: build-enforced boundary; in-process module added in one
-            registration; 3 external providers connected with zero core changes (one
-            wrapping a third party's model).
-            Sensing: 90 Hz, &gt;92% validity, &lt;100 ms budget met on every sample.
-            Context preservation: reading-resume time â†“ and post-intervention
-            regressions â†“ with place-keeping on.
-            Control/reproducibility: whole chapter reconstructed from exported
-            records alone.
-            Bridge OUT: "We'll also tell you where it isn't finished, that's the
-            honest read."
+            SPEAK (P2, ~55s), open the evidence act:
+            "A demo can be staged, so here is the measured evidence, question by question,
+            and we will walk the loop as we go.
+            Start with modularity. We did not want to just claim the core is decoupled, so
+            we wrote the rule as a test. It takes the Domain and the Application assemblies
+            and asserts they reference nothing outward: no infrastructure, no transport, no
+            web host. The project references already make a violating dependency a compile
+            error; this test keeps it that way as the code grows.
+            The payoff in practice: three external providers connected with zero changes to
+            the core, one of them wrapping a third party's model, and a new in-process
+            module is a single registration."
+            BRIDGE: "That is the structure. Now the loop's timing."
+          </aside>
+        </section>
+
+        <!-- Slide 13, RQ2 Sensing (rate/validity + transport latency) -->
+        <section id="s13-ev-sensing" data-loop-stage="sense">
+          <p class="kicker">The evidence · Sensing (RQ2)</p>
+          <h2>Fast enough to adapt live</h2>
+          <p class="ev-lead">Eight sessions on a real Tobii tracker. The stream held its rated rate, and the transport stayed well inside the budget that keeps adaptation feeling instant.</p>
+          <div class="ev-figs">
+            <figure class="ev-fig">
+              <img src="assets/eval-sensing-rate-validity.svg" alt="Per-session bar charts of achieved sampling rate and gaze validity. Every session sits at the nominal 90 Hz, and validity stays above 92 percent throughout." />
+              <figcaption><span class="ev-fig-rq">Rate &amp; validity</span>89.9 Hz mean against a rated 90, with validity above 92% in every session.</figcaption>
+            </figure>
+            <figure class="ev-fig">
+              <img src="assets/eval-client-rtt.svg" alt="Cumulative distribution of client round-trip time for the participant and researcher clients. Both curves reach 1.0 well before the dashed 100 ms budget line." />
+              <figcaption><span class="ev-fig-rq">Transport latency</span>Every sample inside the 100 ms budget (median 1 ms, 95th percentile within 8 ms).</figcaption>
+            </figure>
+          </div>
+          <aside class="notes">
+            SPEAK (P1, ~55s):
+            "Sensing. On the left, the raw stream: across all eight sessions the tracker
+            held a mean of 89.9 hertz against its rated 90, and gaze validity stayed above
+            92 percent throughout, measured during real reading, not a chin-rested fixation
+            task.
+            On the right is the number that matters for adaptation: the round-trip latency
+            from the client, against a 100 millisecond budget, the point past which a
+            response stops feeling instant. Both clients sit far to the left, a median of
+            about one millisecond, and no sample in either stream crossed the budget."
+            BRIDGE: "So the loop is fast. Does the intervention it drives actually help?"
+          </aside>
+        </section>
+
+        <!-- Slide 14, RQ3 Intervention (resume time + regressions) -->
+        <section id="s14-ev-intervention" data-loop-stage="intervene">
+          <p class="kicker">The evidence · Intervention (RQ3)</p>
+          <h2>Adaptation without losing the place</h2>
+          <p class="ev-lead">Four participants read the same article with and without the context-preserving restore. Measures are aligned to each intervention, not averaged across the session.</p>
+          <div class="ev-figs">
+            <figure class="ev-fig">
+              <img src="assets/eval-rrt.svg" alt="Swarm plot of reading-resume time per intervention under the two conditions, with a median bar. The with-preservation median sits lower than without." />
+              <figcaption><span class="ev-fig-rq">Reading-resume time</span>Median 482 ms with preservation, against 650 ms without.</figcaption>
+            </figure>
+            <figure class="ev-fig">
+              <img src="assets/eval-post-regression.svg" alt="Grouped bars of regression rate before and after each intervention, per condition. With preservation the after-rate falls below baseline; without, it stays high." />
+              <figcaption><span class="ev-fig-rq">Post-intervention regressions</span>Fell to 23% with preservation, against 33% without.</figcaption>
+            </figure>
+          </div>
+          <aside class="notes">
+            SPEAK (P1, ~55s):
+            "Intervention. The question is whether adapting the text mid-read costs the
+            reader their place. We measured two things around every applied intervention.
+            On the left, reading-resume time, the gap to the reader's next forward saccade:
+            the median was 482 milliseconds with preservation against 650 without.
+            On the right, the regression rate in the five seconds after an intervention, a
+            standard sign of disruption: with preservation it fell to 23 percent, below its
+            own baseline, while without preservation it sat at 33 percent. The direction
+            held across three-, five-, and ten-second windows.
+            With four participants these are descriptive, not an inferential effect study,
+            which we will come back to."
+            BRIDGE: "Last question: can the whole thing be reproduced?"
+          </aside>
+        </section>
+
+        <!-- Slide 15, RQ4 Reproducibility (the replay screenshot) -->
+        <section id="s15-ev-repro" data-loop-stage="all">
+          <p class="kicker">The evidence · Reproducibility (RQ4)</p>
+          <h2>Every result rebuilt from one record</h2>
+          <div class="shot-cols">
+            <figure class="shot-fig">
+              <img class="shot" src="assets/eval-replay.png" alt="The replay view reconstructing a recorded session: a playback scrubber with speed controls, the reader view with the token heat map, the participant panel, and the full 27-event timeline (session start, connection, quiz, interventions)." />
+            </figure>
+            <div class="shot-side">
+              <p class="shot-lead">A session replayed from its exported record: the event timeline, gaze, and interventions all reconstructed from the file alone.</p>
+              <ul class="code-out-list">
+                <li>one gated console operated every session</li>
+                <li>the entire evaluation chapter was rebuilt from records like this</li>
+                <li>export, re-import, and scrub, no live hardware needed</li>
+              </ul>
+            </div>
+          </div>
+          <p class="fig-credit">Replay view of a recorded reading session (reused from the implementation chapter).</p>
+          <aside class="notes">
+            SPEAK (P2, ~50s):
+            "Reproducibility. Everything you have seen was captured to one authoritative
+            record. This is the replay: we load an exported session and the platform
+            reconstructs it, the reader's view, the gaze heat map, and the full event
+            timeline, twenty-seven events here, from the file alone. You can scrub it,
+            slow it down, with no eye tracker attached.
+            Every session was operated through this one gated console, and the entire set
+            of results in this chapter was reconstructed from records exactly like this."
+            BRIDGE: "That is the evidence. We will also tell you where it is not finished."
           </aside>
         </section>
 
         <!-- Slide 13, Limitations, stated by us first -->
-        <section id="s13-limits" class="stub" data-loop-stage="all">
+        <section id="s13-limits" data-loop-stage="all">
           <p class="kicker">Honest boundaries</p>
           <h2>What we did not prove</h2>
-          <p class="muted">STUB Â· exactly two shortfalls + the Kalman lesson.</p>
+          <p class="ev-lead">We state these ourselves. They bound what the results claim, they do not undercut the results, and each points to a next step.</p>
+          <ul class="limits">
+            <li class="limit">
+              <span class="limit-tag">Effect</span>
+              <b>No efficacy claim, small sample</b>
+              <span>We showed the platform can apply and instrument interventions, not that any of them helps a struggling reader. The readers were a small convenience sample, not clinical ones; the controlled effect study is future work by design.</span>
+            </li>
+            <li class="limit">
+              <span class="limit-tag">AI decision-making</span>
+              <b>Architectural, not built</b>
+              <span>The provider seam was exercised end to end on real hardware, but with a fixed-rule reference provider, not a learned model, and the automated path rests on a single validation run rather than a campaign.</span>
+            </li>
+            <li class="limit">
+              <span class="limit-tag">Context restore</span>
+              <b>Fixed geometrically, not behaviourally</b>
+              <span>The original restore over-repositioned on small reflows, throwing the reader well past where the text actually moved. The revised one removes this geometrically, but has not been re-tested with readers.</span>
+            </li>
+          </ul>
+          <p class="lesson"><span class="lesson-label">The lesson</span> Our line-stabilisation is a hand-tuned bias, a "poor man's Kalman filter": it borrows the intuition (trust the prior position) but keeps none of the machinery. A principled Kalman filter is future work.</p>
           <aside class="notes">
-            JOB: the maturity slide, name it before you're asked.
-            1) Automated decision path validated in a single advisory run, not at
-               campaign scale.
-            2) Revised context-preserving restore confirmed geometrically, not yet
-               re-tested with readers, behavioural benefit unconfirmed.
-            Lesson: line-stabilisation is a hand-tuned hysteresis bias, a
-            "poor man's Kalman filter" (shares the intuition, not the machinery).
+            SPEAK (P1, ~55s), the maturity slide, name it before you are asked:
+            "We will also tell you where this is not finished, because the contribution is
+            clearer when its boundaries are explicit.
+            First, effect: we showed the platform can apply and measure interventions, not
+            that any intervention helps. Our readers were a small convenience sample, not
+            the clinical readers this ultimately serves, so the controlled effect study is
+            future work, by design.
+            Second, the AI story is architectural, not built: we exercised the whole
+            provider seam on real hardware, but with a fixed-rule reference provider, not a
+            learned model, and that automated path rests on a single validation run.
+            Third, the context restore: the original moved the reader too far on small
+            reflows. We fixed that geometrically, but have not yet re-tested the fix with
+            readers, so its behavioural benefit is unconfirmed.
+            And one honest lesson: the trick that keeps gaze on the right line is a
+            hand-tuned bias, a poor man's Kalman filter. It borrows the intuition but none
+            of the machinery."
+            CONTENT verified against 08_Discussion (04_limitations, 05_lessons_learned).
             Bridge OUT: "Each of those points forward to a next step."
           </aside>
         </section>
@@ -560,7 +700,7 @@
         <section id="s14-future" class="stub" data-loop-stage="decide">
           <p class="kicker">Where it goes next</p>
           <h2>A foundation, not an endpoint</h2>
-          <p class="muted">STUB Â· 3 arrows; AI decision provider over the seam leads.</p>
+          <p class="muted">STUB · 3 arrows; AI decision provider over the seam leads.</p>
           <aside class="notes">
             JOB: show the artifact is a base to build on.
             1) Run the decision path autonomously at scale over the same provider
@@ -590,7 +730,7 @@
         <section id="s16-thanks" class="stub">
           <p class="kicker">Thank you</p>
           <h2>Questions</h2>
-          <p class="muted">STUB Â· names, documentation site / repo link, "happy to go deeper." Keep up during Q&A.</p>
+          <p class="muted">STUB · names, documentation site / repo link, "happy to go deeper." Keep up during Q&A.</p>
           <aside class="notes">
             JOB: leave the contact/reference up during Q&A. Have backup slides ready
             (press to jump). Do not over-talk here.
@@ -602,18 +742,18 @@
         <!-- ============================================================ -->
 
         <section id="b1-iaoi" class="stub">
-          <p class="kicker">Backup Â· B1</p>
+          <p class="kicker">Backup · B1</p>
           <h3>Fixation detection: I-AOI (dwell-based)</h3>
           <aside class="notes">
             THE answer to have cold. Dwell/area-of-interest based (I-AOI in
-            Salvucciâ€“Goldberg), NOT I-DT, NOT I-VT. There is NO velocity threshold.
+            Salvucci–Goldberg), NOT I-DT, NOT I-VT. There is NO velocity threshold.
             Report the real dwell-time constants. Both presenters must be able to say
             this instantly.
           </aside>
         </section>
 
         <section id="b2-kalman" class="stub">
-          <p class="kicker">Backup Â· B2</p>
+          <p class="kicker">Backup · B2</p>
           <h3>The line-bias vs. a Kalman filter</h3>
           <aside class="notes">
             Deterministic hysteresis/bias on the current line to reject single-sample
@@ -623,7 +763,7 @@
         </section>
 
         <section id="b3-reflow" class="stub">
-          <p class="kicker">Backup Â· B3</p>
+          <p class="kicker">Backup · B3</p>
           <h3>AOI survives an intervention's reflow</h3>
           <aside class="notes">
             "We already solved that concern": word boxes are re-measured from the live
@@ -633,8 +773,8 @@
         </section>
 
         <section id="b4-register" class="stub">
-          <p class="kicker">Backup Â· B4</p>
-          <h3>Design decision register (DR1â€“DR9)</h3>
+          <p class="kicker">Backup · B4</p>
+          <h3>Design decision register (DR1–DR9)</h3>
           <aside class="notes">
             For any "why did you choose X" question: the trade-offs, each against its
             driver. DR3/DR7/DR4-fallback trade purity for responsiveness/robustness;
@@ -643,18 +783,18 @@
         </section>
 
         <section id="b5-stack" class="stub">
-          <p class="kicker">Backup Â· B5</p>
+          <p class="kicker">Backup · B5</p>
           <h3>Tech stack + Tobii SDK integration</h3>
           <aside class="notes">
-            SDK bindings (.NET / Python only) â†’ chose .NET; adapter subscribes to the
+            SDK bindings (.NET / Python only) → chose .NET; adapter subscribes to the
             gaze callback, normalises to the GazeData contract; licensing / device
             detection; Windows-only SDK quarantined behind the sensing port.
           </aside>
         </section>
 
         <section id="b6-requirements" class="stub">
-          <p class="kicker">Backup Â· B6</p>
-          <h3>Requirements: build â†’ demo â†’ feedback â†’ refine</h3>
+          <p class="kicker">Backup · B6</p>
+          <h3>Requirements: build → demo → feedback → refine</h3>
           <aside class="notes">
             The iteration/refinement table: ~5 stakeholder sessions, what was demoed,
             feedback, resulting requirement change (e.g. license-free operation,
