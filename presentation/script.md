@@ -195,9 +195,13 @@ ends on a hold-frame so speaker/clip swaps are invisible.
 
 ## HINGE 2 from DEMO; ACT 3: Does it hold up (~5 min)
 
-### S11 The four questions, answered live (P2, ~40s) [STUB]
-- Re-anchor after time off-slides: the 4 RQs from S5, each now checked and
-  pinned to the beat that showed it.
+### S11 The four questions, answered live (P2, ~40s)
+- Re-anchor after time off-slides. This is a scorecard, not a new explanation.
+- Map each RQ to the beat that just answered it:
+  - **RQ1 Modularity -> Beat 4:** a module changed behind the seam without core changes.
+  - **RQ2 Sensing -> Beat 1:** live gaze reached the console in sync with the reader.
+  - **RQ3 Intervention -> Beat 2:** the text adapted and the reader kept their place.
+  - **RQ4 Control and replay -> Beat 3 + 5:** the researcher could override a proposal, and the session could be replayed from one record.
 - Bridge: "A demo can be staged, so here is the measured evidence."
 
 ### S12 The evidence (P2, ~90s) [STUB]

@@ -316,6 +316,74 @@ html, body { background: var(--paper); }
   padding: 0.42em 0.72em;
 }
 
+/* ---- Slide 11: post-demo scorecard ---- */
+.reveal .rq-verdicts-lead {
+  font-size: 0.62em;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 0 0 0.7em;
+}
+.reveal .rq-verdicts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65em 0.75em;
+}
+.reveal .rq-verdict {
+  background: var(--panel);
+  border: 1px solid #e4e1dc;
+  border-top: 4px solid var(--green);
+  border-radius: 8px;
+  padding: 0.62em 0.78em 0.72em;
+}
+.reveal .rq-verdict.hero {
+  background: #f8f0f0;
+  border-top-color: var(--red);
+  box-shadow: 0 0 0 1px rgba(153, 0, 0, 0.08);
+}
+.reveal .rq-verdict-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55em;
+  margin-bottom: 0.45em;
+}
+.reveal .rq-verdict-tag {
+  font-size: 0.4em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.reveal .rq-verdict-beat {
+  font-size: 0.38em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--navy);
+  border-radius: 999px;
+  padding: 0.42em 0.72em;
+  white-space: nowrap;
+}
+.reveal .rq-verdict.hero .rq-verdict-beat { background: var(--red); }
+.reveal .rq-verdict-title {
+  font-size: 0.6em;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  margin: 0 0 0.24em;
+}
+.reveal .rq-verdict-copy {
+  font-size: 0.46em;
+  color: var(--ink-soft);
+  line-height: 1.32;
+  margin: 0;
+}
+.reveal #s11-rqs-checked > .muted { display: none; }
+
 /* Slide 7, the adaptive-loop diagram (mirrors the corner loop-spine) */
 .reveal .loop-ring { fill: none; stroke: var(--line); stroke-width: 2.5; }
 .reveal .node-fill { fill: var(--panel); stroke: var(--navy); stroke-width: 2.5; }
