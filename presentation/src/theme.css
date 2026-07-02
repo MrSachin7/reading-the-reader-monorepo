@@ -731,6 +731,12 @@ html, body { background: var(--paper); }
 }
 .reveal .limit b { display: block; font-size: 0.58em; color: var(--ink); margin-bottom: 0.3em; line-height: 1.18; }
 .reveal .limit span { display: block; font-size: 0.44em; color: var(--ink-soft); line-height: 1.32; }
+/* Slide 13: stack the limits vertically as larger rows (tag left, text right) */
+.reveal #s13-limits .limits { grid-template-columns: 1fr; gap: 0.7em; }
+.reveal #s13-limits .limit { display: grid; grid-template-columns: 8.5em 1fr; column-gap: 1.2em; grid-template-rows: auto auto; align-items: baseline; padding: 0.95em 1.2em; }
+.reveal #s13-limits .limit-tag { grid-column: 1; grid-row: 1 / span 2; align-self: center; margin-bottom: 0; font-size: 0.52em; }
+.reveal #s13-limits .limit b { grid-column: 2; grid-row: 1; margin-bottom: 0.2em; font-size: 0.74em; }
+.reveal #s13-limits .limit b + span { grid-column: 2; grid-row: 2; font-size: 0.56em; }
 .reveal .lesson {
   font-family: var(--serif); font-size: 0.62em; color: var(--ink); line-height: 1.36;
   background: var(--panel); border-left: 4px solid var(--navy); border-radius: 6px;
