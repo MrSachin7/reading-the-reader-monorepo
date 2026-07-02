@@ -702,7 +702,21 @@ html, body { background: var(--paper); }
 /* ---- reveal chrome tuned to DTU ---- */
 .reveal .progress { color: var(--red); height: 3px; }
 .reveal .controls { color: var(--red); }
-.reveal .slide-number { background: transparent; color: var(--muted); font-family: var(--mono); }
+.reveal .slide-number {
+  right: 84px;
+  bottom: 16px;
+  z-index: 45;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--navy);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+  box-shadow: 0 1px 4px rgba(3, 15, 79, 0.08);
+}
 
 /* ---- Stub badge (marks slides not yet built) ---- */
 .reveal .stub { position: relative; }
