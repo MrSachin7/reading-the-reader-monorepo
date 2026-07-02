@@ -506,81 +506,29 @@
         <!-- HINGE 1 -> DEMO                                                -->
         <!-- ============================================================ -->
 
-        <!-- Slide 9, pre-demo roadmap -->
-        <section id="s10-demo" data-loop-stage="all">
-          <p class="kicker">Demo</p>
-          <h2>Watch the demo as evidence, not as a tour</h2>
-          <div class="demo-roadmap">
-            <div class="demo-intro">
-              <p class="demo-mode">Recorded video, narrated live</p>
-              <p class="demo-lead">The recording is short. These five beats are the proof points we want you to watch for before we measure them on the next slides.</p>
-              <p class="demo-transition">When beat five ends, we come back to the deck and show the same story again, now from the session record.</p>
-            </div>
-            <ol class="demo-beats">
-              <li class="demo-beat">
-                <span class="beat-num">1</span>
-                <div class="beat-copy">
-                  <p class="beat-title">Two screens stay in sync</p>
-                  <p class="beat-detail">The participant reads while the console mirrors the live gaze.</p>
-                </div>
-                <span class="beat-rq">RQ2</span>
-              </li>
-              <li class="demo-beat hero">
-                <span class="beat-num">2</span>
-                <div class="beat-copy">
-                  <p class="beat-title">The text adapts and the reader keeps their place</p>
-                  <p class="beat-detail">The intervention fires, the text reflows, and the console shows the recovery.</p>
-                </div>
-                <span class="beat-rq">RQ3</span>
-              </li>
-              <li class="demo-beat">
-                <span class="beat-num">3</span>
-                <div class="beat-copy">
-                  <p class="beat-title">A proposal can be approved or overridden</p>
-                  <p class="beat-detail">The researcher stays in control of what reaches the reader.</p>
-                </div>
-                <span class="beat-rq">RQ4</span>
-              </li>
-              <li class="demo-beat">
-                <span class="beat-num">4</span>
-                <div class="beat-copy">
-                  <p class="beat-title">A module can change without touching the core</p>
-                  <p class="beat-detail">We swap the sensing source or decision provider behind the same seam.</p>
-                </div>
-                <span class="beat-rq">RQ1</span>
-              </li>
-              <li class="demo-beat">
-                <span class="beat-num">5</span>
-                <div class="beat-copy">
-                  <p class="beat-title">The session can be exported and replayed</p>
-                  <p class="beat-detail">One record is enough to reconstruct what just happened.</p>
-                </div>
-                <span class="beat-rq">RQ4</span>
-              </li>
-            </ol>
+        <!-- Slide 9, the recorded demo itself (embedded, plays in-deck) -->
+        <section id="s10-demo-video" class="center-slide" data-logo="off">
+          <div class="demo-embed">
+            <iframe
+              data-src="https://www.youtube-nocookie.com/embed/niJmStDGnwI?rel=0&modestbranding=1"
+              title="Reading the Reader, recorded live demo"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
           </div>
           <aside class="notes">
-            <p><strong>[open, ~15s, then play]</strong> One instruction before we start: watch
-            this as evidence, not as a tour. The recording is short, and these five beats are
-            the proof points, each tied to a research question. Then start the recorded silent
-            clips and narrate live.</p>
+            <p><strong>[play the recording]</strong> This is the demo. Press play and let it
+            run; if narrating live, follow the beat-by-beat narration and out-cues in script.md
+            (the demo section). The presenter not narrating drives playback.</p>
 
-            <p><strong>[the five beats on screen]</strong></p>
-            <ol>
-              <li>Two screens stay in sync, gaze mirrored live (RQ2).</li>
-              <li>The text adapts and the reader keeps their place, resume time on the console (RQ3, hero moment).</li>
-              <li>A proposal is approved or overridden, researcher stays in control (RQ4).</li>
-              <li>A module changes behind the same seam, sensing source or decision provider (RQ1).</li>
-              <li>The session is exported and replayed from one record (RQ4).</li>
-            </ol>
+            <p><strong>[watch for]</strong> 1 two screens in sync (RQ2), 2 text adapts and the
+            reader keeps their place, resume time (RQ3, hero), 3 approve / override (RQ4), 4 a
+            module swapped behind the same seam (RQ1), 5 export and replay from one record
+            (RQ4).</p>
 
-            <p><strong>[during the demo]</strong> Narrate against the loop; the presenter not
-            narrating drives the clicks. The full beat-by-beat narration and out-cues are in
-            script.md, in the demo section right after this slide.</p>
-
-            <p><strong>[exit, back to Slide 10]</strong> Land beat five on the exit line:
-            "every number we are about to show you came out of records exactly like this
-            one."</p>
+            <p><strong>[exit, to the scorecard]</strong> When it ends, land the exit line and
+            advance: "every number we are about to show you came out of records exactly like
+            this one."</p>
           </aside>
         </section>
 
@@ -588,54 +536,55 @@
         <!-- HINGE 2 <- DEMO ; ACT 3, DOES IT HOLD UP                     -->
         <!-- ============================================================ -->
 
-        <!-- Slide 11, Back from demo: the scorecard (answered live AND measured) -->
+        <!-- Slide 10, Back from demo: what the audience just saw -->
         <section id="s11-rqs-checked" data-loop-stage="all">
-          <p class="kicker">Answered live, and measured</p>
-          <h2>You saw it work. Here are the numbers.</h2>
-          <p class="principles-lead">The demo answered each question in motion. Here is the single number behind each; the full curves are in the report.</p>
+          <p class="kicker">Answered in the demo</p>
+          <h2>You saw each research question in motion</h2>
+          <p class="principles-lead">Before the numbers, here is what the recording already showed.</p>
           <ul class="principles rq-checked">
             <li class="principle fragment">
               <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ1 · Modularity</span>
-              <b><span class="score-num">3</span> outside models, <span class="score-num">0</span> core changes</b>
-              <span>Swapped live in the demo, and the boundary is enforced as a build-time test.</span>
+              <b>External provider connected without code changes</b>
+              <span>The decision boundary worked as a plug-in point, not a fork.</span>
             </li>
             <li class="principle fragment">
               <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ2 · Sensing</span>
-              <b><span class="score-num">90 Hz</span> stream, every sample under 100 ms</b>
-              <span>The live gaze you watched mirror to the console, measured across eight sessions.</span>
+              <b>The researcher could see live gaze</b>
+              <span>The participant view was mirrored on the console in real time.</span>
             </li>
             <li class="principle fragment">
               <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ3 · Context preservation</span>
-              <b>Resume time <span class="score-was">650</span> <span class="score-arrow" aria-hidden="true">→</span> <span class="score-good">482 ms</span></b>
-              <span>When the text reflowed, the reader got back to reading sooner.</span>
+              <b>You could see the anchor being highlighted</b>
+              <span>The platform carried the reader's place across the text change.</span>
             </li>
             <li class="principle fragment">
-              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ4 · Researcher control</span>
-              <b>Whole chapter rebuilt from <span class="score-num">one record</span></b>
-              <span>You approved a proposal, and every result here came from a replayable file.</span>
+              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ4 · Control + reproducibility</span>
+              <b>You could see the replay</b>
+              <span>The exported record reconstructed the session after it ended.</span>
             </li>
           </ul>
           <aside class="notes">
-            <p><strong>[open, P2 ~45s]</strong> A demo can be staged, so here are the numbers,
-            one per question, and then the two that were actually interesting to find out. This
-            is a scorecard: say each number with confidence and move on, do not read the report
-            back.</p>
+            <p><strong>[open, P2 ~45s]</strong> Before we go into the measured evidence, let us
+            anchor the four research questions in what you just saw in the demo.</p>
 
             <p><strong>[reveal RQ1, Modularity]</strong> Three outside models plugged into the
-            seam with zero changes to our core, and the boundary is a compile-time test, not a
-            promise.</p>
+            seam with zero changes to our core. In the demo, the important part was that the
+            external provider connected without changing the reading platform.</p>
 
-            <p><strong>[reveal RQ2, Sensing]</strong> The tracker held 90 hertz, and every
-            single sample reached the screen inside our 100 millisecond budget.</p>
+            <p><strong>[reveal RQ2, Sensing]</strong> For sensing, you saw the researcher see
+            the participant's live gaze on the console while the participant continued
+            reading.</p>
 
-            <p><strong>[reveal RQ3, Context preservation]</strong> When the text changed,
-            readers got back to reading in 482 milliseconds instead of 650.</p>
+            <p><strong>[reveal RQ3, Context preservation]</strong> For context preservation,
+            you saw the anchor being highlighted. That is the visible sign that the platform
+            knows what part of the text it is trying to preserve across a change.</p>
 
-            <p><strong>[reveal RQ4, Researcher control]</strong> The entire evaluation chapter
-            was rebuilt from one replayable record.</p>
+            <p><strong>[reveal RQ4, Researcher control]</strong> And for researcher control and
+            reproducibility, you saw the replay: after the session ended, the record could be
+            loaded again and inspected.</p>
 
-            <p><strong>[wrap]</strong> The full distributions are in section 7.4. Two of these
-            are worth a closer look.</p>
+            <p><strong>[wrap]</strong> So the demo answered each question in motion. Now the
+            next step is to show which parts we measured more directly.</p>
 
             <p><strong>[bridge]</strong> The first is the one that goes beyond our own
             code.</p>

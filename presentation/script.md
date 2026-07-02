@@ -206,16 +206,14 @@ Now we can place those questions in the full platform.
 
 ## HINGE 1 to DEMO
 
-### S9 What to watch for (id s10-demo, P2, ~15s then play)
-- Open with one instruction: "watch this as evidence, not as a tour."
-- The slide names the 5 proof points the audience should track in the recording:
-  - two-screen gaze mirroring
-  - context-preserving intervention and resume time
-  - approve or override control
-  - live module swap behind the same seam
-  - export and replay from one record
-- Keep it to about 15 seconds, then start the recorded silent clips and narrate
-  live. The loop-spine stays up as the visual anchor.
+### S9 The demo, embedded (id s10-demo-video, ~9 min)
+- The recorded demo is embedded on this slide; press play and let it run. Logo and
+  loop-spine are hidden so the video fills the frame.
+- One framing line before playing: "watch this as evidence, not as a tour."
+- Narrate live over the recording using the five beats below; the presenter not
+  narrating drives playback. Each beat's out-cue carries into the next.
+- Needs internet in the room (YouTube embed). If offline is a risk, swap to a local
+  video file.
 
 ## The demo (recorded, narrated live, ~9 min)
 Narrate against the loop; the presenter not narrating drives clicks. Each beat
@@ -248,18 +246,19 @@ ends on a hold-frame so speaker/clip swaps are invisible.
 
 ## HINGE 2 from DEMO; ACT 3: Does it hold up (~4 min)
 
-The evidence act is NOT the report read back. One fast scorecard, then two deep
+The evidence act is NOT the report read back. One fast demo recap, then two deep
 dives told as stories, then the honest limits. Full charts live in the report and
 in backups B7/B8.
 
-### S10 Scorecard, answered live and measured (id s11-rqs-checked, P2, ~45s)
-- Re-anchor after the demo. A scorecard, not a new explanation: the four questions,
-  one headline number each, delivered with confidence.
-  - **RQ1 Modularity:** 3 outside models plugged in, zero core changes.
-  - **RQ2 Sensing:** 90 Hz, every sample under the 100 ms budget.
-  - **RQ3 Context preservation:** resume time 650 down to 482 ms.
-  - **RQ4 Researcher control:** the whole evaluation chapter rebuilt from one record.
-- Say once, then move on: "the full distributions are in section 7.4."
+### S10 Demo recap (id s11-rqs-checked, P2, ~45s)
+- Re-anchor after the demo. This is not the measured scorecard anymore; it is the
+  audience's memory map of what they just saw.
+  - **RQ1 Modularity:** an external provider connected without any code changes.
+  - **RQ2 Sensing:** the researcher could see live gaze.
+  - **RQ3 Context preservation:** the anchor was highlighted during the text change.
+  - **RQ4 Researcher control + reproducibility:** the replay could reconstruct the session.
+- Land it: "the demo answered each question in motion; now we show the evidence
+  behind the two most important ones."
 - Bridge: "Two of these are worth a closer look. The first goes beyond our own code."
 
 ### S11 Deep dive, modularity as a story (id s12-ev-modularity, P2, ~55s)
