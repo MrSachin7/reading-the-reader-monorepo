@@ -11,23 +11,23 @@ next slide. Speak to these points in your own words; do not read them out.
   reader in real time, and we built the platform that lets researchers run,
   control, and reproduce that, with every part of the loop swappable without
   touching the core.*
-- The four research questions are the spine. They are posed after the first
-  architecture slide (S5), the demo answers them (S10), one scorecard measures all
-  four (S11), two deep dives tell the interesting ones as stories (modularity and
+- The four research questions are the spine. They are posed before the platform
+  overview, the demo answers them, one scorecard measures all four, two deep
+  dives tell the interesting ones as stories (modularity and
   context preservation), the limitations say which are only partly answered, and
-  the close restates the contribution (S15). The sensing and replay charts moved to
-  backups B7/B8 so the evidence act stops reading like the report.
+  the contribution is named once it has been earned. The sensing and replay
+  charts moved to backups B7/B8 so the evidence act stops reading like the report.
 
 | Act | Slides | Minutes |
 |---|---|---|
 | 1 Problem, reframe | S1 to S6 | 5.0 |
-| 2 The artifact + questions | S7 to S9 | 4.5 |
-| Demo | S10 + clips | 9.0 |
-| 3 Evidence (scorecard, 2 deep dives), limits, future | S11 to S14 | 4.5 |
-| Close | S15 to S16 | 1.0 |
+| 2 The artifact + questions | S7 to S8 | 3.7 |
+| Demo | S9 + clips | 9.0 |
+| 3 Evidence (scorecard, 2 deep dives), limits, future | S10 to S14 | 4.5 |
+| Close + contribution | S15 to S18 | 2.0 |
 
-Build status: **S1 to S15 are built** (points below match the slides); only the
-Thanks slide (S16) is still a stub. The one large piece still to produce is the
+Build status: the main deck is built (points below match the slides); only the
+Thanks slide is still a stub. The one large piece still to produce is the
 **8 to 10 min recorded demo**. Backup cards B1 to B6 stay sparse; B7 and B8 hold
 the sensing and replay charts for Q&A.
 
@@ -72,58 +72,103 @@ the sensing and replay charts for Q&A.
 - Reveal the two example questions on click (letter spacing, highlight cue),
   then the punch: prior prototypes proved the loop but were too coupled to swap
   pieces in and out. There was no platform to do the research.
-- Bridge (hand to P2): "So what do we build to make that research possible?"
-
-### S6 Our approach, Design Science (P2, ~50s)
-- We do not build the classifier; we build the platform it presupposes: it
-  produces reproducible session data and exposes a seam where a decider (human
-  or AI) plugs in under researcher control.
-- Where we fit: no existing system unites all of it (real-time sensing,
-  context-preserving adaptation, researcher control, reproducible + pluggable
-  decisions). That gap is our niche.
-- Meet the "is this research or just an app?" challenge head on: this is Design
-  Science. The contribution is two things together, the **artifact** (a working
-  platform) plus the **design knowledge** (principles and trade-offs others can
-  reuse).
-- Bridge (hand to P1): "So let me show you that architecture, starting with how it
-  works."
+- Handover to P2: "So I will hand over to Sachin, who will show how we turned
+  this concept into an architecture."
 
 ---
 
 ## ACT 2: The artifact (~4 min)
 
-### S7 The four steps (P1, ~60s) [translation from the S4 concept; loop device born here]
-- Argue directly off their diagram (point at the thumbnail on the left).
-- On their concept: sensing first, then feature extraction, then the classifier,
-  then the intervention. We named that loop as four replaceable steps, revealed
-  one at a time:
-  - sensing to **Sense**, feature extraction to **Analyse**, classifier to
-    **Decide**, intervention to **Intervene**.
-- Those four run as one live loop: gaze in, events, a decision, an adapted view,
-  round again.
-- The key move (revealed last): the classifier is not ours to build; it becomes
-  an **external decision provider (human or AI) on a decision seam**. We built
-  the whole loop around that seam.
-- Bridge: "With that architecture in view, we can name the four questions it had
-  to satisfy."
+### S7 The four steps (P2, ~60s) [script]
+Thanks, Satish.
 
-### S5 The research questions (P2, ~45s) [HANDOFF to P2; now after S7]
-- Once the loop is visible, the RQs become concrete: prior work proved the loop,
-  but the open question is whether the platform is architected well enough to
-  support real research.
-- Pose four plain questions, revealed one at a time (click each):
-  - **RQ1 Modularity:** can sensing, analysis, decision, and intervention be
-    separated, so a new module, even a new decider, plugs in without touching
-    the core?
-  - **RQ2 Sensing:** can a real Tobii stream become reading events fast enough to
-    adapt live?
-  - **RQ3 Intervention:** can the text change mid-read without costing the reader
-    their place?
-  - **RQ4 Control:** can the researcher steer the session and reproduce it
-    exactly, afterwards?
-- Land it: "these four drive the thesis; the demo answers each, the evidence
-  measures them." Do not over-explain each yet.
-- Bridge: "Now put those four questions where the people actually are."
+So the way we approached this was to take the programme's own concept and turn it
+into a loop with four parts that can each be replaced.
+
+On the left, the original concept starts with sensing. In our architecture, that
+becomes Sensing: the part of the system that receives gaze data from the tracker or
+from a simulated source.
+
+The next step is feature extraction. We call that Analysis, because this is where
+raw gaze becomes reading events like fixations, saccades, and regressions.
+
+Then comes the classifier. In our architecture, that is the Decision step: some
+strategy looks at the current reading context and decides whether an intervention
+should be proposed.
+
+Finally, the intervention changes the reading presentation. That is our Intervention
+step.
+
+Together, those four steps form one live adaptive loop: gaze comes in, reading
+behaviour is analysed, a decision is made, the text adapts, and the loop
+continues.
+
+The important move is what happens to the classifier. We do not build the final
+classifier in this thesis. Instead, we make it a provider that can plug into a
+decision seam. That provider could be a human researcher, a rule-based strategy,
+or later an AI model. So the loop is built around replaceability from the start.
+
+Now that the loop has a name, we can state the project goal more precisely.
+
+### S6 Project goal (P2, ~55s) [script]
+So our goal is not to build the classifier itself.
+
+Our goal is to build the research platform that the classifier, and the
+intervention studies around it, need before they can be evaluated properly.
+
+More precisely, we set out to design and evaluate a modular, researcher-operated
+adaptive reading platform: a platform that lets researchers run controlled
+reading sessions, change one part of the adaptive loop at a time, and still
+reproduce what happened afterwards.
+
+That goal has four parts.
+
+First, the loop has to be replaceable. Sensing, Analysis, Decision, and Intervention have
+to sit behind stable contracts, so changing one does not mean rewriting the rest.
+
+Second, it has to run real sessions. The platform has to work with a physical
+Tobii eye tracker, not only with simulated data.
+
+Third, it has to be researcher-operated. The researcher needs a console where
+they can see the participant's gaze, control the session, approve or trigger
+interventions, and export the full record.
+
+And fourth, it has to expose the decision boundary. A human, a rule-based
+strategy, or a future AI provider should be able to plug in without changing the
+core platform.
+
+This is why we frame the thesis as Design Science. The project is not an efficacy
+study of one intervention, and it is not an AI-classifier thesis. It is the design
+and evaluation of the platform that makes those studies possible.
+
+From that goal, we get the four research questions.
+
+### S5 The research questions (P2, ~45s) [script]
+So the question is not simply whether reading can adapt. The earlier prototypes
+already showed that the adaptive loop can exist.
+
+The question for us is whether the platform can be architected well enough to
+support real research. We break that into four research questions.
+
+The first is modularity. Can we separate sensing, analysis, decision, and
+intervention so that a new module, or even a new decision provider, can be added
+without touching the core reading runtime?
+
+The second is the sensing pipeline. Can a real Tobii stream be turned into
+reading events quickly enough to support live adaptation?
+
+The third is context preservation. If the text changes while someone is reading,
+can the platform preserve their place instead of throwing them out of the flow?
+
+And the fourth is researcher control. Can the researcher operate the session,
+steer what reaches the participant, and reproduce the session afterwards from an
+auditable record?
+
+These four questions become the spine of the rest of the presentation. The demo
+shows them in motion, and the evidence section measures whether they actually
+hold.
+
+Now we can place those questions in the full platform.
 
 ### S8 The whole platform (P1, ~50s) [reuses thesis Fig. 5.1]
 - Those four steps, now where the people are, the whole platform in one picture.
@@ -134,32 +179,14 @@ the sensing and replay charts for Q&A.
   saccades (not just where but how they read), and holds the controls.
 - The decision seam sits on the boundary, where an external provider may attach,
   out of scope by design.
-- Bridge (hand to P2): "Three principles keep those seams stable, and that is
-  the design knowledge, the part another team can reuse."
-
-### S9 Design principles (P2, ~50s)
-- The "knowledge" half of Design Science, not a feature list. Four principles,
-  each answering one research question (this is the transferable part):
-  - **RQ1 Modularity:** one seam shape, immutable snapshots. Every module is
-    identity-in, a read-only snapshot in, an optional result out; new modules
-    are additive, none can mutate the core.
-  - **RQ2 Sensing:** gaze on its own real-time channel, off the control path, so
-    the loop stays lock-free and inside its latency budget.
-  - **RQ3 Context-preserving:** validate, then commit at a controlled boundary
-    with a position anchor, so text adapts without costing the reader their
-    place.
-  - **RQ4 Reproducibility:** one authoritative, schema-versioned record,
-    reconstructable by replay, so nothing can disagree with it.
-- Bridge (THE PROMISE that launches the demo): "Everything so far is a claim,
-  independent modules, a preserved reading position, researcher control,
-  reproducible records. Claims are cheap. So let us watch the platform do all
-  four, live."
+- Bridge (hand to P2): "Now the demo should not feel like a product tour. It
+  should answer the four research questions we just named."
 
 ---
 
 ## HINGE 1 to DEMO
 
-### S10 What to watch for (P2, ~15s then play)
+### S9 What to watch for (P2, ~15s then play)
 - Open with one instruction: "watch this as evidence, not as a tour."
 - The slide names the 5 proof points the audience should track in the recording:
   - two-screen gaze mirroring
@@ -251,18 +278,40 @@ in backups B7/B8.
   touches the core.
 - Nearer-term, smaller: re-test the revised restore with readers; a principled
   Kalman filter over the gaze signal.
-- Bridge: "So, to close."
+- Bridge: "And this is not only future work. It already started to happen."
 
-### S15 Close (P2, ~40s)
+### S15 Reading the Struggle reuse (P2, ~40s)
+- Show the photos as proof that the platform was used in a real lab workflow, not
+  just in our demo.
+- Say the key point plainly: the concurrent project **Reading the Struggle** used
+  the platform to gather reading-session data.
+- Their own analyser connected through the same external-analysis/decision
+  boundary, instead of requiring a fork or a separate experiment system.
+- Land it: this is the modularity claim in practice; another team brought its own
+  intelligence without rewriting the reading platform.
+- Bridge: "Now we can name what the thesis contributes."
+
+### S16 Contribution (P2, ~45s)
+- Name the two layers from the thesis:
+  - **Artifact:** a working, researcher-operated adaptive reading platform with
+    two screens, Tobii-backed sensing, pluggable decision providers,
+    context-preserving interventions, and replayable records.
+  - **Design knowledge:** four transferable principles:
+    enforce boundaries in the build; validate contracts from outside; measure the
+    cost of claimed qualities; separate decision from commit.
+- Bridge: "So if you remember one sentence from the thesis, it is this."
+
+### S17 Close (P2, ~25s)
 - The memorable claim, slowly; this is the sentence they repeat in deliberation: a
   researcher can watch someone read in real time and reshape the text without
   costing them their place, and every part of the loop is swappable without touching
   the core.
-- Then land it: we did not build the classifier, we built the platform it
-  presupposes, and proved the seams hold under a real 90 Hz Tobii loop. Four
-  answered, one lesson learned, a gap filled. "Thank you."
+- Then land the thesis callback: we did not build the classifier; we built the
+  platform it presupposes, with quality data and a live loop where it can be
+  connected, run, and judged.
+- End cleanly: "Thank you."
 
-### S16 Thanks and pointer (P2, ~15s) [STUB]
+### S18 Thanks and pointer (P2, ~15s) [STUB]
 - Names, documentation site / repo link, "happy to go deeper." Leave it up
   during Q&A. Do not over-talk.
 

@@ -135,37 +135,8 @@
             highlight cue cut regressions? Different logic every time. Prior prototypes in the
             programme proved the concept works, but they were too coupled to swap those pieces
             in and out. There was simply no platform to do this research.
-            So, what do we build to make that research possible?
-          </aside>
-        </section>
-
-        <!-- Slide 6, Our approach: Design Science + where we fit -->
-        <section id="s6-approach">
-          <p class="kicker">Our approach</p>
-          <h2 class="wide"><span class="h2-neg">We do not build the classifier.</span> We build the platform it presupposes.</h2>
-          <p class="lead approach-lead">A platform that produces reproducible session data, and exposes a seam where a human or an AI decider plugs in, all under researcher control.</p>
-          <p class="fit-line">No existing system unites all of it: real-time sensing, context-preserving adaptation, researcher control, and reproducible, pluggable decisions. That gap is where we fit.</p>
-          <div class="ds-eq-row">
-            <div class="ds-card"><b>The artifact</b><span>a working, researcher-operated platform</span></div>
-            <span class="ds-op">+</span>
-            <div class="ds-card"><b>The design knowledge</b><span>principles &amp; trade-offs others can reuse</span></div>
-          </div>
-          <p class="ds-conclusion">= the contribution</p>
-          <aside class="notes">
-            SPEAK (P2, ~50s), the "is this research?" pre-empt:
-            "Our approach is deliberately not to supply yet another classifier. We build
-            the platform that classifier presupposes: it produces the reproducible session
-            data such a model would be trained on, and it exposes a clean seam where a
-            decider, human or AI, plugs in under the researcher's control.
-            And notice the gap we are filling: no existing system unites all of it,
-            real-time sensing, context-preserving adaptation, researcher control, and
-            reproducible, pluggable decisions. That is where this thesis fits.
-            It also answers a fair challenge head on: is this research, or just an app? We
-            treat it as Design Science. The contribution is two things together, the
-            artifact, a working researcher-operated platform, and the design knowledge, the
-            principles and trade-offs that make it replaceable on any stack."
-            BRIDGE (hand to P1): "So let me show you that architecture, starting with how it
-            works."
+            So I will hand over to Sachin, who will show how we turned this concept into an
+            architecture.
           </aside>
         </section>
 
@@ -184,7 +155,7 @@
             </figure>
             <div class="map-arrow" aria-hidden="true">&rarr;</div>
             <svg class="diagram" viewBox="0 0 900 630" role="img" aria-labelledby="s7-fig-title">
-              <title id="s7-fig-title">The concept's four stages, named as four replaceable steps that run as one loop: sense, analyse, decide, and intervene. The classifier becomes an external decision provider (human or AI) on the decision seam.</title>
+              <title id="s7-fig-title">The concept's four stages, named as four replaceable steps that run as one loop: sensing, analysis, decision, and intervention. The classifier becomes an external decision provider (human or AI) on the decision seam.</title>
               <defs>
                 <marker id="loop-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
                   <path d="M0 0 L10 4.5 L0 9 z" fill="var(--navy)"/>
@@ -197,42 +168,34 @@
               <!-- the loop ring (matches the corner loop-spine) -->
               <circle class="loop-ring" cx="430" cy="290" r="175"/>
 
-              <!-- flow arcs, clockwise: sense -> analyse -> decide -> intervene -> sense -->
-              <path class="arc" d="M501.2 130.1 A175 175 0 0 1 589.9 218.8" marker-end="url(#loop-arrow)"/>
-              <path class="arc" d="M589.9 361.2 A175 175 0 0 1 501.2 449.9" marker-end="url(#loop-arrow)"/>
-              <path class="arc" d="M358.8 449.9 A175 175 0 0 1 270.1 361.2" marker-end="url(#loop-arrow)"/>
-              <path class="arc" d="M270.1 218.8 A175 175 0 0 1 358.8 130.1" marker-end="url(#loop-arrow)"/>
-
-              <!-- arc labels (what flows) -->
-              <text class="arc-lbl" x="600" y="128" text-anchor="middle">gaze samples</text>
-              <text class="arc-lbl" x="600" y="458" text-anchor="middle">oculomotor events</text>
-              <text class="arc-lbl" x="262" y="458" text-anchor="middle">intervention</text>
-              <text class="arc-lbl" x="262" y="128" text-anchor="middle">adapted text</text>
-
               <!-- centre label -->
               <text class="loop-center-1" x="430" y="285" text-anchor="middle">The adaptive loop</text>
               <text class="loop-center-2" x="430" y="306" text-anchor="middle">one live reading session</text>
 
-              <!-- nodes, revealed one at a time to map onto the concept -->
+              <!-- stages and flow arrows, revealed one at a time to map onto the concept -->
               <g class="fragment">
+                <path class="arc" d="M501.2 130.1 A175 175 0 0 1 589.9 218.8" marker-end="url(#loop-arrow)"/>
+                <text class="arc-lbl" x="600" y="128" text-anchor="middle">gaze samples</text>
                 <circle class="node-fill" cx="430" cy="115" r="62"/>
-                <text class="node-label" x="430" y="110" text-anchor="middle" dominant-baseline="middle">Sense</text>
-                <text class="node-sub" x="430" y="133" text-anchor="middle">their sensing</text>
+                <text class="node-label" x="430" y="115" text-anchor="middle" dominant-baseline="middle">Sensing</text>
               </g>
               <g class="fragment">
+                <path class="arc" d="M589.9 361.2 A175 175 0 0 1 501.2 449.9" marker-end="url(#loop-arrow)"/>
+                <text class="arc-lbl" x="600" y="458" text-anchor="middle">oculomotor events</text>
                 <circle class="node-fill" cx="605" cy="290" r="62"/>
-                <text class="node-label" x="605" y="285" text-anchor="middle" dominant-baseline="middle">Analyse</text>
-                <text class="node-sub" x="605" y="308" text-anchor="middle">their feature extraction</text>
+                <text class="node-label" x="605" y="290" text-anchor="middle" dominant-baseline="middle">Analysis</text>
               </g>
               <g class="fragment">
+                <path class="arc" d="M358.8 449.9 A175 175 0 0 1 270.1 361.2" marker-end="url(#loop-arrow)"/>
+                <text class="arc-lbl" x="262" y="458" text-anchor="middle">intervention</text>
                 <circle class="node-fill" cx="430" cy="465" r="62"/>
-                <text class="node-label" x="430" y="460" text-anchor="middle" dominant-baseline="middle">Decide</text>
-                <text class="node-sub" x="430" y="483" text-anchor="middle">their classifier</text>
+                <text class="node-label" x="430" y="465" text-anchor="middle" dominant-baseline="middle">Decision</text>
               </g>
               <g class="fragment">
+                <path class="arc" d="M270.1 218.8 A175 175 0 0 1 358.8 130.1" marker-end="url(#loop-arrow)"/>
+                <text class="arc-lbl" x="262" y="128" text-anchor="middle">adapted text</text>
                 <circle class="node-fill" cx="255" cy="290" r="62"/>
-                <text class="node-label" x="255" y="285" text-anchor="middle" dominant-baseline="middle">Intervene</text>
-                <text class="node-sub" x="255" y="308" text-anchor="middle">their intervention</text>
+                <text class="node-label" x="255" y="290" text-anchor="middle" dominant-baseline="middle">Intervention</text>
               </g>
 
               <!-- the payoff: the classifier becomes a provider on a seam (revealed last) -->
@@ -247,51 +210,166 @@
           </div>
           <p class="diagram-caption">Their classifying loop, named as four steps we can each replace. And the classifier becomes a provider on a seam: human or AI.</p>
           <aside class="notes">
-            SPEAK (P1, ~60s), argue directly off their diagram (point at the thumbnail):
-            "So how does the platform work? We took the programme's own concept, on the
-            left, and named its loop as four steps we can each replace.
-            On their diagram, sensing comes first, so we call that Sense. [click] Then the
-            feature extraction, that is our Analyse. [click] Then the classifier, the part
-            that makes the call, that is our Decide. [click] And finally the intervention
-            that adapts the text, our Intervene. [click] Those four run as one live loop:
-            gaze in, events, a decision, an adapted view, and round again.
-            And here is the key move. [click] That classifier in the middle is not ours to
-            build. In our architecture it becomes an external decision provider, human or
-            AI, that plugs into a decision seam. We built the whole loop around that seam."
-            BRIDGE: "With that architecture in view, we can name the four questions it had
-            to satisfy."
+            Thanks, Satish.
+
+            So the way we approached this was to take the programme's own concept and turn
+            it into a loop with four parts that can each be replaced.
+
+            On the left, the original concept starts with sensing. In our architecture, that
+            becomes Sensing: the part of the system that receives gaze data from the tracker or
+            from a simulated source.
+
+            The next step is feature extraction. We call that Analysis, because this is where
+            raw gaze becomes reading events like fixations, saccades, and regressions.
+
+            Then comes the classifier. In our architecture, that is the Decision step: some
+            strategy looks at the current reading context and decides whether an intervention
+            should be proposed.
+
+            Finally, the intervention changes the reading presentation. That is our
+            Intervention step.
+
+            Together, those four steps form one live adaptive loop: gaze comes in, reading
+            behaviour is analysed, a decision is made, the text adapts, and the loop continues.
+
+            The important move is what happens to the classifier. We do not build the final
+            classifier in this thesis. Instead, we make it a provider that can plug into a
+            decision seam. That provider could be a human researcher, a rule-based strategy,
+            or later an AI model. So the loop is built around replaceability from the start.
+
+            Now that the loop has a name, we can state the project goal more precisely.
           </aside>
         </section>
 
-        <!-- Research questions, moved after the first architecture slide -->
+        <!-- Slide 6, Project goal: what we build and what we deliberately do not build -->
+        <section id="s6-approach">
+          <p class="kicker">Project goal</p>
+          <h2 class="wide">Build the research platform</h2>
+          <div class="goal-layout">
+            <div class="goal-claim">
+              <p class="goal-not">Not the classifier</p>
+              <p class="goal-main">The platform that makes it testable</p>
+              <p class="goal-support">Run real sessions, swap one part of the loop, and reproduce the record afterwards.</p>
+            </div>
+            <div class="goal-grid">
+              <div class="goal-card fragment">
+                <span>01</span>
+                <b>Replaceable loop</b>
+                <em>Sensing · Analysis · Decision · Intervention</em>
+              </div>
+              <div class="goal-card fragment">
+                <span>02</span>
+                <b>Real sessions</b>
+                <em>Tobii-backed · live · measured</em>
+              </div>
+              <div class="goal-card fragment">
+                <span>03</span>
+                <b>Researcher operation</b>
+                <em>Mirror · gate · export</em>
+              </div>
+              <div class="goal-card fragment">
+                <span>04</span>
+                <b>Decision boundary</b>
+                <em>Human · rules · future AI</em>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            So our goal is not to build the classifier itself.
+
+            Our goal is to build the research platform that the classifier, and the
+            intervention studies around it, need before they can be evaluated properly.
+
+            More precisely, we set out to design and evaluate a modular,
+            researcher-operated adaptive reading platform: a platform that lets researchers
+            run controlled reading sessions, change one part of the adaptive loop at a time,
+            and still reproduce what happened afterwards.
+
+            That goal has four parts.
+
+            First, the loop has to be replaceable. Sensing, Analysis, Decision, and Intervention
+            have to sit behind stable contracts, so changing one does not mean rewriting the
+            rest.
+
+            Second, it has to run real sessions. The platform has to work with a physical
+            Tobii eye tracker, not only with simulated data.
+
+            Third, it has to be researcher-operated. The researcher needs a console where
+            they can see the participant's gaze, control the session, approve or trigger
+            interventions, and export the full record.
+
+            And fourth, it has to expose the decision boundary. A human, a rule-based
+            strategy, or a future AI provider should be able to plug in without changing the
+            core platform.
+
+            This is why we frame the thesis as Design Science. The project is not an
+            efficacy study of one intervention, and it is not an AI-classifier thesis. It is
+            the design and evaluation of the platform that makes those studies possible.
+
+            From that goal, we get the four research questions.
+          </aside>
+        </section>
+
+        <!-- Research questions, after the loop and project goal -->
         <section id="s5-rqs">
-          <p class="kicker">What we set out to answer</p>
-          <h2 class="wide">Not whether reading can adapt, but how to architect it</h2>
-          <p class="ps-lead">Now that the loop is visible, the open problem becomes concrete: can this platform keep the four concerns replaceable, work on real Tobii sessions, adapt text without breaking the reader's flow, and stay under researcher control? It breaks into four questions.</p>
-          <ol class="rq-list">
-            <li class="fragment"><span class="rq-tag">RQ1 · Modularity</span> Can sensing, analysis, decision, and intervention be separated, so a new module, even a new decider, plugs in without touching the core?</li>
-            <li class="fragment"><span class="rq-tag">RQ2 · Sensing</span> Can a real Tobii stream become reading events fast enough to adapt live?</li>
-            <li class="fragment"><span class="rq-tag">RQ3 · Context preservation</span> Can the text change mid-read without costing the reader their place?</li>
-            <li class="fragment"><span class="rq-tag">RQ4 · Researcher control</span> Can the researcher steer the session, and reproduce it exactly, afterwards?</li>
+          <p class="kicker">Research questions</p>
+          <h2 class="wide">Four questions guide the evaluation</h2>
+          <ol class="rq-board">
+            <li class="rq-test">
+              <span class="rq-num">RQ1</span>
+              <div>
+                <b>Modularity</b>
+                <em>Can sensing, analysis, decision, and intervention be replaced without changing the core runtime?</em>
+              </div>
+            </li>
+            <li class="rq-test">
+              <span class="rq-num">RQ2</span>
+              <div>
+                <b>Sensing pipeline</b>
+                <em>Can real Tobii gaze become fixations, saccades, and regressions fast enough for live adaptation?</em>
+              </div>
+            </li>
+            <li class="rq-test">
+              <span class="rq-num">RQ3</span>
+              <div>
+                <b>Context preservation</b>
+                <em>Can typographic micro-interventions adapt the text while preserving the reader's place?</em>
+              </div>
+            </li>
+            <li class="rq-test">
+              <span class="rq-num">RQ4</span>
+              <div>
+                <b>Researcher control</b>
+                <em>Can the researcher operate, replay, and compare sessions from an auditable record?</em>
+              </div>
+            </li>
           </ol>
           <aside class="notes">
-            SPEAK (P2, ~45s) [take over from P1]:
-            "Now that the loop is visible, we can say exactly what this platform had to
-            prove. Prior prototypes showed the loop can exist. What was still open was
-            whether we could architect it well enough to run real research, and that
-            breaks into four questions.
-            [click] One, modularity: can we separate sensing, analysis, decision, and
-            intervention, so a new module, even a new decider, plugs in without touching
-            the core?
-            [click] Two, sensing: can a real Tobii stream become reading events fast
-            enough to adapt live?
-            [click] Three, intervention: can the text change mid-read without costing the
-            reader their place?
-            [click] Four, control: can the researcher steer the session and reproduce it
-            exactly, afterwards?
-            Keep these four in mind: the demo answers each one, and the evidence measures
-            them."
-            BRIDGE: "Now put those four questions where the people actually are."
+            So the question is not simply whether reading can adapt. The earlier prototypes
+            already showed that the adaptive loop can exist.
+
+            The question for us is whether the platform can be architected well enough to
+            support real research. We break that into four research questions.
+
+            The first is modularity. Can we separate sensing, analysis, decision, and
+            intervention so that a new module, or even a new decision provider, can be added
+            without touching the core reading runtime?
+
+            The second is the sensing pipeline. Can a real Tobii stream be turned into
+            reading events quickly enough to support live adaptation?
+
+            The third is context preservation. If the text changes while someone is reading,
+            can the platform preserve their place instead of throwing them out of the flow?
+
+            And the fourth is researcher control. Can the researcher operate the session,
+            steer what reaches the participant, and reproduce the session afterwards from an
+            auditable record?
+
+            These four questions become the spine of the rest of the presentation. The demo
+            shows them in motion, and the evidence section measures whether they actually
+            hold.
+
+            Now we can place those questions in the full platform.
           </aside>
         </section>
 
@@ -312,60 +390,10 @@
             but how the person reads, and they hold the controls that steer the session.
             And the decision seam we just named sits right here on the boundary, where an
             external provider may attach, out of scope by design."
-            BRIDGE (hand off to P2): "Three principles keep those seams stable, and that is
-            the design knowledge, the part another team can reuse."
+            BRIDGE (hand off to P2): "Now the demo should not feel like a product tour.
+            It should answer the four research questions we just named."
             NOTE: figure reused verbatim from the thesis (Fig. 5.1, fig:design-context,
             architecture_overview.svg) for deck-to-report traceability.
-          </aside>
-        </section>
-
-        <!-- Slide 9, Design principles (the "knowledge" half of Design Science) -->
-        <section id="s9-principles" data-loop-stage="all">
-          <p class="kicker">The design knowledge</p>
-          <h2>Principles that keep the seams stable</h2>
-          <p class="principles-lead">The artifact is half the contribution. These four principles are the other half, the transferable part, and each one answers one research question.</p>
-          <ul class="principles">
-            <li class="principle">
-              <span class="pr-rq">RQ1 · Modularity</span>
-              <b>One seam shape, immutable snapshots</b>
-              <span>Every module is the same shape: an identity in, a read-only snapshot in, an optional result out. New modules are additive, and none can reach into or mutate the core.</span>
-            </li>
-            <li class="principle">
-              <span class="pr-rq">RQ2 · Sensing</span>
-              <b>Gaze on its own real-time channel</b>
-              <span>High-frequency gaze rides a dedicated channel, kept off the request-and-response control path, so the per-sample loop stays lock-free and inside its latency budget.</span>
-            </li>
-            <li class="principle">
-              <span class="pr-rq">RQ3 · Context preservation</span>
-              <b>Validate, then commit at a boundary</b>
-              <span>An intervention is validated, then committed at a controlled boundary carrying a position anchor, so the text can adapt without costing the reader their place.</span>
-            </li>
-            <li class="principle">
-              <span class="pr-rq">RQ4 · Researcher control</span>
-              <b>One authoritative, replayable record</b>
-              <span>A single schema-versioned record, reconstructable by replay, so there is no second account to disagree and every session can be reproduced.</span>
-            </li>
-          </ul>
-          <aside class="notes">
-            SPEAK (P2, ~50s):
-            "So what keeps those seams stable? Four principles, and this is the part we
-            most want another team to take away, because it is transferable beyond our
-            code. Each one answers one of our research questions.
-            First, every module has the same shape: an identity, a read-only snapshot in,
-            an optional result out. That uniformity, plus the fact that a module only ever
-            sees a copy, is what makes a new module additive and testable in isolation,
-            that is modularity, RQ1.
-            Second, gaze rides its own real-time channel, off the control path, so the
-            loop stays fast enough to matter, RQ2.
-            Third, an intervention is validated and then committed at a controlled
-            boundary with a position anchor, so the text can change without the reader
-            losing their place, RQ3.
-            Fourth, there is one authoritative, replayable record, so nothing can disagree
-            with it and every session is reproducible, RQ4."
-            BRIDGE (THE PROMISE that launches the demo): "Everything so far is a claim:
-            independent modules, a preserved reading position, researcher control,
-            reproducible records. Claims are cheap. So let us watch the platform do all
-            four, live."
           </aside>
         </section>
 
@@ -373,7 +401,7 @@
         <!-- HINGE 1 -> DEMO                                                -->
         <!-- ============================================================ -->
 
-        <!-- Slide 10, pre-demo roadmap -->
+        <!-- Slide 9, pre-demo roadmap -->
         <section id="s10-demo" data-loop-stage="all">
           <p class="kicker">Demo</p>
           <h2>Watch the demo as evidence, not as a tour</h2>
@@ -427,7 +455,7 @@
             </ol>
           </div>
           <aside class="notes">
-            JOB: cash the promise from slide 8, so the demo reads as EVIDENCE not a
+            JOB: connect the research questions to the recording, so the demo reads as EVIDENCE not a
             tour. Show the 5 beats ~15s, then start the recorded (silent) clips and
             narrate live. Beats:
             1 Two-screen gaze mirroring (RQ2)
@@ -490,38 +518,36 @@
         <!-- Slide 12, Evidence intro + RQ1 Modularity (the executable boundary test) -->
         <section id="s12-ev-modularity" data-loop-stage="all">
           <p class="kicker">Deep dive · Modularity (RQ1)</p>
-          <h2>Proven from outside, enforced by the compiler</h2>
-          <p class="ev-lead">We could just assert the core is decoupled. Instead, we let an outside collaborator's reading-difficulty model connect through the seam, with no change to our code and none to theirs, and we made the boundary a rule the compiler enforces.</p>
-          <div class="code-cols">
-            <pre class="code"><code>// Core (Domain + Application) must never depend outward on
-// infrastructure, transport, or the web host.  (RQ1 / NFR1)
-
-[Fact]
-public void Domain_depends_on_no_other_project_assembly()
-{
-    var refs = typeof(InterventionEventSnapshot).Assembly
-        .GetReferencedAssemblies()
-        .Where(r =&gt; r.Name!.StartsWith("ReadingTheReader"));
-
-    Assert.Empty(refs);
-}
-
-[Fact]
-public void Application_core_depends_on_no_infrastructure_assembly()
+          <h2>The core cannot quietly depend on the outside</h2>
+          <div class="boundary-proof">
+            <pre class="code boundary-code"><code>[Fact]
+public void Application_core_has_no_outward_dependencies()
 {
     var outward = typeof(ExperimentSessionManager).Assembly
         .GetReferencedAssemblies()
-        .Where(r =&gt; OutwardMarkers.Any(m =&gt; r.Name!.Contains(m)));
+        .Select(r =&gt; r.Name ?? string.Empty)
+        .Where(name =&gt; OutwardAssemblyMarkers.Any(marker =&gt;
+            name.Contains(marker)));
 
-    Assert.Empty(outward);
+    <span class="code-focus">Assert.Empty(outward);</span>
 }</code></pre>
-            <div class="code-out">
-              <p class="code-out-verdict"><span class="tick" aria-hidden="true">✓</span> Passing, and build-enforced</p>
-              <ul class="code-out-list">
-                <li><b>3</b> external providers connected, zero core changes (one wraps a third party's model)</li>
-                <li><b>1</b> registration to add an in-process module</li>
-                <li>the boundary is verifiable, not merely asserted in prose</li>
-              </ul>
+            <div class="boundary-outcome">
+              <p class="boundary-rule">If the core imports outward, the test fails.</p>
+              <div class="boundary-metrics">
+                <div>
+                  <b>3</b>
+                  <span>external providers</span>
+                </div>
+                <div>
+                  <b>0</b>
+                  <span>core changes</span>
+                </div>
+                <div>
+                  <b>1</b>
+                  <span>module registration</span>
+                </div>
+              </div>
+              <p class="boundary-note">So modularity is not a diagram promise; it is checked by the build.</p>
             </div>
           </div>
           <p class="fig-credit">Source: <code>ArchitectureBoundaryTests.cs</code> (condensed for the slide).</p>
@@ -587,7 +613,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             <li class="limit fragment">
               <span class="limit-tag">Effect</span>
               <b>No efficacy claim, small sample</b>
-              <span>We showed the platform can apply and instrument interventions, not that any of them helps a struggling reader. The readers were a small convenience sample, not clinical ones; the controlled effect study is future work by design.</span>
+              <span>We showed the platform can apply and log interventions, not that any of them helps a struggling reader. The readers were a small convenience sample, not clinical ones; the controlled effect study is future work by design.</span>
             </li>
             <li class="limit fragment">
               <span class="limit-tag">AI decision-making</span>
@@ -656,15 +682,100 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <!-- Slide 15, Close: the memorable claim (the sentence they repeat in deliberation) -->
-        <section id="s15-close" class="center-slide" data-loop-stage="all">
+        <!-- Slide 15, External use: concurrent project as proof of the seam -->
+        <section id="s15-struggle" data-loop-stage="all">
+          <p class="kicker">Already reused</p>
+          <h2>Reading the Struggle used our platform</h2>
+          <div class="struggle-layout">
+            <div class="struggle-photos" aria-label="Reading the Struggle data collection setup">
+              <figure class="struggle-photo struggle-photo-main">
+                <img src="assets/reading-struggle-session-1.png" alt="A lab setup with a participant reading on one screen while the researcher console runs on another monitor." />
+              </figure>
+              <figure class="struggle-photo struggle-photo-secondary">
+                <img src="assets/reading-struggle-session-2.png" alt="A second angle of the Reading the Reader platform being used during a data collection session." />
+              </figure>
+            </div>
+            <div class="struggle-copy">
+              <p class="struggle-lead">A concurrent thesis project used the platform to collect reading sessions.</p>
+              <div class="struggle-proof">
+                <span>Data collection</span>
+                <b>Sessions ran through our two-screen setup</b>
+              </div>
+              <div class="struggle-proof">
+                <span>External analysis</span>
+                <b>Their analyser connected through the same boundary</b>
+              </div>
+              <p class="struggle-line">That is the modularity claim in practice: another team brought its own analyser without rewriting the platform.</p>
+            </div>
+          </div>
+          <aside class="notes">
+            This is the point where the future-work story becomes concrete.
+
+            While we were building this platform, the concurrent project Reading the
+            Struggle used it to gather their own reading-session data. They did not need
+            to fork the application or build a separate experiment platform.
+
+            More importantly, their own analyser connected through the boundary we had
+            designed for external analysis and decision logic. So the seam was not only
+            something we demonstrated with our own modules; another team used it for their
+            own research workflow.
+
+            For us, that is an important validation of the platform idea. It shows that the
+            architecture is not only internally modular, but useful as shared research
+            infrastructure.
+
+            Now we can name the contribution properly.
+          </aside>
+        </section>
+
+        <!-- Slide 16, Contribution: artifact + design knowledge -->
+        <section id="s15-contribution" data-loop-stage="all">
+          <p class="kicker">Contribution</p>
+          <h2>The artifact, and the knowledge it leaves behind</h2>
+          <p class="contrib-lead">The platform is the evidence. The reusable contribution is the architectural knowledge it demonstrates.</p>
+          <div class="contrib-grid">
+            <div class="contrib-card fragment">
+              <span class="contrib-tag">The artifact</span>
+              <b>A researcher-operated adaptive reading platform</b>
+              <span>Two screens, real Tobii-backed sensing, pluggable decision providers, context-preserving interventions, and replayable session records.</span>
+            </div>
+            <div class="contrib-card fragment">
+              <span class="contrib-tag">The design knowledge</span>
+              <b>Four principles that outlive this stack</b>
+              <span>The thesis contribution is not just that the platform runs, but why its boundaries hold under a live adaptive loop.</span>
+            </div>
+          </div>
+          <ul class="contrib-lessons fragment">
+            <li><b>Enforce</b> boundaries in the build</li>
+            <li><b>Validate</b> contracts from outside</li>
+            <li><b>Measure</b> the cost of claimed qualities</li>
+            <li><b>Separate</b> decision from commit</li>
+          </ul>
+          <aside class="notes">
+            SPEAK (P2, ~45s):
+            "So now we can name the contribution properly. There are two layers.
+            The first is the artifact: a working, researcher-operated adaptive reading
+            platform. It has the two-screen workflow, real Tobii-backed sensing, pluggable
+            decision providers, context-preserving interventions, and a replayable session
+            record.
+            The second is the design knowledge that survives this implementation. The four
+            lessons are: enforce the important boundary in the build, validate the contract
+            from outside rather than only with your own modules, measure the cost of the
+            qualities you claim, and separate a change's decision from its commit so it can
+            land at a natural boundary."
+            BRIDGE: "So if you remember one sentence from the thesis, it is this."
+          </aside>
+        </section>
+
+        <!-- Slide 17, Close: the memorable claim (the sentence they repeat in deliberation) -->
+        <section id="s16-close" class="center-slide" data-loop-stage="all">
           <p class="kicker">What we want you to take away</p>
           <p class="big-claim">
             A researcher can watch someone read in real time and reshape the text as
             it happens, without costing them their place, and every part of that loop
             is swappable without touching the core.
           </p>
-          <p class="close-line">We did not build the classifier. We built the platform it presupposes, and proved the seams hold under a real 90 Hz Tobii loop. Four questions answered, one honest lesson learned, and a gap no one else had filled.</p>
+          <p class="close-line">We did not build the classifier. We built the platform it presupposes: quality data to train it on, and a live loop where it can be connected, run, and judged.</p>
           <ul class="close-rqs" aria-label="The four research questions, all answered">
             <li><span class="tick" aria-hidden="true">✓</span> RQ1 · Modularity</li>
             <li><span class="tick" aria-hidden="true">✓</span> RQ2 · Sensing</li>
@@ -678,15 +789,16 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             every part of that loop, the sensing, the analysis, the decision, the
             intervention, can be swapped without touching the core.
             We did not build the classifier. We built the platform it presupposes, and we
-            proved the seams hold under a real 90 hertz Tobii loop. Four questions
-            answered, one honest lesson about our own line-stabilisation, and a gap nobody
-            else had filled. Thank you."
+            proved the seams hold under a real 90 hertz Tobii loop. With reproducible
+            records and an open decision boundary, the classifier now has the two things it
+            was missing: data of a quality it can be trained on, and a live loop where it can
+            be connected, run, and judged. Thank you."
             [then advance to Questions]
           </aside>
         </section>
 
-        <!-- Slide 16, Thanks + pointer -->
-        <section id="s16-thanks">
+        <!-- Slide 18, Thanks + pointer -->
+        <section id="s17-thanks">
           <p class="kicker">Thank you</p>
           <h2>Questions</h2>
           <p class="thanks-tagline">Reading the Reader: a modular platform for gaze-driven adaptive reading research.</p>
@@ -880,4 +992,3 @@ public void Application_core_depends_on_no_infrastructure_assembly()
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
-
