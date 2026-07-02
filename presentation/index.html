@@ -37,15 +37,82 @@
         <section id="s2-problem">
           <p class="kicker">The problem</p>
           <h2>Reading is hard for some readers</h2>
-          <p class="lead">
-            For readers with dyslexia or age-related vision loss, text can demand
-            more than they can comfortably process.
-          </p>
-          <p class="lead">
-            Digital text <em>can reshape itself</em> as it is read, and an eye
-            tracker can tell <em>when</em> a reader is struggling, so it could
-            adapt in real time <strong>without breaking the reader's flow</strong>.
-          </p>
+          <div class="two-col">
+            <div class="col-text">
+              <p class="lead">
+                For readers with dyslexia or age-related vision loss, text can demand
+                more than they can comfortably process.
+              </p>
+              <p class="lead">
+                Digital text <em>can reshape itself</em> as it is read, and an eye
+                tracker can tell <em>when</em> a reader is struggling, so it could
+                adapt in real time <strong>without breaking the reader's flow</strong>.
+              </p>
+            </div>
+            <figure class="problem-fig">
+              <svg viewBox="0 0 460 360" role="img" aria-labelledby="s2-fig-title">
+                <title id="s2-fig-title">A simulation of how a page can feel to a struggling reader: the centre of the text fades out, as with central vision loss, while one line's letters are scrambled, as dyslexia can make them feel.</title>
+                <defs>
+                  <filter id="s2-soften" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="9" />
+                  </filter>
+                  <radialGradient id="s2-loss" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="var(--ink)" stop-opacity="0.72" />
+                    <stop offset="55%" stop-color="var(--ink)" stop-opacity="0.28" />
+                    <stop offset="100%" stop-color="var(--ink)" stop-opacity="0" />
+                  </radialGradient>
+                </defs>
+
+                <rect x="18" y="14" width="424" height="332" rx="12" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5" />
+
+                <rect x="44" y="40" width="220" height="16" rx="5" fill="var(--muted)" />
+
+                <g fill="var(--line)">
+                  <rect x="44" y="82" width="60" height="12" rx="6" />
+                  <rect x="112" y="82" width="48" height="12" rx="6" />
+                  <rect x="168" y="82" width="86" height="12" rx="6" />
+                  <rect x="262" y="82" width="40" height="12" rx="6" />
+                  <rect x="310" y="82" width="88" height="12" rx="6" />
+
+                  <rect x="44" y="150" width="72" height="12" rx="6" />
+                  <rect x="124" y="150" width="52" height="12" rx="6" />
+                  <rect x="184" y="150" width="96" height="12" rx="6" />
+                  <rect x="288" y="150" width="58" height="12" rx="6" />
+                  <rect x="354" y="150" width="44" height="12" rx="6" />
+
+                  <rect x="44" y="178" width="52" height="12" rx="6" />
+                  <rect x="104" y="178" width="86" height="12" rx="6" />
+                  <rect x="198" y="178" width="40" height="12" rx="6" />
+                  <rect x="246" y="178" width="72" height="12" rx="6" />
+                  <rect x="326" y="178" width="72" height="12" rx="6" />
+
+                  <rect x="44" y="206" width="80" height="12" rx="6" />
+                  <rect x="132" y="206" width="44" height="12" rx="6" />
+                  <rect x="184" y="206" width="64" height="12" rx="6" />
+                  <rect x="256" y="206" width="100" height="12" rx="6" />
+
+                  <rect x="44" y="234" width="60" height="12" rx="6" />
+                  <rect x="112" y="234" width="92" height="12" rx="6" />
+                  <rect x="212" y="234" width="48" height="12" rx="6" />
+                  <rect x="268" y="234" width="84" height="12" rx="6" />
+
+                  <rect x="44" y="262" width="100" height="12" rx="6" />
+                  <rect x="152" y="262" width="52" height="12" rx="6" />
+                  <rect x="212" y="262" width="64" height="12" rx="6" />
+                  <rect x="284" y="262" width="56" height="12" rx="6" />
+
+                  <rect x="44" y="290" width="72" height="12" rx="6" />
+                  <rect x="124" y="290" width="88" height="12" rx="6" />
+                  <rect x="220" y="290" width="44" height="12" rx="6" />
+                </g>
+
+                <text x="44" y="120" font-family="Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="600" fill="var(--ink-soft)">For smoe raeders, the wrods wno't hlod stlil.</text>
+
+                <circle cx="240" cy="212" r="104" fill="url(#s2-loss)" filter="url(#s2-soften)" />
+              </svg>
+              <figcaption class="fig-credit">A simulation. With central vision loss the middle of the page falls away; with dyslexia the letters will not sit still.</figcaption>
+            </figure>
+          </div>
           <aside class="notes">
             Imagine a reader with dyslexia, or someone losing their central vision with age.
             For them, a page of text can demand more effort
@@ -586,18 +653,19 @@ public void Application_core_has_no_outward_dependencies()
             </figure>
           </div>
           <aside class="notes">
-            SPEAK (P1, ~55s):
-            "Intervention. The question is whether adapting the text mid-read costs the
-            reader their place. We measured two things around every applied intervention.
-            On the left, reading-resume time, the gap to the reader's next forward saccade:
-            the median was 482 milliseconds with preservation against 650 without.
-            On the right, the regression rate in the five seconds after an intervention, a
-            standard sign of disruption: with preservation it fell to 23 percent, below its
-            own baseline, while without preservation it sat at 33 percent. The direction
-            held across three-, five-, and ten-second windows.
-            With four participants these are descriptive, not an inferential effect study,
-            which we will come back to."
-            BRIDGE: "That is what the platform can do. Now, honestly, what it cannot."
+            (P2 has just closed the modularity slide, hands back to you here.)
+            Thanks, Sachin. So that is the seam holding. Now let's look at the most useful
+            piece of evidence we gathered, the one result a reader actually feels. This was
+            the result we most wanted to know: does adapting the text mid-read cost the reader
+            their place? We measured two things around every intervention.
+            On the left, reading-resume time, the gap to the reader's next forward saccade: a
+            median of 482 milliseconds with preservation, against 650 without. On the right,
+            the regression rate in the five seconds after an intervention, a standard sign of
+            disruption: with preservation it fell to 23 percent, below its own baseline, while
+            without it sat at 33. The direction held across three-, five-, and ten-second
+            windows. With four participants, these are descriptive, not an inferential effect
+            study, which I'll come back to in a moment.
+            That is what the platform can do. Now, honestly, what it cannot.
           </aside>
         </section>
 
@@ -628,24 +696,25 @@ public void Application_core_has_no_outward_dependencies()
           </ul>
           <p class="lesson fragment"><span class="lesson-label">The lesson</span> Our line-stabilisation is a hand-tuned bias, a "poor man's Kalman filter": it borrows the intuition (trust the prior position) but keeps none of the machinery. A principled Kalman filter is future work.</p>
           <aside class="notes">
-            SPEAK (P1, ~55s), the maturity slide, name it before you are asked:
-            "We will also tell you where this is not finished, because the contribution is
-            clearer when its boundaries are explicit.
-            First, effect: we showed the platform can apply and measure interventions, not
-            that any intervention helps. Our readers were a small convenience sample, not
-            the clinical readers this ultimately serves, so the controlled effect study is
-            future work, by design.
-            Second, the AI story is architectural, not built: we exercised the whole
-            provider seam on real hardware, but with a fixed-rule reference provider, not a
-            learned model, and that automated path rests on a single validation run.
-            Third, the context restore: the original moved the reader too far on small
-            reflows. We fixed that geometrically, but have not yet re-tested the fix with
-            readers, so its behavioural benefit is unconfirmed.
-            And one honest lesson: the trick that keeps gaze on the right line is a
-            hand-tuned bias, a poor man's Kalman filter. It borrows the intuition but none
-            of the machinery."
-            CONTENT verified against 08_Discussion (04_limitations, 05_lessons_learned).
-            Bridge OUT: "Each of those points forward to a next step."
+            So let me be just as honest about what it cannot, because the contribution is
+            actually clearer once its limits are explicit. There are three.
+            First, effect. We showed the platform can apply an intervention and measure what
+            happens around it. We did not show that any given intervention actually helps a
+            struggling reader. And our four readers were a small convenience sample, not the
+            clinical readers this is ultimately for. So the controlled study of what helps is,
+            by design, future work.
+            Second, the AI. Our decision seam is architecture, not a finished AI. We ran the
+            whole provider seam end to end on real hardware, but with a simple fixed-rule
+            provider standing in for a learned model, and that automatic path rests on a single
+            validation run, not a full campaign.
+            Third, the restore. Our first version of the position restore over-corrected on
+            small reflows, pushing the reader past where the text had actually moved. We have
+            since fixed that in the geometry, but we have not re-tested the fix with real
+            readers yet, so its benefit is still unconfirmed.
+            And one honest lesson worth naming: the trick that keeps gaze locked to the right
+            line is a hand-tuned bias, what we call a poor man's Kalman filter. It borrows the
+            intuition, trust the previous position, but none of the real machinery.
+            Each of these points straight to a next step.
           </aside>
         </section>
 
@@ -665,20 +734,21 @@ public void Application_core_has_no_outward_dependencies()
             </div>
           </div>
           <aside class="notes">
-            SPEAK (P2, ~45s), this is a payoff, not a to-do list:
-            "So where does this go? Cast your mind back to that concept diagram and the
-            classifier at its centre, the one that needed a database of readers and could
-            be a human or an AI. We deliberately did not build it. But we now produce the
-            data it trains on, and we expose the exact seam it plugs into. The next team
-            trains the classifier on our records.
-            Picture it a year from now: a psychologist loads a hypothesis, attaches an AI
-            decider to the seam, runs two hundred sessions overnight, and can replay any
-            one of them, and none of that touches our core. That is what the platform
-            unlocks.
-            The nearer-term steps are the honest ones from our limitations: re-test the
-            revised restore with real readers, and swap the hand-tuned line bias for a
-            proper Kalman filter."
-            BRIDGE: "So, to close."
+            So, what does all of this now make possible? Concretely, two things. We now produce
+            the reader data that a classifier would train on, cleanly and reproducibly, one
+            session at a time. And we expose the exact seam where that decider, human or AI,
+            plugs in. So the one piece we deliberately left out, the classifier, is no longer a
+            gap. It is a slot, ready for the next team to fill.
+            Here is what that buys them. A year from now, a psychologist could load a new
+            hypothesis, attach an AI decider to the seam, run two hundred sessions overnight,
+            and replay any one of them the next morning, and none of it touches our core. That
+            is why this is a foundation, not an endpoint: the jump from a one-off prototype to
+            a platform others can build on.
+            And the nearest steps are the honest ones from the slide before: re-test the
+            improved restore with real readers, and swap our hand-tuned line bias for a proper
+            Kalman filter.
+            And this is not just hypothetical: another team has already built on the platform.
+            Sachin will take it from here.
           </aside>
         </section>
 

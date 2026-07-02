@@ -194,6 +194,12 @@ html, body { background: var(--paper); }
 .reveal #s4-concept .hypo-build { margin-top: 0.1em; }
 .reveal #s4-concept .fig-credit { margin-top: 0.4em; }
 
+/* ---- Slide 2: the human-problem simulation figure ---- */
+.reveal #s2-problem .two-col { align-items: center; }
+.reveal .problem-fig { margin: 0; }
+.reveal .problem-fig svg { display: block; width: 100%; height: auto; max-height: 340px; }
+.reveal .problem-fig .fig-credit { margin-top: 0.5em; }
+
 /* ---- Slide 5: the research questions (the spine) ---- */
 .reveal .rq-board {
   list-style: none;
