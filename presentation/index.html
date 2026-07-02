@@ -23,16 +23,13 @@
           <p class="meta">Supervisors: Per Bækgaard (pgba@dtu.dk) · Ashkan Task (ashta@dtu.dk) · Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
           <p class="meta">DTU Compute · July 2026</p>
           <aside class="notes">
-            SPEAK (P1, ~25-30s), welcome + roadmap, set the tone, do not dive in yet:
-            "Welcome everyone, and thank you for being here for our thesis presentation.
-            I'm Satish, this is Sachin, and this is Reading the Reader: a modular software
+            Welcome everyone, and thank you for being here for our thesis presentation.
+            I'm Satish, and this is Sachin. Our thesis is Reading the Reader: a modular software
             architecture for adaptive reading systems. Over the next twenty-five minutes or
             so, we'll walk you through the problem we set out to solve, the platform we built
-            for it, and what we found, and about a third of the way in we'll hand over to a
-            short live demo of the system running end to end. But before we show you a single
-            line of the system, we want to start with the person it is actually for."
-            Background image: the real two-screen setup (reader + researcher console).
-            BRIDGE: "Before the system, the person it's for."
+            for it, and what we found. Along the way, we'll pause for a short live demo of
+            the system in action. But before we show you a single line of the system, let's
+            start with the people it is actually for.
           </aside>
         </section>
 
@@ -50,18 +47,16 @@
             adapt in real time <strong>without breaking the reader's flow</strong>.
           </p>
           <aside class="notes">
-            SPEAK (P1, ~45s), earn the stakes, keep it human:
-            "Imagine a reader with dyslexia, or someone losing their central vision to
-            age-related macular degeneration. For them, a page of text can demand more effort
+            Imagine a reader with dyslexia, or someone losing their central vision with age.
+            For them, a page of text can demand more effort
             than they can comfortably give. Now, here is the opportunity: digital text is not
             fixed. It can reshape itself while it is being read. And an eye tracker can tell us
             when a reader is struggling, in the moment. So in principle, the text could adapt
             in real time, to that specific reader. But there is one hard constraint, and it
             runs through everything we built: the adaptation must never cost the reader their
-            place, or their flow. The instant it does, we've made reading harder, not easier."
-            KEY CONSTRAINT TO PLANT: adaptation must NOT cost the reader their place / flow.
-            BRIDGE: "This isn't a new idea in our group, and that's exactly where the real
-            problem starts."
+            place, or their flow. The instant it does, we've made reading harder, not easier.
+            This isn't a new idea in our group, and that's exactly where the real problem
+            starts.
           </aside>
         </section>
 
@@ -88,17 +83,18 @@
           </div>
           <p class="fig-credit">Reading the Reader programme, DTU Compute; funded by the Novo Nordisk Foundation.</p>
           <aside class="notes">
-            SPEAK (P1, ~45s):
-            "That reader is not alone. They are one of the people the Reading the Reader
-            programme at DTU Compute is built to help. It is funded by the Novo Nordisk
+            That reader is not alone. Helping people exactly like them is the mission of the
+            research programme we are part of: Reading the Reader, here at DTU Compute. And
+            this is a serious, coordinated effort. It is funded by the Novo Nordisk
             Foundation, around eight million kroner, and it deliberately puts computer
             scientists in the same room as typographers, psychologists, and
-            ophthalmologists. The targets are real: age-related central vision loss, and
-            dyslexia. The shared bet across all of them is that eye-tracking can reveal how a
-            person reads, and drive typography that adapts to them. And that reframes who our
-            user actually is. The person we build for is not only the reader. It is the
-            researcher inside this programme, the one who has to run these studies."
-            BRIDGE: "So here is the concept the programme is chasing."
+            ophthalmologists. And the people it serves are real: readers losing their central
+            vision with age, and readers with dyslexia. What ties all of these fields together
+            is a single bet, that eye-tracking can reveal how a person reads, and drive
+            typography that adapts to them. And that bet quietly reframes who our real user is.
+            The person we build for is not only the reader. It is also the researcher inside
+            this programme, the one who actually has to run these studies.
+            So how does the programme picture all of this coming together?
           </aside>
         </section>
 
@@ -122,22 +118,24 @@
           </div>
           <p class="fig-credit">Concept figure reproduced from the Reading the Reader programme, DTU Compute.</p>
           <aside class="notes">
-            SPEAK (P1, ~60s):
-            "This is the concept as the programme publishes it. A reader is sensed, the
-            signal becomes features, a classifier decides, and an intervention adapts the
-            text, closing the loop. Two things about that classifier in the middle.
+            This is the concept as the programme publishes it. A reader is sensed by an eye
+            tracker, which gives us a raw stream of gaze points. Those points are turned into
+            features, measures that actually describe how someone is reading, like how long
+            the eye rests on a word, or when it jumps back to re-read. A classifier then reads
+            those features and decides, and an intervention adapts the text, closing the loop.
+            Now look at that classifier sitting in the middle, because it quietly hides two
+            things that matter.
             First, it is trained on a database of readers, so before you even have a
             classifier, someone has to produce that data, cleanly and reproducibly.
             Second, the decider does not have to be an AI. In the loop, it can just as easily
             be a human, a researcher, making the call.
-            (advance fragments)
             Now the gap. To learn what actually helps, a researcher runs many hypotheses,
             and each one needs different sensing, a different intervention, a different
             decision rule. Does wider letter spacing help an AMD reader resume faster? Does a
             highlight cue cut regressions? Different logic every time. Prior prototypes in the
             programme proved the concept works, but they were too coupled to swap those pieces
-            in and out. There was simply no platform to do this research."
-            BRIDGE (hand to P2): "So, what do we build to make that research possible?"
+            in and out. There was simply no platform to do this research.
+            So, what do we build to make that research possible?
           </aside>
         </section>
 

@@ -59,7 +59,7 @@ the sensing and replay charts for Q&A.
   and dyslexia through personalised, gaze-driven typographic adaptation.
 - It puts computer science, typography, psychology, and ophthalmology in one
   room. The real user of what we built is the researcher inside this programme.
-- Bridge: "Here is the concept the programme is chasing."
+- Bridge: "So how does the programme picture all this coming together?"
 
 ### S4 The concept and the gap (P1, ~60s)
 - Walk the concept loop: a reader is sensed, the signal becomes features, a
