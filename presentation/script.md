@@ -35,8 +35,11 @@ the sensing and replay charts for Q&A.
 
 ## ACT 1: Problem and reframe (~5 min)
 
-### S1 Title (P1, ~10s)
-- Welcome only. Names, title, DTU Compute, date. Do not start explaining.
+### S1 Title (P1, ~25-30s)
+- Welcome (time-neutral, talk is at 14:30) + names + title. Do not dive in yet.
+- Roadmap the room: over the next ~25 min we cover the problem, the platform we
+  built, and what we found; about a third of the way in we hand to a short live
+  demo of the system running end to end.
 - Bridge: "Before the system, the person it is for."
 
 ### S2 The human problem (P1, ~45s)

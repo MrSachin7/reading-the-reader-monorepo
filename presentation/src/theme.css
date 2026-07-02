@@ -488,3 +488,73 @@ html, body { background: var(--paper); }
   text-align: center; font-size: 10px; letter-spacing: 0.06em;
   text-transform: uppercase; font-weight: 700; color: var(--navy); margin-top: 6px;
 }
+
+/* ------------------------------------------------------------------ */
+/* P1 polish: top-anchored layout, paced reveals, animated loop-spine  */
+/* ------------------------------------------------------------------ */
+
+/* With center:false (main.js) content anchors to the top. Give it a little
+   breathing room so the kicker clears the fixed DTU logo / loop-spine chrome,
+   and let two designated slides opt back into vertical centering. */
+.reveal .slides > section { padding-top: 0.35em; }
+.reveal .slides > section.center-slide {
+  flex-direction: column;
+  justify-content: center;
+  /* Left-align items: without this the default align-items:stretch blows the
+     title logo (width:auto) out to the full slide width and distorts it. */
+  align-items: flex-start;
+  padding-top: 0;
+}
+/* Reveal sets inline display:block on the active slide, so the flex switch
+   must be .present-scoped and !important to win; height gives it something
+   to centre within. */
+.reveal .slides > section.center-slide.present {
+  display: flex !important;
+  height: 100%;
+}
+
+/* Scorecard (S11): the "answered" tick reads green (the theme's achieved
+   colour); the resume-time value shows the improvement as was -> now. */
+.reveal .rq-checked .pr-rq .tick { color: var(--green); margin-right: 0.35em; }
+.reveal .rq-checked .score-was {
+  color: var(--muted); font-weight: 700;
+  text-decoration: line-through; text-decoration-color: var(--line);
+}
+.reveal .rq-checked .score-arrow { color: var(--muted); font-weight: 700; margin: 0 0.15em; }
+.reveal .rq-checked .score-good { color: var(--green); font-weight: 800; font-size: 1.08em; }
+
+/* Close (S15): the four questions, all ticked, mirroring the RQ spine. */
+.reveal .close-rqs {
+  list-style: none; margin: 0.9em 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.45em 0.6em;
+}
+.reveal .close-rqs li {
+  font-size: 0.46em; font-weight: 700; color: var(--navy);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 0.35em 0.85em; letter-spacing: 0.01em;
+}
+.reveal .close-rqs .tick { color: var(--green); margin-right: 0.3em; }
+
+/* Loop-spine comes alive: the active node breathes, and when the whole loop
+   is lit ("all") a spark travels the ring to read as circulation. */
+#loop-spine .node.active { animation: spine-pulse 1.9s ease-in-out infinite; }
+@keyframes spine-pulse {
+  0%, 100% { filter: none; }
+  50%      { filter: drop-shadow(0 0 4px var(--navy)); }
+}
+#loop-spine .spark {
+  fill: var(--red); opacity: 0;
+  transform-box: view-box; transform-origin: 60px 60px;
+}
+#loop-spine.flow .spark {
+  opacity: 1;
+  animation: spine-orbit 3.6s linear infinite;
+}
+@keyframes spine-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #loop-spine .node.active { animation: none; }
+  #loop-spine.flow .spark { animation: none; opacity: 0; }
+}

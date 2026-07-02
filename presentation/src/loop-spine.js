@@ -45,6 +45,17 @@ function buildSvg() {
     node.setAttribute('r', '10')
     svg.appendChild(node)
   }
+
+  // A small spark that orbits the ring when the whole loop is lit ("all"),
+  // reading as circulation. Placed at the top of the ring; CSS rotates it
+  // about the ring centre. Appended last so it rides above the nodes.
+  const spark = document.createElementNS(ns, 'circle')
+  spark.setAttribute('class', 'spark')
+  spark.setAttribute('cx', '60')
+  spark.setAttribute('cy', '16')
+  spark.setAttribute('r', '4')
+  svg.appendChild(spark)
+
   return svg
 }
 
@@ -75,6 +86,8 @@ export function initLoopSpine(deck) {
     caption.textContent = raw === 'all'
       ? 'The adaptive loop'
       : stages.map((s) => TITLES[s] || s).join(' → ')
+    // The orbiting spark only runs when the whole loop is in view.
+    root.classList.toggle('flow', raw === 'all')
     root.classList.add('visible')
   }
 

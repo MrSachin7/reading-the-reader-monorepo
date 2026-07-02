@@ -10,8 +10,15 @@ const deck = new Reveal({
   controls: true,
   progress: true,
   slideNumber: 'c/t',
-  transition: 'slide',
+  // A calm cross-fade reads more "designed" than the default horizontal
+  // slide, and it keeps the persistent chrome (logo, loop-spine) from
+  // appearing to slide with the content.
+  transition: 'fade',
   transitionSpeed: 'default',
+  // Top-anchor content instead of vertically centering it, so dense slides
+  // do not float with an empty band up top. The title and close slides opt
+  // back into centering via CSS (.reveal .slides > section.center-slide).
+  center: false,
   width: 1280,
   height: 720,
   margin: 0.06,

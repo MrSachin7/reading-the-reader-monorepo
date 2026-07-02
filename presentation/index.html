@@ -14,7 +14,7 @@
         <!-- ============================================================ -->
 
         <!-- Slide 1, Title -->
-        <section id="s1-title" class="title-slide" data-logo="off">
+        <section id="s1-title" class="title-slide center-slide" data-logo="off">
           <img class="title-logo" src="assets/dtu-logo-red.png" alt="Technical University of Denmark (DTU)" />
           <p class="kicker">Master Thesis Defense · DTU Compute</p>
           <h1>Reading the Reader</h1>
@@ -23,9 +23,16 @@
           <p class="meta">Supervisors: Per Bækgaard (pgba@dtu.dk) · Ashkan Task (ashta@dtu.dk) · Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
           <p class="meta">DTU Compute · July 2026</p>
           <aside class="notes">
-            10-second welcome only, do not start explaining yet.
+            SPEAK (P1, ~25-30s), welcome + roadmap, set the tone, do not dive in yet:
+            "Welcome everyone, and thank you for being here for our thesis presentation.
+            I'm Satish, this is Sachin, and this is Reading the Reader: a modular software
+            architecture for adaptive reading systems. Over the next twenty-five minutes or
+            so, we'll walk you through the problem we set out to solve, the platform we built
+            for it, and what we found, and about a third of the way in we'll hand over to a
+            short live demo of the system running end to end. But before we show you a single
+            line of the system, we want to start with the person it is actually for."
             Background image: the real two-screen setup (reader + researcher console).
-            Bridge OUT: "Before the system, let's talk about the person it's for."
+            BRIDGE: "Before the system, the person it's for."
           </aside>
         </section>
 
@@ -43,10 +50,18 @@
             adapt in real time <strong>without breaking the reader's flow</strong>.
           </p>
           <aside class="notes">
-            Earn the stakes; keep it human. The key constraint to plant: adaptation
-            must NOT cost the reader their place / flow. One clean visual, no bullets.
-            Bridge OUT: "This isn't a new idea in our group, and that's exactly
-            where the real problem starts."
+            SPEAK (P1, ~45s), earn the stakes, keep it human:
+            "Imagine a reader with dyslexia, or someone losing their central vision to
+            age-related macular degeneration. For them, a page of text can demand more effort
+            than they can comfortably give. Now, here is the opportunity: digital text is not
+            fixed. It can reshape itself while it is being read. And an eye tracker can tell us
+            when a reader is struggling, in the moment. So in principle, the text could adapt
+            in real time, to that specific reader. But there is one hard constraint, and it
+            runs through everything we built: the adaptation must never cost the reader their
+            place, or their flow. The instant it does, we've made reading harder, not easier."
+            KEY CONSTRAINT TO PLANT: adaptation must NOT cost the reader their place / flow.
+            BRIDGE: "This isn't a new idea in our group, and that's exactly where the real
+            problem starts."
           </aside>
         </section>
 
@@ -74,16 +89,16 @@
           <p class="fig-credit">Reading the Reader programme, DTU Compute; funded by the Novo Nordisk Foundation.</p>
           <aside class="notes">
             SPEAK (P1, ~45s):
-            "Our reader is not alone. She is one of the cases the Reading the Reader
+            "That reader is not alone. They are one of the people the Reading the Reader
             programme at DTU Compute is built to help. It is funded by the Novo Nordisk
             Foundation, around eight million kroner, and it deliberately puts computer
             scientists in the same room as typographers, psychologists, and
-            ophthalmologists. The target is real: people with age-related central vision
-            loss, and readers with dyslexia. The shared bet is that eye-tracking can
-            reveal how a person reads and drive typography that adapts to them. Which
-            means the real user of what we built is the researcher inside this
-            programme."
-            BRIDGE: "Here is the concept the programme is chasing."
+            ophthalmologists. The targets are real: age-related central vision loss, and
+            dyslexia. The shared bet across all of them is that eye-tracking can reveal how a
+            person reads, and drive typography that adapts to them. And that reframes who our
+            user actually is. The person we build for is not only the reader. It is the
+            researcher inside this programme, the one who has to run these studies."
+            BRIDGE: "So here is the concept the programme is chasing."
           </aside>
         </section>
 
@@ -97,7 +112,7 @@
             </div>
             <div class="concept-points">
               <p class="point"><b>The classifier is the hard part.</b> It is trained on a database of readers, so someone must first produce that data. And the decider can be a human (a researcher) or an AI.</p>
-              <p class="point"><b>But there is no platform to run the research.</b> Prior prototypes proved the loop, yet were too coupled to swap pieces in and out.</p>
+              <p class="point"><b>But there is no platform to run the research.</b> Prior prototypes proved the concept, yet were too coupled to swap pieces in and out.</p>
             </div>
           </div>
           <div class="hypo-build">
@@ -113,16 +128,16 @@
             text, closing the loop. Two things about that classifier in the middle.
             First, it is trained on a database of readers, so before you even have a
             classifier, someone has to produce that data, cleanly and reproducibly.
-            Second, the decider does not have to be an AI; in the loop it can be a human,
-            a researcher, making the call.
+            Second, the decider does not have to be an AI. In the loop, it can just as easily
+            be a human, a researcher, making the call.
+            (advance fragments)
             Now the gap. To learn what actually helps, a researcher runs many hypotheses,
             and each one needs different sensing, a different intervention, a different
-            decision rule. Does wider letter spacing help an AMD reader resume faster, or
-            does a highlight cue cut regressions? Different logic each time. Prior
-            prototypes in the programme proved the loop works, but they were too coupled
-            to swap those pieces in and out. There was no platform to actually do this
-            research."
-            BRIDGE (hand to P2): "So what do we build to make that research possible?"
+            decision rule. Does wider letter spacing help an AMD reader resume faster? Does a
+            highlight cue cut regressions? Different logic every time. Prior prototypes in the
+            programme proved the concept works, but they were too coupled to swap those pieces
+            in and out. There was simply no platform to do this research."
+            BRIDGE (hand to P2): "So, what do we build to make that research possible?"
           </aside>
         </section>
 
@@ -437,23 +452,23 @@
           <h2>You saw it work. Here are the numbers.</h2>
           <p class="principles-lead">The demo answered each question in motion. Here is the single number behind each; the full curves are in the report.</p>
           <ul class="principles rq-checked">
-            <li class="principle">
-              <span class="pr-rq">RQ1 · Modularity</span>
+            <li class="principle fragment">
+              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ1 · Modularity</span>
               <b><span class="score-num">3</span> outside models, <span class="score-num">0</span> core changes</b>
               <span>Swapped live in the demo, and the boundary is enforced as a build-time test.</span>
             </li>
-            <li class="principle">
-              <span class="pr-rq">RQ2 · Sensing</span>
+            <li class="principle fragment">
+              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ2 · Sensing</span>
               <b><span class="score-num">90 Hz</span> stream, every sample under 100 ms</b>
               <span>The live gaze you watched mirror to the console, measured across eight sessions.</span>
             </li>
-            <li class="principle">
-              <span class="pr-rq">RQ3 · Context preservation</span>
-              <b>Resume time <span class="score-num">650 to 482 ms</span></b>
+            <li class="principle fragment">
+              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ3 · Context preservation</span>
+              <b>Resume time <span class="score-was">650</span> <span class="score-arrow" aria-hidden="true">→</span> <span class="score-good">482 ms</span></b>
               <span>When the text reflowed, the reader got back to reading sooner.</span>
             </li>
-            <li class="principle">
-              <span class="pr-rq">RQ4 · Researcher control</span>
+            <li class="principle fragment">
+              <span class="pr-rq"><span class="tick" aria-hidden="true">✓</span>RQ4 · Researcher control</span>
               <b>Whole chapter rebuilt from <span class="score-num">one record</span></b>
               <span>You approved a proposal, and every result here came from a replayable file.</span>
             </li>
@@ -537,11 +552,11 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           <h2>Does changing the text throw the reader off?</h2>
           <p class="ev-lead">This was the result we most wanted to know. Every reflow risks losing the reader's place, so we measured it: four participants, the same article, with and without the restore, aligned to each intervention.</p>
           <div class="ev-figs">
-            <figure class="ev-fig">
+            <figure class="ev-fig fragment">
               <img src="assets/eval-rrt.svg" alt="Swarm plot of reading-resume time per intervention under the two conditions, with a median bar. The with-preservation median sits lower than without." />
               <figcaption><span class="ev-fig-rq">Reading-resume time</span>Median 482 ms with preservation, against 650 ms without.</figcaption>
             </figure>
-            <figure class="ev-fig">
+            <figure class="ev-fig fragment">
               <img src="assets/eval-post-regression.svg" alt="Grouped bars of regression rate before and after each intervention, per condition. With preservation the after-rate falls below baseline; without, it stays high." />
               <figcaption><span class="ev-fig-rq">Post-intervention regressions</span>Fell to 23% with preservation, against 33% without.</figcaption>
             </figure>
@@ -571,23 +586,23 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           <h2>What we did not prove</h2>
           <p class="ev-lead">We state these ourselves. They bound what the results claim, they do not undercut the results, and each points to a next step.</p>
           <ul class="limits">
-            <li class="limit">
+            <li class="limit fragment">
               <span class="limit-tag">Effect</span>
               <b>No efficacy claim, small sample</b>
               <span>We showed the platform can apply and instrument interventions, not that any of them helps a struggling reader. The readers were a small convenience sample, not clinical ones; the controlled effect study is future work by design.</span>
             </li>
-            <li class="limit">
+            <li class="limit fragment">
               <span class="limit-tag">AI decision-making</span>
               <b>Architectural, not built</b>
               <span>The provider seam was exercised end to end on real hardware, but with a fixed-rule reference provider, not a learned model, and the automated path rests on a single validation run rather than a campaign.</span>
             </li>
-            <li class="limit">
+            <li class="limit fragment">
               <span class="limit-tag">Context restore</span>
               <b>Fixed geometrically, not behaviourally</b>
               <span>The original restore over-repositioned on small reflows, throwing the reader well past where the text actually moved. The revised one removes this geometrically, but has not been re-tested with readers.</span>
             </li>
           </ul>
-          <p class="lesson"><span class="lesson-label">The lesson</span> Our line-stabilisation is a hand-tuned bias, a "poor man's Kalman filter": it borrows the intuition (trust the prior position) but keeps none of the machinery. A principled Kalman filter is future work.</p>
+          <p class="lesson fragment"><span class="lesson-label">The lesson</span> Our line-stabilisation is a hand-tuned bias, a "poor man's Kalman filter": it borrows the intuition (trust the prior position) but keeps none of the machinery. A principled Kalman filter is future work.</p>
           <aside class="notes">
             SPEAK (P1, ~55s), the maturity slide, name it before you are asked:
             "We will also tell you where this is not finished, because the contribution is
@@ -644,7 +659,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         </section>
 
         <!-- Slide 15, Close: the memorable claim (the sentence they repeat in deliberation) -->
-        <section id="s15-close" data-loop-stage="all">
+        <section id="s15-close" class="center-slide" data-loop-stage="all">
           <p class="kicker">What we want you to take away</p>
           <p class="big-claim">
             A researcher can watch someone read in real time and reshape the text as
@@ -652,6 +667,12 @@ public void Application_core_depends_on_no_infrastructure_assembly()
             is swappable without touching the core.
           </p>
           <p class="close-line">We did not build the classifier. We built the platform it presupposes, and proved the seams hold under a real 90 Hz Tobii loop. Four questions answered, one honest lesson learned, and a gap no one else had filled.</p>
+          <ul class="close-rqs" aria-label="The four research questions, all answered">
+            <li><span class="tick" aria-hidden="true">✓</span> RQ1 · Modularity</li>
+            <li><span class="tick" aria-hidden="true">✓</span> RQ2 · Sensing</li>
+            <li><span class="tick" aria-hidden="true">✓</span> RQ3 · Context preservation</li>
+            <li><span class="tick" aria-hidden="true">✓</span> RQ4 · Researcher control</li>
+          </ul>
           <aside class="notes">
             SPEAK (P2, ~40s), slow down; this is the sentence they repeat in deliberation:
             "So, in one sentence. A researcher can watch someone read in real time and
@@ -698,7 +719,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         <!-- BACKUP / Q&A, jump to on demand, do not present               -->
         <!-- ============================================================ -->
 
-        <section id="b1-iaoi">
+        <section id="b1-iaoi" data-visibility="uncounted">
           <p class="kicker">Backup · B1</p>
           <h3>Fixation detection: I-AOI (dwell-based)</h3>
           <p class="bk-lead">The spatial stage already resolves each gaze point to the word it falls on, so the word token <em>is</em> the area of interest, and a fixation is identified purely from the dwell time on it.</p>
@@ -715,7 +736,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b2-kalman">
+        <section id="b2-kalman" data-visibility="uncounted">
           <p class="kicker">Backup · B2</p>
           <h3>The line-bias vs. a Kalman filter</h3>
           <p class="bk-lead">A deterministic hysteresis bias, not a Kalman filter. It keeps gaze on the line being read despite vertical jitter of the order of the line spacing.</p>
@@ -731,7 +752,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b3-reflow">
+        <section id="b3-reflow" data-visibility="uncounted">
           <p class="kicker">Backup · B3</p>
           <h3>AOI survives an intervention's reflow</h3>
           <p class="bk-lead">Yes, this is handled, and it is a deliberate piece of engineering rather than a gap.</p>
@@ -747,7 +768,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b4-register">
+        <section id="b4-register" data-visibility="uncounted">
           <p class="kicker">Backup · B4</p>
           <h3>Design decision register (DR1–DR9)</h3>
           <p class="bk-lead">Every architectural choice is traced to the driver that forced it; the trade-offs are deliberate and visible.</p>
@@ -770,7 +791,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b5-stack">
+        <section id="b5-stack" data-visibility="uncounted">
           <p class="kicker">Backup · B5</p>
           <h3>Tech stack + Tobii SDK integration</h3>
           <ul class="bk-facts">
@@ -787,7 +808,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b6-requirements">
+        <section id="b6-requirements" data-visibility="uncounted">
           <p class="kicker">Backup · B6</p>
           <h3>Requirements: build → demo → feedback → refine</h3>
           <p class="bk-lead">Requirements were not fixed up front. A working prototype existed from the start, so much of the set emerged as increments were demonstrated to the supervisors and folded back in.</p>
@@ -807,7 +828,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         </section>
 
         <!-- B7, Sensing performance (headline is on the scorecard; full charts kept here for Q&A) -->
-        <section id="b7-sensing" data-loop-stage="sense">
+        <section id="b7-sensing" data-loop-stage="sense" data-visibility="uncounted">
           <p class="kicker">Backup · B7 · Sensing (RQ2)</p>
           <h3>Rate, validity, and transport latency</h3>
           <div class="ev-figs">
@@ -829,7 +850,7 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         </section>
 
         <!-- B8, Reproducibility / replay (also shown live in demo beat 5) -->
-        <section id="b8-repro" data-loop-stage="all">
+        <section id="b8-repro" data-loop-stage="all" data-visibility="uncounted">
           <p class="kicker">Backup · B8 · Researcher control (RQ4)</p>
           <h3>Every result rebuilt from one record</h3>
           <div class="shot-cols">
