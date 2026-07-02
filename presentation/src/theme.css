@@ -252,6 +252,24 @@ html, body { background: var(--paper); }
 /* Slide 15 close: supporting line under the memorable claim */
 .reveal .close-line { font-size: 0.62em; color: var(--ink-soft); max-width: 50ch; margin-top: 0.9em; line-height: 1.4; }
 
+/* Slide 16 thanks / questions */
+.reveal .thanks-tagline { font-size: 0.68em; color: var(--ink-soft); font-family: var(--serif); margin: 0.2em 0 1.3em; max-width: 42ch; }
+.reveal .thanks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em; max-width: 52ch; }
+.reveal .thanks-label { font-size: 0.42em; text-transform: uppercase; letter-spacing: 0.14em; color: var(--red); font-weight: 700; margin: 0 0 0.45em; }
+.reveal .thanks-people { font-size: 0.56em; color: var(--ink); margin: 0 0 0.28em; line-height: 1.35; }
+.reveal .thanks-email { color: var(--muted); font-family: var(--mono); font-size: 0.86em; }
+
+/* Backup / Q&A reference cards (B1 to B6): dense, glanceable, not presented live */
+.reveal .bk-lead { font-size: 0.58em; color: var(--ink-soft); max-width: 58ch; margin: 0.15em 0 0.7em; line-height: 1.4; }
+.reveal .bk-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4em; max-width: 66ch; }
+.reveal .bk-facts.cols { grid-template-columns: 1fr 1fr; gap: 0.34em 1.4em; max-width: none; }
+.reveal .bk-facts li { font-size: 0.5em; color: var(--ink); line-height: 1.34; padding-left: 1.1em; position: relative; }
+.reveal .bk-facts li::before { content: ""; position: absolute; left: 0; top: 0.52em; width: 5px; height: 5px; background: var(--navy); border-radius: 50%; }
+.reveal .bk-facts b { color: var(--ink); font-weight: 700; }
+.reveal .bk-facts .bk-tag { font-family: var(--mono); color: var(--red); font-weight: 700; font-size: 0.92em; margin-right: 0.15em; }
+.reveal .bk-note { font-size: 0.44em; color: var(--muted); margin-top: 0.75em; max-width: 62ch; line-height: 1.35; }
+.reveal .bk-note b { color: var(--ink-soft); }
+
 /* ---- Slide 10: demo roadmap ---- */
 .reveal .demo-roadmap { display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 1em; align-items: start; margin-top: 0.25em; }
 .reveal .demo-intro { padding: 0.1em 0.1em 0.1em 0; }

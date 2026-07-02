@@ -11,22 +11,25 @@ next slide. Speak to these points in your own words; do not read them out.
   reader in real time, and we built the platform that lets researchers run,
   control, and reproduce that, with every part of the loop swappable without
   touching the core.*
-- The four research questions are the spine. They are now posed after the first
-  architecture slide, and then the demo answers them (S10), the evidence
-  measures them (S12), the limitations say which are only partly answered
-  (S13), and the close restates them (S15).
+- The four research questions are the spine. They are posed after the first
+  architecture slide (S5), the demo answers them (S10), one scorecard measures all
+  four (S11), two deep dives tell the interesting ones as stories (modularity and
+  context preservation), the limitations say which are only partly answered, and
+  the close restates the contribution (S15). The sensing and replay charts moved to
+  backups B7/B8 so the evidence act stops reading like the report.
 
 | Act | Slides | Minutes |
 |---|---|---|
 | 1 Problem, reframe | S1 to S6 | 5.0 |
 | 2 The artifact + questions | S7 to S9 | 4.5 |
 | Demo | S10 + clips | 9.0 |
-| 3 Evidence, limits, future | S11 to S14 | 5.0 |
+| 3 Evidence (scorecard, 2 deep dives), limits, future | S11 to S14 | 4.5 |
 | Close | S15 to S16 | 1.0 |
 
-Build status: **S1 to S9 are finalized** (points below match the slides).
-**S10 to S16 and backups are still stubs**; their points are the plan, to be
-locked when those slides are built.
+Build status: **S1 to S15 are built** (points below match the slides); only the
+Thanks slide (S16) is still a stub. The one large piece still to produce is the
+**8 to 10 min recorded demo**. Backup cards B1 to B6 stay sparse; B7 and B8 hold
+the sensing and replay charts for Q&A.
 
 ---
 
@@ -193,59 +196,68 @@ ends on a hold-frame so speaker/clip swaps are invisible.
 
 ---
 
-## HINGE 2 from DEMO; ACT 3: Does it hold up (~5 min)
+## HINGE 2 from DEMO; ACT 3: Does it hold up (~4 min)
 
-### S11 The four questions, answered live (P2, ~40s)
-- Re-anchor after time off-slides. This is a scorecard, not a new explanation.
-- Map each RQ to the beat that just answered it:
-  - **RQ1 Modularity -> Beat 4:** a module changed behind the seam without core changes.
-  - **RQ2 Sensing -> Beat 1:** live gaze reached the console in sync with the reader.
-  - **RQ3 Intervention -> Beat 2:** the text adapted and the reader kept their place.
-  - **RQ4 Control and replay -> Beat 3 + 5:** the researcher could override a proposal, and the session could be replayed from one record.
-- Bridge: "A demo can be staged, so here is the measured evidence."
+The evidence act is NOT the report read back. One fast scorecard, then two deep
+dives told as stories, then the honest limits. Full charts live in the report and
+in backups B7/B8.
 
-### S12 The evidence (P2, ~90s) [STUB]
-Numbers grouped by the four RQs / loop stages. State results plainly;
-interpretation comes later.
-- Modularity: dependency boundary is build-enforced and checked by a test;
-  in-process module added in one registration; 3 external providers connected
-  with no core change (one wraps a third party's model).
-- Sensing: streamed at rated 90 Hz, validity above 92%, client transport
-  latency inside the budget on every sample.
-- Context preservation: reading-resume time down and post-intervention
-  regressions down with place-keeping on vs off.
-- Control/reproducibility: the whole evaluation chapter was reconstructed from
-  exported records alone.
-- Bridge: "We will also tell you where it is not finished."
+### S11 Scorecard, answered live and measured (P2, ~45s)
+- Re-anchor after the demo. A scorecard, not a new explanation: the four questions,
+  one headline number each, delivered with confidence.
+  - **RQ1 Modularity:** 3 outside models plugged in, zero core changes.
+  - **RQ2 Sensing:** 90 Hz, every sample under the 100 ms budget.
+  - **RQ3 Context preservation:** resume time 650 down to 482 ms.
+  - **RQ4 Researcher control:** the whole evaluation chapter rebuilt from one record.
+- Say once, then move on: "the full distributions are in section 7.4."
+- Bridge: "Two of these are worth a closer look. The first goes beyond our own code."
 
-### S13 Limitations (P1, ~50s) [STUB; this is the "learned something" slide]
-State them yourselves, before being asked; name which RQs are only partly
-answered.
-- Automated decision path (RQ1/RQ4) validated in a single advisory run, not at
-  campaign scale.
-- Revised context-preserving restore (RQ3) confirmed geometrically (the original
-  over-repositioned about 38 px on small reflows), not yet re-tested with
-  readers.
-- Honest lesson: line stabilisation is a hand-tuned hysteresis bias, a "poor
-  man's Kalman filter" (shares the intuition, not the machinery).
+### S12 Deep dive, modularity as a story (P2, ~55s)
+- Lead with the story, not the metric: an outside collaborator's reading-difficulty
+  model connected through the seam with no change to our code and none to theirs.
+- The technique (keep the code on screen): the ports-and-adapters boundary is an
+  executable test, so a violating dependency is a compile error, not a promise.
+- Bridge: "That is the seam holding. Now the result a reader actually feels."
+
+### S14-ev Deep dive, context preservation as a question (P1, ~55s)
+- Open with the question you did not know the answer to: "every time the text
+  reflows, do we throw the reader off?" Then let the two charts answer it.
+- Resume time median 482 ms with preservation vs 650 without; post-intervention
+  regressions 23% vs 33%. Four participants, so descriptive, not an effect study
+  (owned in the limits).
+- Bridge: "That is what it can do. Now, honestly, what it cannot."
+
+### S13 Limitations (P1, ~55s), the maturity slide
+- State them first, before being asked:
+  - No efficacy claim, small convenience sample; the controlled effect study is
+    future work by design.
+  - AI decision-making is architectural, not built: a fixed-rule reference provider
+    on a single validation run, not a learned model at campaign scale.
+  - Context restore fixed geometrically (the original over-repositioned about 38 px
+    on small reflows), not yet re-tested with readers.
+- One honest lesson: line stabilisation is a "poor man's Kalman filter" (the
+  intuition, not the machinery).
 - Bridge: "Each of those points forward to a next step."
 
-### S14 Future work (P2, ~45s) [STUB]
-- Run the decision path autonomously at scale over the same provider seam, where
-  external AI deciders plug in (architectural, by design).
-- A real Kalman filter over the gaze signal.
-- The controlled efficacy study the platform now makes possible.
+### S14 Future work, a payoff not a to-do list (P2, ~45s)
+- Callback to the S4 concept (reuse the classifier image): "remember the classifier?
+  It needed data and could be a human or an AI. We produce the data and expose the
+  seam; the next team trains it."
+- One vivid scenario: a year from now a psychologist loads a hypothesis, attaches an
+  AI decider, runs 200 sessions overnight, replays any of them, and none of it
+  touches the core.
+- Nearer-term, smaller: re-test the revised restore with readers; a principled
+  Kalman filter over the gaze signal.
 - Bridge: "So, to close."
 
-### S15 Close (P2, ~40s) [STUB]
-- Restate the claim (mirror the S6 reframe), now with the four RQs from S5
-  checked and the whole loop shown. The adaptive reading loop can be cleanly
-  separated under a real 90 Hz Tobii loop, giving future studies, including
-  AI-driven ones, a solid base.
-- Answered + learned + fit, in one breath: we answered the four questions,
-  learned where the design bites (the Kalman lesson), and filled a gap nobody
-  else had.
-- This is the sentence you want them repeating in deliberation.
+### S15 Close (P2, ~40s)
+- The memorable claim, slowly; this is the sentence they repeat in deliberation: a
+  researcher can watch someone read in real time and reshape the text without
+  costing them their place, and every part of the loop is swappable without touching
+  the core.
+- Then land it: we did not build the classifier, we built the platform it
+  presupposes, and proved the seams hold under a real 90 Hz Tobii loop. Four
+  answered, one lesson learned, a gap filled. "Thank you."
 
 ### S16 Thanks and pointer (P2, ~15s) [STUB]
 - Names, documentation site / repo link, "happy to go deeper." Leave it up
@@ -275,3 +287,8 @@ Both presenters should be able to answer these cold.
 - **B6 Requirements: build to demo to feedback to refine.** The iteration table
   (stakeholder sessions, what was demoed, feedback, resulting requirement
   change).
+- **B7 Sensing performance.** Per-session rate/validity plus the client RTT CDF:
+  mean 89.9 Hz, validity 92.5 to 98.0%, every sample under the 100 ms budget. The
+  headline sits on the S11 scorecard; the full charts live here for Q&A.
+- **B8 Reproducibility / replay.** The replay screenshot (also shown live in demo
+  beat 5): the whole evaluation chapter rebuilt from exported records.

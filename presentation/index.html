@@ -667,13 +667,30 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         </section>
 
         <!-- Slide 16, Thanks + pointer -->
-        <section id="s16-thanks" class="stub">
+        <section id="s16-thanks">
           <p class="kicker">Thank you</p>
           <h2>Questions</h2>
-          <p class="muted">STUB · names, documentation site / repo link, "happy to go deeper." Keep up during Q&A.</p>
+          <p class="thanks-tagline">Reading the Reader: a modular platform for gaze-driven adaptive reading research.</p>
+          <div class="thanks-grid">
+            <div class="thanks-block">
+              <p class="thanks-label">Authors</p>
+              <p class="thanks-people">Sachin Baral &nbsp;<span class="thanks-email">s243871@dtu.dk</span></p>
+              <p class="thanks-people">Satish Gurung &nbsp;<span class="thanks-email">s243872@dtu.dk</span></p>
+            </div>
+            <div class="thanks-block">
+              <p class="thanks-label">Platform, docs &amp; the add-a-module guide</p>
+              <p class="thanks-people"><span class="thanks-email">github.com/MrSachin7/reading-the-reader-monorepo</span></p>
+            </div>
+          </div>
           <aside class="notes">
-            JOB: leave the contact/reference up during Q&A. Have backup slides ready
-            (press to jump). Do not over-talk here.
+            JOB: invite questions and leave this slide up during Q&A. Do not over-talk.
+            Say: "Thank you. We are happy to go deeper on any part, and there is a
+            documentation site with the setup, the session workflow, and a worked guide
+            to adding a new module. Questions?"
+            Backups are ready (B1 to B8): press ESC for the overview, or jump by number.
+            B1 I-AOI, B2 Kalman, B3 AOI-under-reflow, B4 decision register, B5 tech stack
+            and Tobii SDK, B6 requirements, B7 sensing charts, B8 replay.
+            OPTIONAL: add the live documentation-site URL to the slide if you want it shown.
           </aside>
         </section>
 
@@ -681,9 +698,15 @@ public void Application_core_depends_on_no_infrastructure_assembly()
         <!-- BACKUP / Q&A, jump to on demand, do not present               -->
         <!-- ============================================================ -->
 
-        <section id="b1-iaoi" class="stub">
+        <section id="b1-iaoi">
           <p class="kicker">Backup · B1</p>
           <h3>Fixation detection: I-AOI (dwell-based)</h3>
+          <p class="bk-lead">The spatial stage already resolves each gaze point to the word it falls on, so the word token <em>is</em> the area of interest, and a fixation is identified purely from the dwell time on it.</p>
+          <ul class="bk-facts">
+            <li>The <b>I-AOI</b> branch of the Salvucci and Goldberg taxonomy. NOT I-DT (dispersion), NOT I-VT (velocity). There is no velocity threshold.</li>
+            <li>A token is held as a candidate, then confirmed as a fixation once dwell passes <b>90 ms</b> initially, <b>70 ms</b> within a line, and <b>135 ms</b> across a line change (raised because that move is larger and noisier).</li>
+            <li>Per-word binning by total dwell: under <b>45 ms</b> is dropped as noise, at least <b>130 ms</b> counts as a fixation, and in between is recorded as a skim.</li>
+          </ul>
           <aside class="notes">
             THE answer to have cold. Dwell/area-of-interest based (I-AOI in
             Salvucci–Goldberg), NOT I-DT, NOT I-VT. There is NO velocity threshold.
@@ -692,9 +715,15 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b2-kalman" class="stub">
+        <section id="b2-kalman">
           <p class="kicker">Backup · B2</p>
           <h3>The line-bias vs. a Kalman filter</h3>
+          <p class="bk-lead">A deterministic hysteresis bias, not a Kalman filter. It keeps gaze on the line being read despite vertical jitter of the order of the line spacing.</p>
+          <ul class="bk-facts">
+            <li>In <b>pickBestLine</b>, each sample is charged for its vertical distance to every line band; the line already being read gets a fixed discount, so jitter does not flicker the mapping onto a neighbour.</li>
+            <li>It shares a Kalman filter's <em>intuition</em> (use the prior position to reject a single noisy sample) but none of its machinery: no probabilistic state, no covariance, no predict-and-update cycle.</li>
+            <li>A principled Kalman filter would generalise it, and is future work. We do not claim it <em>is</em> one.</li>
+          </ul>
           <aside class="notes">
             Deterministic hysteresis/bias on the current line to reject single-sample
             vertical jitter. Shares a Kalman filter's intuition (use prior position),
@@ -702,9 +731,15 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b3-reflow" class="stub">
+        <section id="b3-reflow">
           <p class="kicker">Backup · B3</p>
           <h3>AOI survives an intervention's reflow</h3>
+          <p class="bk-lead">Yes, this is handled, and it is a deliberate piece of engineering rather than a gap.</p>
+          <ul class="bk-facts">
+            <li>Word boxes are re-measured from the <b>live DOM</b> on every mutation, resize, and scroll.</li>
+            <li>So after an intervention reflows the text, the gaze-to-word mapping uses fresh coordinates, never stale ones.</li>
+            <li>Gaze is normalised before mapping (FR4.2), so the boxes hold across screen resolutions too.</li>
+          </ul>
           <aside class="notes">
             "We already solved that concern": word boxes are re-measured from the live
             DOM on every mutation / resize / scroll, so the mapping uses fresh
@@ -712,9 +747,22 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b4-register" class="stub">
+        <section id="b4-register">
           <p class="kicker">Backup · B4</p>
           <h3>Design decision register (DR1–DR9)</h3>
+          <p class="bk-lead">Every architectural choice is traced to the driver that forced it; the trade-offs are deliberate and visible.</p>
+          <ul class="bk-facts cols">
+            <li><span class="bk-tag">DR1</span> Inward-dependency layering (ports and adapters)</li>
+            <li><span class="bk-tag">DR2</span> Uniform seam shape with a per-concern registry</li>
+            <li><span class="bk-tag">DR3</span> Dedicated real-time channel for gaze</li>
+            <li><span class="bk-tag">DR4</span> Uniform, identity-keyed provider seam</li>
+            <li><span class="bk-tag">DR5</span> Two-phase validate-then-commit intervention</li>
+            <li><span class="bk-tag">DR6</span> One authoritative, schema-versioned record</li>
+            <li><span class="bk-tag">DR7</span> File-backed, checkpointed local store</li>
+            <li><span class="bk-tag">DR8</span> Sensing-source port behind an adapter</li>
+            <li><span class="bk-tag">DR9</span> Autonomous and advisory execution modes</li>
+          </ul>
+          <p class="bk-note"><b>DR3, DR7, and the DR4 fallback</b> trade a measure of architectural purity for responsiveness and robustness; <b>DR1, DR2, and DR8</b> hold the separation of concerns firm.</p>
           <aside class="notes">
             For any "why did you choose X" question: the trade-offs, each against its
             driver. DR3/DR7/DR4-fallback trade purity for responsiveness/robustness;
@@ -722,9 +770,16 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b5-stack" class="stub">
+        <section id="b5-stack">
           <p class="kicker">Backup · B5</p>
           <h3>Tech stack + Tobii SDK integration</h3>
+          <ul class="bk-facts">
+            <li><b>Frontend:</b> Next.js 16, React 19, TypeScript 5, Bun; RTK Query and Tailwind v4.</li>
+            <li><b>Backend:</b> C# on .NET 10, ASP.NET Core, FastEndpoints 8; CsvHelper for record export.</li>
+            <li><b>Realtime:</b> gaze on a dedicated WebSocket channel (/ws); commands over REST (/api).</li>
+            <li><b>Tobii:</b> the SDK ships .NET and Python bindings only, so we chose .NET. <b>TobiiEyeTrackerAdapter</b> subscribes to the SDK gaze callback and normalises every sample to the <b>GazeData</b> contract.</li>
+            <li>The Windows-only SDK, its licence, and device detection are quarantined behind the sensing-source port (DR8); a simulated mouse source sits behind the same contract.</li>
+          </ul>
           <aside class="notes">
             SDK bindings (.NET / Python only) → chose .NET; adapter subscribes to the
             gaze callback, normalises to the GazeData contract; licensing / device
@@ -732,9 +787,18 @@ public void Application_core_depends_on_no_infrastructure_assembly()
           </aside>
         </section>
 
-        <section id="b6-requirements" class="stub">
+        <section id="b6-requirements">
           <p class="kicker">Backup · B6</p>
           <h3>Requirements: build → demo → feedback → refine</h3>
+          <p class="bk-lead">Requirements were not fixed up front. A working prototype existed from the start, so much of the set emerged as increments were demonstrated to the supervisors and folded back in.</p>
+          <ul class="bk-facts cols">
+            <li><span class="bk-tag">It. 1</span> Core baseline: calibration, controlled reading, live mirror, adaptive loop</li>
+            <li><span class="bk-tag">It. 2</span> Extensibility and control: incremental recovery</li>
+            <li><span class="bk-tag">It. 3</span> Sensing robustness: gaze normalisation, mouse / licence-free sensing, screen-resolution capture</li>
+            <li><span class="bk-tag">It. 4</span> Experiment quality</li>
+            <li><span class="bk-tag">It. 5</span> Difficulty sensing</li>
+          </ul>
+          <p class="bk-note">Reconstructed retrospectively from version control and supervision notes, so the timing is approximate; the substantive changes are evidenced by the implementation work. Full trace in Tab. 4 (requirements evolution).</p>
           <aside class="notes">
             The iteration/refinement table: ~5 stakeholder sessions, what was demoed,
             feedback, resulting requirement change (e.g. license-free operation,
