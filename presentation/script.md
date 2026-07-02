@@ -20,8 +20,8 @@ next slide. Speak to these points in your own words; do not read them out.
 
 | Act | Slides | Minutes |
 |---|---|---|
-| 1 Problem, reframe | S1 to S6 | 5.0 |
-| 2 The artifact + questions | S7 to S8 | 3.7 |
+| 1 Problem, reframe | S1 to S4 | 3.3 |
+| 2 The artifact + questions | S5 to S8 | 3.7 |
 | Demo | S9 + clips | 9.0 |
 | 3 Evidence (scorecard, 2 deep dives), limits, future | S10 to S14 | 4.5 |
 | Close + contribution | S15 to S18 | 2.0 |
@@ -35,14 +35,14 @@ the sensing and replay charts for Q&A.
 
 ## ACT 1: Problem and reframe (~5 min)
 
-### S1 Title (P1, ~25-30s)
+### S1 Title (id s1-title, P1, ~25-30s)
 - Welcome (time-neutral, talk is at 14:30) + names + title. Do not dive in yet.
 - Roadmap the room: over the next ~25 min we cover the problem, the platform we
   built, and what we found; about a third of the way in we hand to a short live
   demo of the system running end to end.
 - Bridge: "Before the system, the person it is for."
 
-### S2 The human problem (P1, ~45s)
+### S2 The human problem (id s2-problem, P1, ~45s)
 - Some readers (dyslexia, age-related vision loss) find text harder to process
   than they can comfortably manage.
 - Digital text can reshape itself as it is read; an eye tracker can tell *when*
@@ -52,7 +52,7 @@ the sensing and replay charts for Q&A.
 - Bridge: "This is not a new idea in our group, and that is where the real
   problem starts."
 
-### S3 The programme (P1, ~45s)
+### S3 The programme (id s3-programme, P1, ~45s)
 - Reading the Reader is a funded, interdisciplinary programme at DTU Compute
   (Novo Nordisk Foundation, about DKK 8 million).
 - Goal (make it prominent): help readers with age-related central vision loss
@@ -61,7 +61,7 @@ the sensing and replay charts for Q&A.
   room. The real user of what we built is the researcher inside this programme.
 - Bridge: "So how does the programme picture all this coming together?"
 
-### S4 The concept and the gap (P1, ~60s)
+### S4 The concept and the gap (id s4-concept, P1, ~60s)
 - Walk the concept loop: a reader is sensed, the signal becomes features, a
   classifier decides, an intervention adapts the text, closing the loop.
 - Two points about the classifier: it is trained on a database of readers (so
@@ -79,38 +79,52 @@ the sensing and replay charts for Q&A.
 
 ## ACT 2: The artifact (~4 min)
 
-### S7 The four steps (P2, ~60s) [script]
+### S5 The four steps (id s7-loop, P2, ~60s) [script]
 Thanks, Satish.
 
-So the way we approached this was to take the programme's own concept and turn it
-into a loop with four parts that can each be replaced.
+So how did we get to this? We did not start from a blank page. We started from the
+concept diagram of the wider Reading the Reader programme, the one on the left. We
+studied that diagram, and we sat down with our stakeholders, who are also our
+supervisors and the researchers driving the programme. Out of that analysis, their
+single high-level picture decomposed cleanly into four concrete components. That
+decomposition is the first design move of the thesis, so let me build it up one part
+at a time.
 
-On the left, the original concept starts with sensing. In our architecture, that
-becomes Sensing: the part of the system that receives gaze data from the tracker or
-from a simulated source.
+[reveal Sensing] The first component is Sensing. This is where the hardware meets the
+system: the eye tracker produces raw gaze samples, and Sensing is the part that
+receives them, whether they come from a real Tobii device or from a simulated source.
 
-The next step is feature extraction. We call that Analysis, because this is where
-raw gaze becomes reading events like fixations, saccades, and regressions.
+[reveal Analysis] The second is Analysis. On their diagram this was feature
+extraction. Analysis is where raw gaze stops being coordinates and becomes reading
+behaviour: fixations, saccades, and regressions, the oculomotor events that actually
+describe how someone is reading.
 
-Then comes the classifier. In our architecture, that is the Decision step: some
-strategy looks at the current reading context and decides whether an intervention
-should be proposed.
+[reveal Decision] The third is Decision. On their diagram this was the classifier.
+Decision is the part that looks at those reading events and identifies struggle: it
+decides whether an intervention is needed right now, and if so, proposes one.
 
-Finally, the intervention changes the reading presentation. That is our Intervention
-step.
+[reveal Intervention] The fourth is Intervention. This is the part that actually
+changes the text the reader sees.
 
-Together, those four steps form one live adaptive loop: gaze comes in, reading
-behaviour is analysed, a decision is made, the text adapts, and the loop
-continues.
+And now that all four are up, look at how they connect. The output of each one feeds
+the next: gaze is sensed, sensing feeds analysis, analysis feeds the decision, the
+decision drives an intervention, and the changed text feeds straight back into how
+the person reads. That closed cycle is what we call the adaptive loop: one live
+reading session, running continuously.
 
-The important move is what happens to the classifier. We do not build the final
-classifier in this thesis. Instead, we make it a provider that can plug into a
-decision seam. That provider could be a human researcher, a rule-based strategy,
-or later an AI model. So the loop is built around replaceability from the start.
+[reveal provider seam] Now the important part, and the reason we bothered to name
+four components instead of one. These four are exactly the pieces that have to be
+interchangeable. A researcher has to be able to swap one out without rewriting the
+other three. And the sharpest example is Decision. We do not build the final
+classifier in this thesis. We turn it into a provider that plugs into a decision
+seam, and that provider can be a human researcher, a rule-based strategy, or later an
+AI model. So replaceability is not something we bolted on afterwards; it is what the
+whole decomposition was for.
 
-Now that the loop has a name, we can state the project goal more precisely.
+Now that the loop has a name and four seams, we can state the project goal more
+precisely.
 
-### S6 Project goal (P2, ~55s) [script]
+### S6 Project goal (id s6-approach, P2, ~55s) [script]
 So our goal is not to build the classifier itself.
 
 Our goal is to build the research platform that the classifier, and the
@@ -123,32 +137,38 @@ reproduce what happened afterwards.
 
 That goal has four parts.
 
-First, the loop has to be replaceable. Sensing, Analysis, Decision, and Intervention have
-to sit behind stable contracts, so changing one does not mean rewriting the rest.
+First, the loop itself has to be modular. All four stages, Sensing, Analysis, Decision,
+and Intervention, sit behind stable contracts, so we can replace any one of them with a
+different implementation without rewriting the other three. This is about swapping our
+own modules in and out.
 
 Second, it has to run real sessions. The platform has to work with a physical
 Tobii eye tracker, not only with simulated data.
 
-Third, it has to be researcher-operated. The researcher needs a console where
-they can see the participant's gaze, control the session, approve or trigger
-interventions, and export the full record.
+Third, adaptation must not cost the reader their place. When the text changes
+mid-session, the platform has to keep the person anchored where they were reading, not
+throw them back to the top of the paragraph. Preserving context through change is a
+first-class goal, not an afterthought.
 
-And fourth, it has to expose the decision boundary. A human, a rule-based
-strategy, or a future AI provider should be able to plug in without changing the
-core platform.
+And fourth, it has to be researcher-operated. The researcher needs a console where they
+can see the participant's gaze, control the session, approve or trigger interventions,
+and export the full record.
 
-This is why we frame the thesis as Design Science. The project is not an efficacy
-study of one intervention, and it is not an AI-classifier thesis. It is the design
-and evaluation of the platform that makes those studies possible.
+This is why we frame the thesis as Design Science. The project is not an efficacy study
+of one intervention, and it is not an AI-classifier thesis. As the headline says, we do
+not build the classifier; we build and evaluate the platform that makes those studies
+possible.
 
-From that goal, we get the four research questions.
+And these four goals are exactly the four research questions we set out to answer, so
+let us state them as questions.
 
-### S5 The research questions (P2, ~45s) [script]
+### S7 The research questions (id s5-rqs, P2, ~45s) [script]
 So the question is not simply whether reading can adapt. The earlier prototypes
 already showed that the adaptive loop can exist.
 
-The question for us is whether the platform can be architected well enough to
-support real research. We break that into four research questions.
+The question for us is whether the platform can be architected well enough to support
+real research. Those four goals, stated as questions, are exactly what the evaluation
+has to answer.
 
 The first is modularity. Can we separate sensing, analysis, decision, and
 intervention so that a new module, or even a new decision provider, can be added
@@ -170,7 +190,7 @@ hold.
 
 Now we can place those questions in the full platform.
 
-### S8 The whole platform (P1, ~50s) [reuses thesis Fig. 5.1]
+### S8 The whole platform (id s8-hero, P1, ~50s) [reuses thesis Fig. 5.1]
 - Those four steps, now where the people are, the whole platform in one picture.
 - It sits between the two people it serves. Participant reads plain text on one
   screen. The eye tracker on the boundary is the sensing interface, streaming
@@ -186,7 +206,7 @@ Now we can place those questions in the full platform.
 
 ## HINGE 1 to DEMO
 
-### S9 What to watch for (P2, ~15s then play)
+### S9 What to watch for (id s10-demo, P2, ~15s then play)
 - Open with one instruction: "watch this as evidence, not as a tour."
 - The slide names the 5 proof points the audience should track in the recording:
   - two-screen gaze mirroring
@@ -222,7 +242,7 @@ ends on a hold-frame so speaker/clip swaps are invisible.
 5. **Replay a re-imported session (RQ4, P2, ~1.5m).** Export, re-import, scrub;
    gaze and interventions reconstructed from the record alone.
    EXIT out-cue: "And every number we are about to show you came out of records
-   exactly like this one." (cut back to slides, land on S11)
+   exactly like this one." (cut back to slides, land on S10)
 
 ---
 
@@ -232,7 +252,7 @@ The evidence act is NOT the report read back. One fast scorecard, then two deep
 dives told as stories, then the honest limits. Full charts live in the report and
 in backups B7/B8.
 
-### S11 Scorecard, answered live and measured (P2, ~45s)
+### S10 Scorecard, answered live and measured (id s11-rqs-checked, P2, ~45s)
 - Re-anchor after the demo. A scorecard, not a new explanation: the four questions,
   one headline number each, delivered with confidence.
   - **RQ1 Modularity:** 3 outside models plugged in, zero core changes.
@@ -242,14 +262,14 @@ in backups B7/B8.
 - Say once, then move on: "the full distributions are in section 7.4."
 - Bridge: "Two of these are worth a closer look. The first goes beyond our own code."
 
-### S12 Deep dive, modularity as a story (P2, ~55s)
+### S11 Deep dive, modularity as a story (id s12-ev-modularity, P2, ~55s)
 - Lead with the story, not the metric: an outside collaborator's reading-difficulty
   model connected through the seam with no change to our code and none to theirs.
 - The technique (keep the code on screen): the ports-and-adapters boundary is an
   executable test, so a violating dependency is a compile error, not a promise.
 - Bridge: "That is the seam holding. Now the result a reader actually feels."
 
-### S14-ev Deep dive, context preservation as a question (P1, ~55s)
+### S12 Deep dive, context preservation as a question (id s14-ev-intervention, P1, ~55s)
 - Open with the question you did not know the answer to: "every time the text
   reflows, do we throw the reader off?" Then let the two charts answer it.
 - Resume time median 482 ms with preservation vs 650 without; post-intervention
@@ -257,7 +277,7 @@ in backups B7/B8.
   (owned in the limits).
 - Bridge: "That is what it can do. Now, honestly, what it cannot."
 
-### S13 Limitations (P1, ~55s), the maturity slide
+### S13 Limitations (id s13-limits, P1, ~55s), the maturity slide
 - State them first, before being asked:
   - No efficacy claim, small convenience sample; the controlled effect study is
     future work by design.
@@ -269,7 +289,7 @@ in backups B7/B8.
   intuition, not the machinery).
 - Bridge: "Each of those points forward to a next step."
 
-### S14 Future work, a payoff not a to-do list (P2, ~45s)
+### S14 Future work, a payoff not a to-do list (id s14-future, P2, ~45s)
 - Callback to the S4 concept (reuse the classifier image): "remember the classifier?
   It needed data and could be a human or an AI. We produce the data and expose the
   seam; the next team trains it."
@@ -280,7 +300,7 @@ in backups B7/B8.
   Kalman filter over the gaze signal.
 - Bridge: "And this is not only future work. It already started to happen."
 
-### S15 Reading the Struggle reuse (P2, ~40s)
+### S15 Reading the Struggle reuse (id s15-struggle, P2, ~40s)
 - Show the photos as proof that the platform was used in a real lab workflow, not
   just in our demo.
 - Say the key point plainly: the concurrent project **Reading the Struggle** used
@@ -291,7 +311,7 @@ in backups B7/B8.
   intelligence without rewriting the reading platform.
 - Bridge: "Now we can name what the thesis contributes."
 
-### S16 Contribution (P2, ~45s)
+### S16 Contribution (id s15-contribution, P2, ~45s)
 - Name the two layers from the thesis:
   - **Artifact:** a working, researcher-operated adaptive reading platform with
     two screens, Tobii-backed sensing, pluggable decision providers,
@@ -301,7 +321,7 @@ in backups B7/B8.
     cost of claimed qualities; separate decision from commit.
 - Bridge: "So if you remember one sentence from the thesis, it is this."
 
-### S17 Close (P2, ~25s)
+### S17 Close (id s16-close, P2, ~25s)
 - The memorable claim, slowly; this is the sentence they repeat in deliberation: a
   researcher can watch someone read in real time and reshape the text without
   costing them their place, and every part of the loop is swappable without touching
@@ -311,7 +331,7 @@ in backups B7/B8.
   connected, run, and judged.
 - End cleanly: "Thank you."
 
-### S18 Thanks and pointer (P2, ~15s) [STUB]
+### S18 Thanks and pointer (id s17-thanks, P2, ~15s) [STUB]
 - Names, documentation site / repo link, "happy to go deeper." Leave it up
   during Q&A. Do not over-talk.
 
@@ -341,6 +361,6 @@ Both presenters should be able to answer these cold.
   change).
 - **B7 Sensing performance.** Per-session rate/validity plus the client RTT CDF:
   mean 89.9 Hz, validity 92.5 to 98.0%, every sample under the 100 ms budget. The
-  headline sits on the S11 scorecard; the full charts live here for Q&A.
+  headline sits on the S10 scorecard; the full charts live here for Q&A.
 - **B8 Reproducibility / replay.** The replay screenshot (also shown live in demo
   beat 5): the whole evaluation chapter rebuilt from exported records.

@@ -97,6 +97,22 @@ html, body { background: var(--paper); }
   margin: 0.2em 0 0.7em;
 }
 
+/* Close (S17): the memorable one-liner, sized to own the final frame. */
+.reveal .close-claim {
+  font-size: 1.5em;
+  line-height: 1.3;
+  max-width: 34ch;
+  border-left-width: 6px;
+  padding-left: 0.6em;
+  margin: 0;
+  font-weight: 500;
+}
+.reveal .close-claim .pop {
+  font-style: normal;
+  color: var(--red);
+}
+#s16-close .kicker { margin-bottom: 0.85em; font-size: 0.5em; }
+
 /* ---- Research-question strip (planted small, checked later) ---- */
 .reveal .rq {
   list-style: none; margin: 0.4em 0 0; padding: 0.5em 0 0;
@@ -339,39 +355,51 @@ html, body { background: var(--paper); }
 .reveal .principle b { display: block; font-size: 0.6em; color: var(--ink); margin-bottom: 0.3em; line-height: 1.16; }
 .reveal .principle span { display: block; font-size: 0.46em; color: var(--ink-soft); line-height: 1.32; }
 
-/* Slide 16 contribution: same card language as the evidence cards, but with a closing weight */
-.reveal .contrib-lead { font-size: 0.66em; color: var(--ink-soft); max-width: 54ch; margin: 0 0 0.75em; line-height: 1.34; }
-.reveal .contrib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; align-items: stretch; margin: 0.15em 0 0.75em; }
-.reveal .contrib-card {
+/* Slide 16 contribution: two editorial bands, "the artifact -> the knowledge it
+   leaves behind", vertically centred so it owns the frame instead of floating. */
+.reveal .contrib-h2 { margin-bottom: 0.7em; }
+.reveal .contrib-stack { display: flex; flex-direction: column; align-items: stretch; gap: 0.5em; width: 100%; max-width: 44ch; }
+.reveal .contrib-band {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
   background: var(--panel);
-  border-top: 4px solid var(--navy);
-  border-radius: 6px;
-  padding: 0.7em 0.85em 0.8em;
+  border-left: 6px solid var(--navy);
+  border-radius: 10px;
+  padding: 1.05em 1.3em;
 }
-.reveal .contrib-card:nth-child(2) { border-top-color: var(--red); }
+.reveal .contrib-band-lasting { border-left-color: var(--red); background: #fbf4f2; }
+.reveal .band-num {
+  font-family: var(--serif);
+  font-size: 2.6em;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--line);
+  flex: 0 0 auto;
+}
+.reveal .contrib-band-lasting .band-num { color: var(--red); opacity: 0.5; }
+.reveal .band-body { min-width: 0; }
 .reveal .contrib-tag {
   display: block;
-  font-size: 0.4em;
+  font-size: 0.42em;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red);
-  margin-bottom: 0.35em;
+  margin-bottom: 0.3em;
 }
-.reveal .contrib-card b { display: block; font-size: 0.66em; color: var(--ink); margin-bottom: 0.32em; line-height: 1.16; }
-.reveal .contrib-card span:last-child { display: block; font-size: 0.48em; color: var(--ink-soft); line-height: 1.32; }
-.reveal .contrib-lessons { list-style: none; margin: 0; padding: 0.65em 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45em; }
-.reveal .contrib-lessons li {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink-soft);
-  font-size: 0.44em;
-  line-height: 1.22;
-  padding: 0.55em 0.65em;
-  min-height: 3.3em;
+.reveal .contrib-band b { display: block; font-size: 0.84em; color: var(--ink); margin-bottom: 0.35em; line-height: 1.16; }
+.reveal .contrib-band .card-sub { display: block; font-size: 0.5em; color: var(--ink-soft); line-height: 1.36; }
+.reveal .contrib-leaves {
+  align-self: flex-start;
+  margin: 0.15em 0 0.15em 1.4em;
+  padding-left: 0.7em;
+  border-left: 2px dashed var(--red);
+  font-size: 0.5em;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
-.reveal .contrib-lessons b { display: block; color: var(--ink); font-size: 1.05em; margin-bottom: 0.12em; }
 
 /* Slide 11 scorecard: make the headline number pop */
 .reveal .rq-checked .score-num { color: var(--red); font-weight: 800; font-size: 1.08em; }
@@ -460,9 +488,6 @@ html, body { background: var(--paper); }
   line-height: 1.32;
   margin: 0.1em 0 0;
 }
-
-/* Slide 17 close: supporting line under the memorable claim */
-.reveal .close-line { font-size: 0.62em; color: var(--ink-soft); max-width: 50ch; margin-top: 0.9em; line-height: 1.4; }
 
 /* Slide 18 thanks / questions */
 .reveal .thanks-tagline { font-size: 0.68em; color: var(--ink-soft); font-family: var(--serif); margin: 0.2em 0 1.3em; max-width: 42ch; }
@@ -803,18 +828,6 @@ html, body { background: var(--paper); }
 }
 .reveal .rq-checked .score-arrow { color: var(--muted); font-weight: 700; margin: 0 0.15em; }
 .reveal .rq-checked .score-good { color: var(--green); font-weight: 800; font-size: 1.08em; }
-
-/* Close (S17): the four questions, all ticked, mirroring the RQ spine. */
-.reveal .close-rqs {
-  list-style: none; margin: 0.9em 0 0; padding: 0;
-  display: flex; flex-wrap: wrap; gap: 0.45em 0.6em;
-}
-.reveal .close-rqs li {
-  font-size: 0.46em; font-weight: 700; color: var(--navy);
-  border: 1px solid var(--line); border-radius: 999px;
-  padding: 0.35em 0.85em; letter-spacing: 0.01em;
-}
-.reveal .close-rqs .tick { color: var(--green); margin-right: 0.3em; }
 
 /* Loop-spine comes alive: the active node breathes, and when the whole loop
    is lit ("all") a spark travels the ring to read as circulation. */

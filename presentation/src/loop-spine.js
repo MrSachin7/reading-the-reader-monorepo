@@ -83,11 +83,20 @@ export function initLoopSpine(deck) {
     nodes.forEach((n) => {
       n.classList.toggle('active', stages.includes(n.getAttribute('data-stage')))
     })
-    caption.textContent = raw === 'all'
-      ? 'The adaptive loop'
-      : stages.map((s) => TITLES[s] || s).join(' → ')
-    // The orbiting spark only runs when the whole loop is in view.
-    root.classList.toggle('flow', raw === 'all')
+    // A slide may override the caption (e.g. a cross-cutting theme like
+    // "Modularity" that lights every stage but is not the generic overview).
+    const captionOverride = section.getAttribute('data-loop-caption')
+    caption.textContent = captionOverride
+      ? captionOverride
+      : raw === 'all'
+        ? 'The adaptive loop'
+        : stages.map((s) => TITLES[s] || s).join(' → ')
+    // The orbiting spark runs on the whole-loop overview, unless a slide opts
+    // out with data-loop-flow="off" (used when "all" lit means "all replaceable"
+    // rather than "the loop circulating").
+    const flowAttr = section.getAttribute('data-loop-flow')
+    const flow = flowAttr ? flowAttr !== 'off' : raw === 'all'
+    root.classList.toggle('flow', flow)
     root.classList.add('visible')
   }
 
