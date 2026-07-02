@@ -37,6 +37,7 @@ class SessionMemory:
     recent_gaze_samples: deque[dict[str, Any]] = field(default_factory=lambda: deque(maxlen=256))
     last_proposal_key: str | None = None
     last_proposal_sent_at_unix_ms: int = 0
+    proposed_for_session_id: str | None = None
 
 
 class MockDecisionEngine:
@@ -147,6 +148,12 @@ class MockDecisionEngine:
         if not is_session_active or automation_paused:
             return []
 
+        # Demo behaviour: propose at most one intervention per session, in both
+        # advisory and autonomous modes. Resets naturally when a new session starts
+        # (a different session id is observed).
+        if self._memory.proposed_for_session_id == session_id:
+            return []
+
         current_token_duration_ms = self._read_optional_int(attention_summary, "currentTokenDurationMs")
         observed_at_unix_ms = self._read_optional_int(attention_summary, "updatedAtUnixMs") or now_unix_ms()
         elapsed_session_runtime_ms = self._calculate_elapsed_session_runtime_ms(
@@ -235,6 +242,7 @@ class MockDecisionEngine:
 
         self._memory.last_proposal_key = proposal_key
         self._memory.last_proposal_sent_at_unix_ms = observed_at_unix_ms
+        self._memory.proposed_for_session_id = session_id
 
         if execution_mode == AUTONOMOUS_MODE:
             envelope = self._build_module_inbound_envelope(
