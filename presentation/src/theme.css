@@ -197,6 +197,8 @@ html, body { background: var(--paper); }
 /* ---- Slide 3: the goal call-out (hierarchically prominent) ---- */
 .reveal .goal { font-size: 1.05em; line-height: 1.3; color: var(--ink); max-width: 30ch; margin-top: 0.55em; }
 .reveal .goal .goal-label { display: inline-block; font-size: 0.46em; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: var(--red); padding: 0.25em 0.6em; border-radius: 4px; vertical-align: middle; margin-right: 0.55em; }
+.reveal .user-note { font-size: 0.56em; line-height: 1.35; color: var(--ink-soft); max-width: 34ch; margin-top: 0.85em; }
+.reveal .user-note b { color: var(--ink); }
 
 /* ---- Slide 4: hypothesis build (click-revealed fragments) ---- */
 .reveal .hypo-build { margin-top: 0.2em; }
