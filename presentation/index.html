@@ -18,10 +18,10 @@
           <img class="title-logo" src="assets/dtu-logo-red.png" alt="Technical University of Denmark (DTU)" />
           <p class="kicker">Master Thesis Defense · DTU Compute</p>
           <h1>Reading the Reader</h1>
-          <p class="subtitle">Adaptive Reading Systems: A Modular Software Architecture</p>
+          <p class="subtitle"><strong>Adaptive Reading Systems: A Modular Software Architecture</strong></p>
           <p class="byline">Sachin Baral (s243871@dtu.dk) &nbsp;·&nbsp; Satish Gurung (s243872@dtu.dk)</p>
           <p class="meta">Supervisors: Per Bækgaard (pgba@dtu.dk) · Ashkan Task (ashta@dtu.dk) · Chaudhary Muhammad Aqdus Ilyas (cmuai@dtu.dk)</p>
-          <p class="meta">DTU Compute · July 2026</p>
+          <p class="meta">Cognitive Systems (CogSys) · July 2026</p>
           <aside class="notes">
             Welcome everyone, and thank you for being here for our thesis presentation.
             I'm Satish, and this is Sachin. Our thesis is Reading the Reader: a modular software
@@ -126,8 +126,8 @@
             in real time, to that specific reader. But there is one hard constraint, and it
             runs through everything we built: the adaptation must never cost the reader their
             place, or their flow. The instant it does, we've made reading harder, not easier.
-            This isn't a new idea in our group, and that's exactly where the real problem
-            starts.
+            And we're not the first to chase this. It lives inside a larger programme, and
+            that's where the real problem starts to show.
           </aside>
         </section>
 
@@ -139,6 +139,7 @@
             <div class="col-text">
               <p class="lead"><em>Reading the Reader</em> is a research programme at DTU Compute, funded by the Novo Nordisk Foundation (about DKK 8 million).</p>
               <p class="goal"><span class="goal-label">The goal</span>Help readers with age-related central vision loss and dyslexia through personalised, gaze-driven typographic adaptation.</p>
+              <p class="user-note"><b>Our user:</b> the researcher who runs these studies.</p>
             </div>
             <div class="prog-side">
               <p class="side-label">Brings together</p>
@@ -160,12 +161,11 @@
             Foundation, around eight million kroner, and it deliberately puts computer
             scientists in the same room as typographers, psychologists, and
             ophthalmologists. And the people it serves are real: readers losing their central
-            vision with age, and readers with dyslexia. What ties all of these fields together
-            is a single bet, and it is the idea behind the name: that eye-tracking can read the
-            reader, revealing how a person reads, so the text can adapt to them. And that bet
-            quietly reframes who our real user is.
-            The person we build for is not only the reader. It is also the researcher inside
-            this programme, the one who actually has to run these studies.
+            vision with age, and readers with dyslexia. The whole programme rests
+            on one premise: that eye-tracking can read the reader, that it can show how a person
+            reads closely enough for the text to adapt to them. And that shifts who we are
+            really building for. Not only the reader, but the researcher who has to run these
+            studies.
             So how does the programme picture all of this coming together?
           </aside>
         </section>
@@ -179,7 +179,7 @@
               <img src="assets/reading-concept.png" alt="The Reading the Reader closed-loop concept: a reader is sensed by an eye tracker, features are extracted, a classifier trained on a database of readers decides, and an intervention adapts the text, closing the loop." />
             </div>
             <div class="concept-points">
-              <p class="point"><b>The classifier is the hard part.</b> It is trained on a database of readers, so someone must first produce that data. And the decider can be a human (a researcher) or an AI.</p>
+              <p class="point"><b>It starts with the data.</b> The classifier is trained on a database of readers, so someone must first produce that data, cleanly and reproducibly.</p>
               <p class="point"><b>But there is no platform to run the research.</b> Prior prototypes proved the concept, yet were too coupled to swap pieces in and out.</p>
             </div>
           </div>
@@ -190,24 +190,21 @@
           </div>
           <p class="fig-credit">Concept figure reproduced from the Reading the Reader programme, DTU Compute.</p>
           <aside class="notes">
-            This is the concept as the programme publishes it. A reader is sensed by an eye
-            tracker, which gives us a raw stream of gaze points. Those points are turned into
-            features, measures that actually describe how someone is reading, like how long
-            the eye rests on a word, or when it jumps back to re-read. A classifier then reads
-            those features and decides, and an intervention adapts the text, closing the loop.
-            Now look at that classifier sitting in the middle, because it quietly hides two
-            things that matter.
-            First, it is trained on a database of readers, so before you even have a
-            classifier, someone has to produce that data, cleanly and reproducibly.
-            Second, the decider does not have to be an AI. In the loop, it can just as easily
-            be a human, a researcher, making the call.
-            Now the gap. To learn what actually helps, a researcher runs many hypotheses,
-            and each one needs different sensing, a different intervention, a different
-            decision rule. Does wider letter spacing help an AMD reader resume faster? Does a
-            highlight cue cut regressions? Different logic every time. Prior prototypes in the
-            programme proved the concept works, but they were too coupled to swap those pieces
-            in and out. There was simply no platform to do this research.
-            So I will hand over to Sachin, who will show how we turned this concept into an
+            So this is the picture that the programme publishes. A reader is sensed by an eye
+            tracker, which gives a raw stream of gaze points. Those points are turned into
+            features, basically measures of how someone is reading, like how long the eye rests
+            on a word, or when it jumps back to re-read. Then a classifier reads those features
+            and decides, and after that an intervention adapts the text, closing the loop.
+            The classifier in the middle is trained on a database of readers, so before you can
+            even train a classifier, someone has to produce that data, cleanly and reproducibly.
+            And that already needs tooling.
+            But the real gap is bigger than the classifier. To learn what actually helps, a
+            researcher runs many hypotheses. Does wider spacing help an AMD reader? Does a
+            highlight cue cut regressions? Each one needs different sensing, a different
+            intervention, a different decision rule. Prior prototypes in the programme proved
+            the concept works, but they were too tightly coupled to swap those pieces in and
+            out. There was no platform to do this research.
+            And now I will hand it to Sachin, who will show how we turned this concept into an
             architecture.
           </aside>
         </section>
@@ -656,7 +653,7 @@ public void Application_core_has_no_outward_dependencies()
         <section id="s14-ev-intervention" data-loop-stage="intervene">
           <p class="kicker">Deep dive · Context preservation (RQ3)</p>
           <h2>Does changing the text throw the reader off?</h2>
-          <p class="ev-lead">This was the result we most wanted to know. Every reflow risks losing the reader's place, so we measured it: four participants, the same article, with and without the restore, aligned to each intervention.</p>
+          <p class="ev-lead">We measured it directly: four participants, the same article, read with and without the restore, aligned to every intervention.</p>
           <div class="ev-figs">
             <figure class="ev-fig fragment">
               <img src="assets/eval-rrt.svg" alt="Swarm plot of reading-resume time per intervention under the two conditions, with a median bar. The with-preservation median sits lower than without." />
@@ -668,12 +665,9 @@ public void Application_core_has_no_outward_dependencies()
             </figure>
           </div>
           <aside class="notes">
-            Thanks, Sachin. So the architecture holds together. Now let's look at the piece of
-            evidence I find most useful, because this is the one thing a reader would actually
-            feel.
-            The question we most wanted to answer was simple: when the system changes the text
-            while someone is in the middle of reading, does it make them lose their place?
-            Every time you reflow a page, you risk exactly that, so we measured it directly.
+            Thanks, Sachin. This is the piece I find most useful, because it's the one thing a
+            reader would actually feel. Every time the text reflows, you risk throwing the
+            reader off, losing their place, so we measured it directly.
             We looked at two things each time an intervention fired. The first is how long it
             took the reader to get going again, the little pause between the text changing and
             their eyes moving forward into the next word. With our context-preserving feature
@@ -717,29 +711,18 @@ public void Application_core_has_no_outward_dependencies()
             </li>
           </ul>
           <aside class="notes">
-            So let me be honest about the other side: the things we did not prove. Being clear
-            about these limits actually makes what we did prove stronger, not weaker. There are
-            three, and the first is the one I just flagged.
-            First, effect. We showed that the platform can make a change to the text and measure
-            what happens right after, but we did not show that any particular change actually
-            helps someone read better. And remember, we only had four readers, and they were
-            people we could conveniently recruit, not the older or dyslexic readers this is
-            really meant for. So the proper study, the one that asks whether this genuinely
-            helps, is something we deliberately left as future work.
-            Second, the AI. When we talk about an AI making the decisions, that part is
-            architecture, not a finished, trained model. We did run the full decision pathway
-            end to end on the real eye tracker, but the thing making the calls was a simple set
-            of fixed rules standing in for a real AI. And we only ran that automatic path once,
-            as a check, not as a full study.
-            Third, the restore, the feature that keeps the reader's place when the text changes.
-            Our first version actually overshot on small changes, and nudged the reader a little
-            past where the text had really moved. We have since fixed that in the geometry. It
-            is a small, contained fix, and the only thing still open is a fresh round of testing
-            with readers to confirm it.
-            The good news is that every one of these points straight at a clear next step.
-            (If asked about how we keep gaze locked to the right line: it is a hand-tuned bias,
-            a poor man's Kalman filter, borrowing the intuition but not the machinery. Full
-            detail is on backup card B2.)
+            So, the other side: what we did not prove. Naming these makes the rest stronger,
+            not weaker. Three.
+            First, effect. We can apply and measure an intervention, but not yet show it helps
+            anyone read better, and our four readers were a convenience sample. The efficacy
+            study is future work, by design.
+            Second, the AI. It is architecture, not a trained model: the full pathway ran end
+            to end on the real tracker, but with fixed rules, and only once.
+            Third, the restore. Our first version overshot on small changes; fixed in the
+            geometry, still to be re-tested with readers.
+            Each one points straight at a next step.
+            (Q&A: line-lock is a hand-tuned bias, a poor man's Kalman filter, the intuition not
+            the machinery. Detail on B2.)
           </aside>
         </section>
 

@@ -52,8 +52,9 @@ the sensing and replay charts for Q&A.
   a reader is struggling.
 - The hard constraint to plant: adaptation must not cost the reader their place
   or flow.
-- Bridge: "This is not a new idea in our group, and that is where the real
-  problem starts."
+- Bridge: "And we are not the first to chase this. It lives inside a larger
+  programme, and that is where the real problem starts to show." (aims the tease
+  at S3, the programme, not at S4; S4 pays off the problem.)
 
 ### S3 The programme (id s3-programme, P1, ~45s)
 - Reading the Reader is a funded, interdisciplinary programme at DTU Compute
@@ -65,16 +66,21 @@ the sensing and replay charts for Q&A.
 - Bridge: "So how does the programme picture all this coming together?"
 
 ### S4 The concept and the gap (id s4-concept, P1, ~60s)
-- Walk the concept loop: a reader is sensed, the signal becomes features, a
-  classifier decides, an intervention adapts the text, closing the loop.
-- Two points about the classifier: it is trained on a database of readers (so
-  someone must first produce that data, cleanly and reproducibly), and the
-  decider can be a human or an AI.
-- The gap: to learn what helps, a researcher runs many hypotheses, each needing
-  different sensing, intervention, and decision logic.
-- Reveal the two example questions on click (letter spacing, highlight cue),
-  then the punch: prior prototypes proved the loop but were too coupled to swap
-  pieces in and out. There was no platform to do the research.
+- Walk the concept loop quickly: a reader is sensed, the signal becomes
+  features, a classifier decides, an intervention adapts the text, closing the
+  loop.
+- Ground it in the figure: point at the classifier box and the training
+  database feeding it. The seed the picture supports is data production:
+  someone has to produce that data (cleanly, reproducibly) before a classifier
+  exists.
+- Do not raise human-or-AI here; it is not in the figure. The human/rule/AI
+  decision provider is introduced on S5, where it belongs.
+- The punch is the gap, not the classifier: there is no platform to run this
+  research. Each hypothesis needs different sensing, intervention, and decision
+  logic.
+- Reveal the two example questions on click (letter spacing, highlight cue) as
+  illustration, then: prior prototypes proved the loop but were too coupled to
+  swap pieces in and out.
 - Handover to P2: "So I will hand over to Sachin, who will show how we turned
   this concept into an architecture."
 
