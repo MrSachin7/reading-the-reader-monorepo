@@ -45,6 +45,9 @@ the sensing and replay charts for Q&A.
 ### S2 The human problem (id s2-problem, P1, ~45s)
 - Some readers (dyslexia, age-related vision loss) find text harder to process
   than they can comfortably manage.
+- The figure is a simulation of how reading can *feel*, not a model of either
+  condition (say this out loud; dyslexia is primarily phonological, and the
+  censor knows it).
 - Digital text can reshape itself as it is read; an eye tracker can tell *when*
   a reader is struggling.
 - The hard constraint to plant: adaptation must not cost the reader their place
@@ -293,8 +296,10 @@ in backups B7/B8.
   It needed data and could be a human or an AI. We produce the data and expose the
   seam; the next team trains it."
 - One vivid scenario: a year from now a psychologist loads a hypothesis, attaches an
-  AI decider, runs 200 sessions overnight, replays any of them, and none of it
-  touches the core.
+  AI decider, runs a study participant by participant, replays any session
+  afterwards, and none of it touches the core. (Between studies, a new provider can
+  be evaluated offline against the recorded corpus, overnight if they like; sessions
+  themselves always need a human reader, so never say "200 sessions overnight.")
 - Nearer-term, smaller: re-test the revised restore with readers; a principled
   Kalman filter over the gaze signal.
 - Bridge: "And this is not only future work. It already started to happen."
@@ -308,6 +313,11 @@ in backups B7/B8.
   boundary, instead of requiring a fork or a separate experiment system.
 - Land it: this is the modularity claim in practice; another team brought its own
   intelligence without rewriting the reading platform.
+- Precision guard (have it loaded, this is where the question lands): their code
+  unmodified, our backend unmodified, and the connector between them written by
+  us. The contract absorbed an independently designed system; no outside team has
+  yet implemented the protocol from the docs alone, and that is named future work.
+  Never say "they validated the contract independently."
 - Bridge: "Now we can name what the thesis contributes."
 
 ### S16 Contribution (id s15-contribution, P2, ~45s)
@@ -322,9 +332,14 @@ in backups B7/B8.
 
 ### S17 Close (id s16-close, P2, ~25s)
 - The memorable claim, slowly; this is the sentence they repeat in deliberation: a
-  researcher can watch someone read in real time and reshape the text without
-  costing them their place, and every part of the loop is swappable without touching
-  the core.
+  researcher can watch someone read in real time and reshape the text as it
+  happens, with the cost to the reader's place measured on every change, and every
+  part of the loop is swappable without touching the core.
+- If challenged on "measured": that word is deliberate. The platform records a
+  graded outcome and residual for every intervention; that measurement caught our
+  own restore's over-repositioning, and the revised restore brings displacement
+  back to or below the no-preservation baseline. We claim the measuring, not
+  perfection.
 - Then land the thesis callback: we did not build the classifier; we built the
   platform it presupposes, with quality data and a live loop where it can be
   connected, run, and judged.

@@ -118,7 +118,9 @@
             For them, a page of text can demand more effort
             than they can comfortably give. On the right is just a simulation of what that can
             feel like: for central vision loss the middle of the page falls away, and for a
-            dyslexic reader the letters won't sit still. Now, here is the opportunity: digital text is not
+            dyslexic reader the letters won't sit still. To be precise: this is a simulation of
+            how reading can feel, not a model of either condition; dyslexia in particular is
+            primarily a phonological difficulty, not letters actually moving. Now, here is the opportunity: digital text is not
             fixed. It can reshape itself while it is being read. And an eye tracker can tell us
             when a reader is struggling, in the moment. So in principle, the text could adapt
             in real time, to that specific reader. But there is one hard constraint, and it
@@ -752,7 +754,7 @@ public void Application_core_has_no_outward_dependencies()
             </figure>
             <div class="future-copy">
               <p class="future-lead">We do not build that classifier. We now <em>produce the data it trains on</em> and <em>expose the seam it plugs into</em>. The next team trains it on our records.</p>
-              <p class="future-scenario"><span class="scenario-label">A year from now</span> a psychologist loads a hypothesis, attaches an AI decider to the seam, runs two hundred sessions overnight, and replays any one of them, and none of it touches the core.</p>
+              <p class="future-scenario"><span class="scenario-label">A year from now</span> a psychologist loads a hypothesis, attaches an AI decider to the seam, runs a study participant by participant, and replays any session afterwards, and none of it touches the core.</p>
               <p class="future-smaller">Nearer term, the honest next steps from our limitations: re-test the revised restore with real readers, and replace the hand-tuned line bias with a principled Kalman filter.</p>
             </div>
           </div>
@@ -763,10 +765,12 @@ public void Application_core_has_no_outward_dependencies()
             plugs in. So the one piece we deliberately left out, the classifier, is no longer a
             gap. It is a slot, ready for the next team to fill.
             Here is what that buys them. A year from now, a psychologist could load a new
-            hypothesis, attach an AI decider to the seam, run two hundred sessions overnight,
-            and replay any one of them the next morning, and none of it touches our core. That
-            is why this is a foundation, not an endpoint: the jump from a one-off prototype to
-            a platform others can build on.
+            hypothesis, attach an AI decider to the seam, run a study participant by
+            participant, and replay any session the next morning, and none of it touches our
+            core. And between studies, a new decision provider can be evaluated offline against
+            the corpus of recorded sessions, overnight if they like, because every session is a
+            replayable record. That is why this is a foundation, not an endpoint: the jump from
+            a one-off prototype to a platform others can build on.
             And the nearest steps are the honest ones from the slide before: re-test the
             improved restore with real readers, and swap our hand-tuned line bias for a proper
             Kalman filter.
@@ -819,6 +823,19 @@ public void Application_core_has_no_outward_dependencies()
             <p><strong>[why it matters]</strong> For us, that is an important validation of the
             platform idea. It shows that the architecture is not only internally modular, but
             useful as shared research infrastructure.</p>
+
+            <p><strong>[precision, if asked who wrote the integration]</strong> Be exact here:
+            their analysis code is used unmodified, our backend is unmodified, and the small
+            connector that adapts their pipeline to our analysis contract was written by us.
+            So the contract absorbed an independently designed system, but no outside team has
+            yet implemented the protocol itself from the documentation; that is named future
+            work. Do not say "they validated the contract independently."</p>
+
+            <p><strong>[precision, the data-collection claim]</strong> The thesis documents
+            their pipeline as the live analysis provider for our evaluation sessions; their own
+            data collection on the platform (these photos) is a fact from the collaboration,
+            beyond what the report itself records. State it plainly but be ready to attribute
+            it: the consent forms in the photos are theirs, from their study protocol.</p>
 
             <p><strong>[bridge]</strong> Now we can name the contribution properly.</p>
           </aside>
@@ -874,15 +891,22 @@ public void Application_core_has_no_outward_dependencies()
           <p class="kicker">What we want you to take away</p>
           <p class="big-claim close-claim">
             A researcher can watch someone read in real time and reshape the text as
-            it happens, <em class="pop">without costing them their place</em>, and
+            it happens, <em class="pop">with the cost to the reader's place measured on every change</em>, and
             <em class="pop">every part of the reading loop is swappable without touching the core</em>.
           </p>
           <aside class="notes">
             <p><strong>[the one sentence, P2 ~40s, slow down]</strong> This is the sentence they
             repeat in deliberation, so land it slowly. A researcher can watch someone read in
-            real time and reshape the text as it happens, without ever costing them their place,
-            and every part of the reading loop, the sensing, the analysis, the decision, the
-            intervention, can be swapped without touching the core.</p>
+            real time and reshape the text as it happens, with the cost to the reader's place
+            measured on every single change, and every part of the reading loop, the sensing,
+            the analysis, the decision, the intervention, can be swapped without touching the
+            core.</p>
+
+            <p><strong>[if challenged on "measured"]</strong> That word is deliberate: the
+            platform records a graded outcome and a residual for every intervention, it is that
+            measurement that caught our own restore over-repositioning, and the revised restore
+            now brings displacement back to or below the no-preservation baseline. We claim the
+            measuring, not perfection.</p>
 
             <p><strong>[the follow-up]</strong> We did not build the classifier. We built the
             platform it presupposes, and we proved the seams hold under a real 90 hertz Tobii
