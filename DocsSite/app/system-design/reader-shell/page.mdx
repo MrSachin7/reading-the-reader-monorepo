@@ -1,30 +1,33 @@
-import { Callout } from 'nextra/components'
-
 # Reader Shell & UI
 
-<Callout type="warning">
-  This page is a stub. Content will be added as the system design is documented.
-</Callout>
+The platform is operated as two browser surfaces served by one Next.js front-end: the **participant reader** on one screen and the **researcher console** on the other. The participant only ever sees the text; the researcher sees a live mirror of that text with analysis overlays and the controls that steer the session. The two never talk to each other: both render the same backend-owned snapshot, which is what keeps them consistent without drift.
 
-## What This Page Will Cover
+## The participant reader
 
-The Reader Shell is the participant-facing reading surface. The Researcher Mirror is its real-time reflection on a secondary screen. Together they form the UI layer of the adaptive system.
+The reader renders Markdown content from the presentation carried on the session snapshot. On an active session it registers itself as the participant view, maps each gaze sample to a word against the live DOM (see [Sensing Layer](/system-design/sensing-layer/)), and streams the enriched observation back over the WebSocket. When an intervention commits, the [capture-and-restore mechanism](/system-design/intervention-layer/) holds the reading position across the reflow. Deliberately, the reader carries no researcher controls and no session chrome: plain text, nothing to distract the participant.
 
-### Topics
+## The researcher console
 
-- Reader Shell architecture: how Markdown content is rendered and how visual presets are applied
-- How interventions arrive at the frontend: WebSocket envelope → Redux → component re-render
-- Context preservation from the frontend perspective: anchor tracking, smooth scroll
-- Researcher Mirror: how it stays in sync with the participant view
-- Session health indicators: sample rate, validity, latency shown to the researcher
-- Manual intervention controls available in the researcher interface
+The console renders from the same live snapshot through the same hook, and adds:
 
-### Answers Research Question
+- a **mirror** of the participant's text with the live gaze position drawn over it,
+- **analysis overlays**: a fixation heat map, the recent saccades, and the regression count, so the researcher sees not only where but how the participant is reading,
+- the **intervention and typography controls**, from which a manual intervention is pushed over the WebSocket,
+- the **decision-mode controls** (manual, advisory, autonomous) and the approve / reject surface for pending proposals,
+- **session health**: live sample rate, gaze validity, and round-trip latency.
 
-This section directly addresses [RQ4](/research-design/research-questions/) — researcher observation and real-time interaction with the participant session.
+Session setup runs through a gated stepper (participant, licensed eye tracker, passed calibration, reading material); the backend re-checks the same gates at start, so readiness is enforced by the server, not just reflected in a disabled button.
 
-### Key Files
+## How live state reaches both screens
+
+One shared WebSocket client (`gaze-socket.ts`) connects lazily, requests current state on open, and routes every inbound envelope through a single handler. Both surfaces consume it through one hook, `useLiveExperimentSession`, which coalesces snapshot bursts to **one React commit per animation frame** (about 60 Hz): the UI renders the newest snapshot at display rate regardless of the inbound message rate, and nothing is dropped from the record, because analysis and persistence consume the stream before the rendering boundary. High-frequency gaze state stays out of Redux by design and flows through refs and requestAnimationFrame loops.
+
+## Per-context settings
+
+The participant reading view, the researcher mirror, and the replay view each keep independent typographic and appearance settings, persisted separately, so enlarging the researcher's mirror never changes what the participant sees (FR23).
+
+## Key files
 
 - `Frontend/src/modules/pages/reading/components/ReaderShell.tsx`
 - `Frontend/src/modules/pages/researcher/current-live/index.tsx`
-- `Frontend/src/lib/gaze-socket.ts`
+- `Frontend/src/lib/gaze-socket.ts`, `Frontend/src/lib/use-live-experiment-session.ts`

@@ -24,9 +24,9 @@ The experiment replay export is a self-contained, single-file archive of one rea
 
 The file is designed to support three use cases:
 
-1. **Full session replay** — scrubbing through the participant view, gaze overlay, and intervention timeline in the replay viewer.
-2. **Experimental reproducibility** — recording what condition ran, what device was used, and what calibration quality was achieved.
-3. **Downstream analysis** — providing a structured, machine-readable archive for post-hoc statistical analysis of reading behaviour and intervention effects.
+1. **Full session replay**: scrubbing through the participant view, gaze overlay, and intervention timeline in the replay viewer.
+2. **Experimental reproducibility**: recording what condition ran, what device was used, and what calibration quality was achieved.
+3. **Downstream analysis**: providing a structured, machine-readable archive for post-hoc statistical analysis of reading behaviour and intervention effects.
 
 ## 2. Top-Level Document Structure
 
@@ -157,7 +157,7 @@ type ExperimentReplayCalibrationSummary = {
 
 ### Lifecycle events
 
-Lifecycle events mark session-level transitions. In version 5, `elapsedSinceStartMs` is absent — elapsed time is derived as `occurredAtUnixMs - experiment.startedAtUnixMs`.
+Lifecycle events mark session-level transitions. In version 5, `elapsedSinceStartMs` is absent, elapsed time is derived as `occurredAtUnixMs - experiment.startedAtUnixMs`.
 
 ```ts
 type ExperimentLifecycleEventRecord = {
@@ -323,7 +323,7 @@ type ReadingFocusSnapshot = {
 In version 5, the per-event attention record carries only scalar summary fields. The full cumulative token statistics dictionary has been moved to `derived.finalTokenStats`.
 
 ```ts
-// Version 5 slim event summary — no tokenStats dictionary
+// Version 5 slim event summary, no tokenStats dictionary
 type ReadingAttentionEventSummary = {
   updatedAtUnixMs: number
   currentTokenId: string | null

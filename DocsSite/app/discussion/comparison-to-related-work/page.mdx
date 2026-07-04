@@ -1,18 +1,8 @@
-import { Callout } from 'nextra/components'
-
 # Comparison to Related Work
 
-<Callout type="warning">
-  This page is a stub. It will be written after the evaluation studies are complete and the literature review is finalised.
-</Callout>
+The short version of the positioning argued in thesis Chapter 8:
 
-## What This Page Will Cover
-
-How this system compares to the tools and approaches surveyed in [Background & Related Work](/background/), specifically:
-
-- How does the modularity achieved here compare to prior adaptive reading system architectures?
-- How do the micro-intervention results compare to prior work on context-preserving adaptations?
-- What does this system offer that existing tools do not?
-- Where do existing tools do something better than this system?
-
-This section answers the implicit question from the committee: *"given everything that already exists, what did you actually contribute?"*
+- **Against the prior Reading the Reader prototypes:** same capability, different structure. Sensing, analysis, decision, and intervention now sit behind build-enforced module boundaries, so the next intervention or decision provider extends the platform in place instead of forking it.
+- **Against general-purpose experiment software** (Tobii Pro Lab, PsychoPy, Psychtoolbox): those tools excel at experiment design, stimulus delivery, and gaze capture, but none closes the loop from gaze to a real-time typographic change or offers a pluggable decision boundary. This platform occupies exactly that region; it is a focused instrument for gaze-driven reading experiments, complementing rather than replacing them.
+- **Against the eye-movement analysis literature:** the contribution is architectural, not algorithmic. The extraction step the literature treats as a methodological precondition becomes an explicit, replaceable, logged analysis strategy; no claim is made of a better fixation detector.
+- **Against the intervention-design work in the project** (intervention forms, context preservation, recovery): this platform approaches the same concern from the other side, making an intervention's disruption something the system measures and records for every change, so the efficacy findings that line of work produces are exactly what the platform is built to generate reproducibly.

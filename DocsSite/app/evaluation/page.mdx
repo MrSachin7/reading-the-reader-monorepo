@@ -1,12 +1,8 @@
-import { Cards, Callout } from 'nextra/components'
+import { Cards } from 'nextra/components'
 
 # Evaluation & Results
 
-This section reports what the system can actually do and how well it does it. It covers the full scope of implemented capabilities, calibration quality, what the data exports contain, and the results of any validation studies.
-
-<Callout type="info">
-  Experiment results will be populated as studies are conducted. The structure is in place; the data is forthcoming.
-</Callout>
+This section reports what the system can do and how well it does it: the implemented capability surface, calibration quality, and the measured results of the evaluation reported in thesis Chapter 7.
 
 <Cards>
   <Cards.Card title="Supported Capabilities" href="/evaluation/supported-capabilities/">
@@ -15,10 +11,9 @@ This section reports what the system can actually do and how well it does it. It
   <Cards.Card title="Calibration & Validation" href="/evaluation/calibration-validation/">
     Eye tracker calibration procedures, quality thresholds, and validation rationale.
   </Cards.Card>
-  <Cards.Card title="Data Export Analysis" href="/evaluation/data-export-analysis/">
-    What the export contains, what replay consumes, and where the gaps are.
-  </Cards.Card>
-  <Cards.Card title="Experiment Results" href="/evaluation/experiment-results/">
-    Results from validation studies measuring usability, reading flow, and intervention impact.
+  <Cards.Card title="Results" href="/evaluation/experiment-results/">
+    The measured evaluation: sensing rate and validity, latency against the budget, context preservation (including the over-repositioning finding and its fix), and the modularity evidence.
   </Cards.Card>
 </Cards>
+
+For the export format itself, see the [Export Format Specification](/reference/export-format-specification/) in the Reference section.

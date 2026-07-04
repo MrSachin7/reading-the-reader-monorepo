@@ -12,7 +12,7 @@ import { Callout } from 'nextra/components'
 
 ## 1. Problem Statement
 
-Every reading session must survive unexpected termination — browser crash, network drop, or server restart — so that researchers do not lose experiment data mid-session. The recovery store is the component responsible for keeping a durable copy of accumulated session data on disk throughout the session lifetime.
+Every reading session must survive unexpected termination, browser crash, network drop, or server restart, so that researchers do not lose experiment data mid-session. The recovery store is the component responsible for keeping a durable copy of accumulated session data on disk throughout the session lifetime.
 
 ### The O(n²) Write Pattern
 
@@ -88,10 +88,10 @@ sequenceDiagram
 
 | Operation | Old design | New design |
 |---|---|---|
-| Per-flush I/O | O(n) — grows with session length | O(1) — fixed batch size |
+| Per-flush I/O | O(n), grows with session length | O(1), fixed batch size |
 | Total session I/O | O(n²) | O(n) |
-| Final export assembly | O(n) — already accumulated | O(n) — single merge pass |
-| Crash recovery | O(n) — read full file | O(n) — read all chunks |
+| Final export assembly | O(n), already accumulated | O(n), single merge pass |
+| Crash recovery | O(n), read full file | O(n), read all chunks |
 
 ## 3. On-Disk Structure
 
@@ -213,12 +213,12 @@ When the backend restarts and detects an incomplete session directory, it consul
 ```mermaid
 flowchart TD
     A[Scan session directory] --> B{completed-experiment.json.gz exists?}
-    B -->|Yes| C[Load as completed export — session is done]
+    B -->|Yes| C[Load as completed export, session is done]
     B -->|No| D{chunk-*.json.gz files exist?}
-    D -->|Yes| E[Call BuildExportAsync — merge chunks into recovery export]
+    D -->|Yes| E[Call BuildExportAsync, merge chunks into recovery export]
     D -->|No| F{session-meta.json exists?}
-    F -->|Yes| G[Session started but no data captured — return minimal export]
-    F -->|No| H[No recoverable session — skip]
+    F -->|Yes| G[Session started but no data captured, return minimal export]
+    F -->|No| H[No recoverable session, skip]
 ```
 
 ### Merge Logic
@@ -252,7 +252,7 @@ static T[] Merge<T>(
 | Process crash during `MarkCompletedAsync` (after completed export, before chunk delete) | Session fully recoverable; chunk files are redundant but harmless |
 | Process crash during `MarkCompletedAsync` (before completed export write) | Session recoverable from chunk files |
 
-The worst-case data loss is one flush batch — the events that were in memory but not yet written to disk when the crash occurred. Given a flush interval of approximately 5 seconds at 60 Hz, this corresponds to at most ~5 seconds of session data.
+The worst-case data loss is one flush batch, the events that were in memory but not yet written to disk when the crash occurred. Given a flush interval of approximately 5 seconds at 60 Hz, this corresponds to at most ~5 seconds of session data.
 
 ## 6. Serialisation
 
@@ -289,7 +289,7 @@ Reading the session metadata file on every `AppendChunkAsync` call is acceptable
 
 ## 8. Relationship to the Export Format
 
-The chunk-file recovery architecture is a purely operational concern — it is invisible to the final export consumer. The `ExperimentReplayExport` document produced by `BuildExportAsync` has identical structure whether it came from merging chunk files (crash recovery path) or from the live `ExperimentSessionManager` (normal completion path). The only observable difference is the `manifest.completionSource` field:
+The chunk-file recovery architecture is a purely operational concern, it is invisible to the final export consumer. The `ExperimentReplayExport` document produced by `BuildExportAsync` has identical structure whether it came from merging chunk files (crash recovery path) or from the live `ExperimentSessionManager` (normal completion path). The only observable difference is the `manifest.completionSource` field:
 
 | Path | `completionSource` value |
 |---|---|
@@ -303,6 +303,6 @@ The replay viewer accepts all `completionSource` values and does not alter its b
 
 This architecture applies two of the four principles stated in the Technology Specification overview:
 
-**Append-only writes** — the recovery store never rewrites existing chunk data during a live session. Each flush is a new file. Existing chunk files are immutable once written.
+**Append-only writes**: the recovery store never rewrites existing chunk data during a live session. Each flush is a new file. Existing chunk files are immutable once written.
 
-**Separation of concerns** — the serialisation format, compression, and recovery file layout are independent layers. Switching from JSON to a binary format, or changing the compression algorithm, requires changes only inside `FileExperimentReplayRecoveryStoreAdapter` — the `ExperimentSessionManager` and the export format specification are unaffected.
+**Separation of concerns**: the serialisation format, compression, and recovery file layout are independent layers. Switching from JSON to a binary format, or changing the compression algorithm, requires changes only inside `FileExperimentReplayRecoveryStoreAdapter`, the `ExperimentSessionManager` and the export format specification are unaffected.

@@ -35,7 +35,7 @@ public static class MyModuleCapabilityKeys
 The module ID must be:
 - lowercase kebab-case
 - unique across all modules
-- stable — it is sent over the wire by external providers
+- stable, it is sent over the wire by external providers
 
 ## Step 2: Define the Message Types
 
@@ -109,7 +109,7 @@ public sealed class MyModuleInboundHandler : IModuleProviderInboundHandler
 Key rules:
 - Do not trust the payload without validating the provider connection first.
 - Use the `ModuleProviderContext.ProviderId` to confirm the message came from the expected provider.
-- Forward validated commands to `IExperimentSessionManager` methods — do not apply state changes from the handler directly.
+- Forward validated commands to `IExperimentSessionManager` methods, do not apply state changes from the handler directly.
 
 ## Step 4: Define the Outbound Publisher Interface
 
@@ -261,10 +261,10 @@ await handler.HandleAsync(
 
 ## What You Do Not Need to Change
 
-- `ModuleProviderWebSocketConfiguration` — it already routes by module ID
-- `ModuleProviderConnectionRegistry` — it already supports multiple module IDs per connection
-- `ExperimentSessionManager` constructor — add only the gateway injection if you need outbound publishing
-- Any existing module handler — each handler is isolated
+- `ModuleProviderWebSocketConfiguration`, it already routes by module ID
+- `ModuleProviderConnectionRegistry`, it already supports multiple module IDs per connection
+- `ExperimentSessionManager` constructor, add only the gateway injection if you need outbound publishing
+- Any existing module handler, each handler is isolated
 
 ## Checklist
 

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This document describes the Module Provider Framework — a backend architectural feature that gives external software modules a single, uniform connection point to the Reading the Reader runtime.
+This document describes the Module Provider Framework, a backend architectural feature that gives external software modules a single, uniform connection point to the Reading the Reader runtime.
 
-The framework replaces a collection of ad-hoc per-provider WebSocket endpoints and ingress services with one generic connection layer. All external module types — decision providers, analysis providers, or future integrations — connect through the same transport boundary, register with the same coordinator, and receive the same lifecycle guarantees.
+The framework replaces a collection of ad-hoc per-provider WebSocket endpoints and ingress services with one generic connection layer. All external module types, decision providers, analysis providers, or future integrations, connect through the same transport boundary, register with the same coordinator, and receive the same lifecycle guarantees.
 
 This is an important thesis architecture claim: the framework demonstrates that the system can accept new external capabilities without touching the session manager, the intervention runtime, or the frontend.
 
@@ -54,24 +54,24 @@ The session manager only calls `IModuleProviderCoordinator`. It never holds a di
 A snapshot of a connected provider's identity and capabilities. Immutable once created.
 
 Fields:
-- `ConnectionId` — the transport-level connection identifier
-- `ProviderId` — the provider's self-declared identity string
-- `DisplayName` — human-readable label for researcher UI
-- `ModuleIds` — the module IDs this provider claimed to support at registration
-- `RegisteredAtUnixMs` — when the provider connected
-- `LastHeartbeatAtUnixMs` — when the last heartbeat was received
-- `CapabilitiesByModule` — a dictionary from module ID to a `ModuleCapabilities` bag
+- `ConnectionId`, the transport-level connection identifier
+- `ProviderId`, the provider's self-declared identity string
+- `DisplayName`, human-readable label for researcher UI
+- `ModuleIds`, the module IDs this provider claimed to support at registration
+- `RegisteredAtUnixMs`, when the provider connected
+- `LastHeartbeatAtUnixMs`, when the last heartbeat was received
+- `CapabilitiesByModule`, a dictionary from module ID to a `ModuleCapabilities` bag
 
-Helper: `GetModuleCapabilities(string moduleId)` — returns the capabilities for the requested module, or an empty bag if none.
+Helper: `GetModuleCapabilities(string moduleId)`, returns the capabilities for the requested module, or an empty bag if none.
 
 ### `ModuleCapabilities`
 
-A lightweight string-keyed property bag for provider capabilities. No fixed schema — each module defines its own capability key constants.
+A lightweight string-keyed property bag for provider capabilities. No fixed schema, each module defines its own capability key constants.
 
 Helpers:
-- `HasFlag(key)` — returns true if the value is `"true"` (case-insensitive)
-- `GetString(key)` — returns the raw string value or null
-- `GetList(key)` — splits the value on commas and returns a list
+- `HasFlag(key)`, returns true if the value is `"true"` (case-insensitive)
+- `GetString(key)`, returns the raw string value or null
+- `GetList(key)`, splits the value on commas and returns a list
 
 The capability bag is intentionally untyped so the framework does not need to be changed when a new module introduces new capabilities.
 
@@ -266,7 +266,7 @@ The framework achieves several thesis claims simultaneously:
 
 1. **The endpoint boundary is a single, stable seam.** External modules do not change how they connect regardless of what the session manager does internally.
 
-2. **New modules do not require core changes.** Adding a third module requires only a new handler, a new publisher, and a new installer — not a new endpoint or a new session manager method.
+2. **New modules do not require core changes.** Adding a third module requires only a new handler, a new publisher, and a new installer, not a new endpoint or a new session manager method.
 
 3. **Capabilities drive behavior, not type checks.** The coordinator returns capability bags. The session manager reads flags. No switch statements on module types.
 

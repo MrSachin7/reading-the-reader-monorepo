@@ -1,29 +1,38 @@
-import { Callout } from 'nextra/components'
-
 # Intervention Layer
 
-<Callout type="warning">
-  This page is a stub. Content will be added as the system design is documented.
-</Callout>
+The intervention layer receives a decision and changes the text the participant is reading. Because a typographic change reflows the very layout being read, this layer's defining concern is not *what* to change but *how to change it without costing the reader their place*.
 
-## What This Page Will Cover
+## Pluggable intervention modules
 
-The intervention layer receives a decision and applies it to the reading UI. Its primary responsibility is ensuring that adaptations are applied correctly — at the right moment, with reading position preserved.
+Every intervention is a module implementing one small contract:
 
-### Topics
+- a **descriptor** declaring its identifier and supported parameters,
+- **Validate**, which checks a request against the current context before anything happens,
+- **Execute**, which commits the change against the presentation.
 
-- Timing modes: Immediate, SentenceEnd, ParagraphEnd, PageTurn — when each is appropriate
-- Layout commit policy: how the viewport adjusts to keep the anchor point visible
-- Context preservation mechanics: word/line anchoring before and after layout change
-- Cooldown and guardrails: preventing intervention storms
-- Intervention event logging: timestamp, source, type, and outcome
+The runtime never names a concrete module; it resolves one from a registry by identifier. Eight built-in modules ship with the platform (font family, font size, line width, line height, letter spacing, theme mode, colour palette, and the participant-edit lock), and adding a ninth is implementing the interface plus one registration, with no change to the runtime or any existing module.
 
-### Relation to Requirements
+## Two-phase commit at a controlled boundary
 
-- FR7 — Intervention Runtime (pluggable modules, declarative inputs)
-- FR9 — Context Preservation (anchor, viewport adjustment, failure logging)
-- NFR6 — Extensibility (additive only)
+The intervention contract separates a change's **decision** from its **commit**:
 
-### Answers Research Question
+- **Appearance-only changes** (colour, theme) move nothing on screen and commit immediately.
+- **Layout-affecting changes** (font family, size, line width, line height, letter spacing) wait for a chosen commit boundary (a sentence end, paragraph end, or page turn), so the reflow lands at a natural reading break rather than mid-line.
 
-This section directly addresses [RQ3](/research-design/research-questions/) — just-in-time micro-interventions without disrupting reading flow.
+## Context preservation: capture and restore
+
+Around every layout commit, the reader runs a capture-and-restore pipeline (`usePreserveReadingContext`):
+
+1. **Capture (continuous).** Every 120 ms, and on any content change, the reader records an anchor: the word currently being looked at, else the first visible word, else the enclosing paragraph, together with its identifiers and, crucially, its offset from the top of the viewport. Anchors older than 15 seconds are treated as stale.
+2. **Restore (at commit).** After the reflow, the anchor is re-located in the rebuilt DOM (degrading sentence, then token, then block) and scrolled back to the on-screen offset it held before the change. An optional highlight briefly flashes the restored sentence to draw the eye back to the resume point.
+3. **Grade and record.** The residual error in pixels is measured and graded (**preserved / degraded / failed**, with tolerances that widen for coarse anchors and full reflows), and the outcome is written into the session record beside the triggering intervention.
+
+That last step is the point: the cost of every intervention to the reader's continuity is **measured and auditable**, not assumed. This instrumentation caught a real flaw in the original restore strategy (it re-established the committed sentence at the top of the reading area, over-repositioning the reader on small reflows); the restore was revised to hold the captured offset, and a deterministic 66-trial sweep confirmed the revision brings displacement back to or below the no-preservation baseline. The full numbers are in [Results](/evaluation/experiment-results/); the sweep harness is committed under `Frontend/experiments/context-displacement/`.
+
+Known limits: line-width changes repaginate the document and are not compensated by a within-page restore, and the revised restore has been verified geometrically but not yet re-evaluated with readers.
+
+## Key files
+
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Interventions/` (module contract and registry)
+- `Frontend/src/modules/pages/reading/` (reader shell, `usePreserveReadingContext`)
+- Requirements: FR7 (intervention runtime), FR9 (context preservation), NFR6 (extensibility)

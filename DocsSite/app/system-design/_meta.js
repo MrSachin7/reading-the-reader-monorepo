@@ -6,6 +6,6 @@ export default {
   'intervention-layer': { title: 'Intervention Layer' },
   'reader-shell': { title: 'Reader Shell & UI' },
   'data-flow': { title: 'Data Flow & Contracts' },
-  'design-decisions': { title: 'Design Decisions' },
-  'architecture-proposal': { title: 'Architecture Proposal' }
+  'module-provider-framework': { title: 'Module Provider Framework' },
+  'design-decisions': { title: 'Design Decisions' }
 }

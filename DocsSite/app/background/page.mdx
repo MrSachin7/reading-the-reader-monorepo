@@ -2,23 +2,31 @@ import { Cards, Callout } from 'nextra/components'
 
 # Background & Related Work
 
-This section surveys the research landscape that this thesis builds on. It covers what is known about eye tracking in reading, what adaptive reading systems already exist, and what concepts and terminology are needed to follow the rest of the report.
+This section gives the short version of the research landscape the platform builds on. The full literature review, with citations and analysis, is Chapter 2 of the thesis report.
 
 <Callout type="info">
-  This section is actively being written as the literature review progresses. Pages marked as stubs will be expanded with citations and analysis during the thesis writing phase.
+  The complete thesis is available as a PDF: [Reading the Reader, MSc thesis (latest build)](https://github.com/MrSachin7/reading-the-reader-monorepo/releases/download/thesis-latest/main.pdf).
 </Callout>
 
+## Eye tracking in reading, in three sentences
+
+Gaze during reading decomposes into discrete oculomotor events: **fixations** (the eye dwells on a word and extracts information), **saccades** (rapid jumps between fixations), and **regressions** (backward jumps, commonly associated with processing difficulty). Decades of reading research link these events to ongoing comprehension, which is what makes them a usable live signal for adaptation. Extracting them from a raw gaze stream requires an explicit identification algorithm; this platform uses a dwell-based, area-of-interest method (I-AOI in the Salvucci and Goldberg taxonomy), described in the [Sensing Layer](/system-design/sensing-layer/).
+
+## Prior work in the Reading the Reader project
+
+Earlier student projects in the programme proved that gaze-driven adaptive reading works: a flexible reading and data-collection application, an adaptive e-reader comparing four intervention designs, and a reactive frontend for ML-driven adaptation. Each was a capable prototype, but each was extended by copying the previous codebase rather than by building against a stable contract, and none offered a researcher console, controlled experiment operation, or a reproducible session record. That coupling gap is the problem this platform addresses.
+
+## Existing tools
+
+Research-grade eye trackers and experiment suites (Tobii Pro Lab, PsychoPy, Psychtoolbox) excel at experiment design, stimulus delivery, and gaze capture, but none closes the loop from live gaze to a real-time typographic change, and none exposes a pluggable decision boundary. Accessibility tools (Immersive Reader, e-reader settings) adapt presentation, but only as manual, static customisation. The combination this platform targets, real-time gaze sensing plus automatic typographic adaptation plus researcher-facing experiment control in one modular system, was unoccupied.
+
+## Where to go deeper
+
 <Cards>
-  <Cards.Card title="Eye Tracking in Reading Research" href="/background/eye-tracking-in-reading/">
-    What eye tracking measures, what fixation and regression patterns reveal about cognitive load, and why these signals are the sensing foundation of this system.
-  </Cards.Card>
-  <Cards.Card title="Adaptive Reading Systems" href="/background/adaptive-reading-systems/">
-    Prior work on systems that adapt text presentation dynamically, and what has been shown to work.
-  </Cards.Card>
-  <Cards.Card title="Existing Tools & Comparison" href="/background/existing-tools/">
-    Survey of existing tools and systems, and how they compare to the approach taken here.
-  </Cards.Card>
   <Cards.Card title="Key Concepts & Terminology" href="/background/key-concepts/">
-    Definitions for terms used consistently across the thesis: micro-interventions, context preservation, decision strategies, and more.
+    Definitions used across the documentation: micro-interventions, context preservation, decision strategies, oculomotor events.
+  </Cards.Card>
+  <Cards.Card title="Thesis Chapter 2 (PDF)" href="https://github.com/MrSachin7/reading-the-reader-monorepo/releases/download/thesis-latest/main.pdf">
+    The full literature review: eye tracking in reading research, adaptive reading systems, the market survey, and the gap analysis.
   </Cards.Card>
 </Cards>

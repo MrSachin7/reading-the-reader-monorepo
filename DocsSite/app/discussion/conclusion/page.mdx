@@ -1,21 +1,9 @@
-import { Callout } from 'nextra/components'
-
 # Conclusion
 
-<Callout type="warning">
-  This page is a stub. It will be written last, after all other sections are complete.
-</Callout>
+The thesis asked how a researcher-operated adaptive reading platform can be architected so that sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable, while supporting real Tobii-backed sessions and context-preserving micro-interventions.
 
-## What This Page Will Cover
+In answer, it delivered a two-screen adaptive reading platform: a participant screen presenting reflowable text that adapts to gaze, and a researcher console mirroring the participant's gaze live with control over the running session. The adaptive loop is four modules behind stable contracts; interventions are applied manually or proposed by a pluggable decision provider in advisory or autonomous mode; and every gaze sample, decision, and intervention lands in one authoritative, schema-versioned record that can be exported, replayed, and re-imported.
 
-A precise answer to the four [research questions](/research-design/research-questions/), referring back to evidence from [Evaluation & Results](/evaluation/) and [Findings](/discussion/findings/).
+The evaluation answered the research questions with evidence: build-enforced modularity with three external providers connected untouched, 90 Hz sensing with every sample inside the latency budget, context preservation with an audited residual for every change (including the honest finding that the original restore over-repositioned, since revised), and a researcher console from which every result in the evaluation was reproduced from exported records alone.
 
-**Constraints for this page (from supervisor guidance):**
-- One page maximum
-- Nothing new — only what has already been reported
-- No new claims, no hedging beyond what is in Limitations
-- Refer back to the Final Problem Statement and conclude what was achieved with sufficient detail
-
----
-
-*This is the last page a committee member reads. It should leave them with a clear, defensible answer to: "What did this thesis achieve?"*
+With reproducible records and an open decision boundary, the platform supplies the two things the programme's envisaged classifier has always presupposed: data of a quality it can be trained on, and a live loop in which it can be connected, run, and judged. The full conclusion is Chapter 9 of the [thesis](https://github.com/MrSachin7/reading-the-reader-monorepo/releases/download/thesis-latest/main.pdf).

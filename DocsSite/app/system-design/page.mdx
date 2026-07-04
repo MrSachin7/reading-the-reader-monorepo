@@ -2,7 +2,7 @@ import { Cards } from 'nextra/components'
 
 # System Design
 
-This section documents what was built and why it was built that way. It covers the full architecture — from the sensing pipeline through decision strategies and intervention execution to the researcher UI — and records the design decisions made at each layer.
+This section documents what was built and why it was built that way. It covers the full architecture, from the sensing pipeline through decision strategies and intervention execution to the researcher UI, and records the design decisions made at each layer.
 
 This is the Methods section of the thesis. Every design choice here should be traceable back to a requirement in [Research Design](/research-design/).
 
@@ -17,18 +17,15 @@ This is the Methods section of the thesis. Every design choice here should be tr
     How interchangeable decision strategies plug in, and how manual, rule-based, and external-provider modes coexist.
   </Cards.Card>
   <Cards.Card title="Intervention Layer" href="/system-design/intervention-layer/">
-    How interventions are applied — timing modes, layout commit policies, and context preservation.
+    How interventions are applied, timing modes, layout commit policies, and context preservation.
   </Cards.Card>
   <Cards.Card title="Reader Shell & UI" href="/system-design/reader-shell/">
-    The participant-facing reading surface and researcher mirror — how they adapt and stay in sync.
+    The participant-facing reading surface and researcher mirror, how they adapt and stay in sync.
   </Cards.Card>
   <Cards.Card title="Data Flow & Contracts" href="/system-design/data-flow/">
     How data moves through the system: WebSocket envelopes, message types, and frontend/backend contracts.
   </Cards.Card>
   <Cards.Card title="Design Decisions" href="/system-design/design-decisions/">
-    Recorded architectural decisions with rationale — the why behind each major choice.
-  </Cards.Card>
-  <Cards.Card title="Architecture Proposal" href="/system-design/architecture-proposal/">
-    A forward-looking refactoring proposal for module boundaries and domain ownership.
+    The consolidated decision register (DR1 to DR9): each choice, the alternative considered, and the rationale.
   </Cards.Card>
 </Cards>

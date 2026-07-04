@@ -3,12 +3,12 @@ import { Callout } from 'nextra/components'
 # Initial Problem Statement
 
 <Callout type="info">
-  This is the problem as originally framed in the thesis proposal. The refined, measurable version — the Final Problem Statement — is in [Research Design](/research-design/final-problem-statement/).
+  This is the problem as originally framed in the thesis proposal. The refined, measurable version, the Final Problem Statement, is in [Research Design](/research-design/final-problem-statement/).
 </Callout>
 
 ## The Problem
 
-The current Reading the Reader prototype integrates sensing, intervention logic, and user interface behaviour in a tightly coupled manner. As a result, introducing new micro-intervention techniques or replacing existing decision logic — such as swapping an AI-based decision mechanism with a manually controlled intervention — requires extensive code changes and limits experimental flexibility.
+The current Reading the Reader prototype integrates sensing, intervention logic, and user interface behaviour in a tightly coupled manner. As a result, introducing new micro-intervention techniques or replacing existing decision logic, such as swapping an AI-based decision mechanism with a manually controlled intervention, requires extensive code changes and limits experimental flexibility.
 
 Furthermore, the existing system provides limited support for experimental workflows. Researchers cannot easily observe, in real time, exactly what a test subject is seeing, nor can they apply or override interventions from a separate interface. This makes it difficult to compare automated interventions with human-in-the-loop approaches or to conduct controlled usability studies.
 
@@ -18,13 +18,13 @@ From a user-experience perspective, adaptive reading systems must also ensure th
 
 The problem addressed in this thesis is therefore:
 
-> **How to engineer an adaptive reading application that is both experimentally flexible and user-centred** — enabling adaptive micro-interventions that measurably improve the reading experience while remaining **modular, testable, and deployable**.
+> **How to engineer an adaptive reading application that is both experimentally flexible and user-centred**: enabling adaptive micro-interventions that measurably improve the reading experience while remaining **modular, testable, and deployable**.
 
 This framing contains three separable concerns:
 
-1. **Modularity** — the architecture must allow sensing, decision strategies, and UI adaptation to be replaced or extended independently.
-2. **Experimental flexibility** — researchers must be able to observe and control sessions from a separate interface.
-3. **User-centredness** — interventions must preserve reading flow and not disrupt the participant.
+1. **Modularity**: the architecture must allow sensing, decision strategies, and UI adaptation to be replaced or extended independently.
+2. **Experimental flexibility**: researchers must be able to observe and control sessions from a separate interface.
+3. **User-centredness**: interventions must preserve reading flow and not disrupt the participant.
 
 ---
 

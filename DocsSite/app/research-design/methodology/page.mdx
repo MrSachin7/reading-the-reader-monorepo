@@ -2,7 +2,7 @@
 
 ## Research and Engineering Approach
 
-This thesis is a platform engineering thesis: its primary contribution is a designed and implemented software artifact — a researcher-operated adaptive reading platform — rather than an empirical study of human reading behaviour.
+This thesis is a platform engineering thesis: its primary contribution is a designed and implemented software artifact, a researcher-operated adaptive reading platform, rather than an empirical study of human reading behaviour.
 The research approach therefore combines software engineering methodology with human-centred design principles, structured to produce both a working system and a defensible architectural argument.
 
 We follow a four-phase process that moves from problem framing to artifact construction to evaluation.
@@ -12,7 +12,7 @@ In the third phase, we design and implement the platform iteratively, making arc
 In the fourth phase, we evaluate the resulting system against the measurable objectives stated in the final problem statement, assessing both technical correctness and the degree to which the architecture supports the research scenarios it was designed for.
 
 This approach is appropriate for the research goals for two reasons.
-First, the primary open question is not whether adaptive reading interventions are effective for readers — that is a question for a future user study conducted with this platform — but whether a modular, extensible architecture for such interventions can be built and defended.
+First, the primary open question is not whether adaptive reading interventions are effective for readers, that is a question for a future user study conducted with this platform, but whether a modular, extensible architecture for such interventions can be built and defended.
 Second, the artifact itself is the instrument: the quality of the architecture is both the subject of the research question and the means by which future empirical studies become possible.
 The methodology therefore treats system design decisions as first-class research outputs that must be motivated, documented, and evaluated, not merely implemented.
 
@@ -24,7 +24,7 @@ Requirements for this platform were derived through a process of reverse enginee
 Because a prototype of the adaptive reading system already existed at the start of this thesis work, we began by analysing that prototype alongside the original project proposal and the findings of the literature review to identify what a research-capable platform must be able to do.
 This analysis produced an initial set of requirements that was then refined through regular supervision sessions, during which gaps and implicit assumptions in the prototype were surfaced and made explicit.
 
-User stories were written from the perspective of the three identified actors — the researcher, the test subject, and the external module provider — and were used as the primary vehicle for communicating behavioural expectations across the team.
+User stories were written from the perspective of the three identified actors, the researcher, the test subject, and the external module provider, and were used as the primary vehicle for communicating behavioural expectations across the team.
 Functional and non-functional requirements were then derived from those user stories, with the non-functional requirements specifically motivated by the architectural goals of the thesis: modularity, low latency, extensibility, and reproducibility.
 
 We note that this elicitation approach is a deliberate consequence of the thesis type.
@@ -34,14 +34,14 @@ Because the contribution is an artifact, the requirements serve a dual purpose: 
 
 ## Development Process
 
-The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality — from sensing to decision to intervention to researcher interface — rather than building one layer at a time.
+The system was developed by a team of two as an iterative build, with each iteration targeting a coherent vertical slice of functionality, from sensing to decision to intervention to researcher interface, rather than building one layer at a time.
 This approach allowed each increment to be tested end-to-end and prevented the accumulation of untested integration assumptions across layers.
 
 The codebase is organised as a monorepo containing five sub-projects: the frontend application, the backend API and realtime server, the documentation site, a reference decision-maker, and a reference eye-movement analyser.
 This structure allowed shared conventions and contracts to be maintained across components without requiring a separate package registry, while keeping each sub-project independently buildable and deployable.
 
 Version control was managed using Git with GitHub as the remote host.
-Two independent continuous integration pipelines were configured using GitHub Actions: the frontend pipeline runs on Ubuntu using Bun and validates every change to the `Frontend/` directory with a full production build; the backend pipeline runs on Windows — required by the Tobii SDK dependency — and validates every change to `Backend/` by restoring dependencies, building the solution in Release configuration, and running the xUnit test suite.
+Two independent continuous integration pipelines were configured using GitHub Actions: the frontend pipeline runs on Ubuntu using Bun and validates every change to the `Frontend/` directory with a full production build; the backend pipeline runs on Windows, required by the Tobii SDK dependency, and validates every change to `Backend/` by restoring dependencies, building the solution in Release configuration, and running the xUnit test suite.
 Changes were introduced through pull requests, providing a lightweight code-review step between the two authors before merging to the main branch.
 
 The full codebase is published on GitHub and released under the MIT License, making it freely available for inspection, reuse, and extension by future researchers and developers.
@@ -85,7 +85,7 @@ The backend pipeline runs on a Windows runner to satisfy the Tobii SDK requireme
 Eye-tracking data is sensitive by nature: it captures where a person directs their attention, moment by moment, and can in principle be used to infer cognitive states, reading difficulties, or other personal characteristics beyond the scope of any individual experiment.
 Collecting such data from study participants therefore requires careful handling.
 
-Within this platform, all session data — including raw gaze samples, demographic attributes, and comprehension results — remains under the direct control of the researcher who operates the system.
+Within this platform, all session data, including raw gaze samples, demographic attributes, and comprehension results, remains under the direct control of the researcher who operates the system.
 No data is transmitted to external servers; all storage is local to the machine on which the backend is running.
 Participant attributes collected at enrolment (name, age, sex, existing eye conditions, reading proficiency) are stored only within the session record and are not shared outside the system.
 

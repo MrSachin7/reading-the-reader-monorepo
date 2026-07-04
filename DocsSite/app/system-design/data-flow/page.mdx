@@ -1,27 +1,36 @@
-import { Callout } from 'nextra/components'
-
 # Data Flow & Contracts
 
-<Callout type="warning">
-  This page is a stub. Content will be added as the system design is documented.
-</Callout>
+Two channels connect the front-end to the backend, and the distinction organises everything else: a **REST** interface (`/api`, FastEndpoints) carries the researcher's discrete commands, and a single long-lived **WebSocket** (`/ws`) carries the continuous realtime stream in both directions. Keeping high-frequency gaze off the request/response path is a deliberate design decision (DR3): mirroring a sample never waits behind a slow command.
 
-## What This Page Will Cover
+## One loop iteration
 
-How data moves through the system from gaze acquisition to UI update, and the contracts that hold the frontend and backend in sync.
+For a Tobii sample, one iteration of the adaptive loop runs:
 
-### Topics
+1. Tracker raises a sample; the backend ingests it on a lock-free path and broadcasts it.
+2. The **participant reader** (which alone knows the rendered layout) maps the sample to a word and returns an enriched, token-indexed observation over the WebSocket.
+3. The backend's **analysis** strategy projects observations into fixations, saccades, and regressions.
+4. A change in analysed state triggers the **decision** strategy, which yields at most one proposal.
+5. The proposal is applied (or approved, in advisory mode) and committed by an **intervention** module; the adapted presentation returns to both surfaces on the next snapshot broadcast.
 
-- End-to-end data path: Tobii → backend sensing → decision → intervention command → WebSocket → frontend → reader UI
-- REST vs. WebSocket: which operations use which transport and why
-- WebSocket envelope format: message type names, payload shapes, versioning
-- Frontend/backend contract alignment: how TypeScript types mirror C# records manually
-- Session state propagation: `ExperimentSessionSnapshot` and how it travels
-- High-frequency gaze data: why it stays out of Redux and flows through refs and rAF loops
+## Commands over REST
 
-### Key Files
+Each researcher command (save participant, choose material, start, finish, change a policy) is an RTK Query mutation posting to a thin FastEndpoints handler that maps the request onto a core port and returns the updated `ExperimentSessionSnapshot`. Mutations invalidate the `Experiment` cache tag, so after any command the front-end re-reads authoritative state rather than trusting a locally computed one. Endpoint handlers hold no session logic; state-changing operations serialise behind the session manager's lifecycle gate and persist a checkpoint before releasing it.
+
+## The realtime stream over the WebSocket
+
+Every server frame is a small JSON envelope: `{ type, sentAtUnixMs, payload }`. The backend's message catalogue lives in `MessageTypes.cs`; the front-end mirrors it **by hand** as a discriminated union in `gaze-socket.ts`. Lifecycle messages (`experimentStarted`, `experimentStopped`, `experimentState`) all carry the same authoritative `ExperimentSessionSnapshot`, so both screens render the same truth. The broadcaster fans one serialised envelope out to every open socket and silently skips sockets that have dropped.
+
+## Where all of it converges
+
+Every command and every realtime frame meets at one component, the `ExperimentSessionManager`: a single object realising the command surface, the realtime authority, the read-only query service, and the replay/recovery buffer, its concerns split across partial files but sharing one `_session` field behind one lifecycle gate. It names no concrete adapters; the Tobii device, the broadcaster, and the persistence store are each reached through a core-owned port. Because all session state lives behind this one component and is published as a single snapshot, the console and the reader never hold competing copies of the truth.
+
+## The contract-alignment caveat
+
+There is no generated package shared between the two roots: the TypeScript types are hand-written mirrors of the backend records, and keeping them aligned is a manual discipline. TypeScript's static typing catches drift at compile time on the front-end side, but changes to snapshot shapes or message-type names must be applied on both sides. This is a known, accepted trade-off; treat `MessageTypes.cs` and `gaze-socket.ts` as one unit when changing either.
+
+## Key files
 
 - `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Messaging/MessageTypes.cs`
-- `Frontend/src/lib/gaze-socket.ts`
-- `Frontend/src/lib/experiment-session.ts`
 - `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`
+- `Frontend/src/lib/gaze-socket.ts`, `Frontend/src/lib/experiment-session.ts`
+- `Frontend/src/redux/api/` (RTK Query command slices)

@@ -1,62 +1,10 @@
-# Risks and Pitfalls
+# Limitations
 
-This page summarizes the main project risks identified during the repo research and planning work.
+Stated plainly, because the contribution is clearer when its boundaries are explicit (full treatment in thesis Chapter 8):
 
-## Highest-Risk Failure Modes
-
-### AI-first scope drift
-
-The main thesis risk is turning the platform into an AI thesis instead of a modular experiment-platform thesis.
-
-The safer framing is:
-
-- manual
-- rule-based
-- external-provider seam
-
-not:
-
-- in-repo production AI as the core thesis claim
-
-### Overgrown realtime orchestration
-
-The strongest architectural risk is letting the backend session orchestrator keep absorbing more responsibilities instead of sharpening module seams.
-
-### Realtime coupling across actors
-
-Participant flow, researcher monitoring, derived analytics, and control traffic can become too intertwined if they all behave like one failure domain.
-
-### Weak reproducibility and provenance
-
-Replayable data is not automatically the same thing as defendable experimental provenance. Export metadata, configuration stamping, and provider/intervention provenance matter.
-
-### Privacy and security deferred because the system is local
-
-Participant data, gaze-linked data, and exports still need deliberate handling even in a thesis environment.
-
-## Lower-Level Practical Risks
-
-- contract drift between backend C# shapes and frontend TypeScript mirrors
-- hidden hardware assumptions between Windows/Tobii study environments and non-Windows dev environments
-- repo-local runtime data becoming operational truth
-- intervention behavior causing more disruption than benefit
-- broad platformization before the thesis core is fully defendable
-
-## Why This Page Exists
-
-These risks are important because they tell future contributors what not to optimize for.
-
-The next useful changes should improve:
-
-- modularity
-- runtime trustworthiness
-- reproducibility
-- contributor clarity
-
-not just feature count.
-
-## Related Reading
-
-- [/project/research-summary/](/project/research-summary/)
-- [/overview/constraints-and-scope/](/overview/constraints-and-scope/)
-- [/backend/architecture-proposal/](/backend/architecture-proposal/)
+- **Scope limits fixed at the start.** Reading material is Markdown only (reflowable text, no PDF). The recorded sessions used a small convenience sample, not the struggling or clinical readers adaptive reading ultimately serves. The thesis makes **no efficacy claim**: it shows the platform can apply interventions and measure their immediate cost, not that any intervention improves reading.
+- **AI support is architectural, not built.** The contract and the external-provider path exist and were exercised end to end on real hardware, but with a fixed-rule reference provider; no learned decision model was implemented or run.
+- **The integration contract is validated mostly by its authors.** One independently designed pipeline was absorbed unmodified (with a connector written by the platform authors); no outside team has yet implemented the protocol from the documentation alone.
+- **The revised context restore is verified geometrically, not behaviourally.** The deterministic sweep confirms the over-repositioning is gone; a re-test with readers is pending. Line-width changes repaginate and are not compensated.
+- **The frontend has no automated test suite.** Browser-side flows were verified by typed builds, manual walkthrough, and the committed sweep harness; the backend carries the contract tests (100 of 100 passing).
+- **Single-operator deployment.** One session at a time, file-backed storage, single host by design (DR7); a concurrent multi-session deployment would need to revisit persistence and session keying.

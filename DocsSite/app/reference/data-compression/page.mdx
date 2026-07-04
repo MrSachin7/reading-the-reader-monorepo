@@ -9,10 +9,10 @@ import { Callout } from 'nextra/components'
 
 A 10-minute reading experiment at 60 Hz eye-tracker sampling produces approximately 72 000 raw gaze samples. With the version 4 export format, this results in a JSON file of approximately **100 MB** when uncompressed. Files of this size create several operational problems:
 
-- **Download time** — a researcher waiting for the export button to complete a download experiences a multi-second delay even on a local network.
-- **Recovery write amplification** — the live recovery store rewrote the entire accumulated export file on every periodic flush. By minute 9, this means writing ~90 MB every few seconds, competing with gaze data ingestion for I/O.
-- **Replay load time** — the browser must parse a 100 MB JSON string synchronously before the replay viewer can render its first frame.
-- **Storage cost** — a study with 20 participants produces ~2 GB of raw export data.
+- **Download time**: a researcher waiting for the export button to complete a download experiences a multi-second delay even on a local network.
+- **Recovery write amplification**: the live recovery store rewrote the entire accumulated export file on every periodic flush. By minute 9, this means writing ~90 MB every few seconds, competing with gaze data ingestion for I/O.
+- **Replay load time**: the browser must parse a 100 MB JSON string synchronously before the replay viewer can render its first frame.
+- **Storage cost**: a study with 20 participants produces ~2 GB of raw export data.
 
 The target for this optimisation work is **≤ 10 MB** for a typical 10-minute session, while retaining all information that the replay viewer and downstream analysis require.
 
@@ -46,7 +46,7 @@ These four null fields are written for every eye of every sample, adding approxi
 
 In version ≤ 4, the `ReadingAttentionSummarySnapshot` embedded inside every `ReadingAttentionEventRecord` included the complete cumulative `tokenStats` dictionary. This dictionary grows monotonically as the session proceeds: after the participant has looked at 200 tokens, every subsequent attention event carries a 200-entry map. With ~1 attention event per second, a 10-minute session produces 600 events each carrying a map that is on average 100 entries × ~60 bytes = **~6 KB per event**, totalling **~3.6 MB** purely for redundant intermediate token statistics.
 
-The final map — the one written at the last attention event — is the only version that matters for post-hoc analysis. All intermediate versions are throwaway.
+The final map, the one written at the last attention event, is the only version that matters for post-hoc analysis. All intermediate versions are throwaway.
 
 ### 2.3 Derived redundancy
 
@@ -75,9 +75,9 @@ flowchart TD
 
 | After phase | Estimated uncompressed | Estimated compressed |
 |---|---|---|
-| Baseline (v4) | ~100 MB | — |
-| Phase 1 (null omit) | ~80 MB | — |
-| Phase 2 (schema v5) | ~65 MB | — |
+| Baseline (v4) | ~100 MB |, |
+| Phase 1 (null omit) | ~80 MB |, |
+| Phase 2 (schema v5) | ~65 MB |, |
 | Phase 3 (gzip) | ~65 MB | **~8–15 MB** |
 | Phase 4 | no size change | ~8–15 MB |
 
@@ -90,7 +90,7 @@ The `System.Text.Json` serialiser supports `DefaultIgnoreCondition.WhenWritingNu
 ### Change
 
 ```csharp
-// ExperimentReplayExportSerializer.cs — before
+// ExperimentReplayExportSerializer.cs, before
 private readonly JsonSerializerOptions _jsonOptions = new()
 {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

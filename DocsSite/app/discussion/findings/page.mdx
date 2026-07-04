@@ -1,18 +1,13 @@
-import { Callout } from 'nextra/components'
-
 # Findings vs. Problem Statement
 
-<Callout type="warning">
-  This page is a stub. It will be written after the evaluation studies are complete.
-</Callout>
+The problem statement asked how a researcher-operated adaptive reading platform can be architected so that sensing, analysis, decision, and intervention are independently replaceable, while running real Tobii sessions and applying context-preserving micro-interventions. The verdict, one research question at a time (full argument in thesis Chapter 8):
 
-## What This Page Will Cover
+**RQ1, Modularity: met strongly.** The dependency rule is enforced by the build and an executable test, an in-process module is added in one registration, and three external providers connected with no change to the core. The strongest evidence is the analysis pipeline of a concurrent, independent thesis, connected over the documented contract and serving as the live analysis source for the whole evaluation. Caveat: the reference providers were built by the platform authors and show contract sufficiency; the one outside integration is strong but single.
 
-A structured comparison of what was achieved against each measurable objective defined in the [Final Problem Statement](/research-design/final-problem-statement/).
+**RQ2, Sensing pipeline: met for sensing and transport.** The tracker streamed at its rated rate with high validity, every recorded sample stayed within the latency budget, and the pipeline is inspectable and replayable from the exported record. The automated decision path was exercised within budget in a single advisory-mode validation run; measuring it at campaign scale, over a network, with a real decision model remains open.
 
-For each objective:
-- Was the criterion met?
-- What evidence supports the claim?
-- Where did the result fall short, and why?
+**RQ3, Context preservation: the architecture is met; the strategy is a measured finding.** Every intervention wrote a graded outcome and residual into the record, and both behavioural proxies moved in the expected direction with preservation on. The same record showed the original restore over-repositioning on small reflows; the revision removes it geometrically. The behavioural gain in the live sessions is best explained by the highlight cue rather than the restore geometry (the two were bundled), which is exactly the follow-up experiment the platform now makes possible.
 
-This is the core of the discussion chapter. It does not introduce new material — it interprets the results from [Evaluation & Results](/evaluation/) in light of the research intent.
+**RQ4, Researcher control: met.** Every session ran through one gated console, and the entire evaluation chapter was rebuilt from the exported records alone.
+
+Together these close the three gaps that motivated the thesis: experimentability (the gated console and replayable record), sensing coupling (the swappable sensing source), and external decision integration (the provider contract).

@@ -1,6 +1,6 @@
 # Key Concepts & Terminology
 
-Definitions for terms used consistently throughout the thesis. These are the stable names — if a concept appears in figures, tables, or code, it uses exactly the same word as defined here.
+Definitions for terms used consistently throughout the thesis. These are the stable names, if a concept appears in figures, tables, or code, it uses exactly the same word as defined here.
 
 ---
 
@@ -8,9 +8,9 @@ Definitions for terms used consistently throughout the thesis. These are the sta
 
 A small, context-preserving change to typography or layout applied during an active reading session. Examples include adjustments to line spacing, font weight, or contrast. Micro-interventions must be:
 
-- **Minimal** — small enough not to visually startle the reader
-- **Precise** — applied to the right content region at the right moment
-- **Reversible** — the reading environment can return to its previous state
+- **Minimal**: small enough not to visually startle the reader
+- **Precise**: applied to the right content region at the right moment
+- **Reversible**: the reading environment can return to its previous state
 
 *Originates from digital health and adaptive systems research (Persson et al., JMIR 2025).*
 
@@ -32,7 +32,7 @@ The component responsible for deciding *when* and *what* intervention to apply. 
 
 ## Sensing Layer
 
-The part of the system that acquires raw eye tracking data from hardware (Tobii), converts it to screen-space coordinates, and maps it to content regions (paragraph, line, word). The sensing layer outputs events — not decisions.
+The part of the system that acquires raw eye tracking data from hardware (Tobii), converts it to screen-space coordinates, and maps it to content regions (paragraph, line, word). The sensing layer outputs events, not decisions.
 
 ---
 
@@ -56,4 +56,4 @@ The backend owns the canonical state of an experiment session. Frontend clients 
 
 ## External Decision Provider
 
-An optional third party — typically an AI service or analysis pipeline — that connects via WebSocket and suggests intervention triggers. The provider has no authority; it can request but the backend decides whether to apply.
+An optional third party, typically an AI service or analysis pipeline, that connects via WebSocket and suggests intervention triggers. The provider has no authority; it can request but the backend decides whether to apply.

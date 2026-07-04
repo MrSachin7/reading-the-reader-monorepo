@@ -72,3 +72,8 @@ Master-Thesis-Report/_minted/
 Master-Thesis-Report/*.minted
 Master-Thesis-Report/svg-inkscape/
 Master-Thesis-Report/bibliography.tex.bak
+
+# AI assistant tooling (local only)
+.claude/
+CLAUDE.md
+AGENTS.md

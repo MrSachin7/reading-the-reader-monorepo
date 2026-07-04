@@ -1,14 +1,14 @@
 # External Module Integration
 
-This section is for teams building an external module — an AI decision provider, a fixation analysis provider, or a new module type.
+This section is for teams building an external module: an AI decision provider, a fixation analysis provider, or a new module type.
 
 ## Included Documents
 
 - [Adding a New Module](/integration/adding-a-new-module/)
 - [Provider Integration Guide](/integration/provider-protocol/)
 - [Black-Box Contract](/integration/black-box-contract/)
-- [Provider Gap Analysis](/integration/external-provider-gap-analysis/)
-- [Provider Roadmap](/integration/external-provider-roadmap/)
+- [Eye Movement Analyzer](/integration/eye-movement-analysis-provider/)
+- [Extension Roadmap](/integration/external-provider-roadmap/)
 
 ## Recommended Reading Order
 
@@ -17,3 +17,7 @@ This section is for teams building an external module — an AI decision provide
 3. Use the backend intervention module catalogue at runtime to align generated interventions with backend validation.
 4. If you are adding a new module type (not just an AI decision provider), read the adding-a-new-module guide.
 5. Use the roadmap page to understand what has been implemented and what remains as future work.
+
+## Proof this path works
+
+The integration path is not hypothetical: a concurrent, independent thesis project (Reading the Struggle) connected its reading-difficulty analysis pipeline through this contract, with no changes to the platform core, and served as the live analysis source for the platform's own evaluation. The mock decision-maker and mock eye-movement analyzer under [Running the System](/running-the-system/) give you working reference implementations to develop against.

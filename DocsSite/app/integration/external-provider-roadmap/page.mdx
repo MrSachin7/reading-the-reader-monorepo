@@ -40,13 +40,13 @@ The fixation-analysis module (`moduleId = "fixation-analysis"`) supports:
 
 ### Phase 5: Backend-owned session projection
 
-Session state published to external providers is derived from backend authority — not from browser-side timing behavior. The `providerDecisionContext` and `providerSessionSnapshot` messages carry backend-computed snapshots.
+Session state published to external providers is derived from backend authority, not from browser-side timing behavior. The `providerDecisionContext` and `providerSessionSnapshot` messages carry backend-computed snapshots.
 
 ### Phase 6: Researcher visibility
 
 Provider health is surfaced in the authoritative experiment snapshot:
-- `externalProviderStatus` — interventions provider connection state and capabilities
-- `eyeMovementAnalysisProviderStatus` — analysis provider connection state
+- `externalProviderStatus`, interventions provider connection state and capabilities
+- `eyeMovementAnalysisProviderStatus`, analysis provider connection state
 
 Both are broadcast when provider state changes, so the researcher UI reflects live connection health.
 
@@ -90,7 +90,7 @@ The current registry enforces one active provider per module. If a future resear
 
 ### Cross-module correlation
 
-Currently each module receives signals independently. A future design might route correlated signals across modules — for example, letting the fixation-analysis provider inform the interventions provider about fixation events before the backend evaluates the decision strategy.
+Currently each module receives signals independently. A future design might route correlated signals across modules, for example, letting the fixation-analysis provider inform the interventions provider about fixation events before the backend evaluates the decision strategy.
 
 ## Companion Pages
 

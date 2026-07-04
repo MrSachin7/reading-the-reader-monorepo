@@ -1,28 +1,39 @@
-import { Callout } from 'nextra/components'
-
 # Decision Layer
 
-<Callout type="warning">
-  This page is a stub. Content will be added as the system design is documented.
-</Callout>
+The decision layer answers one question, continuously: given how the participant is reading right now, should the text change, and how? It is the seam the thesis treats as its architectural centrepiece, because it is where a human researcher, a built-in rule, or an external (possibly AI-driven) provider stand in for one another behind the same contract.
 
-## What This Page Will Cover
+## The contract shape
 
-The decision layer is the architectural centrepiece of the thesis: the seam that makes decision strategies interchangeable. It receives sensing events and produces intervention requests without knowing how the intervention will be applied.
+Like the analysis and intervention concerns, a decision strategy follows one uniform shape: it is identified by a stable provider identity, receives an **immutable snapshot** of the relevant session state (the authoritative session snapshot plus the analysed signals: reading focus, attention summary, oculomotor events), and returns **at most one proposal**. The snapshot is the load-bearing choice: a strategy is handed a copy of what it may see, never a reference to live session state, so it can neither reach into nor mutate the core. That is what makes a strategy replaceable without coordination and testable in isolation.
 
-### Topics
+A proposal pairs an observed signal and a short human-readable rationale with a concrete intervention: the identity of an [intervention module](/system-design/intervention-layer/) and the parameters to apply. The seam commits the platform to a vocabulary (signals in, a proposal out) but not to any particular way of arriving at the proposal.
 
-- The decision strategy abstraction: what the interface looks like and what it guarantees
-- Built-in strategies: manual (researcher-triggered), rule-based (threshold-based), hybrid
-- External provider mode: how a third party plugs in via `/ws/provider` without gaining session authority
-- Strategy lifecycle: how strategies are enabled, disabled, and switched per session
-- Logging: how the origin and rationale of each intervention decision is recorded
+## Three sources of decisions
 
-### Key Files
+1. **Manual.** The baseline: no automated provider is active, and the researcher applies a chosen intervention directly from the console. It commits through the same controlled boundary as any other change.
+2. **Built-in rule-based strategy.** A threshold heuristic over the analysed signals, enough to exercise the loop end to end and to serve as the always-available fallback.
+3. **External provider.** An out-of-process program connected over the [module-provider protocol](/integration/provider-protocol/). Its proposals pass through exactly the same validation and logging path as built-in strategies, so an external decision is indistinguishable downstream from an internal one.
 
-- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Session/ExperimentSessionManager.cs`
-- `Backend/src/ReadingTheReader.WebApi/Websockets/WebSocketConfiguration.cs`
+## Execution modes
 
-### Answers Research Question
+When an automated provider is active, a session-level execution mode governs how its proposals are enacted:
 
-This section directly addresses [RQ1](/research-design/research-questions/) (modular architecture) and [RQ2](/research-design/research-questions/) (AI and human-controlled intervention in the same system).
+- **Advisory**: each proposal is surfaced on the researcher console with approve / reject controls and is committed only on approval.
+- **Autonomous**: a permitted proposal is applied immediately.
+- **Control / manual-only** modes complete the spectrum, so the degree of automation can itself be an experimental condition.
+
+Every automated proposal passes through one lifecycle: it enters a **pending** state and resolves into exactly one terminal outcome (approved, rejected, applied, or superseded when overtaken by a newer proposal or a mode change). The disposition of every proposal, with its origin, parameters, and rationale, is stamped into the session record, which is what makes the researcher's control auditable after the session rather than merely exercised during it.
+
+## Failure behaviour
+
+A provider that stops heartbeating or disconnects is dropped by the gateway; the affected strategy degrades to the built-in fallback, the transition is logged, and the session continues. A decision layer that returns nothing simply yields no proposal; the loop is unaffected.
+
+## Latency
+
+The in-process decision pipeline (freshest gaze sample to proposal dispatch) and the out-of-process provider round trip are both instrumented on a single backend clock. In an advisory-mode validation run both stayed well inside the 100 ms budget (median 6 ms and 5 ms respectively); see [Results](/evaluation/experiment-results/).
+
+## Key files
+
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/` (decision contracts, session manager facets)
+- `Backend/src/ReadingTheReader.WebApi/Websockets/` (transport, module-provider endpoint)
+- [Provider Protocol](/integration/provider-protocol/) and [Black-Box Contract](/integration/black-box-contract/) for the external path

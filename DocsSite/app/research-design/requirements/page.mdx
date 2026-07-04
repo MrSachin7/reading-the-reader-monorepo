@@ -28,7 +28,7 @@ The **Test Subject** is the person recruited by the researcher to take part in a
 Their role within the system is deliberately narrow: they read Markdown-formatted text presented in the reading interface while their gaze behaviour is recorded.
 The test subject does not interact with system configuration, session management, or any researcher-facing controls.
 
-During a session, the test subject may be exposed to typographic adaptations — changes to font size, line width, line height, letter spacing, font family, colour palette, or theme mode — applied by the researcher or by an automated strategy.
+During a session, the test subject may be exposed to typographic adaptations, changes to font size, line width, line height, letter spacing, font family, colour palette, or theme mode, applied by the researcher or by an automated strategy.
 A critical requirement arising from this role is that such adaptations must not disrupt reading flow or cause the test subject to lose their place in the text, as perceptible disruption would confound the experimental results.
 Following each reading item, the test subject may also be asked to answer comprehension quiz questions, the results of which are recorded as part of the session data.
 
@@ -39,7 +39,7 @@ Following each reading item, the test subject may also be asked to answer compre
 The **External Module Provider** is an out-of-process software agent that connects to the platform, declares its capabilities, receives structured context containing gaze observations and session state, and returns commands such as intervention recommendations or derived fixation events.
 
 A central research motivation for this platform is the ability to evaluate different decision and analysis strategies under comparable experimental conditions.
-This actor motivates the need for a stable and documented integration protocol so that different strategies — rule-based, machine-learning-based, or otherwise — can be substituted without changes to the core system.
+This actor motivates the need for a stable and documented integration protocol so that different strategies, rule-based, machine-learning-based, or otherwise, can be substituted without changes to the core system.
 The platform must support a range of execution modes, from fully autonomous application of proposals to researcher-gated approval, so that the degree of automation can itself be varied as an experimental condition.
 The system must also continue operating normally if a provider disconnects mid-session, ensuring that a provider failure does not abort an ongoing experiment.
 
@@ -51,7 +51,7 @@ The following user stories were elicited in collaboration with the project super
 They describe what each actor needs from the system and why, without prescribing how the system achieves it.
 Use cases in the Research Design section are derived from these stories; functional requirements are in turn derived from those use cases.
 
-Stories are written from the perspective of three human actors — the **Researcher**, the **Participant** (test subject), and the **External Module Provider** — and are grouped by feature area.
+Stories are written from the perspective of three human actors, the **Researcher**, the **Participant** (test subject), and the **External Module Provider**: and are grouped by feature area.
 
 ---
 
@@ -87,7 +87,7 @@ Stories are written from the perspective of three human actors — the **Researc
 
 11. **As a researcher**, I want to manually trigger or override typographic interventions at any moment, so that I can compare human-directed and automated intervention behaviour in the same platform.
 
-12. **As a researcher**, I want to see a log of every intervention — when it was applied, what changed, and what triggered it — so that I can interpret the session data accurately.
+12. **As a researcher**, I want to see a log of every intervention, when it was applied, what changed, and what triggered it, so that I can interpret the session data accurately.
 
 ---
 
@@ -169,7 +169,7 @@ Stories are written from the perspective of three human actors — the **Researc
 
 ## L. Gaze and Eye Movement Analysis
 
-35. **As a researcher**, I want the system to derive meaningful reading events — such as fixations and saccades — from the raw gaze stream, so that decision strategies operate on interpretable behavioural signals rather than raw pixel coordinates.
+35. **As a researcher**, I want the system to derive meaningful reading events, such as fixations and saccades, from the raw gaze stream, so that decision strategies operate on interpretable behavioural signals rather than raw pixel coordinates.
 
 36. **As a researcher**, I want to replace the built-in gaze analysis algorithm with my own model, so that I can evaluate different analysis approaches and incorporate domain-specific or machine-learning-based methods without modifying the core platform.
 
@@ -187,7 +187,7 @@ Stories are written from the perspective of three human actors — the **Researc
 
 39. **As a researcher**, I want to replay a recorded session inside the application with full gaze-path reconstruction and intervention markers, so that I can review what happened during the session after it has ended.
 
-40. **As a researcher**, I want to control replay playback — pausing, adjusting speed, and jumping to key events — so that I can efficiently review long sessions and focus on moments of interest.
+40. **As a researcher**, I want to control replay playback, pausing, adjusting speed, and jumping to key events, so that I can efficiently review long sessions and focus on moments of interest.
 
 41. **As a researcher**, I want to browse and reload previously saved session exports from within the application, so that I can review past sessions without manually managing files.
 
@@ -620,7 +620,7 @@ An external module provider:
 
 ## 6. Data Consumer (Post-Processing Actor)
 
-The **Data Consumer** represents the downstream actor — analyst, collaborator, or analysis software — that processes exported session records.
+The **Data Consumer** represents the downstream actor, analyst, collaborator, or analysis software, that processes exported session records.
 
 This actor:
 
@@ -634,9 +634,9 @@ This actor:
 
 The system supports six actors:
 
-1. **Participant** — End-user experiencing adaptive reading
-2. **Researcher** — Experiment conductor and system operator
-3. **Eye Tracker Device** — External sensing hardware
-4. **Intervention Module** — Pluggable adaptation logic component
-5. **External Module Provider** — Out-of-process algorithm or AI provider
-6. **Data Consumer** — Post-session analysis stakeholder
+1. **Participant**: End-user experiencing adaptive reading
+2. **Researcher**: Experiment conductor and system operator
+3. **Eye Tracker Device**: External sensing hardware
+4. **Intervention Module**: Pluggable adaptation logic component
+5. **External Module Provider**: Out-of-process algorithm or AI provider
+6. **Data Consumer**: Post-session analysis stakeholder

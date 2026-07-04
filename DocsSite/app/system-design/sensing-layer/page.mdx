@@ -1,26 +1,48 @@
-import { Callout } from 'nextra/components'
-
 # Sensing Layer
 
-<Callout type="warning">
-  This page is a stub. Content will be added as the system design is documented.
-</Callout>
+The sensing layer acquires raw gaze, converts it into screen-space observations, and hands the rest of the system a stream it can act on without knowing anything about the hardware. It is a three-stage pipeline split deliberately across the tiers: **acquisition** and **temporal analysis** run on the backend, while the **spatial mapping** from a gaze point to a word runs in the participant's browser, because only the rendered page knows where each word actually is.
 
-## What This Page Will Cover
+## Acquisition: the hardware boundary
 
-The sensing layer is responsible for acquiring, converting, and mapping raw eye tracking data so that the rest of the system can act on it without knowing anything about the hardware.
+The only place in the system that names the Tobii SDK is `TobiiEyeTrackerAdapter`, which realises the core-owned port `IEyeTrackerAdapter`. The whole adapter compiles behind an `#if WINDOWS` guard (the `Tobii.Research.x64` binding is Windows-only); off Windows a mock adapter is compiled in its place, so the rest of the platform builds and runs anywhere.
 
-### Topics
+- **Device discovery** uses the SDK's `FindAllEyeTrackers` and takes the first connected tracker; no serial number is hard-coded.
+- **Licensing** is applied from a licence file when present, and the adapter refuses to stream on an invalid licence rather than silently running unlicensed.
+- **Samples** arrive as binocular callbacks with gaze points normalised to the unit square (a fraction of the display, not pixels), per-eye validity, pupil measurement, and device timestamps. Each is mapped into the domain's `GazeData` record and raised for the session manager.
 
-- Tobii SDK integration: device detection, licensing, streaming
-- Coordinate conversion: normalized device coordinates → screen space
-- Content mapping: screen coordinates → reading content regions (paragraph, line, word)
-- The `IEyeTrackerAdapter` interface and how it decouples hardware from application logic
-- Mouse mode: how synthetic gaze samples exercise the full pipeline without Tobii hardware
-- Latency characteristics: where delay is introduced and how it is measured
+Ingest is **lock-free**: the manager records each sample with an atomic counter and a `Volatile.Write` publish, never touching the semaphore that serialises lifecycle commands. This data-plane / control-plane split is what keeps end-to-end latency inside the budget (see [Results](/evaluation/experiment-results/)).
 
-### Key Files
+## Sensing modes: the source is itself swappable
+
+The sensing mode (`eyeTracker`, `mouse`, or `webcam`) is a single persisted setting, changeable over REST without a restart. All modes converge on the same ingest path:
+
+- **Mouse mode** turns the participant's cursor into the gaze source: pointer moves are throttled to roughly 30 Hz, normalised into the identical `GazeData` shape, and submitted over the WebSocket. On the backend they enter the very same `UpdateGazeSample` path as hardware samples, so nothing downstream can tell the source apart. This is what makes the whole platform operable, testable, and demoable with no eye tracker attached.
+- **Webcam mode** supplies facial-state observations only (supplementary context for decision strategies); it is not a gaze source.
+
+## Spatial mapping: gaze point to word
+
+The participant reader maps each sample to the word it falls on, in two stages:
+
+1. **Choose the line.** Word boxes are collapsed into one vertical band per line; a sample is scored by its distance outside each band plus a gentle pull to the band centre, and the line already being read receives a fixed discount. That discount is hysteresis: vertical gaze jitter of the order of the line spacing no longer flickers the mapping between neighbouring lines. (It borrows a Kalman filter's intuition, using the prior position to resist a noisy sample, without its probabilistic machinery; replacing it with a real filter is listed future work.)
+2. **Choose the word on that line** by horizontal distance to each word box.
+
+The word boxes are re-measured from the **live DOM** on every mutation, resize, and scroll. This is why the mapping survives an intervention's reflow: after the text re-wraps, the next sample is hit-tested against the boxes as they are now, not against coordinates baked in at load. It also makes the mapping independent of screen resolution, since normalised gaze is scaled to the current viewport and matched in that same space.
+
+The output is a token-indexed **reading observation** (token id, token / line / block indices, inside-reading-area flag): the stable interface the analysis layer and the export both consume.
+
+## Temporal analysis: observations to oculomotor events
+
+A replaceable analysis strategy on the backend turns the observation stream into fixations, saccades, and regressions. The built-in strategy is dwell-based (**I-AOI** in the Salvucci and Goldberg taxonomy; there is no velocity or dispersion threshold): the word token is the area of interest, and a new token is confirmed as a fixation once dwell passes a threshold (90 ms initially, 70 ms within a line, 135 ms across a line change, where movement is larger and noisier). Finalised fixations are binned for the per-word attention summary (under 45 ms dropped as noise, 130 ms and above a fixation, between recorded as a skim). A saccade's direction is read from the change in line and token index; a backward step is a regression.
+
+Two properties matter for reproducibility: the strategy is a **pure function** of the observation and prior state (replaying the same observations yields the same events), and it is resolved from a registry behind `IEyeMovementAnalysisStrategy`, so an [external analysis provider](/integration/eye-movement-analysis-provider/) can replace it over the module-provider contract without changing anything that consumes its output.
+
+## Measured behaviour
+
+On real hardware across eight recorded sessions, the tracker streamed at a mean 89.9 Hz against its rated 90 Hz with gaze validity above 92% throughout, and client transport latency stayed inside the 100 ms budget for every sample. See [Results](/evaluation/experiment-results/).
+
+## Key files
 
 - `Backend/src/infrastructure/ReadingTheReader.TobiiEyetracker/TobiiEyeTrackerAdapter.cs`
 - `Backend/src/core/ReadingTheReader.core.Application/InfrastructureContracts/IEyeTrackerAdapter.cs`
-- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Sensing/IEyeTrackerService.cs`
+- `Backend/src/core/ReadingTheReader.core.Application/ApplicationContracts/Realtime/Sensing/`
+- `Frontend/src/modules/pages/gaze/lib/useGazeTokenHighlight.ts` (spatial mapping)

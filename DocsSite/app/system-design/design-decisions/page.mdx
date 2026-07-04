@@ -1,35 +1,30 @@
-import { Callout } from 'nextra/components'
-
 # Design Decisions
 
-<Callout type="warning">
-  This page is a stub. Design decisions will be recorded here as the system is built and each choice is made explicit.
-</Callout>
+The architecture was argued decision by decision, each against the driver it serves. This register consolidates the nine principal decisions with the alternative each was chosen over. The full argumentation is Chapter 5 of the [thesis report](https://github.com/MrSachin7/reading-the-reader-monorepo/releases/download/thesis-latest/main.pdf).
 
-## Purpose
+| ID | Decision | Alternative considered | Rationale |
+|----|----------|------------------------|-----------|
+| DR1 | Inward-dependency layering (ports and adapters) | A single coupled application, the shape of the prior prototypes | Only an interface seam per concern with inward dependencies makes sensing, analysis, decision, and intervention independently replaceable. |
+| DR2 | Uniform seam shape with a per-concern registry | Bespoke per-concern interfaces; direct handles to live session state | An identity plus an immutable snapshot in and an optional result out makes seams predictable and modules additive; snapshots prevent a module from mutating core state. |
+| DR3 | Dedicated real-time channel for gaze, separate from REST | Carrying gaze over the request/response path | The per-sample path must stay lock-free and never wait on the control path; this is what holds the latency budget. |
+| DR4 | External concerns through a uniform, identity-keyed provider seam | Embedding decision or analysis intelligence in the core | Integration stays well-defined without supplying the algorithms; the seam falls back to the built-in implementation when no provider is attached. |
+| DR5 | Two-phase validate-then-commit intervention at a controlled boundary | Applying an intervention immediately at an arbitrary instant | Committing at a boundary and carrying a position anchor lets the text adapt while the reader's place is preserved and the cost is measured. |
+| DR6 | One authoritative, schema-versioned session record | Client-held state, or several parallel representations | A single backend-owned record, reconstructable by replay, means there is no second account of the session against which it could disagree. |
+| DR7 | File-backed, checkpointed local store | An external database | The single-operator scope does not warrant a database; best-effort checkpointing provides recovery without operational surface. Revisit for concurrent multi-session deployments. |
+| DR8 | Sensing-source port behind an adapter | Calling the Tobii SDK directly from the core | Quarantines the Windows-only SDK and admits a simulated source alongside the device, enabling development and CI without hardware. |
+| DR9 | Autonomous and advisory execution modes | An autonomous-only loop with no operator gate | A researcher-operated instrument needs the option of human approval per experiment; the degree of automation becomes an experimental condition. |
 
-This page records the architectural decisions made during development — the *why* behind each major choice. These are the arguments the thesis defence will examine.
+Read together, the register makes the architecture's recurring tension explicit: DR3, DR7, and the fallback within DR4 trade a measure of architectural purity for responsiveness and robustness, while DR1, DR2, and DR8 hold the separation of concerns firm. None is an accident of implementation.
 
-A decision record answers:
-1. What was the decision?
-2. What alternatives were considered?
-3. What drove the choice?
-4. What are the trade-offs accepted?
+## Enforcement
 
----
+DR1 is not a convention: the backend project references point inward only, so a violating dependency is a compile error, and an executable boundary test in the suite asserts the same rule at runtime. See [Modularity evidence](/evaluation/experiment-results/#modularity).
 
-## Decision Log
+## Four transferable principles
 
-*Entries will be added here as decisions are made and documented.*
+Distilled in the thesis discussion, the design knowledge these decisions embody:
 
-| # | Decision | Status |
-|---|---|---|
-| DD-01 | Backend as single session authority | Accepted |
-| DD-02 | WebSocket for live gaze traffic, REST for setup | Accepted |
-| DD-03 | File-backed persistence for thesis runs | Accepted |
-| DD-04 | Markdown-only reading content | Accepted |
-| DD-05 | External providers as requesters, not authorities | Accepted |
-
----
-
-*For the forward-looking refactoring proposal, see [Architecture Proposal](/system-design/architecture-proposal/).*
+1. **Enforce a module boundary as a build-time invariant**, not a convention reviewers must remember.
+2. **A contract's authors can show sufficiency; only an outsider shows independence.** Design the contract so an outsider's implementation is small and local.
+3. **Make the cost of a quality attribute measurable, not asserted.** The platform measures both the disruption an intervention causes and the latency its module boundaries add.
+4. **Separate a change's decision from its commit**, so a disruptive update lands at a natural break in a continuous activity.

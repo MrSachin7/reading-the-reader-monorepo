@@ -1,25 +1,42 @@
 import { Callout } from 'nextra/components'
 
-# Experiment Results
+# Results
+
+Summary of the evaluation reported in Chapter 7 of the [thesis](https://github.com/MrSachin7/reading-the-reader-monorepo/releases/download/thesis-latest/main.pdf). Every figure below was computed from exported session records alone, with no reference to live state, which is itself the reproducibility demonstration: the record suffices to reconstruct and analyse a session after the fact.
+
+**Setup.** Eight reading sessions on real hardware: four participants, each reading an expository Markdown article under two conditions (context-preserving restore on / off), on a Tobii `IS4_Large_Peripheral` at 90 Hz, 2560x1440 display, nine-point calibration gated on a passing validation, everything on a single host (backend and both browser surfaces on one machine). Interventions were applied manually from the researcher console. One additional advisory-mode session exercised the automated decision path.
 
 <Callout type="warning">
-  This page is a stub. Results will be added as validation studies are conducted.
+  With four convenience participants the behavioural numbers are **descriptive only**: they indicate direction and magnitude on this sample and support no statistical inference. The enabled condition also bundles the positional restore with a highlight cue, so the two cannot be separated in these sessions.
 </Callout>
 
-## What This Page Will Cover
+## Sensing pipeline
 
-Results from the user studies and validation experiments measuring:
+- Achieved sampling rate: **mean 89.9 Hz** (SD 0.2) against the rated 90 Hz; every session within 0.6 Hz of nominal; inter-sample interval clustered at the nominal 11.1 ms.
+- Gaze validity (at least one eye valid): **92.5% to 98.0%**, mean 95.6%, measured during naturalistic self-paced reading.
+- Calibration: average accuracy 0.30 to 0.69 degrees, average precision 0.08 to 0.33 degrees across sessions.
 
-- **Usability** — SUS scores for the researcher-facing workflow
-- **Reading flow** — fixation duration, regression rate, and reading speed during interventions vs. control
-- **Perceived disruption** — self-reported disruption ratings after sessions with interventions
-- **Context preservation** — rate of reading position loss during layout-changing interventions
-- **Latency** — measured end-to-end latency from gaze signal to UI commit
+## Latency (100 ms budget, measured to intervention dispatch)
 
-## Study Design
+- Client round trip over the single-host loopback: participant median **1 ms** (p95 3 ms); researcher median **1 ms** (p95 8 ms). **No sample exceeded the budget.**
+- Automated decision path (one advisory-mode validation run, ~91 s, reference provider out of process): in-process pipeline median **6 ms** (p95 11 ms, max 46 ms, n = 14,015); provider round trip median **5 ms** (max 7 ms, n = 8 proposals). Within budget, but read as a single-run instrumentation check, not a campaign-scale result. No leg has been measured over a real network.
 
-*To be documented when studies are planned. Will include participant count, session protocol, condition structure (control, manual, automated, hybrid), and analysis method.*
+## Context preservation
 
-## Results
+Behavioural measures aligned to each intervention (19 with preservation, 26 without):
 
-*To be populated after data collection.*
+- Reading-resume time (intervention to next forward saccade): median **482 ms with** preservation vs **650 ms without**.
+- Regression rate in the 5 s after an intervention: **23% with** (down from a 29% baseline) vs **33% without** (flat against 32%). The pattern held across 3, 5, and 10 second windows.
+
+**The over-repositioning finding.** The per-intervention record exposed a flaw in the original restore strategy: it re-established the committed sentence at the top of the reading area regardless of where the reader sat, so on small reflows the restore moved the reader further than the reflow itself (live sessions: 3 of 19 interventions graded preserved; median residual 389 px against a median induced displacement of 38 px). A deterministic sweep (11 layout interventions x 6 reading positions, 66 trials per condition, driving the production restore hook) quantified it: median word displacement **34 px without preservation, 104 px with the original restore** (worse than the bare reflow in 45 of 66 trials). The restore was revised to hold the captured viewport offset; the same sweep confirms the revision removes the over-repositioning (median **32 px**, worse in only 4 of 66). Line-width changes repaginate and remain uncompensated; the revised restore is verified geometrically but not yet re-evaluated with readers. The harness lives in `Frontend/experiments/context-displacement/`.
+
+## Modularity [#modularity]
+
+- The inward dependency rule is enforced by project references (a violation is a compile error) and by an executable boundary test in the suite.
+- Adding an in-process intervention module requires one registry registration; no runtime or existing-module edits.
+- Three external providers connected over the module-provider protocol with zero changes to the core, one of them wrapping the analysis pipeline of a concurrent, independent thesis (Reading the Struggle). That external provider served as the **live analysis source for the entire evaluation**: the fixation, saccade, and regression events above were produced by the outside team's algorithm, not the built-in detector. (The connector adapting their code to the contract was written by the platform authors; independent implementation of the protocol itself remains future work.)
+- The backend test suite passes in full (100 of 100), covering session lifecycle, decision proposals, replay recovery, and export serialisation. The frontend has no automated suite; its flows were verified by typed builds, manual walkthrough, and the deterministic sweep harness.
+
+## Researcher control and reproducibility
+
+All recorded sessions were operated end to end through the gated researcher console, and the complete evaluation was rebuilt from the exported, schema-versioned records alone; session replay reconstructs any recorded session in the reading interface from its export file.
