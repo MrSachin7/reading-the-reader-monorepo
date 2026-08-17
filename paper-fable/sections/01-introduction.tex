@@ -1,0 +1,34 @@
+\section{Introduction}
+\label{sec:intro}
+
+Reading underpins participation in education, employment, and daily life, yet for many people it is far from effortless.
+The World Health Organization estimates that at least 2.2 billion people live with a vision impairment \cite{who2026vision}, age-related macular degeneration alone is projected to affect 288 million people by 2040 \cite{apte2021amd}, and reading difficulties such as dyslexia add to the population for whom text demands more than the visual or cognitive system can comfortably supply.
+Digital text offers a response that print cannot: its presentation can change while it is being read.
+Font size, spacing, line length, and contrast are all adjustable on screen, controlled readability studies show that such parameters measurably affect reading \cite{rello2016makeitbig, beymer2008eyetracking, beier2021letterspacing}, and an eye tracker supplies the moment-to-moment signal needed to apply an adjustment exactly when a reader needs it.
+A system that couples the two can deliver individualised typographic micro-interventions \cite{persson2025microintervention} without the reader ever issuing a command.
+
+The promise carries a structural risk.
+A typographic change that helps in principle also reflows the document, so the line a participant was reading moves, and an ill-timed change costs the reader their place in the very flow the system is trying to protect.
+Prior work confirms both sides of this tension: gaze-driven typographic adaptation is technically achievable, and the design of the intervention, in particular how the transition is presented and whether the reader's context is preserved, measurably shapes recovery and acceptance \cite{pereira2024typography, jensen2025context}.
+
+We argue that the bottleneck in this research area has shifted.
+Demonstrating that gaze-driven adaptation works no longer requires another prototype; three generations of adaptive readers in the Reading the Reader programme alone have shown it \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
+What is missing is the instrument for studying it: each of those prototypes wove sensing, decision logic, and the reading interface into one codebase, so each new study extended the previous system by forking it, and none offered a researcher console for operating a controlled session or a session record from which an experiment could be reproduced.
+Consider a researcher who wants to test whether fading a font change gradually into place disrupts a reader less than applying it abruptly.
+On a coupled prototype this scientifically simple comparison means editing core application code and maintaining two divergent forks under identical sensing.
+An experiment that should be a configuration choice is instead a software project.
+
+This paper presents a platform built to remove that friction, shown in Figure~\ref{fig:rig}.
+A participant reads reflowable text on one screen while the text adapts to their gaze; on a second screen, a researcher follows the participant's gaze, fixations, and regressions live over a mirror of the same text, and applies typographic interventions or approves machine-proposed ones during the session.
+Behind this workflow, the adaptive loop is decomposed into four independently replaceable modules (sensing, eye-movement analysis, decision strategy, and intervention execution) connected through stable contracts, and every gaze sample, decision, and intervention is written into one schema-versioned session record that can be exported, replayed, and re-analysed.
+
+The contributions are:
+\begin{itemize}
+  \item \textbf{A modular platform for gaze-contingent reading experiments}, in which sensing, analysis, decision, and intervention are separate modules behind stable contracts, extendable in process by registration and out of process through a documented provider protocol with graceful fallback.
+  \item \textbf{A two-screen, researcher-in-the-loop workflow}, in which interventions are applied manually, proposed by a decision provider and gated by the researcher (advisory), or applied autonomously, without structural change between modes.
+  \item \textbf{A context-preserving intervention mechanism that measures its own cost}: layout changes commit at controlled boundaries, a continuously captured anchor restores the reader's position across the reflow, and a graded positional outcome for every intervention is written into the session record.
+  \item \textbf{An evaluation on real eye-tracking hardware} covering real-time feasibility (rated 90\,Hz sensing, every measured latency sample within a 100\,ms budget), external-provider integration (three providers, including an independent team's reading-difficulty pipeline that analysed the evaluation sessions live), and context preservation (a with-and-without comparison, and a 66-trial deterministic sweep).
+    The platform's self-measurement exposed a defect in our original restore strategy, which over-repositioned the reader on small reflows; we describe the revision and its geometric verification.
+\end{itemize}
+
+The platform, its documentation, and the analysis pipeline behind every figure and table in this paper are openly available.

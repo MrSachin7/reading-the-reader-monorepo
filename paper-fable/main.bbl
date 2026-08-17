@@ -1,0 +1,369 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{24}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{} and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showURL}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showURL #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Apte(2021)]%
+        {apte2021amd}
+\bibfield{author}{\bibinfo{person}{Rajendra~S. Apte}.}
+  \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Age-Related Macular Degeneration}.
+\newblock \bibinfo{journal}{\emph{New England Journal of Medicine}}
+  \bibinfo{volume}{385}, \bibinfo{number}{6} (\bibinfo{year}{2021}),
+  \bibinfo{pages}{539--547}.
+\newblock
+\href{https://doi.org/10.1056/NEJMcp2102061}{doi:\nolinkurl{10.1056/NEJMcp2102061}}
+
+
+\bibitem[Beier et~al\mbox{.}(2021)]%
+        {beier2021letterspacing}
+\bibfield{author}{\bibinfo{person}{Sofie Beier}, \bibinfo{person}{Chiron
+  Oderkerk}, \bibinfo{person}{Birte Bay}, {and} \bibinfo{person}{Michael
+  Larsen}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Increased letter spacing and greater letter width
+  improve reading acuity in low vision readers}.
+\newblock \bibinfo{journal}{\emph{Information Design Journal}}
+  \bibinfo{volume}{26}, \bibinfo{number}{1} (\bibinfo{year}{2021}),
+  \bibinfo{pages}{73--88}.
+\newblock
+\href{https://doi.org/10.1075/idj.19033.bei}{doi:\nolinkurl{10.1075/idj.19033.bei}}
+
+
+\bibitem[Beymer et~al\mbox{.}(2008)]%
+        {beymer2008eyetracking}
+\bibfield{author}{\bibinfo{person}{David Beymer}, \bibinfo{person}{Daniel~M.
+  Russell}, {and} \bibinfo{person}{Peter Orton}.}
+  \bibinfo{year}{2008}\natexlab{}.
+\newblock \showarticletitle{An eye tracking study of how font size and type
+  influence online reading}. In \bibinfo{booktitle}{\emph{Proceedings of the
+  22nd British HCI Group Annual Conference (People and Computers XXII)}}.
+\newblock
+\href{https://doi.org/10.14236/ewic/HCI2008.23}{doi:\nolinkurl{10.14236/ewic/HCI2008.23}}
+
+
+\bibitem[Biedert et~al\mbox{.}(2010)]%
+        {biedert2010eyebook}
+\bibfield{author}{\bibinfo{person}{R. Biedert}, \bibinfo{person}{Georg
+  Buscher}, {and} \bibinfo{person}{A. Dengel}.}
+  \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{The eyeBook: Using eye tracking to enhance the
+  reading experience}.
+\newblock \bibinfo{journal}{\emph{Informatik-Spektrum}} (\bibinfo{year}{2010}),
+  \bibinfo{pages}{272--281}.
+\newblock
+\href{https://doi.org/10.1007/s00287-009-0381-2}{doi:\nolinkurl{10.1007/s00287-009-0381-2}}
+
+
+\bibitem[Brainard(1997)]%
+        {brainard1997psychtoolbox}
+\bibfield{author}{\bibinfo{person}{David~H. Brainard}.}
+  \bibinfo{year}{1997}\natexlab{}.
+\newblock \showarticletitle{The {Psychophysics} {Toolbox}}.
+\newblock \bibinfo{journal}{\emph{Spatial Vision}} \bibinfo{volume}{10},
+  \bibinfo{number}{4} (\bibinfo{year}{1997}), \bibinfo{pages}{433--436}.
+\newblock
+\href{https://doi.org/10.1163/156856897X00357}{doi:\nolinkurl{10.1163/156856897X00357}}
+
+
+\bibitem[{DTU Compute}(2025)]%
+        {dtucompute2025rtr}
+\bibfield{author}{\bibinfo{person}{{DTU Compute}}.}
+  \bibinfo{year}{2025}\natexlab{}.
+\newblock \bibinfo{title}{Reading the Reader}.
+\newblock
+\urldef\tempurl%
+\url{https://people.compute.dtu.dk/pgba/research/reading-the-reader/}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Project page. Accessed 2025-01-01}.
+
+
+\bibitem[Ilyas et~al\mbox{.}(2025)]%
+        {ilyas2025readersmind}
+\bibfield{author}{\bibinfo{person}{Chaudhary Muhammad~Aqdus Ilyas},
+  \bibinfo{person}{Sifat-E. Noor}, \bibinfo{person}{Ashkan Tashk},
+  \bibinfo{person}{Bart Cooreman}, \bibinfo{person}{Sofie Beier}, {and}
+  \bibinfo{person}{Per B{\ae}kgaard}.} \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Reading the Reader's Mind through Eye Tracking: Can
+  {AI}-Generated Texts Match Human Authors?}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 2025 Symposium on Eye Tracking
+  Research and Applications (ETRA)}}.
+\newblock
+\href{https://doi.org/10.1145/3715669.3726846}{doi:\nolinkurl{10.1145/3715669.3726846}}
+
+
+\bibitem[Jensen et~al\mbox{.}(2025)]%
+        {jensen2025context}
+\bibfield{author}{\bibinfo{person}{Helena~Eschricht Jensen},
+  \bibinfo{person}{Chaudhary Muhammad~Aqdus Ilyas}, \bibinfo{person}{Ashkan
+  Tashk}, \bibinfo{person}{Bart Cooreman}, \bibinfo{person}{Sofie Beier}, {and}
+  \bibinfo{person}{Per B{\ae}kgaard}.} \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Context Preservation Through Eye Tracking: Adaptive
+  Reading Application Design for an Optimal Reading Experience}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 2025 Symposium on Eye Tracking
+  Research and Applications (ETRA)}}.
+\newblock
+\href{https://doi.org/10.1145/3715669.3725897}{doi:\nolinkurl{10.1145/3715669.3725897}}
+
+
+\bibitem[Kaltenberger et~al\mbox{.}(2026)]%
+        {kaltenberger2026confla}
+\bibfield{author}{\bibinfo{person}{Franziska Kaltenberger},
+  \bibinfo{person}{Wei-Ling Chen}, \bibinfo{person}{Enkeleda Thaqi}, {and}
+  \bibinfo{person}{Enkelejda Kasneci}.} \bibinfo{year}{2026}\natexlab{}.
+\newblock \bibinfo{title}{Sure About That Line? Approaching Confidence-Based,
+  Real-Time Line Assignment in Reading Gaze Data}.
+\newblock
+\urldef\tempurl%
+\url{https://arxiv.org/abs/2605.00033}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{arXiv:2605.00033. Accepted at ETRA 2026}.
+
+
+\bibitem[Medan and Pelman(2024)]%
+        {medan2024newline}
+\bibfield{author}{\bibinfo{person}{Elad Medan} {and} \bibinfo{person}{Barak
+  Pelman}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \bibinfo{title}{New line: A new gaze-contingent digital reading
+  interface}.
+\newblock
+\urldef\tempurl%
+\url{https://meitalconf.iucc.ac.il/wp-content/uploads/2024/08/MeitalConference_2024_paper_14.pdf}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Paper presented at the MEITAL National Conference. Bezalel Academy of
+  Arts and Design}.
+
+
+\bibitem[Miller(1968)]%
+        {miller1968response}
+\bibfield{author}{\bibinfo{person}{Robert~B. Miller}.}
+  \bibinfo{year}{1968}\natexlab{}.
+\newblock \showarticletitle{Response time in man-computer conversational
+  transactions}. In \bibinfo{booktitle}{\emph{Proceedings of the December
+  9--11, 1968, Fall Joint Computer Conference, Part I (AFIPS '68)}}.
+  \bibinfo{publisher}{Association for Computing Machinery},
+  \bibinfo{pages}{267--277}.
+\newblock
+\href{https://doi.org/10.1145/1476589.1476628}{doi:\nolinkurl{10.1145/1476589.1476628}}
+
+
+\bibitem[Nielsen(1993)]%
+        {nielsen1993responsetime}
+\bibfield{author}{\bibinfo{person}{Jakob Nielsen}.}
+  \bibinfo{year}{1993}\natexlab{}.
+\newblock \bibinfo{title}{Response Times: The 3 Important Limits}.
+\newblock
+\urldef\tempurl%
+\url{https://www.nngroup.com/articles/response-times-3-important-limits/}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Nielsen Norman Group. Accessed 2026-06-10}.
+
+
+\bibitem[{Novo Nordisk Foundation}(2023)]%
+        {nnf2023rtr}
+\bibfield{author}{\bibinfo{person}{{Novo Nordisk Foundation}}.}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \bibinfo{title}{Artificial Intelligence Will Help to Improve Reading
+  Opportunities for Millions of People}.
+\newblock
+\urldef\tempurl%
+\url{https://novonordiskfonden.dk/en/news/artificial-intelligence-will-help-to-improve-reading-opportunities-for-millions-of-people/}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{News article. Accessed 2026-06-08}.
+
+
+\bibitem[Palinec(2024)]%
+        {palinec2024reactive}
+\bibfield{author}{\bibinfo{person}{Marko Palinec}.}
+  \bibinfo{year}{2024}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Reactive Reading: Crafting an Adaptive Frontend
+  Interface for Dynamic Machine Learning}}.
+\newblock Master's thesis. \bibinfo{school}{Technical University of Denmark,
+  DTU Compute}.
+\newblock
+\urldef\tempurl%
+\url{https://findit.dtu.dk/en/catalog/66bbf5cfdeca9be8f357d145}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Peirce et~al\mbox{.}(2019)]%
+        {peirce2019psychopy}
+\bibfield{author}{\bibinfo{person}{Jonathan Peirce}, \bibinfo{person}{Jeremy~R.
+  Gray}, \bibinfo{person}{Sol Simpson}, \bibinfo{person}{Michael MacAskill},
+  \bibinfo{person}{Richard H{\"o}chenberger}, \bibinfo{person}{Hiroyuki Sogo},
+  \bibinfo{person}{Erik Kastman}, {and} \bibinfo{person}{Jonas~Kristoffer
+  Lindel{\o}v}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{{PsychoPy2}: Experiments in Behavior Made Easy}.
+\newblock \bibinfo{journal}{\emph{Behavior Research Methods}}
+  \bibinfo{volume}{51} (\bibinfo{year}{2019}), \bibinfo{pages}{195--203}.
+\newblock
+\href{https://doi.org/10.3758/s13428-018-01193-y}{doi:\nolinkurl{10.3758/s13428-018-01193-y}}
+
+
+\bibitem[Pereira and Andrei(2024)]%
+        {pereira2024typography}
+\bibfield{author}{\bibinfo{person}{Luz~Emma Pereira} {and}
+  \bibinfo{person}{Mihai-Valentin Andrei}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Designing a Typography-Adaptive Reading
+  Interface for Individuals with Central Vision Loss}}.
+\newblock Master's thesis. \bibinfo{school}{Technical University of Denmark,
+  DTU Compute}.
+\newblock
+\urldef\tempurl%
+\url{https://findit.dtu.dk/en/catalog/669da34561fca2e8f32bfbd8}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Persson et~al\mbox{.}(2025)]%
+        {persson2025microintervention}
+\bibfield{author}{\bibinfo{person}{Dan~Roland Persson}, \bibinfo{person}{Mel
+  Ramasawmy}, \bibinfo{person}{Nushrat Khan}, \bibinfo{person}{Amitava
+  Banerjee}, \bibinfo{person}{Ann Blandford}, \bibinfo{person}{Jakob~Eyvind
+  Bardram}, {and} \bibinfo{person}{Per B{\ae}kgaard}.}
+  \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{A Design Framework for Microintervention Software
+  Technology in Digital Health: Critical Interpretive Synthesis}.
+\newblock \bibinfo{journal}{\emph{Journal of Medical Internet Research}}
+  \bibinfo{volume}{27} (\bibinfo{year}{2025}), \bibinfo{pages}{e72658}.
+\newblock
+\href{https://doi.org/10.2196/72658}{doi:\nolinkurl{10.2196/72658}}
+
+
+\bibitem[Rayner(1998)]%
+        {rayner1998eyemovements}
+\bibfield{author}{\bibinfo{person}{Keith Rayner}.}
+  \bibinfo{year}{1998}\natexlab{}.
+\newblock \showarticletitle{Eye Movements in Reading and Information
+  Processing: 20 Years of Research}.
+\newblock \bibinfo{journal}{\emph{Psychological Bulletin}}
+  \bibinfo{volume}{124}, \bibinfo{number}{3} (\bibinfo{year}{1998}),
+  \bibinfo{pages}{372--422}.
+\newblock
+\href{https://doi.org/10.1037/0033-2909.124.3.372}{doi:\nolinkurl{10.1037/0033-2909.124.3.372}}
+
+
+\bibitem[Refsgaard and Farooq(2024)]%
+        {refsgaard2024rtr}
+\bibfield{author}{\bibinfo{person}{Lars Kristian~Burchard Refsgaard} {and}
+  \bibinfo{person}{Aamir~Ahmad Farooq}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Reading the Reader: An Intelligent System for
+  Optimizing Typography for Central Vision Loss Readers}}.
+\newblock Master's thesis. \bibinfo{school}{Technical University of Denmark,
+  DTU Compute}.
+\newblock
+\urldef\tempurl%
+\url{https://findit.dtu.dk/en/catalog/65fa375f2a83a81e2e536b41}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Rello et~al\mbox{.}(2016)]%
+        {rello2016makeitbig}
+\bibfield{author}{\bibinfo{person}{Luz Rello}, \bibinfo{person}{Martin Pielot},
+  {and} \bibinfo{person}{Mari-Carmen Marcos}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Make It Big! The Effect of Font Size and Line
+  Spacing on Online Readability}. In \bibinfo{booktitle}{\emph{Proceedings of
+  the 2016 CHI Conference on Human Factors in Computing Systems (CHI '16)}}.
+  \bibinfo{pages}{3637--3648}.
+\newblock
+\href{https://doi.org/10.1145/2858036.2858204}{doi:\nolinkurl{10.1145/2858036.2858204}}
+
+
+\bibitem[Rummens and Beier(2025)]%
+        {rummens2025highlighting}
+\bibfield{author}{\bibinfo{person}{Koen Rummens} {and} \bibinfo{person}{Sofie
+  Beier}.} \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Gaze-based word highlighting boosts reading
+  performance: an eye tracking study in second graders}.
+\newblock \bibinfo{journal}{\emph{Ergonomics}} (\bibinfo{year}{2025}),
+  \bibinfo{pages}{1--13}.
+\newblock
+\href{https://doi.org/10.1080/00140139.2025.2514600}{doi:\nolinkurl{10.1080/00140139.2025.2514600}}
+\newblock
+\shownote{Advance online publication}.
+
+
+\bibitem[Salvucci and Goldberg(2000)]%
+        {salvucci2000identifying}
+\bibfield{author}{\bibinfo{person}{Dario~D. Salvucci} {and}
+  \bibinfo{person}{Joseph~H. Goldberg}.} \bibinfo{year}{2000}\natexlab{}.
+\newblock \showarticletitle{Identifying fixations and saccades in eye-tracking
+  protocols}. In \bibinfo{booktitle}{\emph{Proceedings of the 2000 Symposium on
+  Eye Tracking Research \& Applications (ETRA '00)}}. \bibinfo{pages}{71--78}.
+\newblock
+\href{https://doi.org/10.1145/355017.355028}{doi:\nolinkurl{10.1145/355017.355028}}
+
+
+\bibitem[{Tobii Pro}(2025)]%
+        {tobii2025prolab}
+\bibfield{author}{\bibinfo{person}{{Tobii Pro}}.}
+  \bibinfo{year}{2025}\natexlab{}.
+\newblock \bibinfo{title}{Tobii Pro Lab}.
+\newblock
+\urldef\tempurl%
+\url{https://www.tobii.com/products/software/behavior-research-software/tobii-pro-lab}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Product page. Accessed 2026-06-03}.
+
+
+\bibitem[{World Health Organization}(2026)]%
+        {who2026vision}
+\bibfield{author}{\bibinfo{person}{{World Health Organization}}.}
+  \bibinfo{year}{2026}\natexlab{}.
+\newblock \bibinfo{title}{Blindness and Vision Impairment}.
+\newblock
+\urldef\tempurl%
+\url{https://www.who.int/news-room/fact-sheets/detail/blindness-and-visual-impairment}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Fact sheet. Accessed 2026-06-08}.
+
+
+\end{thebibliography}

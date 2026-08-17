@@ -1,0 +1,116 @@
+% Reading the Reader paper, draft v0.1 (2026-08-16).
+% Build: latexmk -pdf main.tex
+% Conventions: British English, first-person plural, one sentence per line, no em dashes.
+% Every number must trace to paper/outline.md ("Headline numbers") and Experiments/analysis outputs.
+% For anonymous submission later, switch the class options to [sigconf,screen,review,anonymous].
+\documentclass[sigconf,screen]{acmart}
+
+% Draft mode: suppress the ACM copyright block and bibstrip until a venue is fixed.
+\setcopyright{none}
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+% Neutral running header until a venue is fixed (replaces the class's Conference'17 placeholder).
+\acmConference[Draft]{Working draft, not for distribution}{August 2026}{}
+
+\usepackage{booktabs}
+
+% Visible draft marker for items only the authors can settle.
+\newcommand{\todopaper}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\begin{document}
+
+\title[Adapt Without Losing the Reader]{Adapt Without Losing the Reader: A Modular Two-Screen Platform for Gaze-Contingent Reading Experiments}
+% Alternative titles (see paper/outline.md):
+% - A Researcher-Operated Platform for Real-Time, Context-Preserving Typographic Interventions
+% - From Prototype to Instrument: Modular Infrastructure for Gaze-Adaptive Reading Research
+
+\author{Sachin Baral}
+\affiliation{%
+  \institution{Technical University of Denmark}
+  \city{Kongens Lyngby}
+  \country{Denmark}}
+\email{s243871@dtu.dk} % TODO(authors): confirm preferred contact address after graduation.
+
+\author{Satish Gurung}
+\affiliation{%
+  \institution{Technical University of Denmark}
+  \city{Kongens Lyngby}
+  \country{Denmark}}
+\email{s243872@dtu.dk} % TODO(authors): confirm preferred contact address after graduation.
+
+% TODO(authors): settle the full author list and order with the supervisors
+% (Ashkan Tashk, Chaudhary Muhammad Aqdus Ilyas, Per Baekgaard, and possibly others),
+% then add their blocks here.
+
+\renewcommand{\shortauthors}{Baral and Gurung}
+
+\begin{abstract}
+Real-time gaze-driven text adaptation has been demonstrated repeatedly, but existing prototypes couple sensing, decision logic, and the reading interface, so studying which interventions actually help remains expensive.
+We present a researcher-operated, two-screen platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable modules: a participant reads reflowable text that adapts to their gaze, while a researcher mirrors the reading live and applies or approves typographic interventions, with every gaze sample, decision, and intervention captured in a replayable session record.
+Across eight reading sessions on real eye-tracking hardware, the platform sustained the tracker's rated 90\,Hz with gaze validity above 92\%, kept every measured latency sample within its 100\,ms budget, and had its evaluation sessions analysed live by an independent team's reading-difficulty pipeline connected through the platform's provider contract without any change to the core.
+Because the platform measures the positional cost of each intervention it applies, it revealed that our original context-preserving restore moved the reader about three times further than the reflow it compensated; we corrected the mechanism and verified the correction over a 66-trial deterministic sweep.
+The platform turns comparisons of reading interventions and decision strategies, including AI-driven ones, into configuration rather than reimplementation.
+\end{abstract}
+
+% TODO(authors): regenerate the CCS concepts with the ACM CCS tool (dl.acm.org/ccs) before submission.
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10003120.10003121.10003129</concept_id>
+<concept_desc>Human-centered computing~Interactive systems and tools</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10003120.10003121.10011748</concept_id>
+<concept_desc>Human-centered computing~Empirical studies in HCI</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10003120.10011738.10011775</concept_id>
+<concept_desc>Human-centered computing~Accessibility systems and tools</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Human-centered computing~Interactive systems and tools}
+\ccsdesc[300]{Human-centered computing~Empirical studies in HCI}
+\ccsdesc[300]{Human-centered computing~Accessibility systems and tools}
+
+\keywords{eye tracking, adaptive reading, gaze-contingent interfaces, typographic interventions, context preservation, research platforms}
+
+\begin{teaserfigure}
+  \centering
+  \includegraphics[width=0.86\textwidth]{figures/experiment-setup.jpg}
+  \caption{The two-screen setup during an evaluation session.
+  The participant reads the presented text on one display (left), while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display, and both surfaces are served by one backend on a single host.
+  Faces are blurred for anonymity.}
+  \Description{A photograph of two desks with monitors. On the left, a participant reads text on a screen with an eye tracker mounted below it. On the right, a researcher operates a console showing the mirrored text and control panels.}
+  \label{fig:rig}
+\end{teaserfigure}
+
+\maketitle
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-platform}
+\input{sections/04-evaluation}
+\input{sections/05-discussion}
+\input{sections/06-conclusion}
+
+\section*{Ethics Statement}
+\todopaper{Authors: state the consent arrangement for the eight recorded sessions (volunteer participants, verbal or written consent, what was stored) and the data handling (all gaze data stored locally on the recording machine, no transmission to external services, exports anonymised to participant codes before any release).
+This must be written by the authors from what actually happened; do not publish without it.}
+
+\section*{Availability}
+The platform (backend, both reading surfaces, and the reference providers), its documentation site, the deterministic displacement harness, and the scripted analysis pipeline that produces every figure and table in this paper are open source under the MIT licence.
+\todopaper{Authors: decide the citable artifact link (repository plus documentation site), anonymise the committed session exports (file names currently carry participant first names), and add an anonymised link if the venue requires blinded review.}
+
+\begin{acks}
+\todopaper{Authors: acknowledge the Reading the Reader project and Novo Nordisk Foundation funding with the grant number~\cite{dtucompute2025rtr, nnf2023rtr}, thank the supervisors if they are not co-authors, thank the collaborating team behind the reading-difficulty pipeline (Katarina Kraljevi\'{c} and Sree Keerthi Desu) and the session participants, and add the generative-AI use disclosure required by ACM policy.}
+\end{acks}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bibliography}
+
+\end{document}

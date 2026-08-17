@@ -1,0 +1,136 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The two-screen setup during an evaluation session. The participant reads the presented text on one display (left), while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display, and both surfaces are served by one backend on a single host. Faces are blurred for anonymity.}}{1}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:rig}{{1}{1}{The two-screen setup during an evaluation session. The participant reads the presented text on one display (left), while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display, and both surfaces are served by one backend on a single host. Faces are blurred for anonymity}{figure.caption.1}{}}
+\@writefile{toc}{\contentsline {section}{Abstract}{1}{section*.2}\protected@file@percent }
+\citation{who2026vision}
+\citation{apte2021amd}
+\citation{rello2016makeitbig,beymer2008eyetracking,beier2021letterspacing}
+\citation{persson2025microintervention}
+\citation{pereira2024typography,jensen2025context}
+\citation{refsgaard2024rtr,pereira2024typography,palinec2024reactive}
+\citation{biedert2010eyebook}
+\citation{medan2024newline}
+\citation{rummens2025highlighting}
+\citation{ilyas2025readersmind}
+\citation{refsgaard2024rtr}
+\citation{pereira2024typography}
+\citation{palinec2024reactive}
+\citation{jensen2025context}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{2}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{2}{2}{Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Gaze-Contingent and Adaptive Reading}{2}{subsection.2.1}\protected@file@percent }
+\citation{salvucci2000identifying}
+\citation{rayner1998eyemovements}
+\citation{kaltenberger2026confla}
+\citation{tobii2025prolab}
+\citation{peirce2019psychopy}
+\citation{brainard1997psychtoolbox}
+\citation{tobii2025prolab,peirce2019psychopy,brainard1997psychtoolbox}
+\citation{tobii2025prolab,peirce2019psychopy,brainard1997psychtoolbox}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Real-Time Gaze Processing for Reading}{3}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Experiment Tooling}{3}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}The Platform}{3}{section.3}\protected@file@percent }
+\newlabel{sec:platform}{{3}{3}{The Platform}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Overview: One Loop, Four Modules, Two Screens}{3}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:platform-overview}{{3.1}{3}{Overview: One Loop, Four Modules, Two Screens}{subsection.3.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Capability comparison of established experiment software with our platform, across the capabilities a gaze-driven reading experiment requires. Entries reflect the authors' assessment of documented capabilities \citep  {tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}}{3}{table.caption.6}\protected@file@percent }
+\newlabel{tab:capability}{{1}{3}{Capability comparison of established experiment software with our platform, across the capabilities a gaze-driven reading experiment requires. Entries reflect the authors' assessment of documented capabilities \cite {tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Sensing and Gaze-to-Word Mapping}{3}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:platform-mapping}{{3.2}{3}{Sensing and Gaze-to-Word Mapping}{subsection.3.2}{}}
+\citation{salvucci2000identifying}
+\citation{rayner1998eyemovements}
+\citation{jensen2025context}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The two operated surfaces: the participant reader (left) and the researcher console mirroring the same text with live gaze, fixation, and saccade overlays and the intervention controls (right).}}{4}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:screens}{{2}{4}{The two operated surfaces: the participant reader (left) and the researcher console mirroring the same text with live gaze, fixation, and saccade overlays and the intervention controls (right)}{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Eye-Movement Analysis as a Replaceable Strategy}{4}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:platform-analysis}{{3.3}{4}{Eye-Movement Analysis as a Replaceable Strategy}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}The Decision Boundary and Execution Modes}{4}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:platform-decision}{{3.4}{4}{The Decision Boundary and Execution Modes}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Context-Preserving Interventions}{4}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:platform-context}{{3.5}{4}{Context-Preserving Interventions}{subsection.3.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces One iteration of the real-time adaptive loop. A gaze sample is mirrored to both surfaces over the realtime channel; the participant surface, which alone knows the rendered layout, maps it to a token and returns an enriched observation; analysis projects observations into oculomotor events; a decision (built-in, external, or the researcher acting manually) yields at most one proposal, which in advisory mode waits for researcher approval; the intervention commits at a controlled boundary and the adapted text returns to both surfaces. Persistence checkpoints are written best-effort throughout.}}{5}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:loop}{{3}{5}{One iteration of the real-time adaptive loop. A gaze sample is mirrored to both surfaces over the realtime channel; the participant surface, which alone knows the rendered layout, maps it to a token and returns an enriched observation; analysis projects observations into oculomotor events; a decision (built-in, external, or the researcher acting manually) yields at most one proposal, which in advisory mode waits for researcher approval; the intervention commits at a controlled boundary and the adapted text returns to both surfaces. Persistence checkpoints are written best-effort throughout}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Researcher Console, Session Record, and Replay}{6}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:platform-record}{{3.6}{6}{Researcher Console, Session Record, and Replay}{subsection.3.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces The eight recorded sessions. Durations and counts are taken from the exported session records.}}{6}{table.caption.9}\protected@file@percent }
+\newlabel{tab:sessions}{{2}{6}{The eight recorded sessions. Durations and counts are taken from the exported session records}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Evaluation}{6}{section.4}\protected@file@percent }
+\newlabel{sec:eval}{{4}{6}{Evaluation}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Setup}{6}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:eval-setup}{{4.1}{6}{Setup}{subsection.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Real-Time Feasibility}{6}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:eval-perf}{{4.2}{6}{Real-Time Feasibility}{subsection.4.2}{}}
+\citation{miller1968response,nielsen1993responsetime}
+\citation{rayner1998eyemovements}
+\citation{jensen2025context}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Cumulative distribution of client round-trip time for the participant and researcher clients against the 100\,ms budget. Every sample falls within budget.}}{7}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:rtt}{{4}{7}{Cumulative distribution of client round-trip time for the participant and researcher clients against the 100\,ms budget. Every sample falls within budget}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Modularity and External Providers}{7}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:eval-modularity}{{4.3}{7}{Modularity and External Providers}{subsection.4.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Reading-resume time per intervention by condition (19 interventions with preservation, 26 without; bars mark medians). Descriptive only.}}{7}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:rrt}{{5}{7}{Reading-resume time per intervention by condition (19 interventions with preservation, 26 without; bars mark medians). Descriptive only}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Context Preservation}{7}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:eval-context}{{4.4}{7}{Context Preservation}{subsection.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Regression rate in the five seconds before and after each intervention, by condition. Without preservation the rate rises after the intervention; with preservation it falls below its baseline. Descriptive only.}}{8}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:postreg}{{6}{8}{Regression rate in the five seconds before and after each intervention, by condition. Without preservation the rate rises after the intervention; with preservation it falls below its baseline. Descriptive only}{figure.caption.12}{}}
+\@writefile{toc}{\contentsline {paragraph}{Self-measurement catches a defect.}{8}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{A deterministic sweep, and the revision.}{8}{section*.14}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Median on-screen displacement (px) of the word being read, per intervention, from the 66-trial deterministic sweep: without preservation, with the original (top-of-area) restore, and with the revised (offset-preserving) restore. Lower is better; one reading line is 32.4\,px.}}{8}{table.caption.15}\protected@file@percent }
+\newlabel{tab:displacement}{{3}{8}{Median on-screen displacement (px) of the word being read, per intervention, from the 66-trial deterministic sweep: without preservation, with the original (top-of-area) restore, and with the revised (offset-preserving) restore. Lower is better; one reading line is 32.4\,px}{table.caption.15}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Restore residual against the displacement the reflow induced, one point per sweep trial for which the reading word stayed on screen in both conditions. The original restore (circles) lies above the line of equality for most trials (45 over-repositions); the revised restore (triangles) returns onto or below it (4).}}{8}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:overreposition}{{7}{8}{Restore residual against the displacement the reflow induced, one point per sweep trial for which the reading word stayed on screen in both conditions. The original restore (circles) lies above the line of equality for most trials (45 over-repositions); the revised restore (triangles) returns onto or below it (4)}{figure.caption.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Researcher Control and Reproducibility}{8}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:eval-control}{{4.5}{8}{Researcher Control and Reproducibility}{subsection.4.5}{}}
+\citation{dtucompute2025rtr}
+\citation{dtucompute2025rtr,nnf2023rtr}
+\bibstyle{ACM-Reference-Format}
+\bibdata{bibliography}
+\bibcite{apte2021amd}{{1}{2021}{{Apte}}{{}}}
+\bibcite{beier2021letterspacing}{{2}{2021}{{Beier et~al\mbox  {.}}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{9}{section.5}\protected@file@percent }
+\newlabel{sec:discussion}{{5}{9}{Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{What the platform enables.}{9}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Measure the quality attribute you claim.}{9}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitations.}{9}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Future work.}{9}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{9}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{9}{Conclusion}{section.6}{}}
+\@writefile{toc}{\contentsline {section}{Acknowledgments}{9}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{9}{section*.26}\protected@file@percent }
+\bibcite{beymer2008eyetracking}{{3}{2008}{{Beymer et~al\mbox  {.}}}{{}}}
+\bibcite{biedert2010eyebook}{{4}{2010}{{Biedert et~al\mbox  {.}}}{{}}}
+\bibcite{brainard1997psychtoolbox}{{5}{1997}{{Brainard}}{{}}}
+\bibcite{dtucompute2025rtr}{{6}{2025}{{DTU Compute}}{{}}}
+\bibcite{ilyas2025readersmind}{{7}{2025}{{Ilyas et~al\mbox  {.}}}{{}}}
+\bibcite{jensen2025context}{{8}{2025}{{Jensen et~al\mbox  {.}}}{{}}}
+\bibcite{kaltenberger2026confla}{{9}{2026}{{Kaltenberger et~al\mbox  {.}}}{{}}}
+\bibcite{medan2024newline}{{10}{2024}{{Medan and Pelman}}{{}}}
+\bibcite{miller1968response}{{11}{1968}{{Miller}}{{}}}
+\bibcite{nielsen1993responsetime}{{12}{1993}{{Nielsen}}{{}}}
+\bibcite{nnf2023rtr}{{13}{2023}{{Novo Nordisk Foundation}}{{}}}
+\bibcite{palinec2024reactive}{{14}{2024}{{Palinec}}{{}}}
+\bibcite{peirce2019psychopy}{{15}{2019}{{Peirce et~al\mbox  {.}}}{{}}}
+\bibcite{pereira2024typography}{{16}{2024}{{Pereira and Andrei}}{{}}}
+\bibcite{persson2025microintervention}{{17}{2025}{{Persson et~al\mbox  {.}}}{{}}}
+\bibcite{rayner1998eyemovements}{{18}{1998}{{Rayner}}{{}}}
+\bibcite{refsgaard2024rtr}{{19}{2024}{{Refsgaard and Farooq}}{{}}}
+\bibcite{rello2016makeitbig}{{20}{2016}{{Rello et~al\mbox  {.}}}{{}}}
+\bibcite{rummens2025highlighting}{{21}{2025}{{Rummens and Beier}}{{}}}
+\bibcite{salvucci2000identifying}{{22}{2000}{{Salvucci and Goldberg}}{{}}}
+\bibcite{tobii2025prolab}{{23}{2025}{{Tobii Pro}}{{}}}
+\bibcite{who2026vision}{{24}{2026}{{World Health Organization}}{{}}}
+\newlabel{tocindent-1}{0pt}
+\newlabel{tocindent0}{0pt}
+\newlabel{tocindent1}{4.185pt}
+\newlabel{tocindent2}{10.34999pt}
+\newlabel{tocindent3}{0pt}
+\newlabel{tocindent4}{0pt}
+\newlabel{tocindent5}{0pt}
+\newlabel{TotPages}{{10}{10}{}{page.10}{}}
+\gdef \@abspage@last{10}
