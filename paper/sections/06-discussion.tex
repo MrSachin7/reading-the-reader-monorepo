@@ -1,0 +1,28 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What the Platform Enables}
+
+The comparative questions that motivated this work become configuration rather than engineering.
+A study in the style of Jensen et al.~\cite{jensen2025context}, comparing intervention designs on recovery cost, needs no new system: interventions, decision strategies, and analysis providers are selected per session, and every trial leaves a replayable record.
+Because decision strategies sit behind a process boundary, machine-learning teams can study their models against live readers without touching, or even reading, the platform's core, as the independent reading-difficulty pipeline in our evaluation demonstrated.
+The same seam positions the platform for AI-driven decision strategies, which can be compared against rule-based and human strategies under otherwise identical conditions.
+
+\subsection{Measure the Cost of the Quality You Claim}
+
+The over-repositioning finding generalises beyond this system.
+Our restore strategy was plausible, implemented carefully, and wrong: it moved readers three times further than the disturbance it compensated, and the behavioural measures alone would not have told us, because the bundled highlight cue plausibly masked the geometric damage.
+The defect surfaced only because the mechanism grades every restore it performs and writes the residual into the record.
+We suggest this as a design principle for adaptive interfaces generally: a system that claims a quality attribute, context preservation, smoothness, unobtrusiveness, should instrument the cost of that attribute in production data rather than asserting it.
+Two further principles from this work: enforce module boundaries in the build rather than in convention, and treat an outsider's independent implementation, not the authors' own reference implementations, as the test that a contract is truly assumption-free.
+
+\subsection{Limitations}
+
+We state the limits plainly.
+The behavioural comparison covers four participants, one text, and manual intervention only; the participants included members of the project team; nothing here is an efficacy claim.
+The with-preservation condition bundles positional restore with a highlight cue, so the behavioural gap cannot be attributed to geometry alone, particularly since prior work suggests highlighting itself drives recovery~\cite{jensen2025context}.
+The revised restore is verified over a deterministic geometric sweep, not yet with readers.
+The automated decision path was validated in a single advisory run rather than a campaign.
+The analysis events in the evaluation were produced by the external provider's algorithms, which have not been calibrated against published oculomotor norms.
+The webcam facial-state module is integrated but unvalidated, and its difficulty heuristic is hand-tuned.
+Finally, the frontend is verified by manual walkthrough rather than an automated suite, and the platform currently renders Markdown content only.

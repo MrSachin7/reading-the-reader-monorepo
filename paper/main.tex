@@ -1,0 +1,87 @@
+% Reading the Reader — ETRA-style paper draft (v0.1)
+% Build: latexmk -pdf main.tex
+% For submission switch class options to [sigconf,screen,review,anonymous]
+% (and check whether the target ETRA cycle requires the PACM single-column
+% acmsmall format instead; that is a one-line change here.)
+\documentclass[sigconf,screen]{acmart}
+
+% Draft-note macro: red margin-visible TODOs for the author pass.
+\newcommand{\draftnote}[1]{\textcolor{red}{[#1]}}
+
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
+
+\settopmatter{printacmref=false}
+\setcopyright{none}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+% Placeholder venue metadata for the draft header; replace when the target
+% ETRA cycle's CFP is out.
+\acmConference[ETRA '27 (draft)]{ACM Symposium on Eye Tracking Research \& Applications}{2027}{TBD}
+
+\begin{document}
+
+% Alternative (earlier working title): "Swappable Senses, Stable Contracts:
+% A Modular Platform for Real-Time Adaptive Reading Experiments"
+\title{A Modular Platform for Real-Time, Context-Preserving Gaze-Adaptive Reading Experiments}
+
+\author{Satish Gurung}
+\email{s243872@student.dtu.dk}
+\affiliation{%
+  \institution{DTU Compute, Technical University of Denmark}
+  \city{Kongens Lyngby}
+  \country{Denmark}}
+
+\author{Sachin Baral}
+\email{s243871@student.dtu.dk}
+\affiliation{%
+  \institution{DTU Compute, Technical University of Denmark}
+  \city{Kongens Lyngby}
+  \country{Denmark}}
+
+% \draftnote{Confirm author order and emails; decide with supervisors whether
+% Ashkan Tashk, Aqdus Ilyas, and Per Baekgaard join the author list or are
+% acknowledged.}
+
+\begin{abstract}
+Real-time gaze-driven text adaptation has been demonstrated repeatedly, yet studying which adaptations actually help readers remains expensive, because existing prototypes couple sensing, decision logic, and the reading interface into single-purpose codebases.
+We present a researcher-operated platform in which sensing, eye-movement analysis, decision strategy, and intervention execution are independently replaceable modules behind stable contracts: a participant reads reflowable text that adapts to their gaze while a researcher mirrors the session live and applies, approves, or delegates typographic interventions, with every sample, decision, and intervention captured in a replayable session record.
+Across eight sessions on research-grade eye-tracking hardware, the platform sustained the tracker's rated 90\,Hz, kept every measured round trip within its 100\,ms budget, and had all sessions analysed live by an independent team's reading-difficulty pipeline connected through the provider contract without modifying the core.
+Because the platform measures the positional cost of every intervention it applies, it exposed that our original context-preserving restore moved readers roughly three times further than the reflow it compensated; a revised restore, verified over a 66-trial deterministic sweep, brought median displacement below the no-preservation baseline.
+A work-in-progress webcam module that derives facial state from commodity cameras behind the same sensing contract sketches a path toward low-cost deployment, and the platform and all session data are open source.
+\end{abstract}
+
+% \draftnote{Regenerate CCS concepts with the ACM tool before submission.}
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10003120.10003123.10010860.10010859</concept_id>
+<concept_desc>Human-centered computing~User centered design</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Human-centered computing~User centered design}
+
+\keywords{eye tracking, adaptive reading, gaze-contingent interfaces, modular architecture, context preservation, webcam sensing, research platforms}
+
+\maketitle
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-platform}
+\input{sections/04-webcam}
+\input{sections/05-evaluation}
+\input{sections/06-discussion}
+\input{sections/07-conclusion}
+
+\begin{acks}
+We thank Ashkan Tashk, Aqdus Ilyas, and Per B\ae kgaard for supervision and feedback, and Katarina Kraljevi\'{c} and Sree Keerthi Desu for connecting their reading-difficulty pipeline to the platform.
+This work was carried out within the Reading the Reader project at DTU Compute, funded by the Novo Nordisk Foundation.
+\draftnote{Insert NNF grant number, generative-AI disclosure per ACM policy, and the approved consent wording for the eight recorded sessions.}
+\end{acks}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

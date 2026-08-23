@@ -1,0 +1,27 @@
+\section{Related Work}
+\label{sec:related-work}
+
+\subsection{Eye Movements as a Reading Signal}
+Decades of reading research establish that oculomotor behaviour reflects cognitive processing: fixation durations track processing effort, saccades relocate attention, and regressions, backward saccades to earlier text, are associated with comprehension difficulty~\cite{rayner1998eyemovements, rayner2009eyemovements}.
+Eye-movement measures predict reading performance in online reading contexts~\cite{guan2022predictive}, and recent work shows that global measures such as fixation counts and regression rates predict scores on standardised comprehension tests~\cite{meziere2023predicting}.
+Salvucci and Goldberg's taxonomy of fixation-identification algorithms~\cite{salvucci2000identifying} remains the reference point for converting raw gaze into oculomotor events; our platform implements a dwell-based, area-of-interest variant over live text tokens.
+This literature justifies gaze as the primary sensing channel for reading difficulty, but it does not by itself provide the infrastructure to act on the signal in real time.
+
+\subsection{Gaze-Contingent and Adaptive Reading Interfaces}
+Typography measurably affects reading for both general and impaired readers: letter spacing~\cite{beier2021letterspacing}, font size~\cite{rello2016makeitbig}, background colour~\cite{rello2017backgroundcolors}, and reader-controlled text customisation~\cite{arditi2004adjustable} all shift performance or comfort.
+Systems research has closed the loop between gaze and text since eyeBook's gaze-responsive reading experiences and the reading assistance of Beymer et al.~\cite{beymer2008eyetracking}.
+Gaze Tutor detected disengagement from gaze and triggered tutorial dialogue moves~\cite{dmello2012gazetutor}; the Eye-Mind Reader detected mind wandering during reading and intervened with self-explanation prompts, improving long-term comprehension~\cite{hutt2020eyemind}, and the approach has since been carried into real classrooms~\cite{hutt2021classrooms}.
+Within the Reading the Reader project, three predecessor prototypes demonstrated gaze-driven typographic adaptation for readers with central vision loss~\cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}, and Jensen et al.\ introduced reading resume time as a measure of post-intervention disruption, finding that only a gradual intervention paired with highlighting significantly reduced recovery time~\cite{jensen2025context}.
+Micro-intervention design frameworks likewise argue for small, just-in-time adaptations over wholesale changes~\cite{persson2025microintervention}.
+Across this line of work the adaptive loop is repeatedly rebuilt: each system binds one sensor, one detection method, and one intervention repertoire into one interface, so intervention comparisons across systems remain confounded by the platforms themselves.
+
+\subsection{Experiment Tooling}
+General-purpose experiment software approaches the problem from the opposite side.
+Tobii Pro Lab~\cite{tobii2025prolab} designs and records eye-tracking studies but does not drive real-time text adaptation; PsychoPy~\cite{peirce2019psychopy} and Psychtoolbox offer stimulus control and gaze recording with scripting, but adaptive reading interfaces, pluggable decision modules, and researcher-in-the-loop intervention control must be built from scratch.
+Consumer reading tools such as Immersive Reader~\cite{microsoft2025immersive} adapt presentation but sense nothing.
+To our knowledge, no available tool combines experiment design, gaze recording, real-time gaze-driven text intervention, and pluggable decision modules; this capability gap is what our platform targets.
+
+\subsection{Toward Low-Cost Sensing}
+Research-grade trackers such as the Tobii Pro Fusion~\cite{tobii2025fusion} deliver the sampling rates and accuracy that reading research needs, but their cost and setup confine studies to the laboratory.
+Webcam-based eye tracking has been validated as a preliminary instrument for reading tests~\cite{lin2022webcam}, and commodity cameras can additionally supply facial signals that research trackers do not observe at all.
+A platform whose sensing layer is a replaceable module can adopt such sensors as they mature without rebuilding the experiment infrastructure around them; Section~\ref{sec:webcam} reports our work in progress in this direction.

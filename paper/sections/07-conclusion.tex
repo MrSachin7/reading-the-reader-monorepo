@@ -1,0 +1,14 @@
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+We presented a researcher-operated platform for real-time adaptive reading experiments in which sensing, analysis, decision, and intervention are independently replaceable modules behind stable, build-enforced contracts.
+On real eye-tracking hardware it sustained research-grade sensing with wide latency headroom, its analysis was performed live by an independent team's pipeline through the published provider contract, and its self-instrumented intervention mechanism exposed and then verified the correction of a threefold over-repositioning defect in our own restore strategy.
+A work-in-progress webcam module extends the sensing boundary toward commodity hardware.
+
+Future work follows directly from the stated limits.
+First, a behavioural re-validation of the revised restore that crosses positional restoration with the highlight cue, unbundling the confound the present data cannot resolve.
+Second, validation of the webcam facial-state signal against ground truth during real reading sessions, surfacing it in the researcher console, and replacing the built-in heuristic with a learned provider, including a calibrated webcam gaze estimator~\cite{lin2022webcam}.
+Third, a campaign-scale study in autonomous mode with a learned decision strategy, moving the automated path from single-run validation to routine operation.
+Fourth, replacing the hand-tuned line-selection hysteresis with a principled uncertainty model such as a Kalman filter.
+The platform, its documentation, and the anonymised session records are available as open source, and we invite external analysis, decision, and sensing providers to test their implementations, and our contracts, against it.
+\draftnote{Insert the public artifact URL after anonymising the session data files, which currently carry participant first names.}

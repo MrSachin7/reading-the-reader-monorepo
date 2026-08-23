@@ -1,0 +1,33 @@
+\section{Work in Progress: Webcam Sensing Behind the Same Contract}
+\label{sec:webcam}
+
+Research-grade eye trackers anchor the platform's primary signal, but they also anchor its deployments to a laboratory.
+Commodity webcams invert both properties: they are already attached to nearly every reading device, and they observe a channel the eye tracker cannot, the reader's face.
+As a first exercise of the sensing boundary with a signal quite unlike gaze, we have implemented a webcam-based facial-state module.
+We describe it here as work in progress: it is integrated end to end, but it has not yet been evaluated with participants, and we state its present limits explicitly.
+
+\subsection{A Facial-State Module}
+
+The module treats the webcam as a supplementary context source rather than a replacement eye tracker.
+The platform tracks its gaze source and its face source independently, and exposes four sensing configurations: eye tracker only, webcam only, a hybrid mode in which the Tobii tracker remains the authoritative gaze source while the webcam contributes facial state, and a simulated mode for development.
+
+The built-in implementation is a background worker that samples the camera at a configurable interval (200\,ms by default) and processes each frame classically, without a learned model: face detection via a Haar cascade, followed by a 68-point facial landmark fit.
+From the landmarks it derives interpretable, geometry-only features: per-eye openness, blink likelihood, mouth tension, head offset from the face-box centre, frame-to-frame motion, and a capture-quality score from image sharpness.
+A rule-based classifier folds these into a coarse three-state reading-difficulty signal, neutral, possible struggle, or possible ease, using fixed thresholds on blink likelihood, motion, and mouth tension.
+In webcam-only mode the worker additionally emits a coarse gaze proxy from a per-eye dark-pixel pupil estimate; this proxy is uncalibrated and is not a point-of-gaze estimator, so webcam-only mode does not support word-level reading analysis.
+
+Everything the module produces flows through the same paths as gaze: facial observations, difficulty signals, and sensor status events are broadcast live, written into the session record, and reconstructed by replay.
+The worker degrades gracefully, reporting distinct degraded and unavailable statuses when the camera cannot be opened, no face is found, or the landmark fit fails, consistent with the platform's behaviour when an external provider disconnects.
+
+\subsection{Replaceability by Construction}
+
+The facial-state seam mirrors the analysis and decision seams: an out-of-process provider can register for the facial-state module over the same provider protocol and submit observations, status, and gaze samples.
+When an external provider is active, the built-in worker pauses itself.
+The intended trajectory is therefore not to perfect the built-in heuristic but to replace it: a learned facial-analysis pipeline, or a validated webcam gaze estimator in the spirit of Lin et al.~\cite{lin2022webcam}, can take over the module without any change to the session runtime, exactly as an independent team's analysis pipeline replaced our built-in fixation detector in the evaluation (Section~\ref{sec:eval-modularity}).
+
+\subsection{Present Status and Limits}
+
+We report the module's maturity precisely.
+The capture, feature extraction, classification, recording, and replay path is implemented and runs; the sensing-mode gating (including skipping tracker calibration in webcam mode) is part of the guided setup flow.
+However, the difficulty heuristic is hand-tuned and unvalidated, no participant sessions have yet been recorded with the webcam active, the researcher console does not yet render the facial-state stream in its live view, and the gaze proxy is far below the accuracy that reading analysis requires.
+The near-term configuration we consider most promising is the hybrid mode, tracker gaze plus webcam facial context, feeding decision strategies with a signal dimension that gaze alone lacks; validating the facial-state signal against ground truth during real reading sessions is the immediate next step (Section~\ref{sec:conclusion}).

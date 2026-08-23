@@ -1,0 +1,41 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Reading is the interface through which most knowledge work happens, yet for a large population it is a daily struggle.
+The World Health Organization estimates that at least 2.2 billion people live with some form of vision impairment~\cite{who2026vision}, and age-related macular degeneration alone is projected to affect 288 million people by 2040~\cite{apte2021amd}.
+Digital text removes the fixed page: font, size, spacing, and layout can change while a person reads.
+Combined with eye tracking, this enables a compelling loop: sense where and how a person reads, detect signs of difficulty, and adapt the typography in the moment~\cite{dtucompute2025rtr}.
+Prior work has repeatedly demonstrated that this loop is feasible~\cite{beymer2008eyetracking, dmello2012gazetutor, hutt2020eyemind, jensen2025context}.
+
+Feasibility, however, is no longer the bottleneck.
+The open questions are comparative: which typographic interventions help which readers, decided by which strategy, delivered at which moment, and at what cost to the reader's place in the text.
+Answering such questions requires running many controlled experiments, and this is where current tooling fails.
+Research prototypes in this space couple the sensor, the analysis logic, the decision policy, and the reading interface into one codebase built for one study~\cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
+Comparing two decision strategies, or swapping an eye tracker for a cheaper sensor, means editing core code or forking the previous system.
+Commercial and scientific tools cover parts of the pipeline, but none we surveyed combines real-time gaze sensing, automatic typographic adaptation, and researcher-facing experiment control in one platform (Section~\ref{sec:related-work}).
+
+A second, subtler problem compounds the first.
+An adaptation applied at the wrong moment, or too abruptly, can cost readers their place in the text, and this disruption is usually assumed away rather than measured.
+Jensen et al.~\cite{jensen2025context} showed that recovery after an intervention is a real cost, measurable as reading resume time, and that intervention design strongly affects it.
+A platform for adaptive reading experiments should therefore not only preserve the reader's context across interventions but also instrument its own disruption, so that the cost of every applied change appears in the data.
+
+We present a researcher-operated platform for real-time adaptive reading experiments, built within the Reading the Reader project at DTU Compute, that treats these two problems as architectural requirements.
+Sensing, eye-movement analysis, decision strategy, and intervention execution are four independently replaceable modules behind stable contracts.
+A participant reads reflowable text on one screen while a researcher mirrors the live session on another, watching gaze and fixations in real time and applying, approving, or delegating typographic interventions.
+Out-of-process providers, including machine-learning pipelines written by other teams, plug into the analysis and decision seams over a documented protocol and can be exchanged without touching the core runtime.
+Every gaze sample, oculomotor event, decision, and intervention is captured in a single schema-versioned session record that supports deterministic replay.
+
+We evaluate the platform on research-grade eye-tracking hardware in eight recorded reading sessions (four participants, two conditions), plus a deterministic 66-trial displacement sweep.
+The platform sustained the tracker's rated 90\,Hz sampling with high gaze validity, kept every measured client round trip within its 100\,ms latency budget, and had all eight sessions analysed live by an independent team's reading-difficulty pipeline connected through the provider contract.
+The self-instrumentation earned its place: it revealed that our original context-preserving restore over-corrected, moving readers roughly three times further than the reflow it compensated, and it let us verify a revised restore that brings median displacement below the no-preservation baseline.
+
+Finally, we report on a work-in-progress webcam sensing module that exercises the sensing boundary with a signal quite unlike the eye tracker: facial state derived from a commodity camera.
+It is implemented end to end behind the same contracts, records into the same session format, and yields a coarse reading-difficulty signal, but it has not yet been evaluated with participants; we describe it as a demonstration of sensing replaceability and a path toward low-cost deployment (Section~\ref{sec:webcam}).
+
+This paper contributes:
+\begin{itemize}
+\item a modular, researcher-operated platform for real-time adaptive reading experiments, in which sensing, analysis, decision, and intervention modules are independently replaceable behind stable contracts, with reproducible, replayable session records;
+\item a context-preserving intervention mechanism that measures the positional cost of every change it applies, together with the empirical finding that a plausible restore strategy over-corrected threefold, and a revised strategy verified over a 66-trial deterministic sweep;
+\item a feasibility evaluation on real eye-tracking hardware covering sensing quality, end-to-end latency against an explicit budget, and live third-party provider integration; and
+\item a work-in-progress webcam facial-state module demonstrating that the sensing contract extends beyond research-grade eye tracking toward commodity hardware.
+\end{itemize}
