@@ -1,0 +1,9 @@
+participant,condition,duplicate_gaze_timestamps,nonincreasing_gaze_timestamps,duplicate_gaze_sequence,duplicate_intervention_ids,duplicate_fixation_payloads,duplicate_saccade_payloads,context_unmatched_intervention_time,telemetry_session_and_times_match
+P1,with,0,0,0,0,38,78,0,True
+P2,with,0,0,0,0,38,88,0,True
+P3,with,0,0,0,0,0,29,0,True
+P4,with,0,0,0,0,64,75,0,True
+P1,without,0,0,0,0,52,164,0,True
+P2,without,0,0,0,0,0,8,0,True
+P3,without,0,0,0,0,88,173,0,True
+P4,without,0,0,0,0,0,37,0,True
