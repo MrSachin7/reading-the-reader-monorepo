@@ -1,0 +1,155 @@
+\section{Evaluation}
+\label{sec:eval}
+
+The evaluation asks four questions that mirror the platform's claims: whether the four concerns are genuinely replaceable without touching the core (Section~\ref{sec:eval-modularity}), whether a real eye-tracking stream drives the loop with measurable quality and transport delay (Section~\ref{sec:eval-perf}), whether interventions can adapt the text while preserving the reader's context (Section~\ref{sec:eval-context}), and whether the researcher has the control and the auditable record needed to operate and reconstruct experiments (Section~\ref{sec:eval-control}).
+The scope is architecture and runtime feasibility, not human efficacy: with \participantsN{} participants, the behavioural numbers below are descriptive, and we draw no statistical inference from them.
+Every quantity, table, and figure in this section is derived from the exported session and telemetry records by a dependency-free audit script committed with the paper; the script records the SHA-256 hash of each of its 20 input files and reproduces the summaries of the thesis analysis to numerical precision.
+
+\subsection{Setup}
+\label{sec:eval-setup}
+
+We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} participants each read under two conditions, with the context-preserving restore enabled (\on{}) and disabled (\off{}), as summarised in Table~\ref{tab:sessions}.
+Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
+Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
+Sessions ran on a Tobii \texttt{IS4\_Large\_Peripheral} tracker under a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
+The deployment was the intended single-operator setting: backend and both surfaces on one host, traffic over the local loopback.
+All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
+Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
+One additional session under an advisory decision strategy exercised the decision-path instrumentation and is reported separately in Section~\ref{sec:eval-perf}.
+
+\begin{table}
+\centering
+\small
+\caption{The \sessionsN{} recorded sessions.
+Text M is \emph{Metal Detectors} and N is \emph{Nuclear Science}; \on{} bundles positional restoration with the highlight cue.
+Duration covers the exported session including activities beyond reading; rate is computed from device timestamps; valid means at least one eye reported valid by the tracker.}
+\label{tab:sessions}
+\input{generated/session-table}
+\end{table}
+
+\subsection{Capture and Transport}
+\label{sec:eval-perf}
+
+Across the \sessionsN{} sessions the exports contain \gazeTotal{} gaze samples.
+The tracker delivered a stable stream at its rated rate: the achieved sampling rate held at a mean of \gazeMeanHz{}\,Hz (SD \gazeSdHz{}\,Hz; range \gazeMinHz{} to \gazeMaxHz{}\,Hz), with the inter-sample interval concentrated at the nominal 11.1\,ms period.
+The gaze-validity rate, the fraction of samples with at least one eye reported valid, ranged from \gazeMinValid\% to \gazeMaxValid\% (mean \gazeMeanValid\%) under continuous, self-paced reading rather than a constrained fixation task.
+
+We keep three timing quantities distinct (Table~\ref{tab:timing}).
+\emph{Client round-trip time} is measured by a ping every five seconds from each browser to the backend and back, so it characterises the transport of the single-host deployment, not the latency of every gaze sample.
+\emph{Gaze freshness at decision dispatch} is the backend-clock interval between the freshest ingested gaze sample and the dispatch of a decision context to the strategy; it is recorded once per evaluation, and evaluations are triggered by several kinds of state change, so their count exceeds the number of gaze samples.
+\emph{Decision-provider round trip} is the correlation-matched interval between a published context and the returned proposal.
+None of these measures the full path from a gaze sample to a visibly changed display, which would add analysis-window age, any approval wait, the commit boundary, and browser layout and repaint, and would require direct measurement of the kind described by \citet{saunders2014latency}.
+The budget the platform reports against is 100\,ms, the threshold below which an interface response is perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and well within a single reading fixation \cite{rayner1998eyemovements}.
+
+In the \sessionsN{} sessions the participant client saw a median round trip of \rttParticipantMedian{}\,ms with a 95th percentile of \rttParticipantPninefive{}\,ms, the researcher client a median of \rttResearcherMedian{}\,ms with a 95th percentile of \rttResearcherPninefive{}\,ms, and none of the \rttCohortN{} recorded round trips exceeded the budget.
+The decision path is instrumented only when an automated strategy is active.
+In the additional advisory-mode session (\advDurationS{}\,s, \advGazeSamples{} gaze samples, with the reference external decision provider running out of process and every proposal gated by the researcher), gaze freshness at dispatch had a median of \advFreshnessMedian{}\,ms, a 95th percentile of \advFreshnessPninefive{}\,ms, and a maximum of \advFreshnessMax{}\,ms over \advFreshnessN{} evaluations, and the \advProviderN{} provider round trips had a median of \advProviderMedian{}\,ms and a maximum of \advProviderMax{}\,ms.
+The provider's \advUniqueProposals{} proposals produced \advProposalRecords{} lifecycle records (\advProposalsApproved{} approved, \advProposalsSuperseded{} superseded), which is why proposal history and applied interventions must be counted separately.
+The same run also contains one participant-client round trip of \advParticipantMax{}\,ms among \advParticipantN{}, so the budget claim holds for the \sessionsN{} sessions and for the decision path but not for every ping ever recorded.
+We read the advisory run as a validation of the instrumentation under a rule-based reference provider on one host, not as a campaign-scale result.
+
+\begin{table}
+\centering
+\small
+\caption{Observed timing quantities in milliseconds.
+$n$ counts recorded pings, evaluations, or matched exchanges, not participants; the advisory run is a separate recording; percentiles are linearly interpolated.
+Gaze freshness ends at decision dispatch; none of these rows measures complete gaze-to-display latency.}
+\label{tab:timing}
+\input{generated/timing-table}
+\end{table}
+
+\subsection{Modularity and External Providers}
+\label{sec:eval-modularity}
+
+The dependency rule that makes the modules replaceable is enforced twice: the backend's project references admit no reference from the core outward, and an executable boundary test inspects the loaded assemblies and fails if the domain or application core depends on infrastructure, transport, or host code.
+The backend test project (101 tests covering session lifecycle gating, the proposal lifecycle, intervention execution, export serialisation, and recovery storage) passes in full on the current checkout.
+Adding an in-process intervention module requires one registration entry and edits to no existing module, because the runtime resolves modules from registries by identifier.
+
+The stronger test is out of process.
+Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project at our institution to the analysis seam.\footnote{\emph{Reading the Struggle}, by Katarina Kraljevi\'{c} and Sree Keerthi Desu (DTU).
+Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.
+\todopaper{Check whether their thesis is now submitted and citable, and cite it here if so.}}
+The reference providers, written by the contract's own authors, evidence only that the contract is sufficient.
+The third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend; we did write the connector, and the collaborator's preprocessor carries small transport-related additions, so this is an adapted integration of collaborator software rather than an unaided third-party implementation.
+Most tellingly, it served as the live analysis source for the \sessionsN{} evaluation sessions themselves: the fixation, saccade, and regression events analysed in this section were produced by that team's code running behind the platform's contract.
+
+\subsection{Context Preservation}
+\label{sec:eval-context}
+
+The \sessionsN{} sessions form a with-and-without comparison of the context-preserving restore.
+In the \on{} condition the restore ran together with its highlight cue, so the conditions contrast a bundle (positional restore plus a brief highlight of the resume point) against neither; we return to this confound below.
+Because preservation acts in the moments after a reflow, both behavioural measures are aligned to each intervention rather than averaged over sessions, which leaves the conditions with unequal counts: \interventionsWith{} interventions \on{} and \interventionsWithout{} \off{}.
+
+Reading-resume time, the interval from an intervention to the start of the reader's next forward or line-change-forward saccade (capped at 30\,s or the next intervention), was observed for \rrtWithObserved{} of \interventionsWith{} interventions \on{} and \rrtWithoutObserved{} of \interventionsWithout{} \off{}; one \off{} intervention had no qualifying saccade and is reported as missing rather than as zero.
+It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians in Table~\ref{tab:behaviour} favour \on{} for three of the four participants.
+The regression rate, averaged over non-empty five-second windows around each intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
+We state the direction of these numbers without inferring from them: four participants, an unbalanced condition order, two texts, researcher-chosen intervention timing, and an unevenly split sample do not support inference, and the bundled highlight means the difference cannot be attributed to the restore geometry alone, the more so as prior work found highlighting to be the component driving recovery improvement \cite{jensen2025context}.
+
+\begin{table}
+\centering
+\small
+\caption{Participant-level median reading-resume time in milliseconds, with observed over applied intervention counts in parentheses.
+Texts and intervention sequences differ across conditions.}
+\label{tab:behaviour}
+\input{generated/behaviour-table}
+\end{table}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.48\textwidth]{figures/eval-rrt.pdf}\hfill
+  \includegraphics[width=0.48\textwidth]{figures/eval-post-regression.pdf}
+  \caption{Left: reading-resume time per intervention by condition (\interventionsWith{} interventions \on{}, \interventionsWithout{} \off{}, of which one has no observation; bars mark medians); points are interventions nested within four participants, not independent observations.
+  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation it falls below its baseline.
+  Both panels are descriptive only.}
+  \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
+  \label{fig:rrt}
+\end{figure}
+
+\paragraph{Record integrity.}
+Auditing the exports revealed that the derived event streams contain exact repeats: \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload within their session, whereas gaze timestamps, gaze sequence numbers, and intervention identifiers contain no duplicates.
+The root cause has not been established; the extraction of new events from the provider's recent-event lists and the provider's own resubmission are candidate explanations.
+As a sensitivity check we recomputed the regression rates after discarding exact repeats: the \on{} rates become \regWithPreDedup\% before and \regWithPostDedup\% after, the \off{} rates \regWithoutPreDedup\% and \regWithoutPostDedup\%, and the resume-time medians are unchanged.
+The direction survives, but until event identity is validated the regression figures should be read with this caveat, and the exported event counts should not be taken as counts of distinct eye movements.
+
+\paragraph{Self-measurement catches a defect.}
+Within the four \on{} sessions, the reader recorded a graded outcome for every intervention: the displacement the reflow induced and the residual after the restore.
+\cpDegraded{} of the \interventionsWith{} outcomes were graded degraded and \cpPreserved{} preserved, and for the degraded ones the median residual was \cpDegradedResidualMedian{}\,px against a median induced displacement of only \cpDegradedInducedMedian{}\,px.
+The restore was moving readers substantially further than the reflow it compensated.
+The cause was the original strategy's fixed target: it re-established the committed sentence near the top of the reading area regardless of how far the reader actually sat from it, so the smaller the reflow, the worse the compensation.
+
+\paragraph{Browser sweep, and the revision.}
+The live outcomes are observational, covering whatever interventions the participants happened to receive.
+To measure displacement under controlled conditions, a harness mounts the real participant reader outside a live session (1440$\times$900 viewport, baseline typography, gaze disabled so the anchor falls back deterministically to a visible word) and drives the same restore hook over every built-in layout intervention from six page positions, recording the vertical displacement of the anchor word with preservation \off{} and \on{}.
+Eleven interventions crossed with six positions give \sweepTrials{} scheduled trials; the harness was run once against the original restore and once against the revised one, and the two runs are separate browser executions rather than a matched experiment: \sweepAnchorDiff{} of the \sweepTrials{} trial keys resolved to a different anchor word across the runs, \sweepOffDiff{} differ in the \off{} displacement by more than 1\,px, and a few line-width trials lose the anchor word from the rendered page, leaving \sweepPairsOriginal{} complete pairs in the original run and \sweepPairsRevised{} in the revised run.
+Table~\ref{tab:sweep} reports both runs side by side.
+Without preservation the bare reflow moves the word by about one line at the median (\sweepOffMedianOriginal{} and \sweepOffMedianRevised{}\,px in the two runs; one line is 32.4\,px), with a heavy tail for large font and line-width changes.
+With the original restore, preservation made displacement worse rather than better: the median rose to \sweepOnMedianOriginal{}\,px, about three times the bare reflow in the same run, the restore moved the word further than the reflow (by more than 1\,px) in \sweepOverOriginal{} of \sweepPairsOriginal{} pairs, and the effect was starkest for the smallest changes, such as a letter-spacing step that moves the word not at all being thrown 115\,px.
+The revised restore returns the captured reading position to the viewport offset it held before the change (Section~\ref{sec:platform-context}); in its run it over-repositions in \sweepOverRevised{} of \sweepPairsRevised{} pairs and brings the median to \sweepOnMedianRevised{}\,px, at or below that run's \off{} baseline, with the gains concentrated where reflows are large, while line-width changes repaginate and lie beyond what a within-page restore can compensate (Figure~\ref{fig:overreposition}).
+The revision is verified geometrically by this sweep; its behavioural benefit to readers has not been re-measured, and a matched benchmark with pinned anchors and rendering environment would be needed for a controlled effect estimate.
+
+\begin{table}
+\centering
+\small
+\caption{Median vertical displacement (px) of the anchor word per intervention in the browser sweep, for the run against the original restore and the run against the revised restore, each with preservation \off{} and \on{}.
+Six positions per intervention; an asterisk marks cells with fewer than six measurements because the anchor word left the rendered page.
+One reading line is 32.4\,px; lower is better.
+The two runs resolved different anchor words in \sweepAnchorDiff{} of \sweepTrials{} trials, so compare \on{} with \off{} within a run rather than across runs.}
+\label{tab:sweep}
+\input{generated/sweep-table}
+\end{table}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/sweep-overreposition.pdf}
+  \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete pair (\sweepPairsOriginal{} original, \sweepPairsRevised{} revised).
+  Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} pairs with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).
+  The two versions were captured in separate runs.}
+  \Description{A scatter plot of on-displacement versus off-displacement with a dashed diagonal line of equality. Circle markers cluster above the diagonal; triangle markers lie on or below it.}
+  \label{fig:overreposition}
+\end{figure}
+
+\subsection{Researcher Control and Reconstruction}
+\label{sec:eval-control}
+
+All recorded sessions were operated end to end through the gated researcher console: no session started before its readiness gates and calibration validation passed, every intervention in Table~\ref{tab:sessions} was applied from the console during the run, and the participant's view was mirrored throughout.
+Reconstruction from the record is demonstrated by construction: every quantity in this section was recomputed from the exported session and telemetry records alone by the audit script, the telemetry of every session joins to its export by session identifier and start and end times, every context-preservation outcome links to an intervention, and the replay view rebuilds any recorded session from its export.

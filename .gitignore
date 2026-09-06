@@ -1,0 +1,13 @@
+/build/
+/main.aux
+/main.bbl
+/main.blg
+/main.fdb_latexmk
+/main.fls
+/main.log
+/main.out
+/main.synctex.gz
+/main.xmpdata
+/main.xmpi
+/main-comment.cut
+/analysis/__pycache__/
