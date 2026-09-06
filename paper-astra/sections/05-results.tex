@@ -1,0 +1,47 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Extension and researcher-control paths}
+
+The implementation supports distinct manual, analysis-provider, and decision-proposal paths. The reference providers and collaborator connector give concrete examples of the external protocol, while the 101 passing backend tests support the inspected lifecycle and persistence behaviour. In the eight recorded sessions, all 45 interventions were manually applied. The advisory run contains 16 proposal-status records for eight unique proposals: eight pending records followed by six superseded and two approved records. This distinction demonstrates why proposal history and applied intervention counts must be represented separately.
+
+The evidence establishes exercised integration and control paths. It does not measure how quickly an unfamiliar researcher can integrate a provider, operate the console, or recover from a fault. Nor do the tests establish that provider detachment automatically substitutes a working built-in analysis strategy.
+
+\subsection{Capture and transport}
+
+Across the eight sessions, the exports contain \gazeTotal{} gaze samples. The effective sampling rate has a mean of \gazeMeanHz{}~Hz and a sample standard deviation of \gazeSdHz{}~Hz, with a range of \gazeMinHz{}--\gazeMaxHz{}~Hz. The mean session validity is \gazeMeanValid{}\%, ranging from \gazeMinValid{}\% to \gazeMaxValid{}\%. Exported calibration-validation summaries report average accuracy between 0.296 and 0.685 degrees and average precision between 0.083 and 0.330 degrees. These summaries concern calibration targets, not an independent validation of line or word assignment during reading.
+
+\begin{table*}[t]
+\caption{Observed timing endpoints in milliseconds. $n$ counts diagnostic samples or matched exchanges, not participants. The advisory run is a separate recording. Freshness ends at context dispatch; none of these rows measures complete gaze-to-display latency.}
+\label{tab:timing}
+\centering
+\input{generated/timing-table}
+\end{table*}
+
+For the main sessions, participant-client RTT has a median of 1~ms and a 95th percentile of 3~ms across 387 samples; the corresponding researcher-client values are 1 and 8.4~ms across 393 samples. All 780 observations are below 100~ms. In the advisory run, however, one of 17 participant-client observations is 315~ms (Table~\ref{tab:timing}). The recordings therefore do not support a universal claim that every observed client exchange remained below 100~ms.
+
+The advisory run's dispatch-time freshness has a median of 6~ms and a 95th percentile of 11~ms over 14,015 records. Eight matched decision-provider exchanges have a median RTT of 4.5~ms. These results describe the specified backend endpoints. A recent gaze sample at dispatch does not establish a recent analysis window, and neither result includes researcher response time or browser presentation.
+
+\subsection{Record integrity and derived-event repetition}
+
+All eight session/telemetry joins match, and gaze timestamps are strictly increasing with no duplicate sequence numbers. Intervention identifiers are unique within sessions. All 19 recorded preservation outcomes link to an intervention time. These checks support the internal consistency of those parts of the record.
+
+The derived streams nevertheless contain exact repeated payloads: \duplicateFixations{} excess fixation payloads among \fixationTotal{} records (\duplicateFixationPct{}\%) and \duplicateSaccades{} excess saccade payloads among \saccadeTotal{} records (\duplicateSaccadePct{}\%). Here ``excess'' counts repetitions after the first occurrence within a session. Thus, the exported fixation and saccade counts cannot be assumed to equal numbers of unique eye movements. The audit does not establish the original cause of these repetitions.
+
+Retaining only the first exact saccade payload leaves the exploratory first-forward-movement medians unchanged, but changes regression-rate summaries (Appendix~\ref{sec:exploratory}). This sensitivity is consistent with the distinction between selecting the first event and counting all events within a window. It is not sufficient to validate the event stream or to justify silently replacing it with a deduplicated dataset.
+
+\subsection{Context-restoration outcomes}
+\label{sec:geometry-results}
+
+In the recorded \on{} sessions, the browser classifies three restoration outcomes as preserved and 16 as degraded. These are the hook's geometric classifications, not participant judgments of whether reading context was recovered. They show that enabling restoration did not guarantee that the implementation's own preservation criterion was satisfied.
+
+\begin{table}[tb]
+\caption{Exploratory browser geometry records. Displacement medians use available observations, with counts in parentheses. Over-repositioning uses complete \off{}/\on{} pairs and a 1~px tolerance. Anchors differ in 21 of 66 trial keys across versions, precluding a matched effect estimate.}
+\label{tab:geometry}
+\centering
+\input{generated/geometry-table}
+\end{table}
+
+The original browser sweep has 62 measurable pairs, with over-repositioning in 45; the revised sweep has 63 pairs, with over-repositioning in four (Table~\ref{tab:geometry}). These counts identify potentially useful engineering changes, but the files do not form a fully matched cross-version comparison. Of 66 corresponding trial keys, 21 have different recorded anchor token identifiers, and 26 have an \off{} displacement difference greater than 1~px where both values are available. Missing pairs occur in line-width trials where the anchor word may leave the rendered page.
+
+The available-case medians therefore describe the saved runs, not an isolated causal effect of the revision. A controlled comparison would pin the initial token and geometry across conditions, preserve missing-word outcomes, and distinguish word displacement from the hook's sentence-anchor diagnostics. The present records are useful for locating restoration problems and specifying that follow-up benchmark.

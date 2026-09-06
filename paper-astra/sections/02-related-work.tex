@@ -1,0 +1,20 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Gaze-contingent reading and context preservation}
+
+\citet{jensen2025context} studied context preservation in an adaptive reader using Popup, Undo, Notification, and Gradual interventions, with word-, sentence-, and paragraph-level highlighting. Their 22-participant within-subjects study motivates treating the reader's recovery after a layout change as part of intervention design. It provides the closest application context for this work. We examine the instrument through which researchers configure, control, and record an experimental loop around such interventions.
+
+\citet{rummens2026highlighting} evaluated gaze-based word colouring with 70 Danish second graders reading aloud. Their reported gains in reading efficiency coexisted with a preference for static text. This distinction matters for adaptive-reading research: a gaze-derived measure, task performance, and subjective preference describe different outcomes. It motivates separating the technical behaviour of the intervention system from the reader's response. Our evaluation concerns that technical behaviour; the exploratory movement proxy is defined separately from comprehension and preference.
+
+\citet{medan2024newline} explored a different interaction in \textit{New Line}: gaze controls scrolling through a continuous line and emphasises the attended word. Their pilot illustrates that gaze-contingent reading can alter navigation as well as typography. \citet{ilyas2025mind} compared reading of human- and AI-generated texts using eye-tracking measures. These applications motivate retaining both stimulus identity and the processing history behind derived measures. They address different experimental questions from the modular orchestration studied here.
+
+\subsection{Assigning gaze to changing text}
+
+A live reader needs a mapping from noisy coordinates to the words currently rendered. Line transitions and regressions complicate that mapping, especially when the layout changes. \citet{kaltenberger2026line} present CONF-LA, a confidence-based approach to real-time line assignment that can defer uncertain assignments. Their work highlights the distinction between assigning a line and representing uncertainty about that assignment. Our browser uses a geometric heuristic with a preference for the current line, rather than CONF-LA or a calibrated confidence model. Replacing or validating this mapper remains a separate algorithmic task.
+
+\subsection{Experiment platforms and integration scope}
+
+PsychoPy supports both graphical experiment construction and scripting, with facilities for hardware input and controlled stimulus presentation \citep{peirce2019psychopy}. Its ioHub documentation describes a common eye-tracker interface across multiple devices and includes simulated gaze \citep{psychopy2026iohub}. OpenSesame similarly combines a graphical experiment builder, Python scripting, and plug-ins, including eye-tracking support \citep{mathot2012opensesame}. These systems establish that replaceable hardware and programmable experiments are existing capabilities.
+
+Our design concentrates on an integrated reading workflow: the researcher can inspect an external provider's proposal separately from the presentation change, and the browser can report what happened to a reading anchor after that change. General-purpose experiment builders supply infrastructure for programming custom procedures. The present implementation supplies these reading-specific operations together, including their shared session state and export. Its evaluation therefore examines the implemented workflow and how well the resulting records support inspection of a completed experiment.

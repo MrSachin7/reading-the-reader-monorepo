@@ -1,0 +1,21 @@
+\section{Introduction}
+\label{sec:introduction}
+
+A researcher testing adaptive typography must connect several operations that are usually considered separately. An eye tracker supplies coordinates; an analysis procedure interprets eye movements; a decision rule proposes a change; and a reader application changes the text. Increasing font size can then move the very word used to trigger the change. The researcher needs to know which text position was estimated, which proposal was accepted, when the presentation state changed, and whether the intended reading position remained available. A functioning display update alone does not answer these questions.
+
+Recent reading interfaces show why this workflow matters. Context-preservation designs help readers relocate text after typographic changes \citep{jensen2025context}, and gaze-based word highlighting has been evaluated as reading support \citep{rummens2026highlighting}. Such interventions depend on choices about mapping, timing, and presentation. Exchanging a detector or trying a different intervention policy should not require rebuilding the entire experiment or losing the relationship between its inputs and outcomes.
+
+General experiment builders provide foundations for stimulus presentation, hardware integration, and custom procedures \citep{peirce2019psychopy,mathot2012opensesame}. Our focus is the concrete workflow of an operator running a gaze-contingent reading experiment: configure an analysis provider, observe its output, apply or approve a typographic change, and inspect the resulting session. We bring these activities together in a reading-specific instrument whose extension boundaries are connected to its experimental record.
+
+We present \rtr{}, a platform with a participant reader, a researcher console, and a backend that owns session state. Its four principal contracts separate sensing, eye-movement analysis, decision proposals, and interventions. This separation permits a manual experiment to use external analysis without delegating presentation control to that analysis. An advisory decision provider can subsequently be introduced while leaving the researcher responsible for approval. The same session record retains gaze, derived events, proposals, applied interventions, and browser-reported restoration outcomes.
+
+We investigate how this design supports configurable experiments and what its existing technical evidence establishes. The evaluation combines source inspection and automated tests with eight Tobii-backed sessions, a separate advisory run, and a browser displacement sweep. It also examines the quality of the records used to evaluate the platform. This audit is necessary because repeated derived events or mismatched anchors can change the interpretation of otherwise plausible results.
+
+The paper makes three contributions:
+\begin{enumerate}
+  \item A working architecture and operator workflow that separates analysis output, intervention proposals, and committed presentation changes within gaze-contingent reading experiments.
+  \item An integration account covering reference providers, a connector to collaborator-developed reading analysis, and context restoration with explicit outcome reporting.
+  \item A technical evaluation with defined measurement endpoints, event-integrity checks, and documented limits on behavioural and geometric inference.
+\end{enumerate}
+
+The recorded sessions demonstrate the instrument in use. They do not establish improved reading performance, the effectiveness of a learned decision policy, or complete gaze-to-display latency. Keeping those questions distinct makes the platform's present contribution assessable and identifies the measurements needed for subsequent intervention studies.

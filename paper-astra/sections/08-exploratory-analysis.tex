@@ -1,0 +1,17 @@
+\section{Exploratory Post-intervention Movement Analysis}
+\label{sec:exploratory}
+
+This appendix retains the descriptive movement analysis as an example of what can be computed from the recorded intervention timeline. It is not an efficacy evaluation. For an intervention at epoch time $t_i$, the first-forward-movement delay is the earliest recorded saccade start after $t_i$ whose direction is forward or line-change-forward, minus $t_i$. The search ends at the next intervention or 30~s, whichever is earlier. The estimator falls back to the event occurrence time if a start time is absent. If no qualifying event is found, the observation remains missing. This operational definition does not establish that comprehension or stable reading resumed at that movement.
+
+\begin{table}[tb]
+\caption{Participant-level first-forward-movement medians (ms), with observed / applied counts in parentheses. Texts and intervention sequences differ across conditions. P3 has one missing \off{} observation.}
+\label{tab:movement}
+\centering
+\input{generated/behaviour-table}
+\end{table}
+
+The pooled event medians are 482~ms for \on{} (19 of 19 observations) and 650~ms for \off{} (25 of 26). Three participants have a lower \on{} median; one has a lower \off{} median (Table~\ref{tab:movement}). Pooling is descriptive: the 44 observed delays are not 44 independent participants, and the conditions bundle restoration with highlighting. These medians should not be interpreted as a validated reduction in reading-recovery time.
+
+For regression summaries, the estimator computes the fraction of recorded saccades marked as regressions in five-second windows before and after each intervention, truncated at neighbouring interventions. Condition summaries average the fractions of nonempty windows rather than pooling all saccades. On the original payload stream, the \on{} summaries are 29.30\% before and 22.76\% after; \off{} summaries are 31.96\% and 33.01\%. Keeping only the first identical inner saccade payload changes these to 30.88\% and 23.02\% for \on{}, and 32.69\% and 33.02\% for \off{}. The first-forward-movement medians remain unchanged under that sensitivity check. Exact-payload removal is not a validated correction of event identity, so neither representation is promoted to a canonical behavioural result.
+
+The audit also provides three- and ten-second window summaries. Their descriptive direction is consistent with the five-second condition-level summaries, but effect magnitudes vary. Resolving event identity, recording a reproducible protocol, and validating the recovery measure would be prerequisites for an intervention-effect study.

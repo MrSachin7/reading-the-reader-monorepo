@@ -1,0 +1,38 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Modularity needs observable experimental meaning}
+
+The architecture makes several choices independently configurable: where gaze originates, how observations are analysed, who proposes a change, and when an approved change is applied. The integration examples and recorded sessions demonstrate these boundaries in operation. For researchers, the practical value is the ability to keep one stage fixed while examining another, such as using external analysis during manual intervention sessions before enabling advisory proposals.
+
+The evaluation also shows that an interface contract alone does not guarantee valid experimental evidence. Provider snapshots must carry a sufficiently clear notion of event identity; otherwise, a technically valid stream can repeat a movement and distort a count-based measure. Future revisions should preserve stable provider event identifiers and define whether incoming snapshots append, revise, or retransmit events. This semantics should be tested with recorded provider messages as well as serializer round trips. An inspectable record makes such defects discoverable, but does not make them harmless.
+
+\subsection{A responsive loop has several clocks and waiting points}
+
+The observed near-nominal gaze rate and low median client RTT support operation in the intended single-host setting. They do not collapse the adaptation loop into one latency number. Analysis windows, context dispatch, provider response, researcher approval, intervention commitment, and visible rendering refer to different endpoints. In an advisory experiment, some waiting is an intentional consequence of researcher control. In a boundary-scheduled experiment, waiting may also be the intervention policy itself.
+
+Future instrumentation should correlate a triggering observation with its analysis window, proposal, committed intervention, and browser presentation measurement. It should report deliberate waiting separately from processing and transport. Direct measurement of gaze-contingent display latency, as demonstrated by \citet{saunders2014latency}, provides a model for validating the visible endpoint. Without these links, a freshness metric can look favourable even when a decision rests on older features. Similarly, a sparse diagnostic ping series cannot establish the timing of every display update.
+
+\subsection{Restoration requires a declared target}
+
+The preservation example exposes a design choice that extends beyond this implementation. Maintaining the position of a word, returning to the start of a sentence, and highlighting useful context are different objectives. A restore can help one objective while moving the target used by another metric. Experiments should state which objective defines success and retain the identity and geometry of that target before and after reflow.
+
+The present browser records motivate a benchmark with preselected tokens, pinned fonts and viewport settings, and explicit disappearance outcomes. The participant comparison would additionally need to separate positional restoration from highlighting if their effects are to be attributed independently. The current findings identify implementation behaviour and measurement requirements; they do not demonstrate that the revised hook improves reading.
+
+\subsection{Scope and limitations}
+
+The human recordings involve four convenience-sample participants, two texts, unequal intervention sequences, and a three-to-one condition order. Repeated interventions are observations nested within participants, not independent participants. No significance tests or population effect estimates are presented. The first-forward-movement proxy in the appendix is not validated against resumed comprehension or a participant report of recovery, and exact-payload repetition further limits event-rate interpretation.
+
+Hardware evidence comes from one Tobii model and a local deployment. It does not establish performance over a network, with other trackers, or in remote or clinical use. Mouse input is a development facility rather than validation of webcam sensing. The gaze-to-word heuristic has no independent accuracy evaluation here. Automated tests cover selected backend behaviour; operator usability, independent developer integration, and systematic disconnection recovery remain unmeasured.
+
+Historical version provenance is another limitation. Current code inspection explains the implementation under review, while the saved sessions and sweeps reflect earlier runs whose complete code, browser, font, and provider configurations are not pinned by the exports. The data hashes in the accompanying audit identify the files analysed, not their full execution environment. Replaying their events cannot remove this gap.
+
+\subsection{Privacy and ethics}
+
+Gaze trajectories, reading materials, and participant attributes in session exports can reveal sensitive information, so retaining detailed provenance also increases the importance of minimising identifying fields and controlling access. A local deployment can help researchers retain operational control, but exported records and connected providers still require an explicit data-handling protocol; this manuscript reports coded aggregates and does not redistribute raw participant records. The recruitment, consent, and institutional-review account for the existing recordings remains an author-confirmation item, and no exemption or clinical benefit is asserted.
+
+\subsection{Artifact availability and drafting disclosure}
+
+The local manuscript package includes LaTeX sources, a read-only evidence-audit script, input hashes, and generated result tables. The source review and code map identify the implementation paths behind architectural claims. This draft makes no claim that the repository or participant data has been approved for public release; a submission artifact can be prepared after version provenance and data-sharing scope are settled.
+
+OpenAI Codex assisted with manuscript drafting, source inspection, evidence-audit code, and LaTeX preparation. The manuscript remains an internal draft for the authors to verify, particularly the participant procedure, historical configuration, interpretation of derived events, and final authorship.

@@ -1,0 +1,62 @@
+% Independent manuscript based on the thesis, source code and original exports.
+% Two-column reading copy, requested by the authors; standard ACM page layout.
+% The conference submission layout can be selected separately when required.
+\documentclass[sigconf,screen,nonacm,pbalance=true]{acmart}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\citestyle{acmauthoryear}
+\settopmatter{printacmref=false,printfolios=true}
+\setcopyright{none}
+\acmDOI{}
+\acmISBN{}
+\acmYear{2026}
+\acmConference[Working draft]{Working draft}{}{}
+\definecolor{rtrblue}{HTML}{245477}
+\definecolor{rtrteal}{HTML}{19766D}
+\definecolor{rtrpale}{HTML}{EDF3F6}
+\setlength{\emergencystretch}{2em}
+\newcommand{\rtr}{\textit{Reading the Reader}}
+\newcommand{\on}{\textsc{on}}
+\newcommand{\off}{\textsc{off}}
+\input{generated/results}
+
+\begin{document}
+\title[Reading the Reader: A Modular Platform for Gaze-Contingent Reading Experiments]{Reading the Reader: A Modular Platform for Auditable Gaze-Contingent Reading Experiments}
+\author{Sachin Baral}
+\affiliation{\institution{Technical University of Denmark}\city{Kongens Lyngby}\country{Denmark}}
+\author{Satish Gurung}
+\affiliation{\institution{Technical University of Denmark}\city{Kongens Lyngby}\country{Denmark}}
+\renewcommand{\shortauthors}{Baral and Gurung}
+
+\begin{abstract}
+Gaze-contingent reading experiments connect noisy eye-tracking signals to changing text, while requiring researcher control and a record of how changes occurred. We present Reading the Reader, a modular platform separating sensing, eye-movement analysis, decision proposals, and typographic interventions. A researcher console supports manual changes and supervised proposals; a participant reader maps gaze to rendered text and reports context-restoration outcomes. We evaluate the implementation through automated tests, eight recorded sessions with four participants, a separate advisory-provider run, and browser geometry records. The sessions contain 175,860 gaze samples at a mean session rate of 89.89 Hz; participant-client diagnostic round-trip time has a 3 ms 95th percentile. These measurements establish capture and transport behaviour in a single-host deployment, not complete gaze-to-display latency. Auditing also identifies repeated derived-event payloads and restoration failures. The contribution is an inspectable experimental workflow and a technical account of its capabilities and measurement limits.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+ <concept><concept_id>10003120.10003121.10003129.10011757</concept_id><concept_desc>Human-centered computing~User interface toolkits</concept_desc><concept_significance>500</concept_significance></concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Human-centered computing~User interface toolkits}
+\keywords{eye tracking, gaze-contingent reading, adaptive typography, research software, session provenance}
+\maketitle
+\hypersetup{hidelinks}
+\raggedbottom
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-platform}
+\input{sections/04-evaluation}
+\input{sections/05-results}
+\input{sections/06-discussion}
+\input{sections/07-conclusion}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\appendix
+\input{sections/08-exploratory-analysis}
+\end{document}

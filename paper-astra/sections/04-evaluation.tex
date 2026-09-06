@@ -1,0 +1,50 @@
+\section{Evaluation Methods}
+\label{sec:methods}
+
+We evaluate three questions: which extension and control paths are implemented and exercised; what capture and timing behaviour is supported by the recordings; and what the exported records reveal about intervention outcomes. Evidence comes from four sources: implementation inspection and backend tests, eight reading-session exports with their telemetry, a separate advisory-provider recording, and two browser geometry result files. The latter three are reanalyses of existing thesis artifacts \citep{baral2026thesis}, not newly collected experiments. We keep the sources separate because they exercise different paths and versions.
+
+\subsection{Implementation and integration checks}
+
+Source inspection follows a sample from sensing through analysis, decisions, intervention execution, browser restoration, and export. We examine the reference providers and collaborator connector to identify what the extension contracts actually require. The backend persistence and runtime test project was rerun during the manuscript review: 101 tests passed, with no failures or skips. Its coverage includes specified assembly dependencies, proposal lifecycles, intervention execution, export serialization, and recovery storage. These checks concern the current checkout; they do not certify the historical device session or browser behaviour.
+
+\subsection{Recorded sessions and materials}
+
+Four participants each completed two sessions, one with preservation enabled (\on{}) and one without it (\off{}). The thesis describes a convenience sample involving the authors and acquaintances. These are instrument-development sessions, with no population-level efficacy claim. The available records identify two expository articles, \textit{Metal Detectors} and \textit{Nuclear Science}. Each appears twice in each condition, but every participant reads a different article across their two conditions. P1's recorded order is \on{} then \off{}; the other three participants have the reverse order. Random allocation and equivalence of text difficulty are not established by these records.
+
+The reported setup used a Tobii \texttt{IS4\_Large\_Peripheral} tracker and a $2560\times1440$ participant display. Calibration used nine points, followed by validation, and all eight exports record a passing result. The backend and both browser surfaces ran on one host, so browser--backend communication used local loopback. The thesis identifies an external analysis provider for the sessions. All 45 recorded interventions have a manual source and an immediate application boundary; they therefore do not test the benefit of autonomous decisions or boundary-based scheduling.
+
+\begin{table*}[t]
+\caption{Recorded sessions. M = \textit{Metal Detectors}; N = \textit{Nuclear Science}. Duration covers the exported session, including activities beyond reading. Valid gaze means at least one eye was marked valid. \on{} bundles positional restoration and highlighting.}
+\label{tab:sessions}
+\centering
+\input{generated/session-table}
+\end{table*}
+
+Intervention counts, timing, and types vary across sessions (Table~\ref{tab:sessions}). They include typography and palette changes. Preservation combines positional restoration with a temporary highlight, so a condition comparison cannot isolate highlighting. All sessions contain quiz answers, but the current analysis neither validates a comprehension score nor interprets complete-session duration as reading speed. One \off{} session has final provider metadata indicating a rule-based advisory configuration despite recording only manual interventions and no proposals. Because the export takes this metadata from a final snapshot, event source is the basis for the statement about manual changes; configuration history remains unresolved.
+
+\paragraph{Participant-procedure documentation.}
+The thesis's engineering ethics account and its recorded participant evaluation do not supply a consistent consent and institutional-review description. Recruitment details, consent, and the applicable review or exemption determination must be confirmed by the authors before submission. This draft does not infer an approval or exemption from the small sample or local deployment.
+
+\subsection{Audit and metric definitions}
+
+The manuscript audit selects the two explicit preservation folders, verifies session schema version~7, and joins each telemetry export to its session by identifier and start/end timestamps. Additional root-level advisory exports are analysed separately. A script using the Python standard library produces CSV summaries and a JSON audit with SHA-256 hashes for its 20 inputs. Original recordings are left intact. This inclusion rule avoids a recursive loader treating advisory or telemetry files as additional participants.
+
+For session $s$, the effective gaze rate is
+\begin{equation}
+ f_s=\frac{N_s-1}{(t_{s,\mathrm{last}}-t_{s,\mathrm{first}})/10^6},
+\end{equation}
+where $t$ is the device timestamp in microseconds and $N_s$ is the number of timestamped samples. We report the unweighted mean and sample standard deviation across sessions. Gaze validity is the fraction of samples with at least one eye's gaze point marked valid. It is a device-validity measure, not accuracy of the browser's word assignment.
+
+Three timing quantities are kept distinct. \textit{Client diagnostic round-trip time} (RTT) is measured by browser ping/pong messages scheduled every five seconds, using the browser's millisecond clock. It includes transport and software scheduling. \textit{Dispatch-time gaze freshness} measures elapsed backend time since the latest gaze ingestion when the backend dispatches external decision context. It does not correlate that context to a particular triggering sample. \textit{Decision-provider RTT} measures the backend interval for correlation-matched requests and replies. Percentiles use linear interpolation over the observed samples, pooled only within a stated population.
+
+These intervals do not together establish the time from a gaze sample to a visible intervention. In particular, analysis-window age, human approval, deliberate boundary waiting, and display presentation are not captured by the freshness measure. Its observations are dispatch records, which can outnumber distinct gaze samples. Provider RTT is conditional on a matched reply. We do not add percentiles across populations or call these separate endpoints end-to-end latency.
+
+The integrity audit checks monotonic gaze timestamps, duplicate gaze sequence numbers and intervention identifiers, telemetry joins, and links from restoration outcomes to intervention times. For derived events, it counts repetitions of the complete inner fixation or saccade payload within each session. Such payload equality is an audit criterion, not a validated biological event-identity rule. We also recompute exploratory movement summaries after retaining only the first identical payload as a sensitivity check (Appendix~\ref{sec:exploratory}).
+
+\subsection{Advisory and geometry records}
+
+The separate advisory run lasts 91.19~s and contains 8,004 gaze samples. It exercises decision proposals and associated timing telemetry; it is not a fifth participant in the preservation comparison. Proposal histories are counted both as records and as unique proposal identifiers to avoid treating a status update as a new decision.
+
+The browser sweep contains 66 scheduled trials per implementation version: 11 presentation changes at six page positions. The documented baseline uses a $1440\times900$ viewport, 18~px Merriweather text, 1.8 line height, and 680~px text width. Changes cover font size, line height, line width, letter spacing, and font family. The harness uses the production reader with gaze disabled and a viewport fallback anchor. It measures the anchor word's vertical displacement with restoration disabled and enabled. An available pair is classed as over-repositioned when the enabled displacement exceeds the disabled displacement by more than 1~px. Missing words remain missing rather than receiving zero displacement.
+
+We analyse each saved run separately, then compare trial keys and anchor identifiers across versions. This check is essential because matching an intervention name and page position does not guarantee that both runs measured the same word or began with the same geometry. No new browser sweep or human evaluation of the revised hook was performed for this manuscript.

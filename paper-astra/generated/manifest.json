@@ -1,0 +1,12 @@
+{
+  "source": "analysis/outputs/evidence-audit.json",
+  "source_sha256": "e68bc11eb34cdb1bc8dd4b797659f4d9ad7d82a5066fc9bd1d4cced9faff30bd",
+  "source_review_commit": "cf3e5872547a643a44a518a29788492776765b34",
+  "generated_files": [
+    "behaviour-table.tex",
+    "geometry-table.tex",
+    "results.tex",
+    "session-table.tex",
+    "timing-table.tex"
+  ]
+}

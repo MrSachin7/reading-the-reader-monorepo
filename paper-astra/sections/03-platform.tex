@@ -1,0 +1,50 @@
+\section{Platform and Design Rationale}
+\label{sec:platform}
+
+\subsection{Two users and one authoritative session}
+
+The participant reads paginated text in a browser. A separate researcher console configures the session, monitors gaze and analysis, applies typography changes, and resolves advisory proposals. A .NET backend owns the session state and distributes updates to both surfaces. Figure~\ref{fig:architecture} shows the functional boundaries. The browsers share session state through the backend; the participant surface does not take commands directly from a model process.
+
+\input{figures/architecture}
+
+A typical experiment begins with content selection and a configured sensing source. The researcher performs calibration and validation, starts recording, and observes the analysis alongside the current text. In manual operation, the researcher selects a presentation change from the console. In advisory operation, a decision provider supplies a proposal that the researcher can resolve. The backend validates the requested intervention and determines when to commit it. The participant reader responds to the resulting state update and, if preservation is enabled, attempts to restore the reading context. The researcher can then export the record and inspect the event sequence in replay.
+
+This ownership model separates observations from authority. An analysis provider may report eye-movement features without being allowed to mutate presentation state. A proposal can exist without being applied. A committed change can exist even if the browser later reports a degraded restoration. Keeping these states distinct permits the researcher to locate a failure at the relevant stage.
+
+\subsection{Four contracts and their extension boundaries}
+
+\paragraph{Sensing.}
+The sensing adapter translates device callbacks into domain gaze samples with timestamps and validity information. The implementation includes a Tobii path and mouse-based input for development. The current Tobii SDK binding is implemented for Windows; the recorded hardware evidence covers one Tobii device model. The acquisition path updates the latest sample without taking the session lifecycle semaphore, while recording uses a separate history lock. This separates acquisition updates from lifecycle coordination while serialising access to recorded history.
+
+\paragraph{Eye-movement analysis.}
+An analysis coordinator selects a configured strategy. A built-in strategy interprets token observations, while an external strategy accepts provider snapshots. In the participant browser, word boxes are derived from the live document layout. A geometric line score combines vertical distance and line-centre distance, with a fixed preference for the current line; a word is then selected within the candidate line. Layout mutations, resize events, and scrolling refresh the geometry. This makes the mapper responsive to reflow, but it does not establish token-level accuracy under noisy gaze.
+
+\paragraph{Decision proposals.}
+The decision coordinator separates manual control from configured decision strategies. An external provider receives session context and returns proposals through a message protocol. Advisory mode exposes proposals for researcher resolution; autonomous handling is also implemented and covered by lifecycle tests. Proposal identity and status are retained separately from the intervention event. The reference decision provider is an integration example, not a validated model of reading difficulty.
+
+\paragraph{Interventions.}
+An intervention module supplies a descriptor, validation, and execution behaviour. Eight built-in module kinds cover font family, font size, line width, line height, letter spacing, theme, palette, and edit locking. Layout changes can be committed immediately or queued for a configured reading boundary. Automated step and cooldown constraints apply in the relevant decision path; manual commands are exempt from those automated limits. New modules that use the existing presentation vocabulary can reuse this machinery. A new rendering behaviour may also require frontend changes, so backend registration alone is not a universal extension mechanism.
+
+These are logical extension boundaries. Several strategies and interventions reside in the same application assembly. Project dependencies point inward, and tests guard specified assembly references, but the four contracts are not four independently deployed services or universally enforced compiler boundaries.
+
+\subsection{Integrating an external analysis provider}
+
+The repository contains a reference analysis provider, a reference decision provider, and a connector to a collaborator-developed reading-analysis pipeline. The connector consumes raw gaze, translates it into the collaborator pipeline's input representation, and sends analysis snapshots back to the platform. It reconciles device timestamps with an epoch-based time reference and associates available token observations with processed events. The current integration also contains transport-related additions for cross-word saccades. The evidence therefore concerns an adapted integration with collaborator software, not an unchanged third-party program or an unaided external developer study.
+
+This example exposes a useful boundary between acquisition and analysis cadence. The connector's default submission threshold is 180 samples, approximately two seconds of input at 90~Hz. That default must not be confused with a measured historical configuration or with the arrival rate of individual gaze samples. A backend can receive a recent gaze sample while the most recent analysis snapshot still summarises an earlier window.
+
+Provider availability is also distinct from strategy selection. In the inspected external path, an unavailable provider produces no fresh result; the coordinator does not automatically select the built-in algorithm in response. The operator can observe provider state, but a continuing session alone does not demonstrate successful algorithm fallback. These limits matter when researchers decide what a recording made during a disconnection can support.
+
+\subsection{Restoring reading context after reflow}
+
+The browser restoration hook periodically captures a reading anchor. It first uses an active gaze-associated word when available, then falls back to a visible location near 35\% of the viewport height, and finally to a coarser block. The current implementation refreshes the anchor every 120~ms and uses a 15~s freshness test. These are implementation parameters, not empirically validated thresholds for reading recovery.
+
+After a presentation change, the hook attempts to locate the anchor in the new layout and reposition the reader. The lookup prefers a sentence wrapper before the individual token and block fallbacks. A temporary context highlight is held for three seconds and fades over the following three seconds. The hook records an outcome after two animation-frame callbacks, including restoration status and geometric diagnostics. Those callbacks schedule browser work; they do not measure the time at which pixels become visible on the display.
+
+Capturing a word and restoring a sentence are related but different operations. A sentence can be successfully relocated while the original word moves within it. Consequently, sentence-anchor residual error and displacement of the original word must be reported separately. The geometry evaluation in Section~\ref{sec:geometry-results} examines existing records with this distinction in mind. The recorded participant sessions used the original restoration behaviour; the revised implementation has only browser-level evidence here.
+
+\subsection{Recording, export, and replay}
+
+The session record brings together raw gaze, derived fixation and saccade events, proposals, applied interventions, and context-preservation outcomes. Export uses a versioned JSON schema with session metadata and content; timing telemetry is also exported separately. The replay reader reconstructs recorded state at a selected playhead. This lets an investigator inspect the relationship between a proposal, a committed change, and subsequent events without repeating the live session.
+
+Replay reconstructs recorded events rather than rerunning the detector or model. Exact scientific reproduction would additionally require the historical code revision, provider configuration, fonts, browser environment, and processing parameters. The current export is also not a complete configuration timeline: some condition fields are taken from the final session snapshot. We therefore treat event-level provenance and final configuration labels as different sources when interpreting the recordings.

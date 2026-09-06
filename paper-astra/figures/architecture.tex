@@ -1,0 +1,35 @@
+\begin{figure*}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+ font=\small,
+ box/.style={draw=rtrblue,rounded corners=2pt,fill=rtrpale,align=center,inner sep=7pt},
+ flow/.style={-{Stealth[length=2mm]},draw=rtrblue,thick},
+ control/.style={flow,dashed},
+ label/.style={font=\footnotesize,align=center,fill=white,inner sep=2pt}
+]
+\node[box,text width=28mm] (sense) at (0,0) {\textbf{Sensing}\\Tobii / mouse};
+\node[box,text width=29mm] (analysis) at (4.1,0) {\textbf{Analysis}\\Built-in / external};
+\node[box,text width=31mm] (decisions) at (8.2,0) {\textbf{Decision proposals}\\Configured strategy};
+\node[box,text width=31mm] (intervention) at (12.4,0) {\textbf{Interventions}\\Validate, schedule\\and apply};
+\draw[flow] (sense) -- (analysis);
+\draw[flow] (analysis) -- (decisions);
+\draw[flow] (decisions) -- (intervention);
+\node[box,fill=white,text width=42mm] (reader) at (2.05,-2.05) {\textbf{Participant reader}\\Text, gaze-to-token mapping,\\context restoration};
+\node[box,fill=white,text width=46mm] (researcher) at (9.9,2.05) {\textbf{Researcher console}\\Monitor, apply manually,\\resolve advisory proposals};
+\draw[flow] (sense.south) |- (reader.west);
+\draw[flow] (reader.north east) -| (5.25,-1.0) -| (analysis.south);
+\node[label] at (6.5,-1.15) {token\\observations};
+\draw[flow] (decisions.north) |- (researcher.west);
+\draw[control] (researcher.south east) -- ++(0,-.4) -| (intervention.north);
+\node[label] at (10.8,1.05) {operator commands};
+\draw[flow] (intervention.south) -- (12.4,-2.05) -- node[label,above]{presentation update via session state} (reader.east);
+\node[box,fill=white,text width=71mm] (record) at (9,-3.65) {\textbf{Backend session authority and record}\\Gaze, analysis, proposals, commits, restore outcomes\\Versioned export and recorded-state replay};
+\draw[flow] (reader.south) |- node[label,pos=.3,below]{restore outcome} (record.west);
+\draw[flow] (intervention.south) -- (12.4,-2.8) -- (9,-2.8) -- (record.north);
+\end{tikzpicture}
+}
+\caption{Functional view of the experiment loop. The backend owns session state and mediates provider and browser messages. Solid arrows show the principal observation and presentation flow; the dashed arrow shows operator control. The record includes events from all stages. Boxes denote logical responsibilities, not separate deployment units.}
+\Description{Four functional stages run left to right: sensing, analysis, decision proposals, and interventions. A participant reader receives gaze and presentation updates and returns token observations and restoration outcomes. A researcher console monitors proposals and controls interventions. The backend retains the session record for export and replay.}
+\label{fig:architecture}
+\end{figure*}
