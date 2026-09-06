@@ -17,24 +17,24 @@ The surfaces never communicate with each other; both render the same backend-own
 Discrete commands (configure a session, change an intervention policy, start, stop) travel over a request-and-response channel, while the high-frequency gaze stream travels over a separate realtime channel (a single WebSocket per client), a split that keeps the per-sample path away from the lock that serialises session lifecycle commands.
 Figure~\ref{fig:loop} traces one cycle of the loop across these parts.
 
-\begin{figure}
+\begin{widefigure}
   \centering
   \includegraphics[width=0.38\textwidth]{figures/ReadingView.png}\hspace{0.03\textwidth}
   \includegraphics[width=0.38\textwidth]{figures/ResearcherLiveView.png}
   \caption{The two operated surfaces: the participant reader (left) and the researcher console mirroring the same text with live gaze, fixation, and saccade overlays and the intervention controls (right).}
   \Description{Two application screenshots side by side. The left shows a clean reading view with a paragraph of text. The right shows the same text overlaid with gaze markers and, beside it, control panels for interventions and session state.}
   \label{fig:screens}
-\end{figure}
+\end{widefigure}
 
-\begin{figure}
+\begin{widefigure}
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/adaptive-loop.pdf}
+  \includegraphics[width=0.46\textwidth]{figures/adaptive-loop.pdf}
   \caption{One iteration of the real-time adaptive loop.
   A gaze sample is mirrored to both surfaces over the realtime channel; the participant surface, which alone knows the rendered layout, maps it to a token and returns an enriched observation; analysis projects observations into oculomotor events; a decision (built-in, external, or the researcher acting manually) yields at most one proposal, which in advisory mode waits for researcher approval; the intervention commits at its configured boundary and the adapted text returns to both surfaces.
   Persistence checkpoints are written best-effort throughout.}
   \Description{A sequence diagram showing messages between the participant surface, the backend core with its analysis, decision, and intervention stages, the researcher console, and a persistence store, forming one cycle from gaze sample to committed intervention.}
   \label{fig:loop}
-\end{figure}
+\end{widefigure}
 
 \subsection{Sensing and Gaze-to-Word Mapping}
 \label{sec:platform-mapping}
