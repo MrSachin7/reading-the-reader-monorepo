@@ -1,0 +1,54 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Gaze-Contingent and Adaptive Reading}
+
+Using the reader's gaze to change the reading experience in real time has a long line of demonstrations.
+The eyeBook coupled an eye tracker to a digital book to trigger in-situ effects as the reader progressed \cite{biedert2010eyebook}.
+More recently, \citet{medan2024newline} presented text as a single line that scrolls with the reader's webcam-estimated gaze and emphasises the fixated word; a pilot with 13 participants found no significant change in comprehension or speed but a clear preference for the interface.
+\citet{rummens2026highlighting} coloured the word under fixation in real time for seventy second graders reading aloud and reported faster reading with shorter fixations, fewer regressions, and less re-reading, without loss of pronunciation accuracy or comprehension, although the children preferred the static text.
+That split between performance and preference is a useful reporting model for adaptive reading.
+Gaze during reading is also used as a measurement instrument in its own right, for example to compare how readers process AI-generated and human-authored text \cite{ilyas2025mind}.
+
+Within the Reading the Reader programme, three master's projects built successive adaptive readers: a flexible reading and gaze-collection application \cite{refsgaard2024rtr}, an adaptive e-reader used to compare four intervention presentation forms, which were found to differ substantially in disruption and acceptance \cite{pereira2024typography}, and a reactive frontend designed to consume machine-learning output \cite{palinec2024reactive}.
+\citet{jensen2025context} then showed that context preservation is where intervention design bites: in a 22-participant within-subjects study of four intervention designs they introduced reading-resume time as a recovery measure and reported that a gradual transition combined with context highlighting resumed fastest, reducing the time lost to an intervention from 14.9\,s to 4.0\,s, and was the most preferred design.
+Each of these systems, however, was built for its own study.
+Sensing, decision logic, and presentation were coupled in one application, so the next study copied and modified the previous system rather than reconfiguring a shared one.
+Our platform is the infrastructural complement to this line of work: it is built so that exactly such comparisons of intervention designs can be run, varied, and reconstructed without touching core code.
+
+\subsection{Real-Time Gaze Processing for Reading}
+
+Reducing a raw gaze stream to oculomotor events is the classical first step, with identification algorithms catalogued by velocity, dispersion, and area-of-interest families \cite{salvucci2000identifying} and reading behaviour extensively characterised \cite{rayner1998eyemovements}.
+Real-time use sharpens the problem: noisy vertical gaze must be assigned to the correct line while the reader is still reading.
+\citet{kaltenberger2026line} address this with CONF-LA, a confidence-scored online fixation-to-line assignment that defers uncertain assignments.
+Our contribution on this front is architectural rather than algorithmic.
+The platform's built-in analysis is a dwell-based, token-level area-of-interest method whose spatial half hit-tests gaze against the words' live on-screen boxes (Section~\ref{sec:platform-mapping}), so a typographic reflow cannot invalidate the mapping; and the whole analysis stage is a replaceable, logged strategy, so a stronger detector or a confidence-aware line-assignment method can be attached as a provider without modifying the platform.
+We do not claim token-level assignment accuracy for the built-in heuristic, which has not been validated against ground truth.
+
+\subsection{Experiment Tooling}
+
+A researcher building a reading study today would more likely reach for general-purpose experiment software than for a research prototype.
+Tobii Pro Lab \cite{tobii2025prolab}, PsychoPy \cite{peirce2019psychopy}, OpenSesame \cite{mathot2012opensesame}, and Psychtoolbox \cite{brainard1997psychtoolbox} are mature platforms for experiment design, stimulus delivery, and gaze capture, and PsychoPy's ioHub already offers a common interface across tracker vendors together with a simulated mouse-driven gaze source \cite{psychopy2026iohub}, so hardware abstraction and simulated gaze are not in themselves new.
+What these tools leave to study-specific programming is the reading-specific loop: mapping gaze onto reflowable text, proposing and gating typographic changes, committing them without losing the reader, and measuring what the change cost.
+Table~\ref{tab:capability} summarises the authors' assessment of the three most established tools against the capabilities a gaze-driven reading experiment requires; none closes the loop from live gaze to a typographic change in the text being read, and none exposes a pluggable decision boundary.
+Our platform occupies that region as a focused instrument for one family of experiments; it complements rather than replaces the general-purpose tools.
+
+% TODO(authors): re-verify the Partial/No ratings against current primary documentation before submission.
+\begin{table}
+\centering
+\small
+\caption{Capability comparison of established experiment software with our platform, across the capabilities a gaze-driven reading experiment requires.
+Entries reflect the authors' assessment of documented capabilities \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}
+\label{tab:capability}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Capability & Tobii Pro Lab & PsychoPy & Psychtoolbox & This platform \\
+\midrule
+Design experiments & Yes & Yes & Yes & Yes \\
+Record gaze data & Yes & Partial & Partial & Yes \\
+Analyse recorded data & Yes & Partial & No & Yes \\
+Real-time gaze-driven text intervention & No & Partial & Partial & Yes \\
+Pluggable decision modules & No & No & No & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
