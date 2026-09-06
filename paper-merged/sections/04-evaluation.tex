@@ -17,7 +17,7 @@ All \interventionsTotal{} recorded interventions were applied manually from the 
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
 One additional session under an advisory decision strategy exercised the decision-path instrumentation and is reported separately in Section~\ref{sec:eval-perf}.
 
-\begin{table}
+\begin{widetable}
 \centering
 \small
 \caption{The \sessionsN{} recorded sessions.
@@ -25,7 +25,7 @@ Text M is \emph{Metal Detectors} and N is \emph{Nuclear Science}; \on{} bundles 
 Duration covers the exported session including activities beyond reading; rate is computed from device timestamps; valid means at least one eye reported valid by the tracker.}
 \label{tab:sessions}
 \input{generated/session-table}
-\end{table}
+\end{widetable}
 
 \subsection{Capture and Transport}
 \label{sec:eval-perf}
@@ -48,7 +48,7 @@ The provider's \advUniqueProposals{} proposals produced \advProposalRecords{} li
 The same run also contains one participant-client round trip of \advParticipantMax{}\,ms among \advParticipantN{}, so the budget claim holds for the \sessionsN{} sessions and for the decision path but not for every ping ever recorded.
 We read the advisory run as a validation of the instrumentation under a rule-based reference provider on one host, not as a campaign-scale result.
 
-\begin{table}
+\begin{widetable}
 \centering
 \small
 \caption{Observed timing quantities in milliseconds.
@@ -56,7 +56,7 @@ $n$ counts recorded pings, evaluations, or matched exchanges, not participants; 
 Gaze freshness ends at decision dispatch; none of these rows measures complete gaze-to-display latency.}
 \label{tab:timing}
 \input{generated/timing-table}
-\end{table}
+\end{widetable}
 
 \subsection{Modularity and External Providers}
 \label{sec:eval-modularity}
@@ -94,7 +94,7 @@ Texts and intervention sequences differ across conditions.}
 \input{generated/behaviour-table}
 \end{table}
 
-\begin{figure}
+\begin{widefigure}
   \centering
   \includegraphics[width=0.48\textwidth]{figures/eval-rrt.pdf}\hfill
   \includegraphics[width=0.48\textwidth]{figures/eval-post-regression.pdf}
@@ -103,7 +103,7 @@ Texts and intervention sequences differ across conditions.}
   Both panels are descriptive only.}
   \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
   \label{fig:rrt}
-\end{figure}
+\end{widefigure}
 
 \paragraph{Record integrity.}
 Auditing the exports revealed that the derived event streams contain exact repeats: \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload within their session, whereas gaze timestamps, gaze sequence numbers, and intervention identifiers contain no duplicates.
@@ -127,7 +127,7 @@ With the original restore, preservation made displacement worse rather than bett
 The revised restore returns the captured reading position to the viewport offset it held before the change (Section~\ref{sec:platform-context}); in its run it over-repositions in \sweepOverRevised{} of \sweepPairsRevised{} pairs and brings the median to \sweepOnMedianRevised{}\,px, at or below that run's \off{} baseline, with the gains concentrated where reflows are large, while line-width changes repaginate and lie beyond what a within-page restore can compensate (Figure~\ref{fig:overreposition}).
 The revision is verified geometrically by this sweep; its behavioural benefit to readers has not been re-measured, and a matched benchmark with pinned anchors and rendering environment would be needed for a controlled effect estimate.
 
-\begin{table}
+\begin{widetable}
 \centering
 \small
 \caption{Median vertical displacement (px) of the anchor word per intervention in the browser sweep, for the run against the original restore and the run against the revised restore, each with preservation \off{} and \on{}.
@@ -136,11 +136,11 @@ One reading line is 32.4\,px; lower is better.
 The two runs resolved different anchor words in \sweepAnchorDiff{} of \sweepTrials{} trials, so compare \on{} with \off{} within a run rather than across runs.}
 \label{tab:sweep}
 \input{generated/sweep-table}
-\end{table}
+\end{widetable}
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/sweep-overreposition.pdf}
+  \includegraphics[width=\narrowwidth]{figures/sweep-overreposition.pdf}
   \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete pair (\sweepPairsOriginal{} original, \sweepPairsRevised{} revised).
   Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} pairs with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).
   The two versions were captured in separate runs.}

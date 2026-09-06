@@ -26,9 +26,13 @@ Requirements: TeX Live with `acmart`, `latexmk`, Python 3.10+.
 
 ## Format
 
-The document uses the ETRA review layout confirmed on the ETRA 2026 submission page: single-column `manuscript,review` with author-year citations, an abstract of at most 150 words (currently 143), and a budget of 14 pages for full papers excluding references.
-Add `anonymous` to the class options for submission and remove the author-facing notes.
-The current build runs slightly over the 14-page body budget; the red author-facing blocks account for roughly half a page of that, and the remainder is a final editorial trim once the supervisors have said what they want kept.
+One source, two layouts, selected in `main.tex` by whether `\reviewlayout` is defined:
+
+- `make` (default) produces `main.pdf`, the two-column `sigconf` reading copy with numeric citations that the authors prefer to read and circulate.
+- `make review` produces `main-review.pdf` in the ETRA review layout confirmed on the ETRA 2026 submission page: single-column `manuscript,review` with line numbers and author-year citations. ETRA also requires an abstract of at most 150 words (currently 143) and allows 14 pages for full papers excluding references; the review build currently runs about a page over, of which roughly half is the red author-facing blocks and the rest a final editorial trim once the supervisors have said what they want kept.
+
+Wide floats (`widefigure`, `widetable`) span both columns in the reading copy and are ordinary floats in the review copy; `\narrowwidth` sizes single-column plots.
+Add `anonymous` to the review class options for submission and remove the author-facing notes.
 
 ## Layout
 

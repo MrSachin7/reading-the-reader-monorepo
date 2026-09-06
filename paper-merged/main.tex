@@ -6,17 +6,34 @@
 % Every number in the body comes from generated/results.tex or a generated table unless
 % it is a design constant taken from the source code.
 %
-% ETRA review format (confirmed on the ETRA 2026 submission page): single-column
-% manuscript, review line numbers, anonymous, author-year citations, abstract of at most
-% 150 words, 14 pages for full papers excluding references. For submission add "anonymous":
-%   \documentclass[manuscript,review,anonymous]{acmart}
-\documentclass[manuscript,review,screen]{acmart}
+% Two layouts from one source:
+%   make          two-column sigconf reading copy (default; what the authors prefer to read)
+%   make review   ETRA review format, confirmed on the ETRA 2026 submission page: single-column
+%                 manuscript with line numbers, author-year citations, abstract of at most
+%                 150 words, 14 pages for full papers excluding references. For submission
+%                 also add "anonymous" to the class options below.
+% The review build defines \reviewlayout before this file is read (latexmk -usepretex).
+\ifdefined\reviewlayout
+  \documentclass[manuscript,review,screen]{acmart}
+  \citestyle{acmauthoryear}
+  % Single column: wide and narrow floats are the same environment.
+  \newenvironment{widefigure}{\begin{figure}}{\end{figure}}
+  \newenvironment{widetable}{\begin{table}}{\end{table}}
+  \newcommand{\narrowwidth}{0.5\textwidth}
+\else
+  \documentclass[sigconf,screen]{acmart}
+  % Narrow columns: allow a little extra stretch instead of overfull lines.
+  \setlength{\emergencystretch}{2em}
+  % Two columns: wide floats span both columns, narrow ones fill one column.
+  \newenvironment{widefigure}{\begin{figure*}}{\end{figure*}}
+  \newenvironment{widetable}{\begin{table*}}{\end{table*}}
+  \newcommand{\narrowwidth}{0.92\columnwidth}
+\fi
 
-\citestyle{acmauthoryear}
 \setcopyright{none}
 \settopmatter{printacmref=false,printfolios=true}
 \renewcommand\footnotetextcopyrightpermission[1]{}
-\acmConference[Working draft]{Working draft, not for distribution}{September 2026}{}
+\acmConference[Working draft]{Working draft}{September 2026}{not for distribution}
 
 \usepackage{booktabs}
 
@@ -94,7 +111,7 @@ Because every intervention's positional cost is recorded, the platform exposed t
 
 \begin{teaserfigure}
   \centering
-  \includegraphics[width=0.58\textwidth]{figures/experiment-setup.jpg}
+  \includegraphics[width=0.52\textwidth]{figures/experiment-setup.jpg}
   \caption{The two-screen setup during an evaluation session.
   The participant reads the presented text on one display (left), while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display, and both surfaces are served by one backend on a single host.
   Faces are blurred for anonymity.}
