@@ -3,12 +3,15 @@
 
 This appendix retains the descriptive movement analysis as an example of what can be computed from the recorded intervention timeline. It is not an efficacy evaluation. For an intervention at epoch time $t_i$, the first-forward-movement delay is the earliest recorded saccade start after $t_i$ whose direction is forward or line-change-forward, minus $t_i$. The search ends at the next intervention or 30~s, whichever is earlier. The estimator falls back to the event occurrence time if a start time is absent. If no qualifying event is found, the observation remains missing. This operational definition does not establish that comprehension or stable reading resumed at that movement.
 
-\begin{table}[tb]
-\caption{Participant-level first-forward-movement medians (ms), with observed / applied counts in parentheses. Texts and intervention sequences differ across conditions. P3 has one missing \off{} observation.}
+\par\addvspace{\medskipamount}
+\noindent\begin{minipage}{\columnwidth}
+\captionsetup{hypcap=false}
+\captionof{table}{Participant-level first-forward-movement medians (ms), with observed / applied counts in parentheses. Texts and intervention sequences differ across conditions. P3 has one missing \off{} observation.}
 \label{tab:movement}
 \centering
 \input{generated/behaviour-table}
-\end{table}
+\end{minipage}
+\par\addvspace{\medskipamount}
 
 The pooled event medians are 482~ms for \on{} (19 of 19 observations) and 650~ms for \off{} (25 of 26). Three participants have a lower \on{} median; one has a lower \off{} median (Table~\ref{tab:movement}). Pooling is descriptive: the 44 observed delays are not 44 independent participants, and the conditions bundle restoration with highlighting. These medians should not be interpreted as a validated reduction in reading-recovery time.
 

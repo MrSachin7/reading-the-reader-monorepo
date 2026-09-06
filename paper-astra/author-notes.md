@@ -1,6 +1,6 @@
 # Notes accompanying the first manuscript draft
 
-The complete draft is [main.pdf](main.pdf); its editable entry point is [main.tex](main.tex). It was written independently from the thesis, code, raw exports, and primary literature. No material from `paper-fable`, `paper-sol`, or `paper` was consulted.
+The complete draft is [main.pdf](main.pdf); its editable entry point is [main.tex](main.tex). It was written independently from the thesis, code, raw exports, and primary literature. The initial manuscript did not consult other paper folders. A later revision, explicitly requested by the authors, compared the LaTeX preambles and first-page layouts of `paper-fable` and `paper-sol` for formatting only; their manuscript content was not reused. The `paper` folder was not consulted.
 
 ## Decisions made in this draft
 
