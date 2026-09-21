@@ -24,6 +24,13 @@ make
 `make audit` first recomputes the evidence from the original data (Python 3.10+, standard library only).
 Requirements: TeX Live with `acmart`, `latexmk`, Python 3.10+.
 
+## Overleaf sync
+
+This folder is mirrored to the Overleaf project `6aa8426de75b60b623d07ac4` through Overleaf's Git integration, linked with `git subtree` (remote `overleaf`, prefix `paper-merged`).
+Commit locally first, then `make overleaf-push` sends the commits to Overleaf and `make overleaf-pull` merges supervisor edits made in the editor back into the monorepo.
+Overleaf comments and tracked-change markers are not part of the Git export; read them in the editor's review panel (tracked insertions do arrive as plain text).
+One-time setup on a new machine: generate a Git authentication token in Overleaf account settings and run `git clone https://git.overleaf.com/6aa8426de75b60b623d07ac4` once with username `git` and the token as password so the keychain stores it.
+
 ## Format
 
 One source, two layouts, selected in `main.tex` by whether `\reviewlayout` is defined:
