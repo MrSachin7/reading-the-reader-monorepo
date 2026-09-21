@@ -1,4 +1,4 @@
-.PHONY: all review assets audit figures clean distclean
+.PHONY: all review assets audit figures clean distclean overleaf-pull overleaf-push
 
 # Default: two-column sigconf reading copy -> main.pdf
 all: main.pdf
@@ -35,3 +35,12 @@ clean:
 
 distclean:
 	rm -rf build build-review
+
+# Overleaf sync (run from anywhere; the targets cd to the monorepo root).
+# The Overleaf project is the "overleaf" git remote, linked to this folder with git subtree.
+# Comments and tracked-change markers do not travel through git; read them in the Overleaf editor.
+overleaf-pull:
+	cd $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/.. && git subtree pull --prefix=paper-merged overleaf main -m "Merge Overleaf changes into paper-merged"
+
+overleaf-push:
+	cd $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/.. && git subtree push --prefix=paper-merged overleaf main
