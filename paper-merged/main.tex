@@ -38,6 +38,11 @@
 
 \usepackage{booktabs}
 
+% Black hyperlinks (citation numbers, cross-references, URLs, emails): the class
+% colours them purple and blue for the screen build. Must run after the class's
+% own \hypersetup, which it issues at the end of the preamble.
+\AtBeginDocument{\hypersetup{allcolors=black}}
+
 % Audited numbers and generated tables (regenerate with: make assets).
 \input{generated/results}
 
