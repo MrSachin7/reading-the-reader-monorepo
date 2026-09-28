@@ -215,18 +215,36 @@ public sealed partial class ExperimentSessionManager
         EyeMovementAnalysisRuntimeState previousState,
         EyeMovementAnalysisRuntimeState nextState)
     {
-        foreach (var fixation in ExtractNewRecentItems(previousState.RecentFixations, nextState.RecentFixations))
+        foreach (var fixation in ExtractNewRecentItems(previousState.RecentFixations, nextState.RecentFixations, FixationIdentity))
         {
             RecordFixationEvent(fixation.EndedAtUnixMs ?? fixation.LastObservedAtUnixMs, fixation);
         }
 
-        foreach (var saccade in ExtractNewRecentItems(previousState.RecentSaccades, nextState.RecentSaccades))
+        foreach (var saccade in ExtractNewRecentItems(previousState.RecentSaccades, nextState.RecentSaccades, SaccadeIdentity))
         {
             RecordSaccadeEvent(saccade.EndedAtUnixMs, saccade);
         }
     }
 
-    private static IReadOnlyList<T> ExtractNewRecentItems<T>(IReadOnlyList<T>? previous, IReadOnlyList<T>? current)
+    // An eye movement is identified by what it is (the token(s) it landed on and when),
+    // not by the layout-dependent fields (line index, token index, saccade direction) that
+    // a provider may re-derive against the current layout when it resends its recent
+    // window. Matching on the full record made the previous head unrecognisable after a
+    // reflow, so the whole resent window was recorded again as new events.
+    private static string FixationIdentity(FixationSnapshot fixation)
+    {
+        return $"{fixation.TokenId}|{fixation.StartedAtUnixMs}|{fixation.EndedAtUnixMs}";
+    }
+
+    private static string SaccadeIdentity(SaccadeSnapshot saccade)
+    {
+        return $"{saccade.FromTokenId}|{saccade.ToTokenId}|{saccade.StartedAtUnixMs}|{saccade.EndedAtUnixMs}";
+    }
+
+    private static IReadOnlyList<T> ExtractNewRecentItems<T>(
+        IReadOnlyList<T>? previous,
+        IReadOnlyList<T>? current,
+        Func<T, string> identity)
         where T : class
     {
         if (current is null || current.Count == 0)
@@ -234,11 +252,20 @@ public sealed partial class ExperimentSessionManager
             return [];
         }
 
-        var previousHead = previous is { Count: > 0 } ? previous[0] : null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        if (previous is not null)
+        {
+            foreach (var item in previous)
+            {
+                seen.Add(identity(item));
+            }
+        }
+
         var newItems = new List<T>();
         foreach (var item in current)
         {
-            if (previousHead is not null && EqualityComparer<T>.Default.Equals(item, previousHead))
+            // Lists are newest-first: the first already-seen item marks the end of the new ones.
+            if (seen.Contains(identity(item)))
             {
                 break;
             }
