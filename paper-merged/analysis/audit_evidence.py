@@ -50,6 +50,14 @@ def stats(values):
             "over_100ms_n": sum(v > 100 for v in xs)}
 
 
+
+def fixation_identity(f):
+    return (f.get("tokenId"), f.get("startedAtUnixMs"), f.get("endedAtUnixMs"))
+
+
+def saccade_identity(s):
+    return (s.get("fromTokenId"), s.get("toTokenId"), s.get("startedAtUnixMs"), s.get("endedAtUnixMs"))
+
 def duplicates(values):
     return len(values) - len(set(values))
 
@@ -174,6 +182,10 @@ def main():
                 "duplicate_intervention_ids": duplicates([i["id"] for i in ivs]),
                 "duplicate_fixation_payloads": duplicates([json.dumps(e["fixation"],sort_keys=True) for e in derived["fixationEvents"]]),
                 "duplicate_saccade_payloads": duplicates([json.dumps(e["saccade"],sort_keys=True) for e in derived["saccadeEvents"]]),
+                # Event identity: the same eye movement re-recorded with layout-dependent fields
+                # (line index, token index, saccade direction) re-derived after a reflow.
+                "duplicate_fixation_identities": duplicates([fixation_identity(e["fixation"]) for e in derived["fixationEvents"]]),
+                "duplicate_saccade_identities": duplicates([saccade_identity(e["saccade"]) for e in derived["saccadeEvents"]]),
                 "context_unmatched_intervention_time": sum(cp["interventionAppliedAtUnixMs"] not in {i["appliedAtUnixMs"] for i in ivs} for cp in cps),
                 "telemetry_session_and_times_match": True})
             for s in tel["samples"]:
@@ -194,18 +206,23 @@ def main():
         sensitivity.extend({"window_s": window,"condition": c,
                             **behavioural_summary([r for r in rs if r["condition"] == c])} for c in CONDITIONS)
 
-    # Sensitivity only: exact payload deduplication is not a validated event-identity policy.
-    dedup_events = []
-    for doc,pid,c in docs:
-        candidate = copy.deepcopy(doc)
-        seen = set(); unique = []
-        for event in candidate["derived"]["saccadeEvents"]:
-            key = json.dumps(event["saccade"],sort_keys=True)
-            if key not in seen:
-                seen.add(key); unique.append(event)
-        candidate["derived"]["saccadeEvents"] = unique
-        dedup_events.extend(post_events(candidate,pid,c))
-    dedup_sensitivity = {c:behavioural_summary([r for r in dedup_events if r["condition"]==c]) for c in CONDITIONS}
+    # Two de-duplication policies over the saccade stream, keeping the first-recorded instance:
+    # exact payload (sensitivity check) and event identity (from/to token and timestamps), the
+    # latter being the identity under which the backend fix records each eye movement once.
+    def dedup(keyfn):
+        rows = []
+        for doc,pid,c in docs:
+            candidate = copy.deepcopy(doc)
+            seen = set(); unique = []
+            for event in candidate["derived"]["saccadeEvents"]:
+                key = keyfn(event["saccade"])
+                if key not in seen:
+                    seen.add(key); unique.append(event)
+            candidate["derived"]["saccadeEvents"] = unique
+            rows.extend(post_events(candidate,pid,c))
+        return {c:behavioural_summary([r for r in rows if r["condition"]==c]) for c in CONDITIONS}
+    dedup_sensitivity = dedup(lambda sac: json.dumps(sac,sort_keys=True))
+    identity_dedup_sensitivity = dedup(saccade_identity)
 
     # Verify agreement with committed thesis outputs, without using those as input data.
     with (ROOT / "Experiments/analysis/outputs/tables/post_intervention_summary.csv").open() as f:
@@ -291,7 +308,7 @@ def main():
                          "session_sd_hz":st.stdev(r["hz"] for r in sessions),
                          "session_mean_validity_pct":mean([r["validity_pct"] for r in sessions])},
               "sessions":sessions,"integrity":integrity,"behaviour":behaviour,
-              "duplicate_payload_sensitivity":dedup_sensitivity,
+              "duplicate_payload_sensitivity":dedup_sensitivity,"identity_dedup_sensitivity":identity_dedup_sensitivity,
               "condition_order":{pid:[c for _,c in sorted(values)] for pid,values in session_order.items()},
               "participant_behaviour":participant_results,"sensitivity":sensitivity,
               "cohort_rtt":{k:stats(v) for k,v in cohort_rtt.items()},

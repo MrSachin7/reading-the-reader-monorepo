@@ -1,5 +1,5 @@
 {
-  "review_commit": "ba56f76e6aa1c6d1e788d8c1ba94413b4c1e0493",
+  "review_commit": "f69ac7d3291d1408911e7e175056b4b7aedecf77",
   "cohort": {
     "participants": 4,
     "sessions": 8,
@@ -246,6 +246,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 38,
       "duplicate_saccade_payloads": 78,
+      "duplicate_fixation_identities": 41,
+      "duplicate_saccade_identities": 84,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -258,6 +260,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 38,
       "duplicate_saccade_payloads": 88,
+      "duplicate_fixation_identities": 39,
+      "duplicate_saccade_identities": 96,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -270,6 +274,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 0,
       "duplicate_saccade_payloads": 29,
+      "duplicate_fixation_identities": 0,
+      "duplicate_saccade_identities": 36,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -282,6 +288,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 64,
       "duplicate_saccade_payloads": 75,
+      "duplicate_fixation_identities": 80,
+      "duplicate_saccade_identities": 88,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -294,6 +302,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 52,
       "duplicate_saccade_payloads": 164,
+      "duplicate_fixation_identities": 68,
+      "duplicate_saccade_identities": 189,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -306,6 +316,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 0,
       "duplicate_saccade_payloads": 8,
+      "duplicate_fixation_identities": 0,
+      "duplicate_saccade_identities": 10,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -318,6 +330,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 88,
       "duplicate_saccade_payloads": 173,
+      "duplicate_fixation_identities": 122,
+      "duplicate_saccade_identities": 208,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     },
@@ -330,6 +344,8 @@
       "duplicate_intervention_ids": 0,
       "duplicate_fixation_payloads": 0,
       "duplicate_saccade_payloads": 37,
+      "duplicate_fixation_identities": 0,
+      "duplicate_saccade_identities": 44,
       "context_unmatched_intervention_time": 0,
       "telemetry_session_and_times_match": true
     }
@@ -384,6 +400,32 @@
       "pre_rate_event_mean": 0.3269128882813093,
       "post_rate_event_mean": 0.33015295815295814,
       "delta_event_mean": 0.013047691830586568
+    }
+  },
+  "identity_dedup_sensitivity": {
+    "with": {
+      "interventions": 19,
+      "rrt_observed": 19,
+      "rrt_missing": 0,
+      "rrt_median_ms": 482.0,
+      "rrt_mean_ms": 669.8421052631579,
+      "pre_rate_observed": 19,
+      "post_rate_observed": 19,
+      "pre_rate_event_mean": 0.2721376920293329,
+      "post_rate_event_mean": 0.22919273708747392,
+      "delta_event_mean": -0.042944954941858966
+    },
+    "without": {
+      "interventions": 26,
+      "rrt_observed": 25,
+      "rrt_missing": 1,
+      "rrt_median_ms": 650.0,
+      "rrt_mean_ms": 922.84,
+      "pre_rate_observed": 25,
+      "post_rate_observed": 25,
+      "pre_rate_event_mean": 0.315038961038961,
+      "post_rate_event_mean": 0.31925108225108223,
+      "delta_event_mean": 0.01406024531024531
     }
   },
   "condition_order": {
@@ -937,7 +979,7 @@
   "input_hashes": [
     {
       "source_label": "P1/with/session",
-      "sha256": "dc8f8f463b9db58a16f8a82e2036bf7b6698714fe563d4a6a7c020ba7bcf6d34"
+      "sha256": "16610203df24b4f38abf24c84fad42b88cc28f0ed35a9a76c5db160c115d0e9b"
     },
     {
       "source_label": "P1/with/telemetry",
@@ -945,7 +987,7 @@
     },
     {
       "source_label": "P2/with/session",
-      "sha256": "e09d8bca8c535db1b29c0cf0bc633b49888c8a05abfc8629b5b7c82bbc070a35"
+      "sha256": "943ba8c133e8fb4796a7c84b6d8113199fe799419ce2d62c227565be00de2113"
     },
     {
       "source_label": "P2/with/telemetry",
@@ -953,7 +995,7 @@
     },
     {
       "source_label": "P3/with/session",
-      "sha256": "391a3899962fe3eca2b3d45fdc1ceaa0c69159d043233e36340fdf9a167dd910"
+      "sha256": "76ee0d0d06c282da09103bac34537cd89f5f180d943b7b2df56f26f4e564838c"
     },
     {
       "source_label": "P3/with/telemetry",
@@ -961,7 +1003,7 @@
     },
     {
       "source_label": "P4/with/session",
-      "sha256": "d8b25594f1299c4f5bf1e721e4e6e7ee7fea2416f15f3b9453f2de914600062b"
+      "sha256": "44670eea373b4f1c1b2dd48e088000d0389118980af0da874ae54f53b44ae7ca"
     },
     {
       "source_label": "P4/with/telemetry",
@@ -969,7 +1011,7 @@
     },
     {
       "source_label": "P1/without/session",
-      "sha256": "6f5a54faa40d9af9b7d3b03725d630ff167023646783586d3d72dbc693c8cd31"
+      "sha256": "234106c7761f4f4a0e1e8f6a8a4c9208feda1348d0fe545f7ba97dbcd59eecef"
     },
     {
       "source_label": "P1/without/telemetry",
@@ -977,7 +1019,7 @@
     },
     {
       "source_label": "P2/without/session",
-      "sha256": "7ec73283e054e6efec6cb315257a23989bd8bd213883b5d6026224d33ba1939b"
+      "sha256": "f2ebff9545ccef4451cb23254a1757e7ae5e04f1908c6b2672b029fae3c89ef6"
     },
     {
       "source_label": "P2/without/telemetry",
@@ -985,7 +1027,7 @@
     },
     {
       "source_label": "P3/without/session",
-      "sha256": "61ca4281a7be516901832c5dc4960016e14c96ee5835eb6fa895c172fe59e86d"
+      "sha256": "f32ba4c730add1aa79ccd730009e3e00ff83ceee9cb32e1c82a91f498f9370b8"
     },
     {
       "source_label": "P3/without/telemetry",
@@ -993,7 +1035,7 @@
     },
     {
       "source_label": "P4/without/session",
-      "sha256": "6ac8e634ee415234ed85759b8b2b1b4eb6c09d84e4a0cec637f1e458521260ce"
+      "sha256": "51196fd09498e36b713879f630c0ea321f5b205d25d20027a7f906bd125542cd"
     },
     {
       "source_label": "P4/without/telemetry",
@@ -1001,7 +1043,7 @@
     },
     {
       "source_label": "advisory/session",
-      "sha256": "4e17b05c4d054503d4b37af85bb5af95666a96acb406aebab38fb68bbbf1c925"
+      "sha256": "b80500fd60ecec5195682cb7d99080b49858215e7f00ca5f5c13f3ae584a7034"
     },
     {
       "source_label": "advisory/telemetry",

@@ -18,7 +18,7 @@ The current implementation is not resilient automation, however: provider detach
 
 \paragraph{Limitations.}
 The behavioural comparison rests on four participants drawn from the authors and acquaintances, reading two texts in an unbalanced condition order under researcher-timed manual interventions; the numbers are descriptive, and the \on{} condition bundles the restore with the highlight cue, so no causal attribution to the restore geometry is possible.
-The derived event streams contain repeated payloads whose cause is unknown, so event-rate measures carry an integrity caveat until event identity is validated.
+The derived event streams of the recorded sessions contain repeated records from an extraction defect that has since been traced and fixed; the regression rates are reported with and without identity-based de-duplication and keep their direction, but the sessions have not been re-recorded with the fix.
 The revised restore is verified geometrically, in a sweep whose two runs are not matched, and has not been re-evaluated with readers.
 The automated decision path was exercised within budget in a single advisory-mode run with a rule-based reference provider on one host, not at campaign scale or over a network, and no learned decision model has yet run against the platform.
 The provider contract has one external integration, written by us around a collaborator's code; a single such integration is encouraging, not proof of independence.
@@ -31,4 +31,4 @@ Three studies follow directly.
 First, the three-condition study separating restore geometry from highlighting on the revised mechanism, which would also replace the authors-as-participants sample and should pin texts, order, and intervention timing.
 Second, a campaign-scale run of the automated decision path with a learned provider, turning the single-run check into a measured result, ideally with an end-to-end latency measurement to the display.
 Third, the properly powered efficacy study the platform was built to host, asking whether specific interventions improve reading rather than only measuring their immediate cost.
-On the platform side, establishing a canonical event identity for derived events, adding automatic fallback and heartbeat enforcement with a fault-injection test, and attracting external providers and multimodal sources behind the existing ports would push the contract from author-validated toward independently validated.
+On the platform side, re-recording sessions with the corrected event extraction, adding automatic fallback and heartbeat enforcement with a fault-injection test, and attracting external providers and multimodal sources behind the existing ports would push the contract from author-validated toward independently validated.

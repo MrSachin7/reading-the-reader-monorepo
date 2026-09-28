@@ -9,6 +9,7 @@ Each concern sits behind a stable contract with a uniform shape: a module is ide
 Because a module is handed a copy of what it needs rather than a reference to live state, it can neither reach into nor mutate the core; and because the runtime resolves modules from a per-concern registry by identifier, never naming a concrete implementation, adding an in-process module is one registration and no existing code changes.
 The .NET backend owns all authoritative session state.
 Its project references point inward only, so the core cannot reference infrastructure or transport code without a build failure, and an executable boundary test checks the same rule over the loaded assemblies; within the application assembly the four boundaries are contracts and registries, not separately deployed units.
+The platform was implemented by the authors with generative AI coding assistance, as described in the disclosure at the end of the paper.
 
 Two browser surfaces of a single web frontend face the two people in the room (Figure~\ref{fig:screens}).
 The participant surface renders the reading material as reflowable, tokenised text.
@@ -41,6 +42,7 @@ Figure~\ref{fig:loop} traces one cycle of the loop across these parts.
 
 Sensing is a port with interchangeable sources.
 The primary adapter subscribes to a Tobii eye tracker's native callback and republishes each sample (per-eye position on the display area normalised to the unit square, pupil data, validity flags, device timestamp) into the domain; a simulated source emits samples of exactly the same shape from the mouse cursor, so the full loop runs with or without hardware and the downstream stages cannot tell which source produced a sample.
+The port is deliberately narrow so that other sources fit behind it: an adapter over a low-level tracker interface such as PyeLink \cite{salari2026pyelink} would add EyeLink hardware, and a synthetic stream of the kind PyEtSimul \cite{salari2026pyetsimul} generates would let the loop be exercised under controlled, reproducible gaze without an eye tracker in the room; neither adapter has been implemented, and we claim only that the seam admits them.
 On the backend the per-sample path avoids the lifecycle lock: each arriving sample is sanitised, published with a volatile write as the latest value, counted atomically, and broadcast, while appending it to the session history takes a separate, short history lock.
 The heavier modular pipeline of analysis, decision, and intervention runs at the cadence of analysed-state changes rather than once per raw sample, which keeps the indirection introduced for modularity off the per-sample path, and the participant surface coalesces snapshot bursts to one render per animation frame.
 
