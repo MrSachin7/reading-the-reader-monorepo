@@ -10,11 +10,11 @@
 %   make          two-column sigconf reading copy (default; what the authors prefer to read)
 %   make review   ETRA review format, confirmed on the ETRA 2026 submission page: single-column
 %                 manuscript with line numbers, author-year citations, abstract of at most
-%                 150 words, 14 pages for full papers excluding references. For submission
-%                 also add "anonymous" to the class options below.
+%                 150 words, 14 pages for full papers excluding references, anonymous
+%                 (ETRA 2027 call: "manuscript,review,anonymous", author-year citations).
 % The review build defines \reviewlayout before this file is read (latexmk -usepretex).
 \ifdefined\reviewlayout
-  \documentclass[manuscript,review,screen]{acmart}
+  \documentclass[manuscript,review,anonymous,screen]{acmart}
   \citestyle{acmauthoryear}
   % Single column: wide and narrow floats are the same environment.
   \newenvironment{widefigure}{\begin{figure}}{\end{figure}}
@@ -33,7 +33,8 @@
 \setcopyright{none}
 \settopmatter{printacmref=false,printfolios=true}
 \renewcommand\footnotetextcopyrightpermission[1]{}
-\acmConference[Working draft]{Working draft}{September 2026}{not for distribution}
+\acmConference[ETRA '27]{2027 Symposium on Eye Tracking Research and Applications}{June 7--10, 2027}{Pamplona, Spain}
+\acmYear{2027}
 
 \usepackage{booktabs}
 
@@ -129,18 +130,39 @@ Because every intervention's positional cost is recorded, the platform exposed t
 \input{sections/06-conclusion}
 
 \section*{Ethics Statement}
-\todopaper{Authors: state the consent arrangement for the eight recorded sessions (who took part and in what capacity, how they were informed, whether consent was verbal or written, what was stored) and the applicable institutional review or exemption determination, and describe the data handling (all gaze data stored locally on the recording machine, no transmission to external services, exports anonymised to participant codes before any release).
-This must be written by the authors from what actually happened; do not publish without it.}
+% CONFIRM(authors) before submission: (a) that consent was given in the form stated here (edit to "written" or "verbal" if you want the form stated); (b) that no ethics-committee approval was required for this evaluation under DTU's rules. Both sentences describe what the authors reported; neither has been checked against a document.
+The recorded sessions were a technical evaluation of the instrument by its developers, not a study of a clinical population.
+Five adult volunteers took part: four read the two evaluation sessions each (two of them are authors of this paper and two are acquaintances of the authors), and a fifth read the advisory-mode session.
+Each was told the purpose of the session and what would be recorded (gaze samples, the enrolment attributes entered on the console, the interventions applied, and quiz answers) and gave informed consent before the session began.
+The evaluation involved no deception, no vulnerable participants, and no manipulation beyond typographic changes to the text being read, and it did not require approval by a research ethics committee under the rules of the authors' institution.
+All gaze data were stored locally on the recording machine and never transmitted to an external service.
+No analysis in this paper uses any enrolment attribute, and the released exports carry participant codes only: names and the eye-condition field were removed before release.
+
+\section*{Privacy and Ethics Statement}
+The platform records gaze, which can reveal reading ability and attention, together with whatever enrolment attributes a researcher chooses to enter; it therefore keeps all data on the researcher's machine, transmits nothing to external services, and leaves consent, pseudonymisation, and retention as explicit procedural obligations of the deploying researcher rather than automating them.
+The platform is meant to enable studies that may eventually benefit readers with vision impairment or reading difficulties, but nothing in this paper evaluates such readers, and gaze-adaptive text should not be deployed for them before studies with the affected groups have measured both benefit and cost.
+The session exports released with this paper contain no names and no health information.
 
 \section*{Availability}
-The platform (backend, both reading surfaces, and the reference providers), its documentation site, the browser displacement harness, and the dependency-free audit script that regenerates every quantity and table in this paper from the exported session records are open source under the MIT licence; the audit records the SHA-256 hash of each input file.
-\todopaper{Authors: decide the citable artifact link (repository plus documentation site), anonymise the committed session exports (file names currently carry participant first names) and remove them from history if required, and add an anonymised link if the venue requires blinded review.}
+The platform (backend, both reading surfaces, and the reference providers), its documentation site, the browser displacement harness, the anonymised session and telemetry exports, and the dependency-free audit script that regenerates every quantity and table in this paper from those exports are open source under the MIT licence at \anon[a public repository whose link is withheld for review]{\url{https://github.com/MrSachin7/reading-the-reader-monorepo}}; the audit records the SHA-256 hash of each input file.
 
+\section*{Generative AI Disclosure}
+% ACM authorship policy (May 2026): AI used in the conduct of the research, including coding, must be described; the ETRA 2027 call asks for the LLM disclosure to be part of the submission.
+Generative AI coding assistants (OpenAI Codex and Anthropic Claude) were used during the implementation of the platform, the browser harness, and the audit script; all generated code was reviewed, tested, and integrated by the authors, who alone designed the architecture, the evaluation, and its interpretation.
+The same tools were used to draft and edit this manuscript from the authors' thesis text; the authors revised every passage and are responsible for its content, and no tool is an author.
+
+% Real acknowledgments: acmart drops the acks environment in anonymous mode, so these appear only in the reading copy and the camera-ready.
+% CONFIRM(authors): thank the supervisors here by name if they are not co-authors.
 \begin{acks}
-% \todopaper{Authors: acknowledge the Reading the Reader project and Novo Nordisk Foundation funding with the grant number~\cite{dtucompute2025rtr, nnf2023rtr}, thank the supervisors if they are not co-authors, thank the collaborating team behind the reading-difficulty pipeline (Katarina Kraljevi\'{c} and Sree Keerthi Desu) and the session participants, and add the generative-AI use disclosure (coding assistance during development; drafting assistance for this manuscript) required by ACM policy.}
-% The authors would sincerely like to thank and acknowledge the Novo Nordisk foundation for funding this research through a “Data Science Collaborative Research Programme 2022” grant with agreement No NNF22OC0076877.
-The authors sincerely thank and acknowledge the funding organization for supporting the establishment and progress of this project.
+The authors would sincerely like to thank and acknowledge the Novo Nordisk Foundation for funding this research, carried out within the Reading the Reader project at DTU Compute \cite{dtucompute2025rtr, nnf2023rtr}, through a ``Data Science Collaborative Research Programme 2022'' grant with agreement No.~NNF22OC0076877.
+We thank Katarina Kraljevi\'{c} and Sree Keerthi Desu for making their reading-difficulty pipeline available as the external analysis provider in the evaluation, and the volunteers who took part in the recorded sessions.
 \end{acks}
+% Anonymised acknowledgment for the review copy (Ashkan Tashk's wording, 2026-09-14).
+\ifdefined\reviewlayout
+\section*{Acknowledgments}
+The authors sincerely thank and acknowledge the funding organization for supporting the establishment and progress of this project.
+Further acknowledgments are withheld for review.
+\fi
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}

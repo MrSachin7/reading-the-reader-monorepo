@@ -72,6 +72,9 @@ def main():
     dfix = sum(s["duplicate_fixation_payloads"] for s in audit["integrity"])
     dsac = sum(s["duplicate_saccade_payloads"] for s in audit["integrity"])
     behaviour, dedup = audit["behaviour"], audit["duplicate_payload_sensitivity"]
+    iddedup = audit["identity_dedup_sensitivity"]
+    idfix = sum(s["duplicate_fixation_identities"] for s in audit["integrity"])
+    idsac = sum(s["duplicate_saccade_identities"] for s in audit["integrity"])
     rtt = audit["cohort_rtt"]
     adv = audit["advisory"][0]
     latency = adv["latency"]
@@ -118,6 +121,16 @@ def main():
         "regWithPostDedup": pct(dedup["with"]["post_rate_event_mean"]),
         "regWithoutPreDedup": pct(dedup["without"]["pre_rate_event_mean"]),
         "regWithoutPostDedup": pct(dedup["without"]["post_rate_event_mean"]),
+        "identityDuplicateFixations": str(idfix), "identityDuplicateSaccades": str(idsac),
+        "identityDuplicateFixationPct": f"{100*idfix/fixations:.1f}",
+        "identityDuplicateSaccadePct": f"{100*idsac/saccades:.1f}",
+        "nearDuplicateFixations": str(idfix-dfix), "nearDuplicateSaccades": str(idsac-dsac),
+        "regWithPreIdDedup": pct(iddedup["with"]["pre_rate_event_mean"]),
+        "regWithPostIdDedup": pct(iddedup["with"]["post_rate_event_mean"]),
+        "regWithoutPreIdDedup": pct(iddedup["without"]["pre_rate_event_mean"]),
+        "regWithoutPostIdDedup": pct(iddedup["without"]["post_rate_event_mean"]),
+        "rrtWithMedianIdDedup": f"{iddedup['with']['rrt_median_ms']:.0f}",
+        "rrtWithoutMedianIdDedup": f"{iddedup['without']['rrt_median_ms']:.0f}",
         "rttParticipantN": str(rtt["participant"]["n"]),
         "rttParticipantMedian": number(rtt["participant"]["p50"]),
         "rttParticipantPninefive": number(rtt["participant"]["p95"], 2),

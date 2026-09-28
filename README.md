@@ -58,13 +58,13 @@ No citation without having read the source or carried it over from the verified 
 
 ## Open items for the authors (also marked red in the PDF)
 
-1. Ethics statement: who took part and in what capacity, how consent was obtained, and the applicable review or exemption determination.
-2. Author list and order with the supervisors (Ashkan Tashk, Aqdus Ilyas, Per Baekgaard); confirm contact emails.
-3. Acknowledgments: NNF grant number, collaborator thanks, ACM generative-AI disclosure.
-4. Reading the Struggle thesis (Kraljevic and Desu): check submission status and cite in the Section 4.3 footnote if citable.
-5. Availability: public artifact link; anonymise `Experiments/data/` file names (they carry participant first names) before pointing at the repository.
-6. CCS concepts: regenerate with the ACM CCS tool before submission; re-verify the Partial/No ratings in the capability table against current primary documentation.
-7. Repository hygiene, outside the paper: the `Eye-Movement-Analyzer` tests (8 of 8) fail against the current provider envelopes; the `Experiments/analysis` loader picks up the root-level advisory files and its README still says N=2. Neither affects the paper, which uses its own audit script, but both should be fixed before the repository is cited as an artifact.
+1. Ethics statement: written from the authors' account (2026-09-23); confirm the consent form (written or verbal) and the no-review determination, marked CONFIRM in `main.tex`.
+2. Author list and order with the supervisors (Ashkan Tashk, Aqdus Ilyas, Per Baekgaard); confirm contact emails; thank the supervisors in `acks` if they are not co-authors.
+3. Reading the Struggle thesis (Kraljevic and Desu): check submission status and cite in the Section 4.3 footnote if citable.
+4. CCS concepts: regenerate with the ACM CCS tool before submission; re-verify the Partial/No ratings in the capability table against current primary documentation.
+5. Length: the ETRA 2027 review build (`make review`, now `manuscript,review,anonymous`) runs to 16 pages before references against a limit of 14; trim before the 16 October 2026 deadline.
+6. Matched sweep: `Frontend/experiments/context-displacement/sweep-matched.mjs` runs OFF, ON-original, and ON-revised from the same anchor in one browser session; run it and replace the two unmatched runs in Section 4.4.
+7. Repository hygiene, outside the paper: the `Eye-Movement-Analyzer` tests (8 of 8) fail against the current provider envelopes. The names in the session exports were removed on 2026-09-23 (files renamed to `P1`..`P5`, name and eye-condition fields scrubbed), but the earlier commits still carry them; rewrite history or squash before citing the repository as an artifact.
 
 ## Corrections relative to the thesis text
 

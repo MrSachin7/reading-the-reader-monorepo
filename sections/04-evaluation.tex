@@ -106,10 +106,15 @@ Texts and intervention sequences differ across conditions.}
 \end{widefigure}
 
 \paragraph{Record integrity.}
-Auditing the exports revealed that the derived event streams contain exact repeats: \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload within their session, whereas gaze timestamps, gaze sequence numbers, and intervention identifiers contain no duplicates.
-The root cause has not been established; the extraction of new events from the provider's recent-event lists and the provider's own resubmission are candidate explanations.
-As a sensitivity check we recomputed the regression rates after discarding exact repeats: the \on{} rates become \regWithPreDedup\% before and \regWithPostDedup\% after, the \off{} rates \regWithoutPreDedup\% and \regWithoutPostDedup\%, and the resume-time medians are unchanged.
-The direction survives, but until event identity is validated the regression figures should be read with this caveat, and the exported event counts should not be taken as counts of distinct eye movements.
+Auditing the exports revealed that the derived event streams contain repeats: \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload exactly within their session, and a further \nearDuplicateFixations{} fixation and \nearDuplicateSaccades{} saccade records repeat an earlier event's identity (the token or tokens involved and the start and end timestamps) with different layout-dependent fields, whereas gaze timestamps, gaze sequence numbers, and intervention identifiers contain no duplicates.
+Tracing the records back through the code established the cause.
+The external provider resends its window of the fifty most recent fixations and saccades about every two seconds and derives each event's line index, token index, and saccade direction from the layout current at submission time; the backend recognised where the new events ended by matching the previously newest record in full, so once a reflow had changed those fields the record was no longer recognised and the whole window was recorded again.
+Every repeat is therefore the same eye movement written twice rather than a repeated detection: the repeats arrive in contiguous bursts with unchanged timestamps shortly after an intervention or scroll, in both conditions, because the reflow occurs in both.
+Saccades suffer more because their payload depends on the layout fields of two tokens rather than one, and because a smaller stream is re-recorded in windows of the same size.
+The fix, now in the backend, matches events by identity rather than by full payload; the recorded sessions predate it.
+We therefore report two corrections.
+Discarding exact repeats gives \on{} regression rates of \regWithPreDedup\% before and \regWithPostDedup\% after an intervention and \off{} rates of \regWithoutPreDedup\% and \regWithoutPostDedup\%; discarding every record that repeats an earlier event's identity, keeping the first-recorded instance, gives \regWithPreIdDedup\% and \regWithPostIdDedup\% \on{} against \regWithoutPreIdDedup\% and \regWithoutPostIdDedup\% \off{}, and the resume-time medians are unchanged under both.
+The direction of the regression result survives; the exported event counts should nonetheless not be read as counts of distinct eye movements.
 
 \paragraph{Self-measurement catches a defect.}
 Within the four \on{} sessions, the reader recorded a graded outcome for every intervention: the displacement the reflow induced and the residual after the restore.
