@@ -2,7 +2,7 @@
 
 Reproducible analysis of the experiment exports, spined by research question. The thesis
 framing is **architectural**: the platform produces analysable data. Reading-behaviour
-numbers on this sample (N=2 participants) are **descriptive, not inferential**.
+numbers on this sample (N=4 participants) are **descriptive, not inferential**.
 
 ## Layout
 
@@ -50,7 +50,7 @@ auto-populates the `pipeline-decision` and `decision-provider-rtt` distributions
 
 ## Caveats / interpretation notes
 
-- **N=2, descriptive.** No inferential claims; effects are reported per participant.
+- **N=4, descriptive.** No inferential claims; effects are reported per participant.
 - **Semantic-restart `anchorErrorPx`.** All interventions here are font-size changes, which
   trigger a *semantic-restart* restore. There `anchorErrorPx` measures the committed
   sentence's distance from its target (a deliberate reposition), **not** pixel-exact
