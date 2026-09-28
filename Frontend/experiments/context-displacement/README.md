@@ -38,6 +38,15 @@ hook driven through the real `ReaderShell`, not a reimplementation.
   git `fb367fc` of `usePreserveReadingContext.ts`, the revised is `HEAD`
   (`git checkout <rev> -- <hook>`, restart `next dev`, run the sweep, copy
   `onoff-raw.json` to the matching `onoff-{original,revised}-raw.json`).
+- `sweep-matched.mjs` — matched three-condition sweep. For each intervention ×
+  position it runs preservation OFF, ON with the original restore, and ON with
+  the revised restore in ONE browser session from the same anchor word, using the
+  evaluation-only `setRestoreStrategy` switch on `window.__harness` (backed by
+  `setRestoreStrategyForEvaluation` in `usePreserveReadingContext.ts`). Writes
+  `results/matched-raw.json` with all three displacements per trial and a flag
+  for trials whose anchor differed across conditions. This supersedes the two
+  separate runs behind `onoff-original-raw.json` and `onoff-revised-raw.json`,
+  which are not comparable trial by trial.
 - `diag.mjs` — single-trial diagnostic used to confirm the restore geometry.
 
 Note on what the numbers support: the revised restore **removes the

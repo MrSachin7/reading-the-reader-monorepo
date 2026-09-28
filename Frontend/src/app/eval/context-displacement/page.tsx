@@ -10,6 +10,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { ReaderShell } from "@/modules/pages/reading/components/ReaderShell"
+import {
+  setRestoreStrategyForEvaluation,
+  type RestoreStrategy,
+} from "@/modules/pages/reading/lib/usePreserveReadingContext"
 import { MOCK_READING_MD } from "@/modules/pages/reading/content/mockReading"
 import { normalizeReaderAppearance } from "@/lib/reader-appearance"
 import type { ReadingPresentationSettings } from "@/modules/pages/reading/lib/readingPresentation"
@@ -179,6 +183,7 @@ export default function ContextDisplacementHarnessPage() {
       fire,
       reset,
       setPreserve: (value: boolean) => setPreserve(Boolean(value)),
+      setRestoreStrategy: (strategy: RestoreStrategy) => setRestoreStrategyForEvaluation(strategy),
       getAnchor: findReadingAnchor,
       snapshots: () => snapshotsRef.current.slice(),
       clearSnapshots: () => {

@@ -317,6 +317,19 @@ function highlightAnchor(elements: HTMLElement[]) {
   }
 }
 
+export type RestoreStrategy = "revised" | "original"
+
+// Evaluation-only switch. The context-displacement harness uses it to run the
+// original restore (semantic restart to the top of the reading area, git fb367fc)
+// and the revised restore (offset-preserving, with the semantic restart aligned to
+// the captured offset) in one matched browser session. Production code never
+// calls the setter, so the shipped behaviour is always "revised".
+let restoreStrategy: RestoreStrategy = "revised"
+
+export function setRestoreStrategyForEvaluation(strategy: RestoreStrategy): void {
+  restoreStrategy = strategy
+}
+
 export function usePreserveReadingContext({
   containerRef,
   contentRef,
@@ -465,10 +478,12 @@ export function usePreserveReadingContext({
       // when no fresh captured anchor can be re-located do we fall back to
       // restarting the committed segment, and that fallback is itself aligned to
       // the captured offset rather than to the top of the reading area.
-      const semanticTargetOffsetPx = anchor && hasFreshAnchor ? anchor.anchorViewportOffsetPx : 0
+      const offsetPreserving = restoreStrategy === "revised"
+      const semanticTargetOffsetPx =
+        offsetPreserving && anchor && hasFreshAnchor ? anchor.anchorViewportOffsetPx : 0
       const located =
         restoreMode === "semantic-restart"
-          ? (anchor && hasFreshAnchor ? locateAnchor(content, anchor) : null) ??
+          ? (offsetPreserving && anchor && hasFreshAnchor ? locateAnchor(content, anchor) : null) ??
             locateSemanticRestartAnchor(content, latestIntervention, semanticTargetOffsetPx)
           : anchor
             ? locateAnchor(content, anchor)
