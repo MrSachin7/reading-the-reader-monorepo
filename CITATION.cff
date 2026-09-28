@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this platform or its session records, please cite the thesis below. A conference paper is in preparation; this file will be updated when it is published."
+title: "Reading the Reader: a modular two-screen platform for gaze-contingent reading experiments"
+type: software
+authors:
+  - family-names: Baral
+    given-names: Sachin
+    affiliation: Technical University of Denmark
+  - family-names: Gurung
+    given-names: Satish
+    affiliation: Technical University of Denmark
+repository-code: https://github.com/MrSachin7/reading-the-reader-monorepo
+license: MIT
+version: 1.0.0
+date-released: 2026-06-30
+keywords:
+  - eye tracking
+  - adaptive reading
+  - gaze-contingent interfaces
+  - typographic interventions
+  - research platform
+references:
+  - type: thesis
+    title: "Reading the Reader: Adaptive Reading Systems: A Modular Software Architecture"
+    authors:
+      - family-names: Baral
+        given-names: Sachin
+      - family-names: Gurung
+        given-names: Satish
+    institution:
+      name: Technical University of Denmark, DTU Compute
+    year: 2026
+    thesis-type: Master's thesis
