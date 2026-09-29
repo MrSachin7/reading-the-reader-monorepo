@@ -66,9 +66,7 @@ The backend test project (101 tests covering session lifecycle gating, the propo
 Adding an in-process intervention module requires one registration entry and edits to no existing module, because the runtime resolves modules from registries by identifier.
 
 The stronger test is out of process.
-Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project at our institution to the analysis seam.\footnote{\emph{Reading the Struggle}, by Katarina Kraljevi\'{c} and Sree Keerthi Desu (DTU).
-Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.
-\todopaper{Check whether their thesis is now submitted and citable, and cite it here if so.}}
+Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project at our institution \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
 The reference providers, written by the contract's own authors, evidence only that the contract is sufficient.
 The third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend; we did write the connector, and the collaborator's preprocessor carries small transport-related additions, so this is an adapted integration of collaborator software rather than an unaided third-party implementation.
 Most tellingly, it served as the live analysis source for the \sessionsN{} evaluation sessions themselves: the fixation, saccade, and regression events analysed in this section were produced by that team's code running behind the platform's contract.
