@@ -15,7 +15,7 @@ Two browser surfaces of a single web frontend face the two people in the room (F
 The participant surface renders the reading material as reflowable, tokenised text.
 The researcher console mirrors the same text and overlays the participant's live gaze, a fixation heat map, and recent saccades, so the researcher sees not merely where the participant looks but how they read.
 The surfaces never communicate with each other; both render the same backend-owned snapshot, so they cannot disagree.
-Discrete commands (configure a session, change an intervention policy, start, stop) travel over a request-and-response channel, while the high-frequency gaze stream travels over a separate realtime channel (a single WebSocket per client), a split that keeps the per-sample path away from the lock that serialises session lifecycle commands.
+Discrete commands (configure a session, change an intervention policy, start, stop) travel over a request-and-response channel, while the high-frequency gaze stream travels over a separate real-time channel (a single WebSocket per client), a split that keeps the per-sample path away from the lock that serialises session lifecycle commands.
 Figure~\ref{fig:loop} traces one cycle of the loop across these parts.
 
 \begin{widefigure}
