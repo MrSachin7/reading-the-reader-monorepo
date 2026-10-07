@@ -12,23 +12,15 @@ Context preservation was a headline feature, yet its original geometry made smal
 The same record also surfaced the repeated derived-event payloads and the mismatch between the two sweep runs, which a success-only log would have hidden.
 We suggest the principle transfers beyond reading platforms: any interface that changes state during a continuous user task can hold the change until a natural boundary, re-anchor the user's focus across it, and record what the change cost.
 
-\paragraph{Human authority is part of the architecture.}
-Manual, advisory, and autonomous modes share one proposal and intervention record, so a study can move gradually from researcher control to automation without changing the presentation runtime or losing provenance, and advisory mode lets later analysis distinguish model behaviour from operator resolution while a provider is experimental.
-The current implementation is not resilient automation, however: provider detachment is recorded but does not trigger a switch to the built-in strategy, and heartbeat expiry is not enforced.
-
 \paragraph{Limitations.}
-The behavioural comparison rests on four participants drawn from the authors and acquaintances, reading two texts in an unbalanced condition order under researcher-timed manual interventions; the numbers are descriptive, and the \on{} condition bundles the restore with the highlight cue, so no causal attribution to the restore geometry is possible.
-The derived event streams of the recorded sessions contain repeated records from an extraction defect that has since been traced and fixed; the regression rates are reported with and without identity-based de-duplication and keep their direction, but the sessions have not been re-recorded with the fix.
+The behavioural comparison rests on four participants drawn from the authors and acquaintances, reading two texts in an unbalanced order under researcher-timed manual interventions; the numbers are descriptive, and because the \on{} condition bundles the restore with the highlight cue, no causal attribution to the restore geometry is possible.
 The revised restore is verified geometrically, in a sweep whose two runs are not matched, and has not been re-evaluated with readers.
-The automated decision path was exercised within budget in a single advisory-mode run with a rule-based reference provider on one host, not at campaign scale or over a network, and no learned decision model has yet run against the platform.
-The provider contract has one external integration, written by us around a collaborator's code; a single such integration is encouraging, not proof of independence.
-Timing figures are loopback figures of the intended single-host deployment and none measures the visible endpoint.
-The recorded sessions did not exercise boundary scheduling, and the exports pin the producing application version but not the full browser, font, and provider configuration, so historical provenance is incomplete.
-Reading material is restricted to reflowable Markdown, and our participants were general readers, not the vision-impaired or dyslexic readers who motivate the programme, so no claim here extends to those groups.
+The provider contract has one external integration, written by us around a collaborator's code, and the automated decision path was exercised in a single advisory run on one host; the runtime neither falls back to the built-in strategy on provider detachment nor enforces heartbeat expiry.
+Timing figures are loopback figures that stop short of the display, the exports do not pin the full browser, font, and provider configuration, and our participants were general readers, so no claim here extends to the vision-impaired or dyslexic readers who motivate the programme.
 
 \paragraph{Future work.}
 Three studies follow directly.
 First, the three-condition study separating restore geometry from highlighting on the revised mechanism, which would also replace the authors-as-participants sample and should pin texts, order, and intervention timing.
 Second, a campaign-scale run of the automated decision path with a learned provider, turning the single-run check into a measured result, ideally with an end-to-end latency measurement to the display.
 Third, the properly powered efficacy study the platform was built to host, asking whether specific interventions improve reading rather than only measuring their immediate cost.
-On the platform side, re-recording sessions with the corrected event extraction, adding automatic fallback and heartbeat enforcement with a fault-injection test, and attracting external providers and multimodal sources behind the existing ports would push the contract from author-validated toward independently validated.
+On the platform side, adding automatic fallback and heartbeat enforcement with a fault-injection test and attracting external providers and multimodal sources behind the existing ports would push the contract from author-validated toward independently validated.

@@ -60,23 +60,24 @@
 % - A Researcher-Operated Platform for Real-Time, Context-Preserving Typographic Interventions
 % - From Prototype to Instrument: Modular Infrastructure for Gaze-Adaptive Reading Research
 
+% Affiliation format as requested by Ashkan Tashk (2026-10-07). The co-authors are entered in
+% the submission system only; for the camera-ready add them here in the agreed order:
+% Sachin Baral, Satish Gurung, Ashkan Tashk, Chaudhary Muhammad Aqdus Ilyas, Per Baekgaard.
 \author{Sachin Baral}
 \affiliation{%
-  \institution{Technical University of Denmark}
-  \city{Kongens Lyngby}
+  \department{Department of Applied Mathematics and Computer Science (DTU Compute)}
+  \institution{Technical University of Denmark (DTU)}
+  \city{Kgs. Lyngby}
   \country{Denmark}}
-\email{s243871@dtu.dk} % TODO(authors): confirm preferred contact address after graduation.
+\email{s243871@dtu.dk}
 
 \author{Satish Gurung}
 \affiliation{%
-  \institution{Technical University of Denmark}
-  \city{Kongens Lyngby}
+  \department{Department of Applied Mathematics and Computer Science (DTU Compute)}
+  \institution{Technical University of Denmark (DTU)}
+  \city{Kgs. Lyngby}
   \country{Denmark}}
-\email{s243872@dtu.dk} % TODO(authors): confirm preferred contact address after graduation.
-
-% TODO(authors): settle the full author list and order with the supervisors
-% (Ashkan Tashk, Chaudhary Muhammad Aqdus Ilyas, Per Baekgaard, and possibly others),
-% then add their blocks here.
+\email{s243872@dtu.dk}
 
 \renewcommand{\shortauthors}{Baral and Gurung}
 
@@ -134,27 +135,17 @@ Because the platform records every intervention's positional cost, it showed tha
 \input{sections/05-discussion}
 \input{sections/06-conclusion}
 
-\section*{Ethics Statement}
-% CONFIRM(authors) before submission: (a) that consent was given in the form stated here (edit to "written" or "verbal" if you want the form stated); (b) that no ethics-committee approval was required for this evaluation under DTU's rules. Both sentences describe what the authors reported; neither has been checked against a document.
-The recorded sessions were a technical evaluation of the instrument by its developers, not a study of a clinical population.
-Five adult volunteers took part: four read the two evaluation sessions each (two of them are authors of this paper and two are acquaintances of the authors), and a fifth read the advisory-mode session.
-Each was told the purpose of the session and what would be recorded (gaze samples, the enrolment attributes entered on the console, the interventions applied, and quiz answers) and gave informed consent before the session began.
-The evaluation involved no deception, no vulnerable participants, and no manipulation beyond typographic changes to the text being read, and it did not require approval by a research ethics committee under the rules of the authors' institution.
-All gaze data were stored locally on the recording machine and never transmitted to an external service.
-No analysis in this paper uses any enrolment attribute, and the released exports carry participant codes only: names and the eye-condition field were removed before release.
-
 \section*{Privacy and Ethics Statement}
-The platform records gaze, which can reveal reading ability and attention, together with whatever enrolment attributes a researcher chooses to enter; it therefore keeps all data on the researcher's machine, transmits nothing to external services, and leaves consent, pseudonymisation, and retention as explicit procedural obligations of the deploying researcher rather than automating them.
+% CONFIRM(authors) before submission: (a) that consent was given as stated (add "written" or "verbal" if you want the form stated); (b) that no ethics-committee approval was required under DTU's rules. Both describe what the authors reported; neither has been checked against a document.
+The recorded sessions were a technical evaluation of the instrument by its developers: five adult volunteers, two of them authors, were told what would be recorded and gave informed consent, no vulnerable participants or deception were involved, and the evaluation did not require approval by a research ethics committee under the rules of the authors' institution.
+Gaze reveals reading ability and attention, so the platform keeps all data on the researcher's machine, transmits nothing to external services, and leaves consent, pseudonymisation, and retention as explicit obligations of the deploying researcher; the released exports carry participant codes only, with names and the eye-condition field removed.
 The platform is meant to enable studies that may eventually benefit readers with vision impairment or reading difficulties, but nothing in this paper evaluates such readers, and gaze-adaptive text should not be deployed for them before studies with the affected groups have measured both benefit and cost.
-The session exports released with this paper contain no names and no health information.
 
 \section*{Availability}
-The platform (backend, both reading surfaces, and the reference providers), its documentation site, the browser displacement harness, the anonymised session and telemetry exports, and the dependency-free audit script that regenerates every quantity and table in this paper from those exports are open source under the MIT licence at \anon[a public repository whose link is withheld for review]{\url{https://github.com/MrSachin7/reading-the-reader-monorepo}}; the audit records the SHA-256 hash of each input file.
+The platform, its documentation, the browser displacement harness, the anonymised session exports, and the audit script that regenerates every quantity in this paper from them are open source under the MIT licence at \anon[a public repository whose link is withheld for review]{\url{https://github.com/MrSachin7/reading-the-reader-monorepo}}.
 
 \section*{Generative AI Disclosure}
-% ACM authorship policy (May 2026): AI used in the conduct of the research, including coding, must be described; the ETRA 2027 call asks for the LLM disclosure to be part of the submission.
-Generative AI coding assistants (OpenAI Codex and Anthropic Claude) were used during the implementation of the platform, the browser harness, and the audit script; all generated code was reviewed, tested, and integrated by the authors, who alone designed the architecture, the evaluation, and its interpretation.
-The same tools were used to draft and edit this manuscript from the authors' thesis text; the authors revised every passage and are responsible for its content, and no tool is an author.
+Generative AI coding assistants (OpenAI Codex and Anthropic Claude) were used in implementing the platform, the browser harness, and the audit script, and in drafting this manuscript from the authors' thesis text; the authors reviewed and tested all generated code, revised every passage, and alone designed the architecture, the evaluation, and its interpretation.
 
 % Real acknowledgments: acmart drops the acks environment in anonymous mode, so these appear only in the reading copy and the camera-ready.
 % CONFIRM(authors): thank the supervisors here by name if they are not co-authors.
@@ -162,12 +153,8 @@ The same tools were used to draft and edit this manuscript from the authors' the
 The authors would sincerely like to thank and acknowledge the Novo Nordisk Foundation for funding this research, carried out within the Reading the Reader project at DTU Compute \cite{dtucompute2025rtr, nnf2023rtr}, through a ``Data Science Collaborative Research Programme 2022'' grant with agreement No.~NNF22OC0076877.
 We thank Katarina Kraljevi\'{c} and Sree Keerthi Desu for making their reading-difficulty pipeline available as the external analysis provider in the evaluation, and the volunteers who took part in the recorded sessions.
 \end{acks}
-% Anonymised acknowledgment for the review copy (Ashkan Tashk's wording, 2026-09-14).
-\ifdefined\reviewlayout
-\section*{Acknowledgments}
-The authors sincerely thank and acknowledge the funding organization for supporting the establishment and progress of this project.
-Further acknowledgments are withheld for review.
-\fi
+% The acks environment is dropped automatically in the anonymous review build; the full
+% acknowledgments appear in the reading copy and the camera-ready.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}

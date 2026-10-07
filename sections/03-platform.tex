@@ -7,8 +7,7 @@
 The platform decomposes the adaptive reading loop into four concerns chosen along the axis of replaceability: \emph{sensing} produces a continuous stream of gaze samples; \emph{analysis} projects that stream into oculomotor events (fixations, saccades, regressions); \emph{decision} consumes the analysed state and returns at most a proposal to intervene; and \emph{intervention} validates a proposal and commits a change to the text.
 Each concern sits behind a stable contract with a uniform shape: a module is identified by a stable provider identity and exposes a single operation that receives an immutable snapshot of the relevant session state and returns an optional result.
 Because a module is handed a copy of what it needs rather than a reference to live state, it can neither reach into nor mutate the core; and because the runtime resolves modules from a per-concern registry by identifier, never naming a concrete implementation, adding an in-process module is one registration and no existing code changes.
-The .NET backend owns all authoritative session state.
-Its project references point inward only, so the core cannot reference infrastructure or transport code without a build failure, and an executable boundary test checks the same rule over the loaded assemblies; within the application assembly the four boundaries are contracts and registries, not separately deployed units.
+The .NET backend owns all authoritative session state; within its application assembly the four boundaries are contracts and registries, not separately deployed units, and the build enforces the dependency rule (Section~\ref{sec:eval-modularity}).
 The platform was implemented by the authors with generative AI coding assistance, as described in the disclosure at the end of the paper.
 
 Two browser surfaces of a single web frontend face the two people in the room (Figure~\ref{fig:screens}).
@@ -16,7 +15,7 @@ The participant surface renders the reading material as reflowable, tokenised te
 The researcher console mirrors the same text and overlays the participant's live gaze, a fixation heat map, and recent saccades, so the researcher sees not merely where the participant looks but how they read.
 The surfaces never communicate with each other; both render the same backend-owned snapshot, so they cannot disagree.
 Discrete commands (configure a session, change an intervention policy, start, stop) travel over a request-and-response channel, while the high-frequency gaze stream travels over a separate real-time channel (a single WebSocket per client), a split that keeps the per-sample path away from the lock that serialises session lifecycle commands.
-Figure~\ref{fig:loop} traces one cycle of the loop across these parts.
+One cycle of the loop runs across these parts: a gaze sample is mirrored to both surfaces; the participant surface, which alone knows the rendered layout, maps it to a token and returns an enriched observation; analysis projects observations into oculomotor events; a decision (built-in, external, or the researcher acting manually) yields at most one proposal, which in advisory mode waits for approval; and the intervention commits at its configured boundary, after which the adapted text returns to both surfaces while persistence checkpoints are written throughout.
 
 \begin{widefigure}
   \centering
@@ -27,16 +26,6 @@ Figure~\ref{fig:loop} traces one cycle of the loop across these parts.
   \caption{The two operated surfaces at the same scale: the participant reader (left) and the researcher console mirroring the same text with live gaze, fixation, and saccade overlays and the intervention controls (right).}
   \Description{Two application screenshots side by side. The left shows a clean reading view with a paragraph of text. The right shows the same text overlaid with gaze markers and, beside it, control panels for interventions and session state.}
   \label{fig:screens}
-\end{widefigure}
-
-\begin{widefigure}
-  \centering
-  \includegraphics[width=0.46\textwidth]{figures/adaptive-loop.pdf}
-  \caption{One iteration of the real-time adaptive loop.
-  A gaze sample is mirrored to both surfaces over the real-time channel; the participant surface, which alone knows the rendered layout, maps it to a token and returns an enriched observation; analysis projects observations into oculomotor events; a decision (built-in, external, or the researcher acting manually) yields at most one proposal, which in advisory mode waits for researcher approval; the intervention commits at its configured boundary and the adapted text returns to both surfaces.
-  Persistence checkpoints are written best-effort throughout.}
-  \Description{A sequence diagram showing messages between the participant surface, the backend core with its analysis, decision, and intervention stages, the researcher console, and a persistence store, forming one cycle from gaze sample to committed intervention.}
-  \label{fig:loop}
 \end{widefigure}
 
 \subsection{Sensing and Gaze-to-Word Mapping}
@@ -61,8 +50,7 @@ The result of the stage is a token-level reading observation (token, line, and b
 \label{sec:platform-analysis}
 
 The temporal half of the pipeline is an explicit analysis strategy behind its own contract.
-The built-in strategy realises the area-of-interest branch of the classical taxonomy \cite{salvucci2000identifying}: since each observation is already bound to a word, the word itself is the area of interest, and a fixation is confirmed from accumulated dwell, with thresholds of 90\,ms initially, 70\,ms for a candidate on the same line, and 135\,ms across a line change, the latter raised because cross-line movement is larger and noisier.
-For per-word attention statistics, dwell below 45\,ms is discarded as noise and dwell of at least 130\,ms counts as a fixation, with the band between recorded as a skim, so the statistics separate words that were read from words the gaze merely crossed.
+The built-in strategy realises the area-of-interest branch of the classical taxonomy \cite{salvucci2000identifying}: since each observation is already bound to a word, the word itself is the area of interest, a fixation is confirmed from accumulated dwell against thresholds that are raised across a line change because cross-line movement is noisier, and per-word statistics separate read words from skimmed ones by dwell.
 Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, the standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
 The strategy is a pure function of the observation and the prior state, so replaying the same observations yields the same events, and it is resolved from a registry, so an external analysis provider can replace it at runtime (Section~\ref{sec:platform-decision}).
 
@@ -95,7 +83,7 @@ The residual error between target and achieved offset is then measured, graded (
 Optionally, the restored sentence is briefly highlighted and fades over about three seconds, drawing the eye back to the resume point, which corresponds to the highlighting component that prior work found effective for recovery \cite{jensen2025context}.
 Because the sentence is re-located before the token, a small sentence-anchor residual does not by itself guarantee that the word being read stayed still; the evaluation therefore measures word displacement directly (Section~\ref{sec:eval-context}).
 
-This restore-to-captured-offset design is itself a product of the platform's self-measurement: our original strategy re-established the committed sentence near the top of the reading area, and Section~\ref{sec:eval-context} shows how the recorded outcomes exposed that this over-repositioned the reader on small reflows.
+Section~\ref{sec:eval-context} shows how these recorded outcomes exposed a defect in our original restore strategy.
 Because every intervention's graded outcome and residual are in the record, a later analysis can ask not only whether an intervention helped a reader but what it cost them in lost position.
 
 \subsection{Researcher Console, Session Record, and Replay}
