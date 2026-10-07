@@ -1,7 +1,7 @@
 \section{Evaluation}
 \label{sec:eval}
 
-The evaluation asks four questions that mirror the platform's claims: whether the four concerns are genuinely replaceable without touching the core (Section~\ref{sec:eval-modularity}), whether a real eye-tracking stream drives the loop with measurable quality and transport delay (Section~\ref{sec:eval-perf}), whether interventions can adapt the text while preserving the reader's context (Section~\ref{sec:eval-context}), and whether the researcher has the control and the auditable record needed to operate and reconstruct experiments (Section~\ref{sec:eval-control}).
+The evaluation asks three questions that mirror the platform's claims: whether the four concerns are genuinely replaceable without touching the core (Section~\ref{sec:eval-modularity}), whether a real eye-tracking stream drives the loop with measurable quality and transport delay (Section~\ref{sec:eval-perf}), and whether interventions can adapt the text while preserving the reader's context (Section~\ref{sec:eval-context}).
 The scope is architecture and runtime feasibility, not human efficacy: with \participantsN{} participants, the behavioural numbers below are descriptive, and we draw no statistical inference from them.
 Every quantity, table, and figure in this section is derived from the exported session and telemetry records by a dependency-free audit script committed with the paper; the script records the SHA-256 hash of each of its 20 input files and reproduces the summaries of the thesis analysis to numerical precision.
 
@@ -16,6 +16,7 @@ The deployment was the intended single-operator setting: backend and both surfac
 All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
 One additional session under an advisory decision strategy exercised the decision-path instrumentation and is reported separately in Section~\ref{sec:eval-perf}.
+Every session was operated end to end from the gated researcher console, and every quantity in this section was recomputed from the exported session and telemetry records alone by the audit script, with telemetry joined to exports by session identifier and every context-preservation outcome linked to its intervention.
 
 \begin{widetable}
 \centering
@@ -79,18 +80,9 @@ In the \on{} condition the restore ran together with its highlight cue, so the c
 Because preservation acts in the moments after a reflow, both behavioural measures are aligned to each intervention rather than averaged over sessions, which leaves the conditions with unequal counts: \interventionsWith{} interventions \on{} and \interventionsWithout{} \off{}.
 
 Reading-resume time, the interval from an intervention to the start of the reader's next forward or line-change-forward saccade (capped at 30\,s or the next intervention), was observed for \rrtWithObserved{} of \interventionsWith{} interventions \on{} and \rrtWithoutObserved{} of \interventionsWithout{} \off{}; one \off{} intervention had no qualifying saccade and is reported as missing rather than as zero.
-It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians in Table~\ref{tab:behaviour} favour \on{} for three of the four participants.
+It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians favour \on{} for three of the four participants.
 The regression rate, averaged over non-empty five-second windows around each intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
 We state the direction of these numbers without inferring from them: four participants, an unbalanced condition order, two texts, researcher-chosen intervention timing, and an unevenly split sample do not support inference, and the bundled highlight means the difference cannot be attributed to the restore geometry alone, the more so as prior work found highlighting to be the component driving recovery improvement \cite{jensen2025context}.
-
-\begin{table}
-\centering
-\small
-\caption{Participant-level median reading-resume time in milliseconds, with observed over applied intervention counts in parentheses.
-Texts and intervention sequences differ across conditions.}
-\label{tab:behaviour}
-\input{generated/behaviour-table}
-\end{table}
 
 \begin{widefigure}
   \centering
@@ -104,15 +96,10 @@ Texts and intervention sequences differ across conditions.}
 \end{widefigure}
 
 \paragraph{Record integrity.}
-Auditing the exports revealed that the derived event streams contain repeats: \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload exactly within their session, and a further \nearDuplicateFixations{} fixation and \nearDuplicateSaccades{} saccade records repeat an earlier event's identity (the token or tokens involved and the start and end timestamps) with different layout-dependent fields, whereas gaze timestamps, gaze sequence numbers, and intervention identifiers contain no duplicates.
-Tracing the records back through the code established the cause.
-The external provider resends its window of the fifty most recent fixations and saccades about every two seconds and derives each event's line index, token index, and saccade direction from the layout current at submission time; the backend recognised where the new events ended by matching the previously newest record in full, so once a reflow had changed those fields the record was no longer recognised and the whole window was recorded again.
-Every repeat is therefore the same eye movement written twice rather than a repeated detection: the repeats arrive in contiguous bursts with unchanged timestamps shortly after an intervention or scroll, in both conditions, because the reflow occurs in both.
-Saccades suffer more because their payload depends on the layout fields of two tokens rather than one, and because a smaller stream is re-recorded in windows of the same size.
-The fix, now in the backend, matches events by identity rather than by full payload; the recorded sessions predate it.
-We therefore report two corrections.
-Discarding exact repeats gives \on{} regression rates of \regWithPreDedup\% before and \regWithPostDedup\% after an intervention and \off{} rates of \regWithoutPreDedup\% and \regWithoutPostDedup\%; discarding every record that repeats an earlier event's identity, keeping the first-recorded instance, gives \regWithPreIdDedup\% and \regWithPostIdDedup\% \on{} against \regWithoutPreIdDedup\% and \regWithoutPostIdDedup\% \off{}, and the resume-time medians are unchanged under both.
-The direction of the regression result survives; the exported event counts should nonetheless not be read as counts of distinct eye movements.
+Auditing the exports revealed that \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload exactly, and a further \nearDuplicateFixations{} and \nearDuplicateSaccades{} repeat an earlier event's identity with different layout-dependent fields; gaze samples and interventions contain no duplicates.
+The cause is a recording defect, since fixed: the provider resends its window of recent events every two seconds with line and token indices re-derived from the current layout, and the backend, which matched the previously newest record in full to find where the new events began, no longer recognised it after a reflow and recorded the whole window again.
+Each repeat is thus the same eye movement written twice, which is why saccades, whose payload depends on two tokens, suffer more.
+Discarding records that repeat an earlier event's identity gives regression rates of \regWithPreIdDedup\% before and \regWithPostIdDedup\% after an intervention \on{} against \regWithoutPreIdDedup\% and \regWithoutPostIdDedup\% \off{}, with resume-time medians unchanged, so the direction survives; exported event counts should nonetheless not be read as counts of distinct eye movements.
 
 \paragraph{Self-measurement catches a defect.}
 Within the four \on{} sessions, the reader recorded a graded outcome for every intervention: the displacement the reflow induced and the residual after the restore.
@@ -151,8 +138,3 @@ The two runs resolved different anchor words in \sweepAnchorDiff{} of \sweepTria
   \label{fig:overreposition}
 \end{figure}
 
-\subsection{Researcher Control and Reconstruction}
-\label{sec:eval-control}
-
-All recorded sessions were operated end to end through the gated researcher console: no session started before its readiness gates and calibration validation passed, every intervention in Table~\ref{tab:sessions} was applied from the console during the run, and the participant's view was mirrored throughout.
-Reconstruction from the record is demonstrated by construction: every quantity in this section was recomputed from the exported session and telemetry records alone by the audit script, the telemetry of every session joins to its export by session identifier and start and end times, every context-preservation outcome links to an intervention, and the replay view rebuilds any recorded session from its export.
