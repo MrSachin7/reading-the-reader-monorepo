@@ -33,13 +33,13 @@ One-time setup on a new machine: generate a Git authentication token in Overleaf
 
 ## Format
 
-One source, two layouts, selected in `main.tex` by whether `\reviewlayout` is defined:
+One source, two layouts, selected in `main.tex` by whether `\readinglayout` is defined:
 
-- `make` (default) produces `main.pdf`, the two-column `sigconf` reading copy with numeric citations that the authors prefer to read and circulate.
-- `make review` produces `main-review.pdf` in the ETRA review layout confirmed on the ETRA 2026 submission page: single-column `manuscript,review` with line numbers and author-year citations. ETRA also requires an abstract of at most 150 words (currently 143) and allows 14 pages for full papers excluding references; the review build currently runs about a page over, of which roughly half is the red author-facing blocks and the rest a final editorial trim once the supervisors have said what they want kept.
+- `make` (default, and what Overleaf compiles) produces `main.pdf`, the ETRA 2027 submission format: single-column `manuscript,review,anonymous` with line numbers and author-year citations. ETRA allows 14 pages for full papers excluding references and an abstract of at most 150 words. This is the file that is submitted and the one to review.
+- `make reading` produces `main-reading.pdf`, an optional two-column `sigconf` copy with author names that is easier to read on screen. It is never submitted.
 
-Wide floats (`widefigure`, `widetable`) span both columns in the reading copy and are ordinary floats in the review copy; `\narrowwidth` sizes single-column plots.
-Add `anonymous` to the review class options for submission and remove the author-facing notes.
+Wide floats (`widefigure`, `widetable`) are ordinary floats in the submission copy and span both columns in the reading copy; `\narrowwidth` sizes single-column plots.
+For the camera-ready, remove `review` and `anonymous` from the class options.
 
 ## Layout
 
@@ -62,7 +62,7 @@ No citation without having read the source or carried it over from the verified 
 2. Author list and order with the supervisors (Ashkan Tashk, Aqdus Ilyas, Per Baekgaard); confirm contact emails; thank the supervisors in `acks` if they are not co-authors.
 3. Reading the Struggle thesis (Kraljevic and Desu): cited in Section 4.3 from the DTU Findit record (2026-09-29).
 4. CCS concepts: regenerate with the ACM CCS tool before submission; re-verify the Partial/No ratings in the capability table against current primary documentation.
-5. Length: the ETRA 2027 review build (`make review`, now `manuscript,review,anonymous`) runs to 16 pages before references against a limit of 14; trim before the 16 October 2026 deadline.
+5. Length: as of 2026-10-07 the submission build is exactly 14 pages before references; keep it there.
 6. Matched sweep: `Frontend/experiments/context-displacement/sweep-matched.mjs` runs OFF, ON-original, and ON-revised from the same anchor in one browser session; run it and replace the two unmatched runs in Section 4.4.
 7. Repository hygiene, outside the paper: the `Eye-Movement-Analyzer` tests (8 of 8) fail against the current provider envelopes. The names in the session exports were removed on 2026-09-23 (files renamed to `P1`..`P5`, name and eye-condition fields scrubbed), but the earlier commits still carry them; rewrite history or squash before citing the repository as an artifact.
 

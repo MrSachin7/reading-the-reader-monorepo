@@ -1,15 +1,15 @@
-.PHONY: all review assets audit figures clean distclean overleaf-pull overleaf-push
+.PHONY: all reading assets audit figures clean distclean overleaf-pull overleaf-push
 
-# Default: two-column sigconf reading copy -> main.pdf
+# Default: ETRA submission format (single column, line numbers, anonymous) -> main.pdf
 all: main.pdf
 
-# ETRA single-column review manuscript -> main-review.pdf (same sources, \reviewlayout defined)
-review: main-review.pdf
+# Optional two-column reading copy with author names -> main-reading.pdf (same sources, \readinglayout defined)
+reading: main-reading.pdf
 
-main-review.pdf: main.tex bibliography.bib $(wildcard sections/*.tex) analysis/outputs/evidence-audit.json analysis/build_paper_assets.py
+main-reading.pdf: main.tex bibliography.bib $(wildcard sections/*.tex) analysis/outputs/evidence-audit.json analysis/build_paper_assets.py
 	python3 analysis/build_paper_assets.py
-	latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -usepretex -pretex='\def\reviewlayout{1}' -outdir=build-review main.tex
-	cp build-review/main.pdf main-review.pdf
+	latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -usepretex -pretex='\def\readinglayout{1}' -outdir=build-reading main.tex
+	cp build-reading/main.pdf main-reading.pdf
 
 # Regenerate the LaTeX macros and tables from the audited JSON summary.
 assets:
@@ -31,10 +31,10 @@ figures:
 
 clean:
 	latexmk -c -outdir=build main.tex
-	latexmk -c -outdir=build-review main.tex
+	latexmk -c -outdir=build-reading main.tex
 
 distclean:
-	rm -rf build build-review
+	rm -rf build build-reading
 
 # Overleaf sync (run from anywhere; the targets cd to the monorepo root).
 # The Overleaf project is the "overleaf" git remote, linked to this folder with git subtree.
