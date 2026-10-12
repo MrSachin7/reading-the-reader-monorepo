@@ -12,11 +12,21 @@ We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} par
 Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
 Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
 Sessions ran on a Tobii \texttt{IS4\_Large\_Peripheral} tracker under a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
-The deployment was the intended single-operator setting: backend and both surfaces on one host, traffic over the local loopback.
+The deployment was the intended single-operator setting shown in Figure~\ref{fig:rig}: backend and both surfaces on one host, traffic over the local loopback.
 All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
 One additional session under an advisory decision strategy exercised the decision-path instrumentation and is reported separately in Section~\ref{sec:eval-perf}.
 Every session was operated end to end from the gated researcher console, and every quantity in this section was recomputed from the exported session and telemetry records alone by the audit script, with telemetry joined to exports by session identifier and every context-preservation outcome linked to its intervention.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.3\textwidth]{figures/experiment-setup.jpg}
+  \caption{The two-screen setup during an evaluation session.
+  The participant reads on one display (left) while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display.
+  Faces are blurred for anonymity.}
+  \Description{A photograph of two desks with monitors. On the left, a participant reads text on a screen with an eye tracker mounted below it. On the right, a researcher operates a console showing the mirrored text and control panels.}
+  \label{fig:rig}
+\end{figure}
 
 \begin{widetable}
 \centering
@@ -39,7 +49,7 @@ We keep three timing quantities distinct (Table~\ref{tab:timing}).
 \emph{Client round-trip time} is measured by a ping every five seconds from each browser to the backend and back, so it characterises the transport of the single-host deployment, not the latency of every gaze sample.
 \emph{Gaze freshness at decision dispatch} is the backend-clock interval between the freshest ingested gaze sample and the dispatch of a decision context to the strategy; it is recorded once per evaluation, and evaluations are triggered by several kinds of state change, so their count exceeds the number of gaze samples.
 \emph{Decision-provider round trip} is the correlation-matched interval between a published context and the returned proposal.
-None of these measures the full path from a gaze sample to a visibly changed display, which would add analysis-window age, any approval wait, the commit boundary, and browser layout and repaint, and would require direct measurement of the kind described by \citet{saunders2014latency}.
+None of these measures the full path from a gaze sample to a visibly changed display, which would require direct measurement of the kind described by \citet{saunders2014latency}.
 The budget the platform reports against is 100\,ms, the threshold below which an interface response is perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and well within a single reading fixation \cite{rayner1998eyemovements}.
 
 In the \sessionsN{} sessions the participant client saw a median round trip of \rttParticipantMedian{}\,ms with a 95th percentile of \rttParticipantPninefive{}\,ms, the researcher client a median of \rttResearcherMedian{}\,ms with a 95th percentile of \rttResearcherPninefive{}\,ms, and none of the \rttCohortN{} recorded round trips exceeded the budget.
@@ -68,8 +78,7 @@ Adding an in-process intervention module requires one registration entry and edi
 
 The stronger test is out of process.
 Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project at our institution \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
-The reference providers, written by the contract's own authors, evidence only that the contract is sufficient.
-The third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend; we did write the connector, and the collaborator's preprocessor carries small transport-related additions, so this is an adapted integration of collaborator software rather than an unaided third-party implementation.
+The reference providers, written by the contract's own authors, evidence only that the contract is sufficient; the third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend, although we did write the connector and the collaborator's preprocessor carries small transport-related additions.
 Most tellingly, it served as the live analysis source for the \sessionsN{} evaluation sessions themselves: the fixation, saccade, and regression events analysed in this section were produced by that team's code running behind the platform's contract.
 
 \subsection{Context Preservation}
