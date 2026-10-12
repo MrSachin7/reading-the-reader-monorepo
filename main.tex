@@ -119,12 +119,13 @@ Because the platform records every intervention's positional cost, it showed tha
 
 \begin{teaserfigure}
   \centering
-  \includegraphics[width=0.52\textwidth]{figures/experiment-setup.jpg}
-  \caption{The two-screen setup during an evaluation session.
-  The participant reads the presented text on one display (left), while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display, and both surfaces are served by one backend on a single host.
-  Faces are blurred for anonymity.}
-  \Description{A photograph of two desks with monitors. On the left, a participant reads text on a screen with an eye tracker mounted below it. On the right, a researcher operates a console showing the mirrored text and control panels.}
-  \label{fig:rig}
+  % Source: figures/architecture-overview.svg (drawn by the authors in Excalidraw for the thesis);
+  % the PDF is rendered from it. Replaces the rig photo at Aqdus Ilyas's request (2026-10-08).
+  \includegraphics[width=0.9\textwidth]{figures/architecture-overview.pdf}
+  \caption{The platform as a researcher--participant adaptive loop.
+  The participant reads on one screen while an eye tracker senses gaze; the backend passes the gaze stream through four replaceable modules (sensing, analysis, decision, intervention), adapts the text, mirrors gaze and derived analysis to the researcher's console with its approve-or-reject controls, writes everything to the session record, and exposes a provider contract through which an external decision or analysis provider can attach.}
+  \Description{A diagram with a participant at a screen on the left, a researcher at a mirrored screen on the right, and between them the backend with four boxes labelled sensing, analysis, decision, and intervention, connected to a session record below and to an external decision provider above through a provider API.}
+  \label{fig:overview}
 \end{teaserfigure}
 
 \maketitle
@@ -145,13 +146,13 @@ Because the platform records every intervention's positional cost, it showed tha
 % CONFIRM(authors) before submission: (a) that consent was given as stated (add "written" or "verbal" if you want the form stated); (b) that no ethics-committee approval was required under DTU's rules. Both describe what the authors reported; neither has been checked against a document.
 The recorded sessions were a technical evaluation of the instrument by its developers: five adult volunteers, two of them authors, were told what would be recorded and gave informed consent, no vulnerable participants or deception were involved, and the evaluation did not require approval by a research ethics committee under the rules of the authors' institution.
 Gaze reveals reading ability and attention, so the platform keeps all data on the researcher's machine, transmits nothing to external services, and leaves consent, pseudonymisation, and retention as explicit obligations of the deploying researcher; the released exports carry participant codes only, with names and the eye-condition field removed.
-The platform is meant to enable studies that may eventually benefit readers with vision impairment or reading difficulties, but nothing in this paper evaluates such readers, and gaze-adaptive text should not be deployed for them before studies with the affected groups have measured both benefit and cost.
+The platform is meant to enable studies that may eventually benefit readers with vision impairment or reading difficulties, but nothing in this paper evaluates such readers, and gaze-adaptive text should not be deployed for them before studies with those groups have measured benefit and cost.
 
 \section*{Availability}
 The platform, its documentation, the browser displacement harness, the anonymised session exports, and the audit script that regenerates every quantity in this paper from them are open source under the MIT licence at \anon[a public repository whose link is withheld for review]{\url{https://github.com/MrSachin7/reading-the-reader-monorepo}}.
 
 \section*{Generative AI Disclosure}
-Generative AI coding assistants (OpenAI Codex and Anthropic Claude) were used in implementing the platform, the browser harness, and the audit script, and in drafting this manuscript from the authors' thesis text; the authors reviewed and tested all generated code, revised every passage, and alone designed the architecture, the evaluation, and its interpretation.
+Generative AI coding assistants (OpenAI Codex and Anthropic Claude) were used in implementing the platform, the harness, and the audit script, and in drafting this manuscript from the authors' thesis; the authors reviewed and tested all generated code, revised every passage, and alone designed the architecture, the evaluation, and its interpretation.
 
 % Real acknowledgments: acmart drops the acks environment in anonymous mode, so these appear only in the reading copy and the camera-ready.
 % CONFIRM(authors): thank the supervisors here by name if they are not co-authors.

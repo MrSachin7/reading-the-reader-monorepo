@@ -34,8 +34,7 @@ One cycle of the loop runs across these parts: a gaze sample is mirrored to both
 Sensing is a port with interchangeable sources.
 The primary adapter subscribes to a Tobii eye tracker's native callback and republishes each sample (per-eye position on the display area normalised to the unit square, pupil data, validity flags, device timestamp) into the domain; a simulated source emits samples of exactly the same shape from the mouse cursor, so the full loop runs with or without hardware and the downstream stages cannot tell which source produced a sample.
 The port is deliberately narrow so that other sources fit behind it: an adapter over a low-level tracker interface such as PyeLink \cite{salari2026pyelink} would add EyeLink hardware, and a synthetic stream of the kind PyEtSimul \cite{salari2026pyetsimul} generates would let the loop be exercised under controlled, reproducible gaze without an eye tracker in the room; neither adapter has been implemented, and we claim only that the seam admits them.
-On the backend the per-sample path avoids the lifecycle lock: each arriving sample is sanitised, published with a volatile write as the latest value, counted atomically, and broadcast, while appending it to the session history takes a separate, short history lock.
-The heavier modular pipeline of analysis, decision, and intervention runs at the cadence of analysed-state changes rather than once per raw sample, which keeps the indirection introduced for modularity off the per-sample path, and the participant surface coalesces snapshot bursts to one render per animation frame.
+On the backend the per-sample path avoids the session lifecycle lock, and the heavier modular pipeline of analysis, decision, and intervention runs at the cadence of analysed-state changes rather than once per raw sample, so the indirection introduced for modularity stays off the per-sample path; the participant surface coalesces snapshot bursts to one render per animation frame.
 
 The spatial half of the pipeline runs in the reader, the only place the rendered layout exists.
 Every word is a tokenised span whose on-screen box is measured from the live DOM and re-measured whenever the layout changes, prompted by mutation, resize, and scroll observers.
@@ -67,13 +66,11 @@ What crosses the boundary is a fixed vocabulary: outward, an immutable session s
 The seam commits the platform to signals in and a proposal out, but not to any particular way of arriving at the proposal, which is what makes an AI-driven provider a configuration rather than a rewrite.
 An external decision is applied through exactly the same validation and logging path as a built-in one.
 When a provider disconnects, the platform marks it detached, records the transition as a lifecycle event, and the session continues; the current runtime does not switch the affected concern to its built-in strategy on its own, and although the handshake advertises a heartbeat timeout, heartbeats are recorded rather than enforced.
-The same provider framework serves the analysis seam in the same way, one mechanism for two concerns.
 
 \subsection{Context-Preserving Interventions}
 \label{sec:platform-context}
 
-Typographic interventions are the platform's actuator: built-in modules cover font family, font size, line width, line height, letter spacing, theme, and palette.
-Appearance-only changes commit immediately.
+Typographic interventions are the platform's actuator: built-in modules cover font family, font size, line width, line height, letter spacing, theme, and palette, and appearance-only changes commit immediately.
 A layout-changing intervention can be committed immediately or held until a chosen boundary (the end of the sentence or paragraph being read, or the page turn), so that a reflow can land at a natural break rather than mid-line.
 
 Around the commit, the reader runs a capture-and-restore mechanism.
@@ -90,11 +87,10 @@ Because every intervention's graded outcome and residual are in the record, a la
 \label{sec:platform-record}
 
 A session is operated end to end from the researcher console.
-Setup is a gated stepper: a session cannot start until a participant is saved, a licensed eye tracker is selected, a calibration (9-, 13-, or 16-point presets with a five-target accuracy and precision validation) has passed, and reading material is chosen, with the gates re-checked by the backend at the moment of start.
-During the run, the console shows the mirror with live analysis overlays, the gaze-validity rate, and the measured client round-trip time, and carries the intervention and typography controls together with the approval queue in advisory mode.
+Setup is gated: a session cannot start until a participant is saved, a tracker is selected, a calibration with accuracy and precision validation has passed, and reading material is chosen, with the gates re-checked by the backend at start.
+During the run, the console shows the mirror with live analysis overlays, the gaze-validity rate, and the client round-trip time, and carries the intervention controls and the approval queue.
 
-Everything that happens flows into one authoritative, schema-versioned session record owned by the backend: run parameters and presentation baseline, calibration metrics, screen geometry, the raw gaze stream, derived oculomotor events, decision proposals and their outcomes, interventions and their context-preservation outcomes, and quiz responses, each entry stamped with a monotonic sequence number and timestamp.
+Everything that happens flows into one authoritative, schema-versioned session record owned by the backend: run parameters, calibration metrics, screen geometry, the raw gaze stream, derived oculomotor events, proposals and their outcomes, interventions and their context-preservation outcomes, and quiz responses, each stamped with a sequence number and timestamp.
 The record is the same structure a background worker checkpoints throughout the session, so durability and export are one artifact and an interrupted session is recoverable from its latest checkpoint.
-A completed record exports to JSON and CSV, re-imports through a version-gated schema check, and replays in the reading interface with scrubbing, variable speed, and jump-to-event navigation.
-Replay reconstructs the recorded events at any instant; reproducing a study in the scientific sense additionally requires the code, provider, and configuration versions, which the export records only in part (its manifest names the producing application and tracker SDK versions, and its condition fields come from the final session snapshot).
+A completed record exports to JSON and CSV, re-imports through a version-gated schema check, and replays in the reading interface; reproducing a study in the scientific sense additionally requires the code, provider, and configuration versions, which the export records only in part.
 A separate telemetry record (client round-trip times, achieved sampling rate, validity, and decision-path timings) against an explicit 100\,ms budget is the instrumentation behind Section~\ref{sec:eval-perf}.
