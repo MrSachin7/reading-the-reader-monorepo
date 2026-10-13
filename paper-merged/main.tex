@@ -86,8 +86,8 @@
 Gaze-driven text adaptation has been demonstrated repeatedly, but existing prototypes couple sensing, decision logic, and presentation, so comparing interventions remains expensive.
 We present a researcher-operated, two-screen platform whose sensing, eye-movement analysis, decision, and intervention stages are replaceable modules behind stable contracts.
 A participant reads reflowable text that adapts to their gaze while a researcher mirrors the reading live and applies or approves typographic changes; every sample, proposal, intervention, and restoration outcome enters one replayable record.
-Across eight Tobii 4C sessions, the platform sustained a rated 90\,Hz, kept gaze validity above 92\%, kept all 780 client round trips below 100\,ms, and ran a collaborator's reading-difficulty pipeline as its live analysis module.
-Because the platform records every intervention's positional cost, it showed that our original context-preserving restore moved readers about three times farther than the reflow it compensated; we describe the revision and its geometric evidence.
+Across eight Tobii 4C sessions, the platform sustained a rated 90\,Hz with gaze validity above 92\% and single-host round trips below 100\,ms, and ran a collaborator's reading-difficulty pipeline as its live analysis module.
+Because the platform records every intervention's positional cost, it exposed that our original context-preserving restore over-repositioned readers; a matched browser sweep measured about three times the bare reflow, and we describe the revision and its evidence.
 \end{abstract}
 
 % TODO(authors): regenerate the CCS concepts with the ACM CCS tool (dl.acm.org/ccs) before submission.
@@ -121,7 +121,7 @@ Because the platform records every intervention's positional cost, it showed tha
   \centering
   % Source: figures/architecture-overview.svg (drawn by the authors in Excalidraw for the thesis);
   % the PDF is rendered from it. Replaces the rig photo at Aqdus Ilyas's request (2026-10-08).
-  \includegraphics[width=0.9\textwidth]{figures/architecture-overview.pdf}
+  \includegraphics[width=0.8\textwidth]{figures/architecture-overview.pdf}
   \caption{The platform as a researcher--participant adaptive loop.
   The participant reads on one screen while an eye tracker senses gaze; the backend passes the gaze stream through four replaceable modules (sensing, analysis, decision, intervention), adapts the text, mirrors gaze and derived analysis to the researcher's console with its approve-or-reject controls, writes everything to the session record, and exposes a provider contract through which an external decision or analysis provider can attach.
   The approve-or-reject gate shown is the advisory mode; in autonomous mode the loop commits proposals without it, so the operating role beside the second screen can equally be filled by an automated decision strategy.}
@@ -145,7 +145,7 @@ Because the platform records every intervention's positional cost, it showed tha
 
 \section*{Privacy and Ethics Statement}
 % CONFIRM(authors) before submission: (a) that consent was given as stated (add "written" or "verbal" if you want the form stated); (b) that no ethics-committee approval was required under DTU's rules. Both describe what the authors reported; neither has been checked against a document.
-The recorded sessions were a technical evaluation of the instrument by its developers: five adult volunteers, two of them authors, were told what would be recorded and gave informed consent, no vulnerable participants or deception were involved, and the evaluation did not require approval by a research ethics committee under the rules of the authors' institution.
+The recorded sessions were a technical evaluation of the instrument by its developers: five adult volunteers (four in the eight sessions, one in the advisory session), two of them authors, were told what would be recorded and gave informed consent, no vulnerable participants or deception were involved, and the evaluation did not require approval by a research ethics committee under the rules of the authors' institution.
 Gaze reveals reading ability and attention, so the platform keeps all data on the researcher's machine, transmits nothing to external services, and leaves consent, pseudonymisation, and retention as explicit obligations of the deploying researcher; the released exports carry participant codes only, with names and the eye-condition field removed.
 The platform is meant to enable studies that may eventually benefit readers with vision impairment or reading difficulties, but nothing in this paper evaluates such readers, and gaze-adaptive text should not be deployed for them before studies with those groups have measured benefit and cost.
 

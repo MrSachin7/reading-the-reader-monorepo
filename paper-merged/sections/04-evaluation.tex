@@ -11,7 +11,7 @@ Every quantity, table, and figure in this section is derived from the exported s
 We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} participants each read under two conditions, with the context-preserving restore enabled (\on{}) and disabled (\off{}), as summarised in Table~\ref{tab:sessions}.
 Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
 Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
-Sessions ran on a Tobii \texttt{IS4\_Large\_Peripheral} tracker under a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
+Sessions ran on a Tobii Eye Tracker 4C (reported by the SDK as \texttt{IS4\_Large\_Peripheral}) under a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
 The deployment was the intended single-operator setting shown in Figure~\ref{fig:rig}: backend and both surfaces on one host, traffic over the local loopback.
 All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
@@ -20,7 +20,7 @@ Every session was operated end to end from the gated researcher console, and eve
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.3\textwidth]{figures/experiment-setup.jpg}
+  \includegraphics[width=0.26\textwidth]{figures/experiment-setup.jpg}
   \caption{The two-screen setup during an evaluation session.
   The participant reads on one display (left) while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display.
   Faces are blurred for anonymity.}
@@ -77,7 +77,7 @@ The backend test project (101 tests covering session lifecycle gating, the propo
 Adding an in-process intervention module requires one registration entry and edits to no existing module, because the runtime resolves modules from registries by identifier.
 
 The stronger test is out of process.
-Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project at our institution \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
+Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
 The reference providers, written by the contract's own authors, evidence only that the contract is sufficient; the third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend, although we did write the connector and the collaborator's preprocessor carries small transport-related additions.
 Most tellingly, it served as the live analysis source for the \sessionsN{} evaluation sessions themselves: the fixation, saccade, and regression events analysed in this section were produced by that team's code running behind the platform's contract.
 
@@ -86,19 +86,21 @@ Most tellingly, it served as the live analysis source for the \sessionsN{} evalu
 
 The \sessionsN{} sessions form a with-and-without comparison of the context-preserving restore.
 In the \on{} condition the restore ran together with its highlight cue, so the conditions contrast a bundle (positional restore plus a brief highlight of the resume point) against neither; we return to this confound below.
+The \on{} sessions ran the original restore strategy; the revision described at the end of this section was made after these recordings, so the behavioural comparison characterises the original mechanism.
 Because preservation acts in the moments after a reflow, both behavioural measures are aligned to each intervention rather than averaged over sessions, which leaves the conditions with unequal counts: \interventionsWith{} interventions \on{} and \interventionsWithout{} \off{}.
 
 Reading-resume time, the interval from an intervention to the start of the reader's next forward or line-change-forward saccade (capped at 30\,s or the next intervention), was observed for \rrtWithObserved{} of \interventionsWith{} interventions \on{} and \rrtWithoutObserved{} of \interventionsWithout{} \off{}; one \off{} intervention had no qualifying saccade and is reported as missing rather than as zero.
 It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians favour \on{} for three of the four participants.
 The regression rate, averaged over non-empty five-second windows around each intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
 We state the direction of these numbers without inferring from them: four participants, an unbalanced condition order, two texts, researcher-chosen intervention timing, and an unevenly split sample do not support inference, and the bundled highlight means the difference cannot be attributed to the restore geometry alone, the more so as prior work found highlighting to be the component driving recovery improvement \cite{jensen2025context}.
+Indeed, these sessions ran the restore that the sweep below shows over-repositioned the word, so any advantage seen here is more plausibly the highlight than the geometry.
 
 \begin{widefigure}
   \centering
-  \includegraphics[width=0.48\textwidth]{figures/eval-rrt.pdf}\hfill
-  \includegraphics[width=0.48\textwidth]{figures/eval-post-regression.pdf}
+  \includegraphics[width=0.44\textwidth]{figures/eval-rrt.pdf}\hfill
+  \includegraphics[width=0.44\textwidth]{figures/eval-post-regression.pdf}
   \caption{Left: reading-resume time per intervention by condition (\interventionsWith{} interventions \on{}, \interventionsWithout{} \off{}, of which one has no observation; bars mark medians); points are interventions nested within four participants, not independent observations.
-  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation it falls below its baseline.
+  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation (the original restore) it falls below its baseline.
   Both panels are descriptive only.}
   \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
   \label{fig:rrt}
@@ -118,31 +120,30 @@ The cause was the original strategy's fixed target: it re-established the commit
 
 \paragraph{Browser sweep, and the revision.}
 The live outcomes are observational, covering whatever interventions the participants happened to receive.
-To measure displacement under controlled conditions, a harness mounts the real participant reader outside a live session (1440$\times$900 viewport, baseline typography, gaze disabled so the anchor falls back deterministically to a visible word) and drives the same restore hook over every built-in layout intervention from six page positions, recording the vertical displacement of the anchor word with preservation \off{} and \on{}.
-Eleven interventions crossed with six positions give \sweepTrials{} scheduled trials; the harness was run once against the original restore and once against the revised one, and the two runs are separate browser executions rather than a matched experiment: \sweepAnchorDiff{} of the \sweepTrials{} trial keys resolved to a different anchor word across the runs, \sweepOffDiff{} differ in the \off{} displacement by more than 1\,px, and a few line-width trials lose the anchor word from the rendered page, leaving \sweepPairsOriginal{} complete pairs in the original run and \sweepPairsRevised{} in the revised run.
-Table~\ref{tab:sweep} reports both runs side by side.
-Without preservation the bare reflow moves the word by about one line at the median (\sweepOffMedianOriginal{} and \sweepOffMedianRevised{}\,px in the two runs; one line is 32.4\,px), with a heavy tail for large font and line-width changes.
-With the original restore, preservation made displacement worse rather than better: the median rose to \sweepOnMedianOriginal{}\,px, about three times the bare reflow in the same run, the restore moved the word further than the reflow (by more than 1\,px) in \sweepOverOriginal{} of \sweepPairsOriginal{} pairs, and the effect was starkest for the smallest changes, such as a letter-spacing step that moves the word not at all being thrown 115\,px.
-The revised restore returns the captured reading position to the viewport offset it held before the change (Section~\ref{sec:platform-context}); in its run it over-repositions in \sweepOverRevised{} of \sweepPairsRevised{} pairs and brings the median to \sweepOnMedianRevised{}\,px, at or below that run's \off{} baseline, with the gains concentrated where reflows are large, while line-width changes repaginate and lie beyond what a within-page restore can compensate (Figure~\ref{fig:overreposition}).
-The revision is verified geometrically by this sweep; its behavioural benefit to readers has not been re-measured, and a matched benchmark with pinned anchors and rendering environment would be needed for a controlled effect estimate.
+To measure displacement under controlled conditions, a harness mounts the real participant reader outside a live session (1440$\times$900 viewport, baseline typography, gaze disabled so the anchor falls back deterministically to a visible word) and drives the same restore hook over every built-in layout intervention from six page positions, recording the vertical displacement of the anchor word under three conditions: preservation \off{}, \on{} with the original restore, and \on{} with the revised restore.
+The three conditions of a trial run in one browser session from the same page, position, and anchor word, with the restore strategy switched in the hook, so only the restore differs between them; the harness verifies that the anchor word is identical across the conditions of every trial.
+Eleven interventions crossed with six positions give \sweepTrials{} trials, of which \sweepPairs{} are complete; in the remaining line-width trials the anchor word left the rendered page in at least one condition.
+Table~\ref{tab:sweep} reports the medians per intervention.
+Without preservation the bare reflow moves the word by about one line at the median (\sweepOffMedian{}\,px; one line is 32.4\,px), with a heavy tail for large font and line-width changes.
+With the original restore, preservation made displacement worse rather than better: the median rose to \sweepOnMedianOriginal{}\,px, \sweepRatioOriginal{} times the bare reflow, the restore moved the word further than the reflow (by more than 1\,px) in \sweepOverOriginal{} of \sweepPairs{} trials, and the effect was starkest for the smallest changes, such as a letter-spacing step that moves the word not at all being thrown 115\,px.
+The revised restore returns the captured reading position to the viewport offset it held before the change (Section~\ref{sec:platform-context}); it over-repositions in \sweepOverRevised{} of \sweepPairs{} trials, brings the median to \sweepOnMedianRevised{}\,px, at or below the \off{} baseline in every trial, and displaces the word less than the original restore in \sweepRevisedBelowOriginal{} of them, with the gains concentrated where reflows are large, while line-width changes repaginate and lie beyond what a within-page restore can compensate (Figure~\ref{fig:overreposition}).
+The revision is verified geometrically by this sweep; its behavioural benefit to readers has not been re-measured.
 
 \begin{widetable}
 \centering
 \small
-\caption{Median vertical displacement (px) of the anchor word per intervention in the browser sweep, for the run against the original restore and the run against the revised restore, each with preservation \off{} and \on{}.
-Six positions per intervention; an asterisk marks cells with fewer than six measurements because the anchor word left the rendered page.
-One reading line is 32.4\,px; lower is better.
-The two runs resolved different anchor words in \sweepAnchorDiff{} of \sweepTrials{} trials, so compare \on{} with \off{} within a run rather than across runs.}
+\caption{Median vertical displacement (px) of the anchor word per intervention in the matched browser sweep, with preservation \off{}, \on{} with the original restore, and \on{} with the revised restore, all three measured from the same anchor word in one browser session.
+Six positions per intervention; an asterisk marks cells with fewer than six complete trials because the anchor word left the rendered page.
+One reading line is 32.4\,px; lower is better.}
 \label{tab:sweep}
 \input{generated/sweep-table}
 \end{widetable}
 
 \begin{figure}
   \centering
-  \includegraphics[width=\narrowwidth]{figures/sweep-overreposition.pdf}
-  \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete pair (\sweepPairsOriginal{} original, \sweepPairsRevised{} revised).
-  Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} pairs with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).
-  The two versions were captured in separate runs.}
+  \includegraphics[width=0.44\textwidth]{figures/sweep-overreposition.pdf}
+  \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete trial (\sweepPairs{}) and restore version, from the matched sweep.
+  Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} trials with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).}
   \Description{A scatter plot of on-displacement versus off-displacement with a dashed diagonal line of equality. Circle markers cluster above the diagonal; triangle markers lie on or below it.}
   \label{fig:overreposition}
 \end{figure}
