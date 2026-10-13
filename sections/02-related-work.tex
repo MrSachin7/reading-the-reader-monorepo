@@ -9,7 +9,7 @@ The eyeBook coupled an eye tracker to a digital book to trigger in-situ effects 
 More recently, \citet{medan2024newline} scrolled a single line of text with the reader's webcam-estimated gaze and found no change in comprehension or speed but a clear preference for the interface, and \citet{rummens2026highlighting} coloured the fixated word in real time for second graders and reported faster reading with fewer regressions although the children preferred the static text; that split between performance and preference is a useful reporting model for adaptive reading.
 Gaze during reading is also used as a measurement instrument in its own right, for example to compare how readers process AI-generated and human-authored text \cite{ilyas2025mind}.
 
-Within the Reading the Reader programme, three master's projects built successive adaptive readers: a flexible reading and gaze-collection application \cite{refsgaard2024rtr}, an adaptive e-reader used to compare four intervention presentation forms, which were found to differ substantially in disruption and acceptance \cite{pereira2024typography}, and a reactive frontend designed to consume machine-learning output \cite{palinec2024reactive}.
+Within one research programme, three master's projects built successive adaptive readers: a flexible reading and gaze-collection application \cite{refsgaard2024rtr}, an adaptive e-reader used to compare four intervention presentation forms, which were found to differ substantially in disruption and acceptance \cite{pereira2024typography}, and a reactive frontend designed to consume machine-learning output \cite{palinec2024reactive}.
 \citet{jensen2025context} then showed that context preservation is where intervention design bites: in a 22-participant within-subjects study of four intervention designs they introduced reading-resume time as a recovery measure and reported that a gradual transition combined with context highlighting resumed fastest, reducing the time lost to an intervention from 14.9\,s to 4.0\,s, and was the most preferred design.
 Each of these systems, however, was built for its own study.
 Sensing, decision logic, and presentation were coupled in one application, so the next study copied and modified the previous system rather than reconfiguring a shared one.
@@ -32,25 +32,25 @@ Two recent ETRA contributions show the same open-source tooling trend at both en
 \citet{salari2026pyelink} provide PyeLink and SyeLink, Python tools that expose low-level control of EyeLink trackers to Pygame, PsychoPy, and Pyglet experiments, including recording during calibration and raw pupil and corneal-reflection data, and that parse the resulting files into structured data; \citet{salari2026pyetsimul} provide PyEtSimul, a simulator of video-based eye trackers that generates synthetic eye features from a geometric model so that gaze-estimation algorithms can be benchmarked reproducibly without hardware or participants.
 Both sit below the reading loop: they broaden what a sensing stage can be, and they are the kind of component our sensing port is designed to admit (Section~\ref{sec:platform-mapping}).
 What these tools leave to study-specific programming is the reading-specific loop: mapping gaze onto reflowable text, proposing and gating typographic changes, committing them without losing the reader, and measuring what the change cost.
-Table~\ref{tab:capability} summarizes the authors' assessment of the three most established tools against the capabilities a gaze-driven reading experiment requires; none closes the loop from live gaze to a typographic change in the text being read, and none exposes a pluggable decision boundary.
+Table~\ref{tab:capability} summarizes the authors' assessment of the three most established tools against the capabilities a gaze-driven reading experiment requires; none maps gaze onto reflowable text, gives the researcher a live mirror with an approval gate, records what each intervention cost the reader, or exposes a pluggable decision boundary.
 Our platform occupies that region as a focused instrument for one family of experiments; it complements rather than replaces the general-purpose tools.
 
 % TODO(authors): re-verify the Partial/No ratings against current primary documentation before submission.
 \begin{widetable}
 \centering
 \small
-\caption{Capability comparison of established experiment software with our platform, across the capabilities a gaze-driven reading experiment requires.
-Entries reflect the authors' assessment of documented capabilities \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}
+\caption{What a gaze-driven reading experiment needs beyond established experiment software.
+Entries reflect the authors' assessment of documented capabilities; Partial means achievable with study-specific code \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}
 \label{tab:capability}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
 Capability & Tobii Pro Lab & PsychoPy & Psychtoolbox & This platform \\
 \midrule
-Design experiments & Yes & Yes & Yes & Yes \\
-Record gaze data & Yes & Partial & Partial & Yes \\
-Analyse recorded data & Yes & Partial & No & Yes \\
-Real-time gaze-driven text intervention & No & Partial & Partial & Yes \\
-Pluggable decision modules & No & No & No & Yes \\
+Real-time typographic change to the text being read & No & Partial & Partial & Yes \\
+Gaze mapped onto reflowable text, robust to reflow & No & No & No & Yes \\
+Researcher console with live mirror and approval gate & No & No & No & Yes \\
+Positional cost of each intervention recorded & No & No & No & Yes \\
+Pluggable decision and analysis modules, out of process & No & No & No & Yes \\
 \bottomrule
 \end{tabular}
 \end{widetable}
