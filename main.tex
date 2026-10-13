@@ -123,7 +123,8 @@ Because the platform records every intervention's positional cost, it showed tha
   % the PDF is rendered from it. Replaces the rig photo at Aqdus Ilyas's request (2026-10-08).
   \includegraphics[width=0.9\textwidth]{figures/architecture-overview.pdf}
   \caption{The platform as a researcher--participant adaptive loop.
-  The participant reads on one screen while an eye tracker senses gaze; the backend passes the gaze stream through four replaceable modules (sensing, analysis, decision, intervention), adapts the text, mirrors gaze and derived analysis to the researcher's console with its approve-or-reject controls, writes everything to the session record, and exposes a provider contract through which an external decision or analysis provider can attach.}
+  The participant reads on one screen while an eye tracker senses gaze; the backend passes the gaze stream through four replaceable modules (sensing, analysis, decision, intervention), adapts the text, mirrors gaze and derived analysis to the researcher's console with its approve-or-reject controls, writes everything to the session record, and exposes a provider contract through which an external decision or analysis provider can attach.
+  The approve-or-reject gate shown is the advisory mode; in autonomous mode the loop commits proposals without it, so the operating role beside the second screen can equally be filled by an automated decision strategy.}
   \Description{A diagram with a participant at a screen on the left, a researcher at a mirrored screen on the right, and between them the backend with four boxes labelled sensing, analysis, decision, and intervention, connected to a session record below and to an external decision provider above through a provider API.}
   \label{fig:overview}
 \end{teaserfigure}
