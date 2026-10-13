@@ -10,8 +10,8 @@ Every quantity, table, and figure in this section is derived from the exported s
 
 We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} participants each read under two conditions, with the context-preserving restore enabled (\on{}) and disabled (\off{}), as summarised in Table~\ref{tab:sessions}.
 Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
-Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
-Sessions ran on a Tobii Eye Tracker 4C (reported by the SDK as \texttt{IS4\_Large\_Peripheral}) under a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
+Condition order was not counterbalanced: \orderWithFirst{} participants read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
+Sessions ran on a Tobii Eye Tracker 4C (reported by the SDK as \texttt{IS4\_Large\_Peripheral}) mounted below a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
 The deployment was the intended single-operator setting shown in Figure~\ref{fig:rig}: backend and both surfaces on one host, traffic over the local loopback.
 All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
@@ -100,7 +100,7 @@ Indeed, these sessions ran the restore that the sweep below shows over-repositio
   \includegraphics[width=0.44\textwidth]{figures/eval-rrt.pdf}\hfill
   \includegraphics[width=0.44\textwidth]{figures/eval-post-regression.pdf}
   \caption{Left: reading-resume time per intervention by condition (\interventionsWith{} interventions \on{}, \interventionsWithout{} \off{}, of which one has no observation; bars mark medians); points are interventions nested within four participants, not independent observations.
-  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation (the original restore) it falls below its baseline.
+  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation, the rate rises after the intervention, with preservation (the original restore) it falls below its baseline.
   Both panels are descriptive only.}
   \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
   \label{fig:rrt}

@@ -51,7 +51,7 @@ The result of the stage is a token-level reading observation (token, line, and b
 The temporal half of the pipeline is an explicit analysis strategy behind its own contract.
 The built-in strategy realises the area-of-interest branch of the classical taxonomy \cite{salvucci2000identifying}: since each observation is already bound to a word, the word itself is the area of interest, a fixation is confirmed from accumulated dwell against thresholds that are raised across a line change because cross-line movement is noisier, and per-word statistics separate read words from skimmed ones by dwell.
 Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, the standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
-The strategy is a pure function of the observation and the prior state, so replaying the same observations yields the same events, and it is resolved from a registry, so an external analysis provider can replace it at runtime (Section~\ref{sec:platform-decision}).
+The strategy depends only on the observation and the prior state, so replaying the same observations yields the same events; it is resolved from a registry, so an external analysis provider can replace it at runtime (Section~\ref{sec:platform-decision}).
 
 \subsection{The Decision Boundary and Execution Modes}
 \label{sec:platform-decision}
