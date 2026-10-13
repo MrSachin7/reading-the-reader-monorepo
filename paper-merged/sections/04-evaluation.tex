@@ -20,7 +20,7 @@ Every session was operated end to end from the gated researcher console, and eve
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.3\textwidth]{figures/experiment-setup.jpg}
+  \includegraphics[width=0.26\textwidth]{figures/experiment-setup.jpg}
   \caption{The two-screen setup during an evaluation session.
   The participant reads on one display (left) while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display.
   Faces are blurred for anonymity.}
@@ -93,13 +93,14 @@ Reading-resume time, the interval from an intervention to the start of the reade
 It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians favour \on{} for three of the four participants.
 The regression rate, averaged over non-empty five-second windows around each intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
 We state the direction of these numbers without inferring from them: four participants, an unbalanced condition order, two texts, researcher-chosen intervention timing, and an unevenly split sample do not support inference, and the bundled highlight means the difference cannot be attributed to the restore geometry alone, the more so as prior work found highlighting to be the component driving recovery improvement \cite{jensen2025context}.
+Indeed, these sessions ran the restore that the sweep below shows over-repositioned the word, so any advantage seen here is more plausibly the highlight than the geometry.
 
 \begin{widefigure}
   \centering
-  \includegraphics[width=0.48\textwidth]{figures/eval-rrt.pdf}\hfill
-  \includegraphics[width=0.48\textwidth]{figures/eval-post-regression.pdf}
+  \includegraphics[width=0.44\textwidth]{figures/eval-rrt.pdf}\hfill
+  \includegraphics[width=0.44\textwidth]{figures/eval-post-regression.pdf}
   \caption{Left: reading-resume time per intervention by condition (\interventionsWith{} interventions \on{}, \interventionsWithout{} \off{}, of which one has no observation; bars mark medians); points are interventions nested within four participants, not independent observations.
-  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation it falls below its baseline.
+  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate rises after the intervention, with preservation (the original restore) it falls below its baseline.
   Both panels are descriptive only.}
   \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
   \label{fig:rrt}
@@ -140,7 +141,7 @@ One reading line is 32.4\,px; lower is better.}
 
 \begin{figure}
   \centering
-  \includegraphics[width=\narrowwidth]{figures/sweep-overreposition.pdf}
+  \includegraphics[width=0.44\textwidth]{figures/sweep-overreposition.pdf}
   \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete trial (\sweepPairs{}) and restore version, from the matched sweep.
   Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} trials with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).}
   \Description{A scatter plot of on-displacement versus off-displacement with a dashed diagonal line of equality. Circle markers cluster above the diagonal; triangle markers lie on or below it.}
