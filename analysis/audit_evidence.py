@@ -264,40 +264,31 @@ def main():
                          "proposal_record_statuses":dict(Counter(e["proposal"]["status"] for e in doc["interventions"].get("decisionProposals",[]))),
                          "latency": {k:stats(v) for k,v in grouped.items()}})
 
-    sweep, sweep_rows = {}, {}
-    for version in ["original","revised"]:
-        path = ROOT / f"Frontend/experiments/context-displacement/results/onoff-{version}-raw.json"
-        doc = read(path); rows = doc["rows"]
-        input_hash(path,f"sweep/{version}")
-        pair = [r for r in rows if r["offDisplacementPx"] is not None and r["onDisplacementPx"] is not None]
-        sweep_rows[version] = {(r["intervention"],r["pageIndex"]):r for r in rows}
-        assert len(sweep_rows[version]) == len(rows)
-        per_intervention = []
-        for label in dict.fromkeys(r["intervention"] for r in rows):
-            group = [r for r in rows if r["intervention"] == label]
-            per_intervention.append({
-                "intervention": label,
-                "off_median_px": quantile([r["offDisplacementPx"] for r in group], .5),
-                "off_n": sum(r["offDisplacementPx"] is not None for r in group),
-                "on_median_px": quantile([r["onDisplacementPx"] for r in group], .5),
-                "on_n": sum(r["onDisplacementPx"] is not None for r in group)})
-        sweep[version] = {"scheduled_trials": len(rows),"measurable_pairs": len(pair),
-                          "missing_pairs": len(rows)-len(pair),
-                          "off_observed": sum(r["offDisplacementPx"] is not None for r in rows),
-                          "on_observed": sum(r["onDisplacementPx"] is not None for r in rows),
-                          "off_median_px": quantile([r["offDisplacementPx"] for r in rows],.5),
-                          "on_median_px": quantile([r["onDisplacementPx"] for r in rows],.5),
-                          "over_reposition_n": sum(r["onDisplacementPx"] > r["offDisplacementPx"]+1 for r in pair),
-                          "threshold_px": 1,
-                          "per_intervention": per_intervention,
-                          "missing_rows": [{k:r[k] for k in ["intervention","pageIndex","offDisplacementPx","onDisplacementPx"]}
-                                           for r in rows if r["offDisplacementPx"] is None or r["onDisplacementPx"] is None]}
-    same_keys = set(sweep_rows["original"]) & set(sweep_rows["revised"])
-    comparisons = [(sweep_rows["original"][k],sweep_rows["revised"][k]) for k in same_keys]
-    sweep["cross_version"] = {"same_trial_keys":len(same_keys),
-        "anchor_id_differences":sum(a["anchorTokenId"]!=b["anchorTokenId"] for a,b in comparisons),
-        "off_displacement_diff_over_1px":sum(a["offDisplacementPx"] is not None and b["offDisplacementPx"] is not None
-                 and abs(a["offDisplacementPx"]-b["offDisplacementPx"])>1 for a,b in comparisons)}
+    # Matched browser sweep: OFF, ON with the original restore, and ON with the revised restore,
+    # fired from the same page, position, and anchor word in one browser session (sweep-matched.mjs).
+    path = ROOT / "Frontend/experiments/context-displacement/results/matched-raw.json"
+    doc = read(path); rows = doc["rows"]
+    input_hash(path, "sweep/matched")
+    KEYS = ("offDisplacementPx", "onOriginalDisplacementPx", "onRevisedDisplacementPx")
+    complete = [r for r in rows if all(r[k] is not None for k in KEYS)]
+    per_intervention = []
+    for label in dict.fromkeys(r["intervention"] for r in rows):
+        group = [r for r in complete if r["intervention"] == label]
+        per_intervention.append({
+            "intervention": label, "n": len(group),
+            "off_median_px": quantile([r["offDisplacementPx"] for r in group], .5),
+            "on_original_median_px": quantile([r["onOriginalDisplacementPx"] for r in group], .5),
+            "on_revised_median_px": quantile([r["onRevisedDisplacementPx"] for r in group], .5)})
+    sweep = {"scheduled_trials": len(rows), "complete_trials": len(complete),
+             "anchor_mismatches": sum(not r["anchorsMatch"] for r in rows),
+             "off_median_px": quantile([r["offDisplacementPx"] for r in complete], .5),
+             "on_original_median_px": quantile([r["onOriginalDisplacementPx"] for r in complete], .5),
+             "on_revised_median_px": quantile([r["onRevisedDisplacementPx"] for r in complete], .5),
+             "over_reposition_original_n": sum(r["onOriginalDisplacementPx"] > r["offDisplacementPx"] + 1 for r in complete),
+             "over_reposition_revised_n": sum(r["onRevisedDisplacementPx"] > r["offDisplacementPx"] + 1 for r in complete),
+             "revised_below_original_n": sum(r["onRevisedDisplacementPx"] < r["onOriginalDisplacementPx"] - 1 for r in complete),
+             "threshold_px": 1, "per_intervention": per_intervention,
+             "missing_rows": [{k: r[k] for k in ("intervention", "pageIndex") + KEYS} for r in rows if r not in complete]}
 
     # Demonstrate the loader discovery issue without importing pandas or executing caches.
     invalid_for_legacy_loader = sum(read(p).get("manifest",{}).get("schema") != "rtr.experiment-export" for p in extras)
@@ -319,7 +310,7 @@ def main():
                                 "root_files_with_wrong_full_schema":invalid_for_legacy_loader},
               "input_hashes":inputs,
               "limits":["Descriptive reproduction; no efficacy or significance inference.",
-                        "No live hardware, browser sweep, or learned model rerun.",
+                        "No live hardware or learned model rerun; the browser sweep is the matched run of 2026-10-13.",
                         "Condition labels come from explicit folders, not an independently recorded assignment log.",
                         "Participant labels preserve the existing four-person ordering; not a general anonymisation tool."]}
     (OUT / "evidence-audit.json").write_text(json.dumps(result,indent=2,allow_nan=False)+"\n")

@@ -1,5 +1,5 @@
 {
-  "review_commit": "f69ac7d3291d1408911e7e175056b4b7aedecf77",
+  "review_commit": "955c5f2ec0b40fd55d321b95e52d330aab9bf23f",
   "cohort": {
     "participants": 4,
     "sessions": 8,
@@ -740,237 +740,118 @@
     }
   ],
   "sweep": {
-    "original": {
-      "scheduled_trials": 66,
-      "measurable_pairs": 62,
-      "missing_pairs": 4,
-      "off_observed": 62,
-      "on_observed": 64,
-      "off_median_px": 32.39,
-      "on_median_px": 104.38499999999999,
-      "over_reposition_n": 45,
-      "threshold_px": 1,
-      "per_intervention": [
-        {
-          "intervention": "Font size +2px (18->20)",
-          "off_median_px": 24.465,
-          "off_n": 6,
-          "on_median_px": 168.34,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font size +6px (18->24)",
-          "off_median_px": 174.75,
-          "off_n": 6,
-          "on_median_px": 225.155,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font size -2px (18->16)",
-          "off_median_px": 38.04,
-          "off_n": 6,
-          "on_median_px": 82.655,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line height +0.3 (1.8->2.1)",
-          "off_median_px": 36.045,
-          "off_n": 6,
-          "on_median_px": 124.655,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line height -0.3 (1.8->1.5)",
-          "off_median_px": 23.11,
-          "off_n": 6,
-          "on_median_px": 53.73,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line width -120px (680->560)",
-          "off_median_px": 136.56,
-          "off_n": 3,
-          "on_median_px": 156.14999999999998,
-          "on_n": 4
-        },
-        {
-          "intervention": "Line width +80px (680->760)",
-          "off_median_px": 161.95,
-          "off_n": 5,
-          "on_median_px": 148.64499999999998,
-          "on_n": 6
-        },
-        {
-          "intervention": "Letter spacing +0.06em",
-          "off_median_px": 0.0,
-          "off_n": 6,
-          "on_median_px": 115.0,
-          "on_n": 6
-        },
-        {
-          "intervention": "Letter spacing +0.12em",
-          "off_median_px": 44.695,
-          "off_n": 6,
-          "on_median_px": 154.805,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font family -> Inter",
-          "off_median_px": 1.0,
-          "off_n": 6,
-          "on_median_px": 31.305,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font family -> Space Grotesk",
-          "off_median_px": 0.0,
-          "off_n": 6,
-          "on_median_px": 49.5,
-          "on_n": 6
-        }
-      ],
-      "missing_rows": [
-        {
-          "intervention": "Line width -120px (680->560)",
-          "pageIndex": 3,
-          "offDisplacementPx": null,
-          "onDisplacementPx": 357.08
-        },
-        {
-          "intervention": "Line width -120px (680->560)",
-          "pageIndex": 4,
-          "offDisplacementPx": null,
-          "onDisplacementPx": null
-        },
-        {
-          "intervention": "Line width -120px (680->560)",
-          "pageIndex": 5,
-          "offDisplacementPx": null,
-          "onDisplacementPx": null
-        },
-        {
-          "intervention": "Line width +80px (680->760)",
-          "pageIndex": 4,
-          "offDisplacementPx": null,
-          "onDisplacementPx": 265.13
-        }
-      ]
-    },
-    "revised": {
-      "scheduled_trials": 66,
-      "measurable_pairs": 63,
-      "missing_pairs": 3,
-      "off_observed": 63,
-      "on_observed": 64,
-      "off_median_px": 34.34,
-      "on_median_px": 32.39,
-      "over_reposition_n": 4,
-      "threshold_px": 1,
-      "per_intervention": [
-        {
-          "intervention": "Font size +2px (18->20)",
-          "off_median_px": 24.465,
-          "off_n": 6,
-          "on_median_px": 24.465,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font size +6px (18->24)",
-          "off_median_px": 142.35999999999999,
-          "off_n": 6,
-          "on_median_px": 42.97,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font size -2px (18->16)",
-          "off_median_px": 38.04,
-          "off_n": 6,
-          "on_median_px": 53.95,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line height +0.3 (1.8->2.1)",
-          "off_median_px": 35.44,
-          "off_n": 6,
-          "on_median_px": 35.44,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line height -0.3 (1.8->1.5)",
-          "off_median_px": 34.535,
-          "off_n": 6,
-          "on_median_px": 31.735,
-          "on_n": 6
-        },
-        {
-          "intervention": "Line width -120px (680->560)",
-          "off_median_px": 188.14999999999998,
-          "off_n": 4,
-          "on_median_px": 188.14999999999998,
-          "on_n": 4
-        },
-        {
-          "intervention": "Line width +80px (680->760)",
-          "off_median_px": 161.95,
-          "off_n": 5,
-          "on_median_px": 148.64499999999998,
-          "on_n": 6
-        },
-        {
-          "intervention": "Letter spacing +0.06em",
-          "off_median_px": 0.0,
-          "off_n": 6,
-          "on_median_px": 0.0,
-          "on_n": 6
-        },
-        {
-          "intervention": "Letter spacing +0.12em",
-          "off_median_px": 32.39,
-          "off_n": 6,
-          "on_median_px": 16.28,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font family -> Inter",
-          "off_median_px": 1.0,
-          "off_n": 6,
-          "on_median_px": 1.0,
-          "on_n": 6
-        },
-        {
-          "intervention": "Font family -> Space Grotesk",
-          "off_median_px": 0.0,
-          "off_n": 6,
-          "on_median_px": 0.0,
-          "on_n": 6
-        }
-      ],
-      "missing_rows": [
-        {
-          "intervention": "Line width -120px (680->560)",
-          "pageIndex": 4,
-          "offDisplacementPx": null,
-          "onDisplacementPx": null
-        },
-        {
-          "intervention": "Line width -120px (680->560)",
-          "pageIndex": 5,
-          "offDisplacementPx": null,
-          "onDisplacementPx": null
-        },
-        {
-          "intervention": "Line width +80px (680->760)",
-          "pageIndex": 4,
-          "offDisplacementPx": null,
-          "onDisplacementPx": 265.13
-        }
-      ]
-    },
-    "cross_version": {
-      "same_trial_keys": 66,
-      "anchor_id_differences": 21,
-      "off_displacement_diff_over_1px": 26
-    }
+    "scheduled_trials": 66,
+    "complete_trials": 63,
+    "anchor_mismatches": 0,
+    "off_median_px": 35.44,
+    "on_original_median_px": 112.0,
+    "on_revised_median_px": 32.78,
+    "over_reposition_original_n": 52,
+    "over_reposition_revised_n": 0,
+    "revised_below_original_n": 53,
+    "threshold_px": 1,
+    "per_intervention": [
+      {
+        "intervention": "Font size +2px (18->20)",
+        "n": 6,
+        "off_median_px": 24.465,
+        "on_original_median_px": 168.34,
+        "on_revised_median_px": 24.465
+      },
+      {
+        "intervention": "Font size +6px (18->24)",
+        "n": 6,
+        "off_median_px": 136.95999999999998,
+        "on_original_median_px": 209.54000000000002,
+        "on_revised_median_px": 42.97
+      },
+      {
+        "intervention": "Font size -2px (18->16)",
+        "n": 6,
+        "off_median_px": 66.555,
+        "on_original_median_px": 98.555,
+        "on_revised_median_px": 66.555
+      },
+      {
+        "intervention": "Line height +0.3 (1.8->2.1)",
+        "n": 6,
+        "off_median_px": 35.44,
+        "on_original_median_px": 134.86,
+        "on_revised_median_px": 35.44
+      },
+      {
+        "intervention": "Line height -0.3 (1.8->1.5)",
+        "n": 6,
+        "off_median_px": 34.34,
+        "on_original_median_px": 66.34,
+        "on_revised_median_px": 34.34
+      },
+      {
+        "intervention": "Line width -120px (680->560)",
+        "n": 4,
+        "off_median_px": 188.14999999999998,
+        "on_original_median_px": 156.14999999999998,
+        "on_revised_median_px": 188.14999999999998
+      },
+      {
+        "intervention": "Line width +80px (680->760)",
+        "n": 5,
+        "off_median_px": 161.95,
+        "on_original_median_px": 161.95,
+        "on_revised_median_px": 161.95
+      },
+      {
+        "intervention": "Letter spacing +0.06em",
+        "n": 6,
+        "off_median_px": 0.0,
+        "on_original_median_px": 115.0,
+        "on_revised_median_px": 0.0
+      },
+      {
+        "intervention": "Letter spacing +0.12em",
+        "n": 6,
+        "off_median_px": 32.39,
+        "on_original_median_px": 162.11,
+        "on_revised_median_px": 16.28
+      },
+      {
+        "intervention": "Font family -> Inter",
+        "n": 6,
+        "off_median_px": 1.0,
+        "on_original_median_px": 49.0,
+        "on_revised_median_px": 1.0
+      },
+      {
+        "intervention": "Font family -> Space Grotesk",
+        "n": 6,
+        "off_median_px": 0.0,
+        "on_original_median_px": 81.0,
+        "on_revised_median_px": 0.0
+      }
+    ],
+    "missing_rows": [
+      {
+        "intervention": "Line width -120px (680->560)",
+        "pageIndex": 4,
+        "offDisplacementPx": null,
+        "onOriginalDisplacementPx": null,
+        "onRevisedDisplacementPx": null
+      },
+      {
+        "intervention": "Line width -120px (680->560)",
+        "pageIndex": 5,
+        "offDisplacementPx": null,
+        "onOriginalDisplacementPx": null,
+        "onRevisedDisplacementPx": null
+      },
+      {
+        "intervention": "Line width +80px (680->760)",
+        "pageIndex": 4,
+        "offDisplacementPx": null,
+        "onOriginalDisplacementPx": null,
+        "onRevisedDisplacementPx": null
+      }
+    ]
   },
   "legacy_loader": {
     "root_files_discovered_as_cohort": 2,
@@ -1050,17 +931,13 @@
       "sha256": "95e43dff7a52d3460739a6e77396762526a38e268c04626ecd3f9ff6a09ae699"
     },
     {
-      "source_label": "sweep/original",
-      "sha256": "0fe0a77e57c04f28dacb682335abad0d10fed6407145710739951afa7ee3f514"
-    },
-    {
-      "source_label": "sweep/revised",
-      "sha256": "49e1b19084da6241a8ee5b7edb0fe3a9d1a703e4362352ec2d6a3bdf37c39c02"
+      "source_label": "sweep/matched",
+      "sha256": "ebb4b969d7a791402aa3d54bf560a812a0ae6b9eae62e8dbf1d5ece5f45d8a8f"
     }
   ],
   "limits": [
     "Descriptive reproduction; no efficacy or significance inference.",
-    "No live hardware, browser sweep, or learned model rerun.",
+    "No live hardware or learned model rerun; the browser sweep is the matched run of 2026-10-13.",
     "Condition labels come from explicit folders, not an independently recorded assignment log.",
     "Participant labels preserve the existing four-person ordering; not a general anonymisation tool."
   ]

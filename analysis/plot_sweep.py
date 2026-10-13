@@ -3,7 +3,7 @@
 The thesis figure labelled the axes "induced displacement" and "restore residual",
 terms the restore hook uses for its sentence-anchor diagnostics; the plotted data
 are the anchor word's vertical displacement with preservation off (x) and on (y).
-Reads the same raw sweep files as audit_evidence.py; writes only figures/.
+Reads the matched sweep file (matched-raw.json) like audit_evidence.py; writes only figures/.
 Requires matplotlib (not needed for the audit itself).
 """
 from __future__ import annotations
@@ -21,9 +21,12 @@ RESULTS = ROOT / "Frontend/experiments/context-displacement/results"
 
 
 def pairs(version):
-    rows = json.loads((RESULTS / f"onoff-{version}-raw.json").read_text())["rows"]
-    return [(r["offDisplacementPx"], r["onDisplacementPx"]) for r in rows
-            if r["offDisplacementPx"] is not None and r["onDisplacementPx"] is not None]
+    """(off, on) pairs for one restore version from the matched sweep (one browser session)."""
+    rows = json.loads((RESULTS / "matched-raw.json").read_text())["rows"]
+    key = {"original": "onOriginalDisplacementPx", "revised": "onRevisedDisplacementPx"}[version]
+    return [(r["offDisplacementPx"], r[key]) for r in rows
+            if r["offDisplacementPx"] is not None and r["onOriginalDisplacementPx"] is not None
+            and r["onRevisedDisplacementPx"] is not None]
 
 
 def main():
