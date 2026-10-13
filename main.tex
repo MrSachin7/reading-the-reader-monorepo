@@ -87,7 +87,7 @@ Gaze-driven text adaptation has been demonstrated repeatedly, but existing proto
 We present a researcher-operated, two-screen platform whose sensing, eye-movement analysis, decision, and intervention stages are replaceable modules behind stable contracts.
 A participant reads reflowable text that adapts to their gaze while a researcher mirrors the reading live and applies or approves typographic changes; every sample, proposal, intervention, and restoration outcome enters one replayable record.
 Across eight Tobii 4C sessions, the platform sustained a rated 90\,Hz with gaze validity above 92\% and single-host round trips below 100\,ms, and ran a collaborator's reading-difficulty pipeline as its live analysis module.
-Because the platform records every intervention's positional cost, it showed that our original context-preserving restore moved readers about three times farther than the reflow it compensated; we describe the revision and its geometric evidence.
+Because the platform records every intervention's positional cost, it exposed that our original context-preserving restore over-repositioned readers; a matched browser sweep measured about three times the bare reflow, and we describe the revision and its evidence.
 \end{abstract}
 
 % TODO(authors): regenerate the CCS concepts with the ACM CCS tool (dl.acm.org/ccs) before submission.
@@ -121,7 +121,7 @@ Because the platform records every intervention's positional cost, it showed tha
   \centering
   % Source: figures/architecture-overview.svg (drawn by the authors in Excalidraw for the thesis);
   % the PDF is rendered from it. Replaces the rig photo at Aqdus Ilyas's request (2026-10-08).
-  \includegraphics[width=0.9\textwidth]{figures/architecture-overview.pdf}
+  \includegraphics[width=0.8\textwidth]{figures/architecture-overview.pdf}
   \caption{The platform as a researcher--participant adaptive loop.
   The participant reads on one screen while an eye tracker senses gaze; the backend passes the gaze stream through four replaceable modules (sensing, analysis, decision, intervention), adapts the text, mirrors gaze and derived analysis to the researcher's console with its approve-or-reject controls, writes everything to the session record, and exposes a provider contract through which an external decision or analysis provider can attach.
   The approve-or-reject gate shown is the advisory mode; in autonomous mode the loop commits proposals without it, so the operating role beside the second screen can equally be filled by an automated decision strategy.}
