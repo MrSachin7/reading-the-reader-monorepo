@@ -1,0 +1,1353 @@
+{
+  "meta": {
+    "generatedAtUtc": "2026-10-13T18:47:15.774Z",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "baselineLinePx": 32.4,
+    "pageCount": 6,
+    "trialCount": 66,
+    "anchorMismatches": 0,
+    "conditions": [
+      {
+        "key": "off",
+        "preserve": false,
+        "strategy": "revised"
+      },
+      {
+        "key": "onOriginal",
+        "preserve": true,
+        "strategy": "original"
+      },
+      {
+        "key": "onRevised",
+        "preserve": true,
+        "strategy": "revised"
+      }
+    ],
+    "note": "displacement = |final on-screen offset of the relevant reading word - its offset before the intervention|; all three conditions of a trial run in one browser session from the same page and anchor word"
+  },
+  "rows": [
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 22.66,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 168.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 26.27,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 164.73,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 26.27,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 22.66,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 168.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 22.66,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 94.66,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 196.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 35.66,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 22.66,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 168.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 22.66,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +2px (18->20)",
+      "affected": "font-size",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 62.27,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 30.27,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 62.27,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 109.97,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 254.03,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 0.03,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 163.95,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 208.05,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 42.95,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 109.97,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 211.03,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 42.97,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 196.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 203.66,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 43.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 109.97,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 211.03,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 42.97,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size +6px (18->24)",
+      "affected": "font-size",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 163.95,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 131.95,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 131.95,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 50.36,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 82.36,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 50.36,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 53.95,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 85.95,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 53.95,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 79.16,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 111.16,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 79.16,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "degraded"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 79.16,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 111.16,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 79.16,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "degraded"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 79.16,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 111.16,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 79.16,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "degraded"
+    },
+    {
+      "intervention": "Font size -2px (18->16)",
+      "affected": "font-size",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 53.95,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 85.95,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 53.95,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "degraded"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 35.44,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 155.56,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0.44,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 40.84,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 152.16,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 37.84,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 35.44,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 117.56,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 35.44,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 35.44,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 185.56,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 35.44,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 35.44,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 117.56,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 35.44,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height +0.3 (1.8->2.1)",
+      "affected": "line-height",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 40.84,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 8.84,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 40.84,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 34.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 66.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 34.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 39.73,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 71.73,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 39.73,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 34.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 66.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 34.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 34.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 66.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 34.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 34.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 66.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 34.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line height -0.3 (1.8->1.5)",
+      "affected": "line-height",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 39.73,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 71.73,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 39.73,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "degraded"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 32,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 97.17,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 65.17,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 97.17,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 279.13,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 247.13,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 279.13,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 497.08,
+      "offVisible": false,
+      "onOriginalDisplacementPx": 357.08,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 357.08,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": null,
+      "offVisible": false,
+      "onOriginalDisplacementPx": null,
+      "onOriginalVisible": false,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": null,
+      "onRevisedVisible": false,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width -120px (680->560)",
+      "affected": "line-width",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": null,
+      "offVisible": false,
+      "onOriginalDisplacementPx": null,
+      "onOriginalVisible": false,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": null,
+      "onRevisedVisible": false,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 64.39,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 97.17,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 129.17,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 97.17,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 161.95,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 161.95,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 161.95,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 242.34,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 242.34,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 242.34,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": null,
+      "offVisible": false,
+      "onOriginalDisplacementPx": null,
+      "onOriginalVisible": false,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": null,
+      "onRevisedVisible": false,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Line width +80px (680->760)",
+      "affected": "line-width",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 335.13,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 335.13,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 303.13,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 115,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 112,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 115,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 64.78,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 172.22,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 32.78,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 115,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.06em",
+      "affected": "letter-spacing",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 0.39,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 115.61,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 176.61,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 147.61,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 97.17,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 204.83,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 32.17,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 180,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "preserved",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Letter spacing +0.12em",
+      "affected": "letter-spacing",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 32.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 0.39,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 1,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 49,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 1,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 78,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 1,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 1,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 49,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 1,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 33.39,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 106.61,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.39,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 1,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 49,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 1,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Inter",
+      "affected": "font-family",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 1,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 31,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 1,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 0,
+      "anchorTokenId": "eval-context-displacement:3:sentence:4:word:1",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1",
+        "eval-context-displacement:3:sentence:4:word:1"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 83,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 1,
+      "anchorTokenId": "eval-context-displacement:7:sentence:4:word:7",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7",
+        "eval-context-displacement:7:sentence:4:word:7"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 79,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 2,
+      "anchorTokenId": "eval-context-displacement:12:sentence:2:word:6",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6",
+        "eval-context-displacement:12:sentence:2:word:6"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 83,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 3,
+      "anchorTokenId": "eval-context-displacement:17:sentence:2:word:8",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8",
+        "eval-context-displacement:17:sentence:2:word:8"
+      ],
+      "offDisplacementPx": 64.78,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 107.22,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 32.78,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 4,
+      "anchorTokenId": "eval-context-displacement:22:sentence:1:word:11",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11",
+        "eval-context-displacement:22:sentence:1:word:11"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 50,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    },
+    {
+      "intervention": "Font family -> Space Grotesk",
+      "affected": "font-family",
+      "pageIndex": 5,
+      "anchorTokenId": "eval-context-displacement:26:sentence:2:word:18",
+      "anchorsMatch": true,
+      "anchorTokenIds": [
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18",
+        "eval-context-displacement:26:sentence:2:word:18"
+      ],
+      "offDisplacementPx": 0,
+      "offVisible": true,
+      "onOriginalDisplacementPx": 32,
+      "onOriginalVisible": true,
+      "onOriginalStatus": "degraded",
+      "onRevisedDisplacementPx": 0,
+      "onRevisedVisible": true,
+      "onRevisedStatus": "preserved"
+    }
+  ]
+}

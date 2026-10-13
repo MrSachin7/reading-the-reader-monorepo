@@ -63,7 +63,7 @@ No citation without having read the source or carried it over from the verified 
 3. Reading the Struggle thesis (Kraljevic and Desu): cited in Section 4.3 from the DTU Findit record (2026-09-29).
 4. CCS concepts: regenerate with the ACM CCS tool before submission; re-verify the Partial/No ratings in the capability table against current primary documentation.
 5. Length: as of 2026-10-07 the submission build is exactly 14 pages before references; keep it there.
-6. Matched sweep: `Frontend/experiments/context-displacement/sweep-matched.mjs` runs OFF, ON-original, and ON-revised from the same anchor in one browser session; run it and replace the two unmatched runs in Section 4.4.
+6. Matched sweep: run on 2026-10-13 (`Frontend/experiments/context-displacement/sweep-matched.mjs`, results in `matched-raw.json`); Section 4.4, Table 4 and Figure 5 now use it. The two earlier unmatched runs remain in the results folder for the record.
 7. Repository hygiene, outside the paper: the `Eye-Movement-Analyzer` tests (8 of 8) fail against the current provider envelopes. The names in the session exports were removed on 2026-09-23 (files renamed to `P1`..`P5`, name and eye-condition fields scrubbed), but the earlier commits still carry them; rewrite history or squash before citing the repository as an artifact.
 
 ## Corrections relative to the thesis text

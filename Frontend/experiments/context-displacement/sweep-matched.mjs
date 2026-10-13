@@ -85,6 +85,16 @@ async function runCondition(page, condition, intervention, pageIndex) {
   await page.evaluate(() => window.__harness.reset())
   await sleep(240)
   await gotoPage(page, pageIndex)
+  // Pin the starting scroll position: a previous condition's restore may have scrolled the
+  // reading container, and the harness reset restores the presentation but not the scroll,
+  // which would make the fallback anchor resolve to a different word across conditions.
+  await page.evaluate(() => {
+    const content = document.querySelector("[data-reader-content='true']")
+    const container = content?.parentElement
+    if (container) container.scrollTop = 0
+    window.scrollTo(0, 0)
+  })
+  await sleep(200)
   const anchor = await page.evaluate(() => window.__harness.getAnchor())
   if (!anchor.tokenId) return null
   await sleep(260)

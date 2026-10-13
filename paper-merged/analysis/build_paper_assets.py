@@ -79,7 +79,7 @@ def main():
     adv = audit["advisory"][0]
     latency = adv["latency"]
     context = audit["context_by_status"]
-    original, revised, cross = (audit["sweep"][k] for k in ("original", "revised", "cross_version"))
+    sweep = audit["sweep"]
     order = audit["condition_order"]
     with_first = sum(v[0] == "with" for v in order.values())
 
@@ -161,17 +161,16 @@ def main():
         "cpDegraded": str(context.get("degraded", {}).get("n", 0)),
         "cpDegradedResidualMedian": number(context["degraded"]["anchor_error_median_px"], 0),
         "cpDegradedInducedMedian": number(context["degraded"]["viewport_delta_median_px"]),
-        "sweepTrials": str(original["scheduled_trials"]),
-        "sweepPairsOriginal": str(original["measurable_pairs"]),
-        "sweepPairsRevised": str(revised["measurable_pairs"]),
-        "sweepOverOriginal": str(original["over_reposition_n"]),
-        "sweepOverRevised": str(revised["over_reposition_n"]),
-        "sweepOffMedianOriginal": number(original["off_median_px"]),
-        "sweepOffMedianRevised": number(revised["off_median_px"]),
-        "sweepOnMedianOriginal": number(original["on_median_px"]),
-        "sweepOnMedianRevised": number(revised["on_median_px"]),
-        "sweepAnchorDiff": str(cross["anchor_id_differences"]),
-        "sweepOffDiff": str(cross["off_displacement_diff_over_1px"]),
+        "sweepTrials": str(sweep["scheduled_trials"]),
+        "sweepPairs": str(sweep["complete_trials"]),
+        "sweepAnchorMismatches": str(sweep["anchor_mismatches"]),
+        "sweepOverOriginal": str(sweep["over_reposition_original_n"]),
+        "sweepOverRevised": str(sweep["over_reposition_revised_n"]),
+        "sweepRevisedBelowOriginal": str(sweep["revised_below_original_n"]),
+        "sweepOffMedian": number(sweep["off_median_px"]),
+        "sweepOnMedianOriginal": number(sweep["on_original_median_px"]),
+        "sweepOnMedianRevised": number(sweep["on_revised_median_px"]),
+        "sweepRatioOriginal": f'{sweep["on_original_median_px"]/sweep["off_median_px"]:.1f}',
     }
     save("results.tex", [rf"\newcommand{{\{key}}}{{{value}}}" for key, value in values.items()])
 
@@ -197,31 +196,29 @@ def main():
         number(s["p50"]), number(s["p95"], 2), number(s["max"]))
         for pop, label, s in populations], midrules=(2,))
 
-    geometry = []
-    for label, field in (("Scheduled trials", "scheduled_trials"), ("Complete on/off pairs", "measurable_pairs")):
-        geometry.append(table_row(label, original[field], revised[field]))
-    for condition, name in (("off", r"\off{} displacement, px ($n$)"), ("on", r"\on{} displacement, px ($n$)")):
-        geometry.append(table_row(name,
-            *(f'{s[f"{condition}_median_px"]:.1f} ({s[f"{condition}_observed"]})'
-              for s in (original, revised))))
-    geometry.append(table_row("Over-repositioned pairs", *(f'{s["over_reposition_n"]}/{s["measurable_pairs"]}'
-                                                    for s in (original, revised))))
-    save_table("geometry-table.tex", "@{}lrr@{}", ["Measure", "Original run", "Revised run"], geometry)
+    geometry = [
+        table_row("Scheduled trials", sweep["scheduled_trials"]),
+        table_row("Complete trials (all three conditions measured)", sweep["complete_trials"]),
+        table_row("Trials whose anchor word differed across conditions", sweep["anchor_mismatches"]),
+        table_row(r"\off{} displacement, median px", f'{sweep["off_median_px"]:.1f}'),
+        table_row(r"\on{} displacement, original restore, median px", f'{sweep["on_original_median_px"]:.1f}'),
+        table_row(r"\on{} displacement, revised restore, median px", f'{sweep["on_revised_median_px"]:.1f}'),
+        table_row("Over-repositioned trials, original restore", f'{sweep["over_reposition_original_n"]}/{sweep["complete_trials"]}'),
+        table_row("Over-repositioned trials, revised restore", f'{sweep["over_reposition_revised_n"]}/{sweep["complete_trials"]}'),
+    ]
+    save_table("geometry-table.tex", "@{}lr@{}", ["Measure", "Matched run"], geometry)
 
-    def cell(entry, condition):
-        median, n = entry[f"{condition}_median_px"], entry[f"{condition}_n"]
-        text = f"{median:.1f}" if median is not None else "n/a"
-        return text + (r"$^{*}$" if n < 6 else "")
-    per_original = {e["intervention"]: e for e in original["per_intervention"]}
-    per_revised = {e["intervention"]: e for e in revised["per_intervention"]}
-    rows = [table_row(SWEEP_LABELS.get(label, label.replace("->", "to")),
-                      cell(per_original[label], "off"), cell(per_original[label], "on"),
-                      cell(per_revised[label], "off"), cell(per_revised[label], "on"))
-            for label in per_original]
+    def cell(entry, key):
+        value = f'{entry[key]:.1f}'
+        return value if entry["n"] == 6 else value + r"$^{*}$"
+
+    rows = [table_row(SWEEP_LABELS.get(e["intervention"], e["intervention"].replace("->", "to")),
+                      cell(e, "off_median_px"), cell(e, "on_original_median_px"), cell(e, "on_revised_median_px"))
+            for e in sweep["per_intervention"]]
     rows.append(table_row(r"\textbf{All trials}",
-                          *(rf"\textbf{{{s[f'{c}_median_px']:.1f}}}" for s in (original, revised) for c in ("off", "on"))))
-    save_table("sweep-table.tex", "@{}lrrrr@{}",
-        ["Intervention", r"\off{}", r"\on{} (original)", r"\off{}", r"\on{} (revised)"], rows, midrules=(len(rows) - 1,))
+                          *(rf"\textbf{{{sweep[k]:.1f}}}" for k in ("off_median_px", "on_original_median_px", "on_revised_median_px"))))
+    save_table("sweep-table.tex", "@{}lrrr@{}",
+        ["Intervention", r"\off{}", r"\on{}, original restore", r"\on{}, revised restore"], rows, midrules=(len(rows) - 1,))
 
     behaviour_rows = {(s["participant"], s["condition"]): s for s in audit["participant_behaviour"]}
     rows = []
