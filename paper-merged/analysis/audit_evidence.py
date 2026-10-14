@@ -162,6 +162,8 @@ def main():
                    "text_title": doc["content"]["title"],
                    "gaze_samples": len(gaze), "hz": hz, "validity_pct": 100*valid/len(gaze),
                    "fixations": len(derived["fixationEvents"]), "saccades": len(derived["saccadeEvents"]),
+                   # Whole-session regression baseline: backward or line-change-backward saccades over all saccade records.
+                   "regression_rate_pct": 100*mean([int(e["saccade"]["isRegression"]) for e in derived["saccadeEvents"]]),
                    "interventions": len(ivs), "context_events": len(cps),
                    "provider_metadata": exp["condition"]["providerId"],
                    "manual_interventions": sum(i.get("source") == "manual" for i in ivs),
