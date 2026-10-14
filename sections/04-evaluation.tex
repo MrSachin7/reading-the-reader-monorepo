@@ -10,8 +10,11 @@ Every quantity, table, and figure in this section is derived from the exported s
 
 We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} participants each read under two conditions, with the context-preserving restore enabled (\on{}) and disabled (\off{}), as summarised in Table~\ref{tab:sessions}.
 Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
-Condition order was not counterbalanced: \orderWithFirst{} participants read the \on{} session first and \orderWithoutFirst{} read the \off{} session first.
+Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first (Table~\ref{tab:sessions}), so most \on{} sessions were second sessions and any practice effect favours \on{}, the same direction as the differences reported below.
 Sessions ran on a Tobii Eye Tracker 4C (reported by the SDK as \texttt{IS4\_Large\_Peripheral}) mounted below a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
+Validation passes when, over 30 samples at each of five targets, average accuracy is at most 1.0 degree, precision (root mean square angular distance between successive samples) is at most 0.5 degrees, and at least four targets rate good or fair; accuracy was not rechecked at session end.
+% CONFIRM(authors): screen diagonal and viewing distance were not recorded; if known, state them here so that line spacing can be given in degrees of visual angle and compared with the accuracy figures (Ashkan's comment of 2026-10-13).
+Screen size and viewing distance were not recorded, so text sizes are given in pixels.
 The deployment was the intended single-operator setting shown in Figure~\ref{fig:rig}: backend and both surfaces on one host, traffic over the local loopback.
 All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
 Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
@@ -20,7 +23,7 @@ Every session was operated end to end from the gated researcher console, and eve
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.26\textwidth]{figures/experiment-setup.jpg}
+  \includegraphics[width=0.22\textwidth]{figures/experiment-setup.jpg}
   \caption{The two-screen setup during an evaluation session.
   The participant reads on one display (left) while the researcher monitors the mirrored view and applies interventions from the console on the other (right); the eye tracker is mounted at the foot of the participant's display.
   Faces are blurred for anonymity.}
@@ -33,7 +36,7 @@ Every session was operated end to end from the gated researcher console, and eve
 \small
 \caption{The \sessionsN{} recorded sessions.
 Text M is \emph{Metal Detectors} and N is \emph{Nuclear Science}; \on{} bundles positional restoration with the highlight cue.
-Duration covers the exported session including activities beyond reading; rate is computed from device timestamps; valid means at least one eye reported valid by the tracker.}
+Order is the participant's session order; duration covers the exported session including activities beyond reading; rate is computed from device timestamps; valid means at least one eye reported valid by the tracker; Regr.\ is the whole-session regression rate.}
 \label{tab:sessions}
 \input{generated/session-table}
 \end{widetable}
@@ -57,7 +60,6 @@ The decision path is instrumented only when an automated strategy is active.
 In the additional advisory-mode session (\advDurationS{}\,s, \advGazeSamples{} gaze samples, with the reference external decision provider running out of process and every proposal gated by the researcher), gaze freshness at dispatch had a median of \advFreshnessMedian{}\,ms, a 95th percentile of \advFreshnessPninefive{}\,ms, and a maximum of \advFreshnessMax{}\,ms over \advFreshnessN{} evaluations, and the \advProviderN{} provider round trips had a median of \advProviderMedian{}\,ms and a maximum of \advProviderMax{}\,ms.
 The provider's \advUniqueProposals{} proposals produced \advProposalRecords{} lifecycle records (\advProposalsApproved{} approved, \advProposalsSuperseded{} superseded), which is why proposal history and applied interventions must be counted separately.
 The same run also contains one participant-client round trip of \advParticipantMax{}\,ms among \advParticipantN{}, so the budget claim holds for the \sessionsN{} sessions and for the decision path but not for every ping ever recorded.
-We read the advisory run as a validation of the instrumentation under a rule-based reference provider on one host, not as a campaign-scale result.
 
 \begin{widetable}
 \centering
@@ -74,7 +76,6 @@ Gaze freshness ends at decision dispatch; none of these rows measures complete g
 
 The dependency rule that makes the modules replaceable is enforced twice: the backend's project references admit no reference from the core outward, and an executable boundary test inspects the loaded assemblies and fails if the domain or application core depends on infrastructure, transport, or host code.
 The backend test project (101 tests covering session lifecycle gating, the proposal lifecycle, intervention execution, export serialisation, and recovery storage) passes in full on the current checkout.
-Adding an in-process intervention module requires one registration entry and edits to no existing module, because the runtime resolves modules from registries by identifier.
 
 The stronger test is out of process.
 Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
@@ -89,18 +90,19 @@ In the \on{} condition the restore ran together with its highlight cue, so the c
 The \on{} sessions ran the original restore strategy; the revision described at the end of this section was made after these recordings, so the behavioural comparison characterises the original mechanism.
 Because preservation acts in the moments after a reflow, both behavioural measures are aligned to each intervention rather than averaged over sessions, which leaves the conditions with unequal counts: \interventionsWith{} interventions \on{} and \interventionsWithout{} \off{}.
 
-Reading-resume time, the interval from an intervention to the start of the reader's next forward or line-change-forward saccade (capped at 30\,s or the next intervention), was observed for \rrtWithObserved{} of \interventionsWith{} interventions \on{} and \rrtWithoutObserved{} of \interventionsWithout{} \off{}; one \off{} intervention had no qualifying saccade and is reported as missing rather than as zero.
+Reading-resume time, the interval from an intervention to the start of the reader's next forward or line-change-forward saccade (capped at 30\,s or the next intervention), is narrower than the time lost per intervention reported by \citet{jensen2025context}, so the two differ in scale; it was observed for \rrtWithObserved{} of \interventionsWith{} interventions \on{} and \rrtWithoutObserved{} of \interventionsWithout{} \off{}; one \off{} intervention had no qualifying saccade and is reported as missing rather than as zero.
 It was shorter \on{} (median \rrtWithMedian{}\,ms, mean \rrtWithMean{}\,ms) than \off{} (median \rrtWithoutMedian{}\,ms, mean \rrtWithoutMean{}\,ms), as shown in Figure~\ref{fig:rrt} (left), and the per-participant medians favour \on{} for three of the four participants.
-The regression rate, averaged over non-empty five-second windows around each intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
+The regression rate, the share of backward and line-change-backward saccades among all saccades in a five-second window, averaged over non-empty windows per intervention, showed the same separation: \regWithPost\% after an intervention \on{}, down from \regWithPre\% before, against \regWithoutPost\% \off{}, essentially unchanged from its \regWithoutPre\% baseline (Figure~\ref{fig:rrt}, right); the pattern held across three-, five-, and ten-second windows.
+Whole-session rates (Table~\ref{tab:sessions}, last column) lie between 22\% and 34\%, about double the share usual for skilled readers \cite{rayner1998eyemovements}; corrective saccades after line changes, gaze noise, and the repeated records discussed below are the likely causes, so the rates compare within this study but not with the literature.
 We state the direction of these numbers without inferring from them: four participants, an unbalanced condition order, two texts, researcher-chosen intervention timing, and an unevenly split sample do not support inference, and the bundled highlight means the difference cannot be attributed to the restore geometry alone, the more so as prior work found highlighting to be the component driving recovery improvement \cite{jensen2025context}.
 Indeed, these sessions ran the restore that the sweep below shows over-repositioned the word, so any advantage seen here is more plausibly the highlight than the geometry.
 
 \begin{widefigure}
   \centering
-  \includegraphics[width=0.44\textwidth]{figures/eval-rrt.pdf}\hfill
-  \includegraphics[width=0.44\textwidth]{figures/eval-post-regression.pdf}
+  \includegraphics[width=0.4\textwidth]{figures/eval-rrt.pdf}\hfill
+  \includegraphics[width=0.4\textwidth]{figures/eval-post-regression.pdf}
   \caption{Left: reading-resume time per intervention by condition (\interventionsWith{} interventions \on{}, \interventionsWithout{} \off{}, of which one has no observation; bars mark medians); points are interventions nested within four participants, not independent observations.
-  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation, the rate rises after the intervention, with preservation (the original restore) it falls below its baseline.
+  Right: regression rate in the five seconds before and after each intervention, by condition; without preservation the rate is essentially unchanged after the intervention, with preservation (the original restore) it falls below its baseline.
   Both panels are descriptive only.}
   \Description{Left, a dot plot with two columns of points, one per condition, where the with-preservation points sit lower with median bars at 482 and 650 milliseconds. Right, a paired bar chart of regression rates before and after interventions for the two conditions, showing a decrease with preservation and a slight increase without.}
   \label{fig:rrt}
@@ -141,7 +143,7 @@ One reading line is 32.4\,px; lower is better.}
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.44\textwidth]{figures/sweep-overreposition.pdf}
+  \includegraphics[width=0.4\textwidth]{figures/sweep-overreposition.pdf}
   \caption{Displacement of the anchor word with preservation \on{} against its displacement \off{}, one point per complete trial (\sweepPairs{}) and restore version, from the matched sweep.
   Points above the line of equality mean the restore moved the word further than the reflow alone (by more than 1\,px in \sweepOverOriginal{} trials with the original restore, circles, and \sweepOverRevised{} with the revised one, triangles).}
   \Description{A scatter plot of on-displacement versus off-displacement with a dashed diagonal line of equality. Circle markers cluster above the diagonal; triangle markers lie on or below it.}

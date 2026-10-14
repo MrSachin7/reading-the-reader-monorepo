@@ -61,6 +61,11 @@ def main():
                     table_row(*headings), r"\midrule", *body,
                     r"\bottomrule", r"\end{tabular}"])
 
+    def count(value):
+        """Counts below ten are spelled out in prose (ETRA reviewer request)."""
+        words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+        return words[value] if 0 <= value < 10 else str(value)
+
     def number(value, precision=1):
         return f"{value:.{precision}f}".rstrip("0").rstrip(".") if precision else str(round(value))
 
@@ -84,8 +89,8 @@ def main():
     with_first = sum(v[0] == "with" for v in order.values())
 
     values = {
-        "participantsN": str(cohort["participants"]),
-        "sessionsN": str(cohort["sessions"]),
+        "participantsN": count(cohort["participants"]),
+        "sessionsN": count(cohort["sessions"]),
         "gazeTotal": f'{cohort["gaze_samples"]:,}',
         "gazeMeanHz": f'{cohort["session_mean_hz"]:.2f}',
         "gazeSdHz": f'{cohort["session_sd_hz"]:.2f}',
@@ -105,8 +110,8 @@ def main():
         "interventionsWith": str(behaviour["with"]["interventions"]),
         "interventionsWithout": str(behaviour["without"]["interventions"]),
         "interventionsTotal": str(behaviour["with"]["interventions"] + behaviour["without"]["interventions"]),
-        "orderWithFirst": str(with_first),
-        "orderWithoutFirst": str(len(order) - with_first),
+        "orderWithFirst": count(with_first),
+        "orderWithoutFirst": count(len(order) - with_first),
         "rrtWithMedian": number(behaviour["with"]["rrt_median_ms"], 0),
         "rrtWithMean": number(behaviour["with"]["rrt_mean_ms"], 0),
         "rrtWithObserved": str(behaviour["with"]["rrt_observed"]),
@@ -147,17 +152,17 @@ def main():
         "advFreshnessMedian": number(latency["pipeline-decision"]["p50"]),
         "advFreshnessPninefive": number(latency["pipeline-decision"]["p95"]),
         "advFreshnessMax": number(latency["pipeline-decision"]["max"]),
-        "advProviderN": str(latency["decision-provider-rtt"]["n"]),
+        "advProviderN": count(latency["decision-provider-rtt"]["n"]),
         "advProviderMedian": number(latency["decision-provider-rtt"]["p50"]),
         "advProviderMax": number(latency["decision-provider-rtt"]["max"]),
         "advParticipantN": str(latency["participant"]["n"]),
         "advParticipantMax": number(latency["participant"]["max"]),
         "advParticipantOverBudget": str(latency["participant"]["over_100ms_n"]),
         "advProposalRecords": str(adv["decision_proposal_records"]),
-        "advUniqueProposals": str(adv["unique_proposal_ids"]),
-        "advProposalsApproved": str(adv["proposal_record_statuses"].get("approved", 0)),
-        "advProposalsSuperseded": str(adv["proposal_record_statuses"].get("superseded", 0)),
-        "cpPreserved": str(context.get("preserved", {}).get("n", 0)),
+        "advUniqueProposals": count(adv["unique_proposal_ids"]),
+        "advProposalsApproved": count(adv["proposal_record_statuses"].get("approved", 0)),
+        "advProposalsSuperseded": count(adv["proposal_record_statuses"].get("superseded", 0)),
+        "cpPreserved": count(context.get("preserved", {}).get("n", 0)),
         "cpDegraded": str(context.get("degraded", {}).get("n", 0)),
         "cpDegradedResidualMedian": number(context["degraded"]["anchor_error_median_px"], 0),
         "cpDegradedInducedMedian": number(context["degraded"]["viewport_delta_median_px"]),
@@ -176,11 +181,12 @@ def main():
 
     labels = {"with": r"\on{}", "without": r"\off{}"}
     texts = {"Metal Detectors": "M", "Nuclear Science": "N"}
-    save_table("session-table.tex", "@{}lllrrrrr@{}",
-        ["Participant", "Preservation", "Text", "Duration (s)", "Gaze samples", "Rate (Hz)", r"Valid (\%)", "Interventions"], [table_row(
-        s["participant"], labels[s["condition"]], texts[s["text_title"]],
+    ordinal = {0: "1st", 1: "2nd"}
+    save_table("session-table.tex", "@{}llllrrrrrr@{}",
+        ["Participant", "Preservation", "Order", "Text", "Duration (s)", "Gaze samples", "Rate (Hz)", r"Valid (\%)", "Interventions", r"Regr. (\%)"], [table_row(
+        s["participant"], labels[s["condition"]], ordinal[order[s["participant"]].index(s["condition"])], texts[s["text_title"]],
         f'{s["duration_s"]:.1f}', f'{s["gaze_samples"]:,}', f'{s["hz"]:.2f}',
-        f'{s["validity_pct"]:.1f}', s["interventions"])
+        f'{s["validity_pct"]:.1f}', s["interventions"], f'{s["regression_rate_pct"]:.1f}')
         for s in sorted(sessions, key=lambda s: (s["participant"], s["condition"]))])
 
     populations = [

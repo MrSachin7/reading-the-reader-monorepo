@@ -22,7 +22,6 @@ Real-time use sharpens the problem: noisy vertical gaze must be assigned to the 
 \citet{kaltenberger2026line} address this with CONF-LA, a confidence-scored online fixation-to-line assignment that defers uncertain assignments.
 Our contribution on this front is architectural rather than algorithmic.
 The platform's built-in analysis is a dwell-based, token-level area-of-interest method whose spatial half hit-tests gaze against the words' live on-screen boxes (Section~\ref{sec:platform-mapping}), so a typographic reflow cannot invalidate the mapping; and the whole analysis stage is a replaceable, logged strategy, so a stronger detector or a confidence-aware line-assignment method can be attached as a provider without modifying the platform.
-We do not claim token-level assignment accuracy for the built-in heuristic, which has not been validated against ground truth.
 
 \subsection{Experiment Tooling}
 

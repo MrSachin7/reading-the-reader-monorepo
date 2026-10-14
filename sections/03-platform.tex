@@ -21,8 +21,8 @@ One cycle of the loop runs across these parts: a gaze sample is mirrored to both
   \centering
   % Equal heights put the two screenshots at the same scale: the reading column is the same
   % fraction of each screenshot's height, so the mirrored text is as large as the participant's.
-  \includegraphics[height=0.44\textwidth]{figures/ReadingView.png}\hspace{0.02\textwidth}
-  \includegraphics[height=0.44\textwidth]{figures/ResearcherLiveView.png}
+  \includegraphics[height=0.4\textwidth]{figures/ReadingView.png}\hspace{0.02\textwidth}
+  \includegraphics[height=0.4\textwidth]{figures/ResearcherLiveView.png}
   \caption{The two operated surfaces at the same scale: the participant reader (left) and the researcher console mirroring the same text with live gaze, fixation, and saccade overlays and the intervention controls (right).}
   \Description{Two application screenshots side by side. The left shows a clean reading view with a paragraph of text. The right shows the same text overlaid with gaze markers and, beside it, control panels for interventions and session state.}
   \label{fig:screens}
@@ -50,7 +50,7 @@ The result of the stage is a token-level reading observation (token, line, and b
 
 The temporal half of the pipeline is an explicit analysis strategy behind its own contract.
 The built-in strategy realises the area-of-interest branch of the classical taxonomy \cite{salvucci2000identifying}: since each observation is already bound to a word, the word itself is the area of interest, a fixation is confirmed from accumulated dwell against thresholds that are raised across a line change because cross-line movement is noisier, and per-word statistics separate read words from skimmed ones by dwell.
-Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, the standard oculomotor sign of reading disruption \cite{rayner1998eyemovements}.
+Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, a common marker of processing difficulty \cite{rayner1998eyemovements}; the rule also counts the small corrective leftward saccade that often follows a line change.
 The strategy depends only on the observation and the prior state, so replaying the same observations yields the same events; it is resolved from a registry, so an external analysis provider can replace it at runtime (Section~\ref{sec:platform-decision}).
 
 \subsection{The Decision Boundary and Execution Modes}
