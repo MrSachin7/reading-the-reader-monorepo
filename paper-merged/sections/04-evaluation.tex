@@ -9,7 +9,7 @@ Every quantity, table, and figure in this section is derived from the exported s
 \label{sec:eval-setup}
 
 We recorded \sessionsN{} reading sessions on real hardware: \participantsN{} participants each read under two conditions, with the context-preserving restore enabled (\on{}) and disabled (\off{}), as summarised in Table~\ref{tab:sessions}.
-Two expository Markdown articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
+Two expository Markdown formatted articles were used (\emph{Metal Detectors} and \emph{Nuclear Science}); each participant read a different article in each condition, and each article appears twice per condition.
 Condition order was not counterbalanced: \orderWithFirst{} participant read the \on{} session first and \orderWithoutFirst{} read the \off{} session first (Table~\ref{tab:sessions}), so most \on{} sessions were second sessions and any practice effect favours \on{}, the same direction as the differences reported below.
 Sessions ran on a Tobii Eye Tracker 4C (reported by the SDK as \texttt{IS4\_Large\_Peripheral}) mounted below a 2560$\times$1440 display, each gated by a passing nine-point calibration validation (average accuracy \calAccMin{} to \calAccMax{} degrees, precision \calPrecMin{} to \calPrecMax{} degrees).
 Validation passes when, over 30 samples at each of five targets, average accuracy is at most 1.0 degree, precision (root mean square angular distance between successive samples) is at most 0.5 degrees, and at least four targets rate good or fair; accuracy was not rechecked at session end.
@@ -53,7 +53,7 @@ We keep three timing quantities distinct (Table~\ref{tab:timing}).
 \emph{Gaze freshness at decision dispatch} is the backend-clock interval between the freshest ingested gaze sample and the dispatch of a decision context to the strategy; it is recorded once per evaluation, and evaluations are triggered by several kinds of state change, so their count exceeds the number of gaze samples.
 \emph{Decision-provider round trip} is the correlation-matched interval between a published context and the returned proposal.
 None of these measures the full path from a gaze sample to a visibly changed display, which would require direct measurement of the kind described by \citet{saunders2014latency}.
-The budget the platform reports against is 100\,ms, the threshold below which an interface response is perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and well within a single reading fixation \cite{rayner1998eyemovements}.
+The budget the platform reports against is 100\,ms, the threshold below which an interface response is perceived as instantaneous \cite{miller1968response, nielsen1993responsetime} and within a single normal reading fixation \cite{rayner1998eyemovements}.
 
 In the \sessionsN{} sessions the participant client saw a median round trip of \rttParticipantMedian{}\,ms with a 95th percentile of \rttParticipantPninefive{}\,ms, the researcher client a median of \rttResearcherMedian{}\,ms with a 95th percentile of \rttResearcherPninefive{}\,ms, and none of the \rttCohortN{} recorded round trips exceeded the budget.
 The decision path is instrumented only when an automated strategy is active.
@@ -78,7 +78,7 @@ The dependency rule that makes the modules replaceable is enforced twice: the ba
 The backend test project (101 tests covering session lifecycle gating, the proposal lifecycle, intervention execution, export serialisation, and recovery storage) passes in full on the current checkout.
 
 The stronger test is out of process.
-Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent master's project \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
+Three external providers connect to the running platform over the documented provider protocol: a reference decision provider and a reference analysis provider written by us, and a connector that bridges the reading-difficulty pipeline of a concurrent, independent study \cite{kraljevic2026struggle} to the analysis seam.\footnote{Their pipeline derives reader-struggle signals (cognitive load, reading style, and a pupillary load index) from eye-tracking features.}
 The reference providers, written by the contract's own authors, evidence only that the contract is sufficient; the third goes further, because we neither wrote its pipeline nor designed the contract around it, and its addition changed nothing in the backend, although we did write the connector and the collaborator's preprocessor carries small transport-related additions.
 Most tellingly, it served as the live analysis source for the \sessionsN{} evaluation sessions themselves: the fixation, saccade, and regression events analysed in this section were produced by that team's code running behind the platform's contract.
 

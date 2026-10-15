@@ -42,8 +42,8 @@ An incoming gaze point is smoothed adaptively, mapped into the reading area, and
 The mapping has two properties that matter for an adaptive reader.
 It is resolution-independent, because the tracker reports gaze as a fraction of the display and the words are measured live rather than assumed.
 And it is reflow-proof by construction: a typographic intervention that moves every word to a new position cannot invalidate the mapping, because the next sample is hit-tested against the boxes as they now are, which is precisely the failure mode a coordinate-based scheme would suffer.
-The heuristic's thresholds are hand-tuned and its token-level accuracy has not been validated against ground truth; it is a replaceable component.
-The result of the stage is a token-level reading observation (token, line, and block identity) published back to the backend.
+The heuristic's thresholds are hand-tuned and its token-level accuracy has not been validated against ground truth; however it is a replaceable component that can be adapted.
+The result of this stage is a token-level reading observation (token, line, and block identity) published back to the backend.
 
 \subsection{Eye-Movement Analysis as a Replaceable Strategy}
 \label{sec:platform-analysis}
@@ -81,7 +81,7 @@ Optionally, the restored sentence is briefly highlighted and fades over about th
 Because the sentence is re-located before the token, a small sentence-anchor residual does not by itself guarantee that the word being read stayed still; the evaluation therefore measures word displacement directly (Section~\ref{sec:eval-context}).
 
 Section~\ref{sec:eval-context} shows how these recorded outcomes exposed a defect in our original restore strategy.
-Because every intervention's graded outcome and residual are in the record, a later analysis can ask not only whether an intervention helped a reader but what it cost them in lost position.
+Because every intervention's graded outcome and residual are in the record, a later analysis can ask not only whether an intervention helped a reader but also what it cost them in lost position.
 
 \subsection{Researcher Console, Session Record, and Replay}
 \label{sec:platform-record}
