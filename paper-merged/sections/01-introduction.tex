@@ -14,18 +14,18 @@ Prior work confirms both sides of this tension: gaze-driven typographic adaptati
 We argue that the bottleneck in this research area has shifted.
 Demonstrating that gaze-driven adaptation works no longer requires another prototype; three generations of adaptive readers from one research programme alone have shown it \cite{refsgaard2024rtr, pereira2024typography, palinec2024reactive}.
 What is missing is the instrument for studying it: each of those prototypes wove sensing, decision logic, and the reading interface into one codebase, so each new study extended the previous system by forking it, and none offered a researcher console for operating a controlled session or a session record from which an experiment could be reconstructed.
-On a coupled prototype, even a simple comparison such as fading a font change in gradually versus applying it abruptly means editing core code and maintaining two forks under identical sensing: an experiment that should be a configuration choice becomes a software project.
+On a coupled prototype, even a simple comparison such as fading in a font change gradually versus applying it abruptly means editing core code and maintaining two forks under identical sensing: an experiment that should be a configuration choice becomes a software project.
 
-This paper presents a platform built to remove that friction, shown in Figure~\ref{fig:overview}.
+This paper presents a platform (Figure~\ref{fig:overview}) built to remove that friction.
 A participant reads reflowable text on one screen while the text adapts to their gaze; on a second screen, a researcher follows the participant's gaze, fixations, and regressions live over a mirror of the same text, and applies typographic interventions or approves machine-proposed ones during the session.
 Behind this workflow, the adaptive loop decomposes into four independently replaceable modules (sensing, eye-movement analysis, decision strategy, and intervention execution) connected through stable contracts, and writes every gaze sample, decision, and intervention into a schema-versioned session record that can be exported, replayed, and re-analysed.
 
 The contributions are:
 \begin{itemize}
-  \item \textbf{A modular platform for gaze-contingent reading experiments}, in which sensing, analysis, decision, and intervention are separate modules behind stable contracts, extendable in process by registration and out of process through a documented provider protocol.
+  \item \textbf{A modular platform for gaze-contingent reading experiments}, in which sensing, analysis, decision, and intervention are separate modules behind stable contracts, extendable either inside the backend process by registering a module or from a separate process through the same contracts, carried over a WebSocket provider protocol.
   \item \textbf{A two-screen, researcher-in-the-loop workflow}, in which interventions are applied manually, proposed by a decision provider and gated by the researcher (advisory), or applied autonomously, without structural change between modes.
   \item \textbf{A context-preserving intervention mechanism that measures its own cost}: layout changes can be committed at controlled boundaries, a continuously captured anchor restores the reader's position across the reflow, and a graded positional outcome for every intervention is written into the session record.
-  \item \textbf{A technical evaluation on real eye-tracking hardware} covering capture and transport, external-provider integration (including a collaborator's reading-difficulty pipeline that analysed the evaluation sessions live), and context preservation, whose self-measurement exposed a defect in our original restore strategy that over-repositioned the reader on small reflows; we describe the revision and its geometric evidence.
+  \item \textbf{A technical evaluation on real eye-tracking hardware} covering capture and transport, external-provider integration (including a collaborating study's reading-difficulty pipeline that analysed the evaluation sessions live), and context preservation, whose self-measurement exposed a defect in our original restore strategy that over-repositioned the reader on small reflows; we describe the revision and its geometric evidence.
 \end{itemize}
 
 We report the evaluation as an evaluation of the instrument: with four participants the behavioural observations are descriptive, and the paper makes no claim that any intervention improves reading.

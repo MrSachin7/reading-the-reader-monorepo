@@ -1,9 +1,9 @@
 \section{Evaluation}
 \label{sec:eval}
 
-The evaluation asks three questions that mirror the platform's claims: whether the four concerns are genuinely replaceable without touching the core (Section~\ref{sec:eval-modularity}), whether a real eye-tracking stream drives the loop with measurable quality and transport delay (Section~\ref{sec:eval-perf}), and whether interventions can adapt the text while preserving the reader's context (Section~\ref{sec:eval-context}).
+The evaluation asks three questions that mirror the platform's claims: whether the four components are genuinely replaceable without touching the core (Section~\ref{sec:eval-modularity}), whether a real eye-tracking stream drives the loop with measurable quality and transport delay (Section~\ref{sec:eval-perf}), and whether interventions can adapt the text while preserving the reader's context (Section~\ref{sec:eval-context}).
 The scope is architecture and runtime feasibility, not human efficacy: with \participantsN{} participants, the behavioural numbers below are descriptive, and we draw no statistical inference from them.
-Every quantity, table, and figure in this section is derived from the exported session and telemetry records by a dependency-free audit script committed with the paper; the script records the SHA-256 hash of each of its 20 input files and reproduces the summaries of the thesis analysis to numerical precision.
+Every quantity, table, and figure in this section is derived from the exported session and telemetry records by a dependency-free audit script committed with the paper; the script records the SHA-256 hash of each of its 20 input files and reproduces the summaries of the paper's analysis to numerical precision.
 
 \subsection{Setup}
 \label{sec:eval-setup}
@@ -16,8 +16,8 @@ Validation passes when, over 30 samples at each of five targets, average accurac
 % CONFIRM(authors): screen diagonal and viewing distance were not recorded; if known, state them here so that line spacing can be given in degrees of visual angle and compared with the accuracy figures (Ashkan's comment of 2026-10-13).
 Screen size and viewing distance were not recorded, so text sizes are given in pixels.
 The deployment was the intended single-operator setting shown in Figure~\ref{fig:rig}: backend and both surfaces on one host, traffic over the local loopback.
-All \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
-Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborator's external provider of Section~\ref{sec:eval-modularity}.
+In total, \interventionsTotal{} recorded interventions were applied manually from the researcher console with the immediate commit boundary, so the sessions exercise the manual path and the restore mechanism but not boundary scheduling or automated decisions; one export carries a rule-based advisory configuration in its final metadata although all of its interventions are manual, because condition metadata is taken from the final session snapshot.
+Eye-movement analysis in all \sessionsN{} sessions was served live by the collaborating study's external provider of Section~\ref{sec:eval-modularity}.
 One additional session under an advisory decision strategy exercised the decision-path instrumentation and is reported separately in Section~\ref{sec:eval-perf}.
 Every session was operated end to end from the gated researcher console, and every quantity in this section was recomputed from the exported session and telemetry records alone by the audit script, with telemetry joined to exports by session identifier and every context-preservation outcome linked to its intervention.
 
@@ -44,8 +44,8 @@ Order is the participant's session order; duration covers the exported session i
 \subsection{Capture and Transport}
 \label{sec:eval-perf}
 
-Across the \sessionsN{} sessions the exports contain \gazeTotal{} gaze samples.
-The tracker delivered a stable stream at its rated rate: the achieved sampling rate held at a mean of \gazeMeanHz{}\,Hz (SD \gazeSdHz{}\,Hz; range \gazeMinHz{} to \gazeMaxHz{}\,Hz), with the inter-sample interval concentrated at the nominal 11.1\,ms period.
+In total, across the \sessionsN{} sessions the exports contain \gazeTotal{} gaze point samples.
+The tracker delivered a stable stream at its designed rate: the achieved sampling rate held at a mean of \gazeMeanHz{}\,Hz (SD \gazeSdHz{}\,Hz; range \gazeMinHz{} to \gazeMaxHz{}\,Hz), with the inter-sample interval concentrated at the nominal 11.1\,ms period.
 The gaze-validity rate, the fraction of samples with at least one eye reported valid, ranged from \gazeMinValid\% to \gazeMaxValid\% (mean \gazeMeanValid\%) under continuous, self-paced reading rather than a constrained fixation task.
 
 We keep three timing quantities distinct (Table~\ref{tab:timing}).
@@ -110,14 +110,14 @@ Indeed, these sessions ran the restore that the sweep below shows over-repositio
 
 \paragraph{Record integrity.}
 Auditing the exports revealed that \duplicateFixations{} of \fixationTotal{} fixation records (\duplicateFixationPct\%) and \duplicateSaccades{} of \saccadeTotal{} saccade records (\duplicateSaccadePct\%) repeat an earlier payload exactly, and a further \nearDuplicateFixations{} and \nearDuplicateSaccades{} repeat an earlier event's identity with different layout-dependent fields; gaze samples and interventions contain no duplicates.
-The cause is a recording defect, since fixed: the provider resends its window of recent events every two seconds with line and token indices re-derived from the current layout, and the backend, which matched the previously newest record in full to find where the new events began, no longer recognised it after a reflow and recorded the whole window again.
+The cause is a recording defect in the backend, which has since been fixed: the provider resends its window of recent events every two seconds with line and token indices re-derived from the current layout, and the backend, which matched the previously newest record in full to find where the new events began, no longer recognised it after a reflow and recorded the whole window again.
 Each repeat is thus the same eye movement written twice, which is why saccades, whose payload depends on two tokens, suffer more.
 Discarding records that repeat an earlier event's identity gives regression rates of \regWithPreIdDedup\% before and \regWithPostIdDedup\% after an intervention \on{} against \regWithoutPreIdDedup\% and \regWithoutPostIdDedup\% \off{}, with resume-time medians unchanged, so the direction survives; exported event counts should nonetheless not be read as counts of distinct eye movements.
 
 \paragraph{Self-measurement catches a defect.}
 Within the four \on{} sessions, the reader recorded a graded outcome for every intervention: the displacement the reflow induced and the residual after the restore.
 \cpDegraded{} of the \interventionsWith{} outcomes were graded degraded and \cpPreserved{} preserved, and for the degraded ones the median residual was \cpDegradedResidualMedian{}\,px against a median induced displacement of only \cpDegradedInducedMedian{}\,px.
-The restore was moving readers substantially further than the reflow it compensated.
+The restore was moving the reader's viewport, and with it the anchor word, substantially further than the reflow it compensated.
 The cause was the original strategy's fixed target: it re-established the committed sentence near the top of the reading area regardless of how far the reader actually sat from it, so the smaller the reflow, the worse the compensation.
 
 \paragraph{Browser sweep, and the revision.}
