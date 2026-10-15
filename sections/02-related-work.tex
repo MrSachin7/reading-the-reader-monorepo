@@ -7,21 +7,20 @@ Using the reader's gaze to change the reading experience in real time has a long
 Throughout this paper, gaze-contingent is meant in this broad sense of a display that responds in real time to where the reader looks; the saccade-contingent display-change paradigms of reading research, such as the moving window of \citet{mcconkie1975span}, which mask changes within saccades, are out of scope.
 The eyeBook coupled an eye tracker to a digital book to trigger in-situ effects as the reader progressed \cite{biedert2010eyebook}.
 More recently, \citet{medan2024newline} scrolled a single line of text with the reader's webcam-estimated gaze and found no change in comprehension or speed but a clear preference for the interface, and \citet{rummens2026highlighting} coloured the fixated word in real time for second graders and reported faster reading with fewer regressions although the children preferred the static text; that split between performance and preference is a useful reporting model for adaptive reading.
-Gaze during reading is also used as a measurement instrument in its own right, for example to compare how readers process AI-generated and human-authored text \cite{ilyas2025mind}.
 
 Within one research programme, three master's projects built successive adaptive readers: a flexible reading and gaze-collection application \cite{refsgaard2024rtr}, an adaptive e-reader used to compare four intervention presentation forms, which were found to differ substantially in disruption and acceptance \cite{pereira2024typography}, and a reactive frontend designed to consume machine-learning output \cite{palinec2024reactive}.
 \citet{jensen2025context} then showed that context preservation is where intervention design bites: in a 22-participant within-subjects study of four intervention designs they introduced reading-resume time as a recovery measure and reported that a gradual transition combined with context highlighting resumed fastest, reducing the time lost to an intervention from 14.9\,s to 4.0\,s, and was the most preferred design.
 Each of these systems, however, was built for its own study.
 Sensing, decision logic, and presentation were coupled in one application, so the next study copied and modified the previous system rather than reconfiguring a shared one.
-Our platform is the infrastructural complement to this line of work: it is built so that exactly such comparisons of intervention designs can be run, varied, and reconstructed without touching core code.
+Our platform is a generalisation and an infrastructural complement to this line of work: it is built so that exactly such comparisons of intervention designs can be run, varied, and reconstructed without touching core code.
 
 \subsection{Real-Time Gaze Processing for Reading}
 
 Reducing a raw gaze stream to oculomotor events is the classical first step, with identification algorithms catalogued by velocity, dispersion, and area-of-interest families \cite{salvucci2000identifying,andersson2017one} and reading behaviour extensively characterised \cite{rayner1998eyemovements}.
-Real-time use sharpens the problem: noisy vertical gaze must be assigned to the correct line while the reader is still reading.
+Real-time use sharpens the problem: noisy vertical gaze must be assigned to the most probable line while the reader is still reading.
 \citet{kaltenberger2026line} address this with CONF-LA, a confidence-scored online fixation-to-line assignment that defers uncertain assignments.
-Our contribution on this front is architectural rather than algorithmic.
-The platform's built-in analysis is a dwell-based, token-level area-of-interest method whose spatial half hit-tests gaze against the words' live on-screen boxes (Section~\ref{sec:platform-mapping}), so a typographic reflow cannot invalidate the mapping; and the whole analysis stage is a replaceable, logged strategy, so a stronger detector or a confidence-aware line-assignment method can be attached as a provider without modifying the platform.
+However, our contribution on this front is architectural rather than algorithmic.
+The platform's built-in analysis is a dwell-based, token-level area-of-interest method which first assigns each gaze point to a token by testing it against the tokens' live on-screen boxes (Section~\ref{sec:platform-mapping}), so a typographic reflow cannot invalidate the mapping; and the whole analysis stage is a replaceable, logged strategy, so a stronger detector or a confidence-aware line-assignment method can be attached as a provider without modifying the platform.
 
 \subsection{Experiment Tooling}
 
@@ -31,25 +30,26 @@ Two recent ETRA contributions show the same open-source tooling trend at both en
 \citet{salari2026pyelink} provide PyeLink and SyeLink, Python tools that expose low-level control of EyeLink trackers to Pygame, PsychoPy, and Pyglet experiments, including recording during calibration and raw pupil and corneal-reflection data, and that parse the resulting files into structured data; \citet{salari2026pyetsimul} provide PyEtSimul, a simulator of video-based eye trackers that generates synthetic eye features from a geometric model so that gaze-estimation algorithms can be benchmarked reproducibly without hardware or participants.
 Both sit below the reading loop: they broaden what a sensing stage can be, and they are the kind of component our sensing port is designed to admit (Section~\ref{sec:platform-mapping}).
 What these tools leave to study-specific programming is the reading-specific loop: mapping gaze onto reflowable text, proposing and gating typographic changes, committing them without losing the reader, and measuring what the change cost.
-Table~\ref{tab:capability} summarizes the authors' assessment of the three most established tools against the capabilities a gaze-driven reading experiment requires; none maps gaze onto reflowable text, gives the researcher a live mirror with an approval gate, records what each intervention cost the reader, or exposes a pluggable decision boundary.
+Table~\ref{tab:capability} summarizes the authors' assessment of the most established tools against the capabilities a gaze-driven reading experiment requires; none maps gaze onto reflowable text, gives the researcher a live mirror with an approval gate, records what each intervention cost the reader, or exposes a pluggable decision boundary.
 Our platform occupies that region as a focused instrument for one family of experiments; it complements rather than replaces the general-purpose tools.
 
 % TODO(authors): re-verify the Partial/No ratings against current primary documentation before submission.
 \begin{widetable}
 \centering
-\small
+\footnotesize
+\setlength{\tabcolsep}{4pt}
 \caption{What a gaze-driven reading experiment needs beyond established experiment software.
-Entries reflect the authors' assessment of documented capabilities; Partial means achievable with study-specific code \cite{tobii2025prolab, peirce2019psychopy, brainard1997psychtoolbox}.}
+Entries reflect the authors' assessment of documented capabilities; Partial means achievable with study-specific code \cite{tobii2025prolab, peirce2019psychopy, mathot2012opensesame, brainard1997psychtoolbox}.}
 \label{tab:capability}
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-Capability & Tobii Pro Lab & PsychoPy & Psychtoolbox & This platform \\
+Capability & Tobii Pro Lab & PsychoPy & OpenSesame & Psychtoolbox & This platform \\
 \midrule
-Real-time typographic change to the text being read & No & Partial & Partial & Yes \\
-Gaze mapped onto reflowable text, robust to reflow & No & No & No & Yes \\
-Researcher console with live mirror and approval gate & No & No & No & Yes \\
-Positional cost of each intervention recorded & No & No & No & Yes \\
-Decision and analysis modules behind a provider protocol & No & No & No & Yes \\
+Real-time typographic change to the text being read & No & Partial & Partial & Partial & Yes \\
+Gaze mapped onto reflowable text, robust to reflow & No & No & No & No & Yes \\
+Researcher console with live mirror and approval gate & No & No & No & No & Yes \\
+Positional cost of each intervention recorded & No & No & No & No & Yes \\
+Decision and analysis modules behind a provider protocol & No & No & No & No & Yes \\
 \bottomrule
 \end{tabular}
 \end{widetable}
