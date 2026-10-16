@@ -198,7 +198,7 @@ def main():
         ("Advisory run", "Decision-provider round trip", latency["decision-provider-rtt"]),
     ]
     save_table("timing-table.tex", "@{}llrrrr@{}",
-        ["Recording", "Quantity (ms)", "$n$", "Median", "95th pct.", "Max."], [table_row(pop, label, f'{s["n"]:,}',
+        ["Recording", "Quantity (ms)", "$n$", "Median", "${95}^{th}$ pct.", "Max."], [table_row(pop, label, f'{s["n"]:,}',
         number(s["p50"]), number(s["p95"], 2), number(s["max"]))
         for pop, label, s in populations], midrules=(2,))
 

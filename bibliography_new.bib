@@ -12,6 +12,9 @@
 % NOTE: never write an at-sign inside comments in this file; BibTeX parses it as an entry.
 
 % ---------- Entries carried over from the thesis bibliography ----------
+% Access to the four DTU master's theses (refsgaard2024rtr, pereira2024typography, palinec2024reactive,
+% kraljevic2026struggle) shows as prohibited on DTU Findit for a signed-out reader (checked 2026-10-16),
+% hence the access note on each.
 
 @inproceedings{jensen2025context,
   author       = {Jensen, Helena Eschricht and Ilyas, Chaudhary Muhammad Aqdus and Tashk, Ashkan and Cooreman, Bart and Beier, Sofie and B{\ae}kgaard, Per},
@@ -25,12 +28,15 @@
   doi          = {10.1145/3715669.3725897},
 }
 
+% CHECK: DTU Findit lists Farooq first (Farooq, Aamir Ahmad; Refsgaard, Lars Kristian Burchard).
+% If the title page agrees, swap the two authors; the key can stay.
 @mastersthesis{refsgaard2024rtr,
   author       = {Refsgaard, Lars Kristian Burchard and Farooq, Aamir Ahmad},
   title        = {Reading the Reader: An Intelligent System for Optimizing Typography for Central Vision Loss Readers},
   type         = {Master's thesis},
   school       = {Technical University of Denmark, DTU Compute},
   year         = {2024},
+  note         = {Full text not publicly accessible; catalogue record in DTU Findit},
   url          = {https://findit.dtu.dk/en/catalog/65fa375f2a83a81e2e536b41},
 }
 
@@ -42,6 +48,7 @@
   type         = {Master's thesis},
   school       = {Technical University of Denmark, DTU Compute},
   year         = {2024},
+  note         = {Full text not publicly accessible; catalogue record in DTU Findit},
   url          = {https://findit.dtu.dk/en/catalog/669da34561fca2e8f32bfbd8},
 }
 
@@ -51,6 +58,7 @@
   type         = {Master's thesis},
   school       = {Technical University of Denmark, DTU Compute},
   year         = {2024},
+  note         = {Full text not publicly accessible; catalogue record in DTU Findit},
   url          = {https://findit.dtu.dk/en/catalog/66bbf5cfdeca9be8f357d145},
 }
 
@@ -237,7 +245,7 @@
 }
 
 % Published version of arXiv:2605.00033 (PACM CGIT 9(2), May 2026; presented at ETRA 2026). Verified via Crossref.
-% Corrected 2026-10-15: numpages from Crossref (pages 1 to 22); add articleno if the ACM DL page shows one.
+% Corrected 2026-10-15: numpages from Crossref (pages 1 to 22). Corrected 2026-10-16: article number 19 from the ACM DL page.
 @article{kaltenberger2026line,
   author  = {Kaltenberger, Franziska and Chen, Wei-Ling and Thaqi, Enkeleda and Kasneci, Enkelejda},
   title   = {Sure About That Line? Approaching Confidence-Based, Real-Time Line Assignment in Reading Gaze Data},
@@ -245,6 +253,7 @@
   year    = {2026},
   volume  = {9},
   number  = {2},
+  articleno = {19},
   numpages = {22},
   doi     = {10.1145/3803540},
 }
@@ -295,11 +304,12 @@
 }
 
 % Corrected 2026-10-15: stable documentation URL instead of the development docs.
+% Corrected 2026-10-16: version dropped; the page shows none and the current release is 2026.2.4 (PyPI).
 @misc{psychopy2026iohub,
   author       = {{PsychoPy contributors}},
   title        = {{ioHub} Common Eye Tracker Interface},
   year         = {2026},
-  note         = {PsychoPy documentation, version 2026.1.0. Accessed 2026-10-15},
+  note         = {PsychoPy documentation. Accessed 2026-10-16},
   url          = {https://www.psychopy.org/api/iohub/device/eyetracker.html},
 }
 
@@ -329,13 +339,14 @@
   doi     = {10.1145/3806023},
 }
 
-% DTU Findit record 6a80ffb9b29e8a2151887cff (master thesis, eThesis open access), read on 2026-09-29.
+% DTU Findit record 6a80ffb9b29e8a2151887cff (master thesis), read on 2026-09-29.
 @mastersthesis{kraljevic2026struggle,
   author       = {Kraljevi\'{c}, Katarina and Desu, Sree Keerthi},
   title        = {Reading the Struggle: Using Machine Learning to Detect Reading Difficulty in Near Real-Time},
   type         = {Master's thesis},
   school       = {Technical University of Denmark, DTU Compute},
   year         = {2026},
+  note         = {Full text not publicly accessible; catalogue record in DTU Findit},
   url          = {https://findit.dtu.dk/en/catalog/6a80ffb9b29e8a2151887cff},
 }
 
