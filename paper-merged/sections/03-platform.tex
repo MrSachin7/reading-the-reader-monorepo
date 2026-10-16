@@ -50,7 +50,7 @@ The result of this stage is a token-level reading observation (token, line, and 
 
 The temporal half of the pipeline is an explicit analysis strategy behind its own contract.
 The built-in strategy realises the area-of-interest branch of the classical taxonomy \cite{salvucci2000identifying}: since each observation is already bound to a word, the word itself is the area of interest, a fixation is confirmed from accumulated dwell against thresholds that are raised across a line change because cross-line movement is noisier, and per-word statistics separate read words from skimmed ones by dwell.
-Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, a common marker of processing difficulty \cite{rayner1998eyemovements}; the rule also counts the small corrective leftward saccade that often follows a line change.
+Saccades are classified from token and line deltas, and a backward or line-change-backward saccade is counted as a regression, a common marker of processing difficulty \cite{rayner1998eyemovements}; the rule also counts the small corrective leftward saccade that often follows a line change \cite{parker2019returnsweep}.
 The strategy depends only on the observation and the prior state, so replaying the same observations yields the same events; it is resolved from a registry, so an external analysis provider can replace it at runtime (Section~\ref{sec:platform-decision}).
 
 \subsection{The Decision Boundary and Execution Modes}
@@ -77,7 +77,7 @@ To anchor the currently read token, line, and sentence spatially across a commit
 An anchor is captured continuously (every 120\,ms and on content changes), preferring the word the participant is currently reading, degrading to a visible fallback word or its enclosing block, and recording the element's identity together with its viewport offset; anchors older than 15\,s are rejected as stale.
 When a layout change commits, the reader re-locates the anchor in the reflowed document (degrading sentence to token to block) and scrolls it back to the viewport offset it held before the change.
 The residual error between target and achieved offset is then measured, graded (preserved, degraded, or failed, with tolerances of 72\,px for a full reflow and 48\,px to 120\,px otherwise), and written into the session record next to the intervention that caused it, together with the displacement the reflow itself induced.
-Optionally, the restored sentence is briefly highlighted and fades over about three seconds, drawing the eye back to the resume point, which corresponds to the highlighting component that prior work found effective for recovery \cite{jensen2025context}.
+Optionally, the restored sentence is briefly highlighted and fades over about three seconds, drawing the eye back to the resume point; highlighting of this kind has been associated with faster resumption, and the sentence level is the mode that prior work favoured \cite{jensen2025context}.
 Because the sentence is re-located before the token, a small sentence-anchor residual does not by itself guarantee that the word being read stayed still; the evaluation therefore measures word displacement directly (Section~\ref{sec:eval-context}).
 
 Section~\ref{sec:eval-context} shows how these recorded outcomes exposed a defect in our original restore strategy.
